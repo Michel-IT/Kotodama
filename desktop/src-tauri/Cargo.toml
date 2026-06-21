@@ -1,0 +1,44 @@
+[package]
+name = "kotodama"
+# Rust crate version: NOT the version shown by the app.
+# The single source of truth is desktop/package.json (tauri.conf.json points to "../package.json").
+# No need to bump it every release: just keep it valid for cargo.
+version = "0.1.8"
+description = "Kotodama • Ai Prompt Builder — Tauri desktop app"
+authors = ["Michel-IT"]
+edition = "2021"
+rust-version = "1.77.2"
+
+# The logic lives in the lib (`app_lib`) so it stays reusable on mobile too.
+[lib]
+name = "app_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# `unstable` -> multi-webview (window.add_child); `tray-icon`+`image-png` -> system tray;
+# `macos-private-api` -> transparent toast window on macOS (required by macOSPrivateApi in tauri.conf.json)
+tauri = { version = "2", features = ["unstable", "tray-icon", "image-png", "macos-private-api"] }
+tauri-plugin-clipboard = "2"          # clipboard monitor + read/write
+tauri-plugin-global-shortcut = "2"    # global hotkey
+tauri-plugin-autostart = "2"          # start on login
+tauri-plugin-opener = "2"             # open links in the system browser
+tauri-plugin-updater = "2"            # auto-update from the public Kotodama repo Releases
+tauri-plugin-single-instance = "2"    # single instance: a 2nd launch focuses the existing one
+sys-locale = "0.3"                    # OS language detection (multilingual first launch)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+
+# Faster `tauri dev` iteration (does not affect the release profile).
+[profile.dev]
+opt-level = 1
+codegen-units = 16

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="sumi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kotodama • Ai Prompt Builder — Notifica</title>
+  <style>
+    :root, [data-theme="ginga"] {
+      --accent:#6c8cff; --accent-soft:#5a78f0; --on-accent:#0a0a22;
+      --text:#eaeefb; --text-dim:#aab4d8; --border:#283357;
+      --card-a:#161e3a; --card-b:#0b1022; --kbd-bg:#070a16;
+      --card-shadow:0 16px 40px rgba(0,0,0,.6); --card-blur:none;
+    }
+    [data-theme="hisui"] {
+      --accent:#2fd9a0; --accent-soft:#1fc78d; --on-accent:#03201a;
+      --text:#e8fbf3; --text-dim:#9ccabc; --border:#1d4f40;
+      --card-a:#0e2c24; --card-b:#081a15; --kbd-bg:#05130f;
+    }
+    [data-theme="kohaku"] {
+      --accent:#ffb454; --accent-soft:#f0a23c; --on-accent:#241803;
+      --text:#eaf1fb; --text-dim:#a7bcd6; --border:#2b3c54;
+      --card-a:#16202f; --card-b:#0c1320; --kbd-bg:#060912;
+    }
+    [data-theme="murasaki"] {
+      --accent:#c084fc; --accent-soft:#a855f7; --on-accent:#1c0a2e;
+      --text:#f1ebfb; --text-dim:#c2b3da; --border:#322052;
+      --card-a:#1e1636; --card-b:#120c22; --kbd-bg:#0a0714;
+    }
+    /* Sumi: sober/flat, no shadow, squared */
+    [data-theme="sumi"] {
+      --accent:#ffb454; --accent-soft:#f0a23c; --on-accent:#241803;
+      --text:#ededed; --text-dim:#a6a6a6; --border:#2a2a2a;
+      --card-a:#141414; --card-b:#101010; --kbd-bg:#0a0a0a;
+      --card-shadow:none;
+    }
+    [data-theme="sumi"] .card { border-radius:2px; }
+    [data-theme="sumi"] .spark,[data-theme="sumi"] .head .x,[data-theme="sumi"] .preview,
+    [data-theme="sumi"] .kbd,[data-theme="sumi"] .open { border-radius:2px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: transparent; overflow: hidden; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      padding: 8px; -webkit-user-select: none; user-select: none; cursor: default;
+    }
+    .card {
+      height: calc(138px - 16px);
+      display: flex; flex-direction: column; gap: 9px; justify-content: flex-start;
+      background: linear-gradient(180deg, var(--card-a), var(--card-b));
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 13px 15px;
+      box-shadow: var(--card-shadow);
+      -webkit-backdrop-filter: var(--card-blur); backdrop-filter: var(--card-blur);
+      animation: slideup .28s cubic-bezier(.22,.61,.36,1);
+    }
+    .head { display: flex; align-items: center; gap: 9px; }
+    .spark {
+      width: 24px; height: 24px; border-radius: 7px; flex: none; display: block; object-fit: cover;
+    }
+    .head .title { font-size: 13px; font-weight: 650; color: var(--text); flex: 1; }
+    .head .x {
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      font-size: 14px; width: 22px; height: 22px; border-radius: 6px; line-height: 1;
+    }
+    .head .x:hover { color: var(--accent); background: rgba(255,255,255,.05); }
+    .preview {
+      display: flex; align-items: center; min-height: 34px;
+      background: rgba(0,0,0,.18); border-radius: 8px; padding: 6px 10px;
+    }
+    .preview .ptext {
+      font-size: 12px; color: var(--text-dim); line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; }
+    .keys { display: flex; align-items: center; gap: 5px; color: var(--text-dim); font-size: 11.5px; }
+    .kbd {
+      display: inline-grid; place-items: center; min-width: 20px; height: 21px; padding: 0 6px;
+      background: var(--kbd-bg); border: 1px solid var(--border); border-bottom-width: 2px;
+      border-radius: 6px; font-size: 11px; font-weight: 700; color: var(--accent);
+    }
+    .open {
+      padding: 7px 16px; border-radius: 9px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      color: var(--on-accent); font-size: 12.5px; font-weight: 700; transition: filter .15s, transform .1s;
+    }
+    .open:hover { filter: brightness(1.06); }
+    .open:active { transform: scale(.96); }
+    @keyframes slideup { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="head">
+      <img class="spark" src="logo.png" alt="Kotodama">
+      <span class="title" id="title">Hai copiato del testo</span>
+      <button class="x" id="close" title="Chiudi">✕</button>
+    </div>
+    <div class="preview"><span class="ptext" id="preview"></span></div>
+    <div class="foot">
+      <div class="keys" id="keys"></div>
+      <button class="open" id="open">Apri</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    const T = window.__TAURI__;
+    const invoke = (T && T.core) ? T.core.invoke : null;
+    const listen = (T && T.event) ? T.event.listen : null;
+
+    // Localization: inline English (fallback); the actual language comes from the Settings / the payload,
+    // loading the "toast" section of the i18n/<code>.json file (same schema as the app).
+    const STR_EN = { title: 'You copied some text', open: 'Open', press: 'press', or: 'or click', empty: '(empty text)' };
+    let STR = STR_EN;
+    let curProvider = '';
+    const RTL = new Set(['ar','ur','fa','he']);
+    async function loadToastStrings(code) {
+      if (!code || code === 'en') { STR = STR_EN; return; }
+      try { const r = await fetch('i18n/' + code + '.json'); if (r.ok) { const d = await r.json(); STR = { ...STR_EN, ...(d.toast || {}) }; return; } } catch (e) {}
+      STR = STR_EN;
+    }
+    function applyDir(code) { document.documentElement.dir = RTL.has(code) ? 'rtl' : 'ltr'; }
+    function renderStrings() {
+      document.getElementById('title').textContent = STR.title;
+      document.getElementById('open').textContent = curProvider ? `${STR.open} ${curProvider}` : STR.open;
+    }
+    renderStrings();
+
+    function keyLabel(p) {
+      switch (p) {
+        case 'Control': case 'CommandOrControl': case 'CmdOrCtrl': return 'Ctrl';
+        case 'Super': case 'Meta': return 'Win';
+        case 'Command': return 'Cmd';
+        case 'Alt': case 'Option': return 'Alt';
+        case 'Shift': return 'Shift';
+        case 'IntlBackslash': return '<';
+        case 'Backslash': return '\\';
+        case 'Backquote': return '`';
+        case 'BracketLeft': return '[';
+        case 'BracketRight': return ']';
+        case 'Semicolon': return ';';
+        case 'Quote': return "'";
+        case 'Comma': return ',';
+        case 'Period': return '.';
+        case 'Slash': return '/';
+        case 'Minus': return '-';
+        case 'Equal': return '=';
+        case 'Space': return 'Space';
+        case 'Enter': return 'Enter';
+        case 'Tab': return 'Tab';
+        case 'Escape': return 'Esc';
+        case 'ArrowUp': return '↑';
+        case 'ArrowDown': return '↓';
+        case 'ArrowLeft': return '←';
+        case 'ArrowRight': return '→';
+        default:
+          if (p.startsWith('Key')) return p.slice(3);
+          if (p.startsWith('Digit')) return p.slice(5);
+          if (p.startsWith('Numpad')) return 'Num ' + p.slice(6);
+          return p;
+      }
+    }
+    function friendlyHotkey(accel) {
+      if (!accel) return 'Ctrl + <';
+      return accel.split('+').map(keyLabel).join(' + ');
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function renderKeys(accel) {
+      const parts = friendlyHotkey(accel).split(' + ');
+      const kbds = parts.map(k => `<span class="kbd">${esc(k)}</span>`).join('');
+      document.getElementById('keys').innerHTML = `${STR.press} ${kbds} ${STR.or}`;
+    }
+    function applyTheme(t) { document.documentElement.setAttribute('data-theme', t || 'sumi'); }
+
+    // initial state: current hotkey + theme (fallback before the first content)
+    if (invoke) {
+      invoke('get_settings').then(async s => {
+        if (s) { applyTheme(s.theme); await loadToastStrings(s.language); applyDir(s.language); renderStrings(); renderKeys(s.hotkey); }
+      }).catch(() => renderKeys(null));
+    } else { renderKeys(null); }
+
+    // on each show the backend sends updated preview + hotkey + theme
+    if (listen) {
+      listen('toast://content', async (e) => {
+        const pl = e.payload || {};
+        if (pl.language !== undefined) { await loadToastStrings(pl.language); applyDir(pl.language); }
+        curProvider = pl.provider || '';
+        document.getElementById('preview').textContent = pl.preview || STR.empty;
+        if (pl.hotkey) renderKeys(pl.hotkey);   // fix: always the current hotkey
+        if (pl.theme) applyTheme(pl.theme);
+        renderStrings();   // title + "Apri {provider}" in the current language
+        scheduleAutoHide();
+      });
+    }
+
+    // auto-hide ~6s, cancelled if the mouse enters
+    let hideTimer;
+    function scheduleAutoHide() {
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => { if (invoke) invoke('hide_toast').catch(() => {}); }, 6000);
+    }
+    document.body.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+    document.body.addEventListener('mouseleave', scheduleAutoHide);
+
+    document.getElementById('open').addEventListener('click', () => {
+      if (invoke) invoke('accept_clipboard').catch(() => {});
+    });
+    document.getElementById('close').addEventListener('click', () => {
+      if (invoke) invoke('hide_toast').catch(() => {});
+    });
+
+    scheduleAutoHide();
+  </script>
+</body>
+</html>

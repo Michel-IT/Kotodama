@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permessi per le finestre locali dell'app (main + toast). Le viste provider sono remote: l'IPC è bloccato di default.",
+  "windows": ["main", "toast"],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "updater:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-internal-toggle-maximize"
+  ]
+}

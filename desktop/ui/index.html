@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="sumi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kotodama • Ai Prompt Builder</title>
+  <style>
+    /* ===================== STRUCTURE / SIZING (shared) ===================== */
+    :root {
+      --radius:14px; --radius-l:18px; --radius-s:10px;
+      --shadow:0 22px 60px rgba(0,0,0,.6); --shadow-s:0 8px 24px rgba(0,0,0,.42);
+      --topbar-h:46px; --ease:cubic-bezier(.22,.61,.36,1);
+      --danger:#ff6b6b;
+    }
+
+    /* ===================== GINGA 銀河 (default) — neon on navy (from the icon colors) ===================== */
+    :root, [data-theme="ginga"] {
+      --bg-0:#070a16; --bg-1:#0b1022; --panel:#111831; --panel-2:#1a2342;
+      --field:#141c38; --field-2:#1f2a4a;
+      --accent:#6c8cff; --accent-soft:#5a78f0; --accent-2:#ff6ad5; --on-accent:#0a0a22;
+      --accent-glow:rgba(108,140,255,.34); --panel-glow:rgba(108,140,255,.10);
+      --glow0:rgba(108,140,255,.18); --glow1:rgba(255,106,213,.12); --grid:rgba(120,140,255,.04);
+      --text:#eaeefb; --text-dim:#aab4d8; --text-faint:#737f9f;
+      --border:#283357; --border-soft:#1b2545;
+    }
+
+    /* ===================== HISUI 翡翠 — jade / green ===================== */
+    [data-theme="hisui"] {
+      --bg-0:#05130f; --bg-1:#081a15; --panel:#0c2620; --panel-2:#123a30;
+      --field:#0f2c24; --field-2:#184a3d;
+      --accent:#2fd9a0; --accent-soft:#1fc78d; --accent-2:#37e0c0; --on-accent:#03201a;
+      --accent-glow:rgba(47,217,160,.30); --panel-glow:rgba(47,217,160,.10);
+      --glow0:rgba(47,217,160,.15); --glow1:rgba(55,224,192,.10); --grid:rgba(47,217,160,.035);
+      --text:#e8fbf3; --text-dim:#9ccabc; --text-faint:#6f9688;
+      --border:#1d4f40; --border-soft:#143b30;
+    }
+
+    /* ===================== KOHAKU 琥珀 — amber & steel ===================== */
+    [data-theme="kohaku"] {
+      --bg-0:#060912; --bg-1:#0a1018; --panel:#0e1622; --panel-2:#16202f;
+      --field:#111a28; --field-2:#1c2838;
+      --accent:#ffb454; --accent-soft:#f0a23c; --accent-2:#5b9bd5; --on-accent:#241803;
+      --accent-glow:rgba(255,180,84,.28); --panel-glow:rgba(91,155,213,.10);
+      --glow0:rgba(255,180,84,.13); --glow1:rgba(91,155,213,.14); --grid:rgba(120,170,220,.04);
+      --text:#eaf1fb; --text-dim:#a7bcd6; --text-faint:#6f86a0;
+      --border:#2b3c54; --border-soft:#1d2a3c;
+    }
+
+    /* ===================== MURASAKI 紫 — purple & magenta ===================== */
+    [data-theme="murasaki"] {
+      --bg-0:#0a0714; --bg-1:#100b1e; --panel:#150f28; --panel-2:#1e1636;
+      --field:#181030; --field-2:#251a44;
+      --accent:#c084fc; --accent-soft:#a855f7; --accent-2:#ff5fd2; --on-accent:#1c0a2e;
+      --accent-glow:rgba(192,132,252,.30); --panel-glow:rgba(192,132,252,.11);
+      --glow0:rgba(192,132,252,.16); --glow1:rgba(255,95,210,.12); --grid:rgba(170,130,255,.04);
+      --text:#f1ebfb; --text-dim:#c2b3da; --text-faint:#8a7aa6;
+      --border:#322052; --border-soft:#241640;
+    }
+
+    /* ===================== SUMI — sober, flat, Windows 10 style (#101010) ===================== */
+    [data-theme="sumi"] {
+      --bg-0:#0a0a0a; --bg-1:#101010; --panel:#171717; --panel-2:#1c1c1c;
+      --field:#1a1a1a; --field-2:#232323;
+      --accent:#ffb454; --accent-soft:#f0a23c; --accent-2:#f0a23c; --on-accent:#241803;
+      --accent-glow:rgba(255,180,84,.16); --panel-glow:transparent;
+      --glow0:transparent; --glow1:transparent; --grid:transparent;
+      --text:#ededed; --text-dim:#a6a6a6; --text-faint:#6c6c6c;
+      --border:#2a2a2a; --border-soft:#1e1e1e;
+      /* flat & nearly square */
+      --radius:2px; --radius-l:2px; --radius-s:2px; --shadow:none; --shadow-s:none;
+    }
+    /* Sumi: squares the hardcoded radii + removes glow/shadows/gradients (Win10 taskbar look) */
+    [data-theme="sumi"] .spark,[data-theme="sumi"] .icon-btn,[data-theme="sumi"] .lang,
+    [data-theme="sumi"] .lang button,[data-theme="sumi"] .win-btn,[data-theme="sumi"] .pc-btn,
+    [data-theme="sumi"] .pc-close,[data-theme="sumi"] .add-btn,[data-theme="sumi"] .recipe-del,
+    [data-theme="sumi"] .prov,[data-theme="sumi"] .instr-save,[data-theme="sumi"] .copy-btn,
+    [data-theme="sumi"] .toast,[data-theme="sumi"] .cs-opt,[data-theme="sumi"] .ch-x,
+    [data-theme="sumi"] .send { border-radius:2px; }
+    [data-theme="sumi"] .appbar { background:#161616; border-bottom:1px solid var(--border); }
+    [data-theme="sumi"] .appbar::after { display:none; }
+    [data-theme="sumi"] body.tauri .appbar { box-shadow:none; }
+    [data-theme="sumi"] .send,[data-theme="sumi"] .claude-hint,[data-theme="sumi"] .seclabel::before { box-shadow:none; }
+
+    /* Ginga signature: cyan→blue→magenta gradient (echoes the icon ribbons) */
+    [data-theme="ginga"] .send,
+    [data-theme="ginga"] .btn.primary { background:linear-gradient(135deg,#2fe6e0,#6c8cff,#ff6ad5); }
+
+    * { box-sizing:border-box; margin:0; padding:0; }
+
+    html { height:100vh; }
+    body {
+      font-family:"Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+      color:var(--text); height:100vh; overflow:hidden;
+      /* lightness: repeated grid removed, a single light radial glow */
+      background:
+        radial-gradient(1000px 620px at 82% -12%, var(--glow0), transparent 60%),
+        var(--bg-0);
+      display:flex; align-items:center; justify-content:center; padding:24px;
+      -webkit-font-smoothing:antialiased;
+      user-select:none; -webkit-user-select:none;   /* no text selection on the UI (e.g. double-click on the providers) */
+    }
+    /* re-enable selection where it is actually needed */
+    textarea, input, #result, .content, [contenteditable] { user-select:text; -webkit-user-select:text; }
+    /* Themed scrollbar: uses the variables → automatically follows every theme (WebView2/Chromium + Firefox) */
+    * { scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+    ::-webkit-scrollbar { width:10px; height:10px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:8px; border:2px solid transparent; background-clip:padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background:var(--accent); }
+    ::-webkit-scrollbar-corner { background:transparent; }
+    body.tauri { padding:0; display:block; }
+    body.tauri .app {
+      max-width:none; width:100%; height:100vh;
+      border-radius:0; border:none; box-shadow:none;
+      display:flex; flex-direction:column; padding-top:var(--topbar-h);
+    }
+    /* Main area below the topbar: fills the height; the textarea acts as the elastic element (no scroll) */
+    .main { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; }
+    body.tauri .layout { flex:1; min-height:0; }
+
+    /* ===================== App window ===================== */
+    .app {
+      width:100%; max-width:1080px; position:relative;
+      /* lightness: oversize radial removed, the linear sheen at the top remains */
+      background:
+        linear-gradient(180deg, var(--panel-2), rgba(0,0,0,0) 260px),
+        var(--bg-1);
+      border-radius:var(--radius-l); box-shadow:var(--shadow);
+      overflow:hidden; border:1px solid var(--border);
+    }
+
+    /* ===================== Top bar ===================== */
+    .appbar {
+      display:flex; align-items:center; gap:8px; height:var(--topbar-h);
+      padding:0 6px 0 12px; position:relative;
+      background:linear-gradient(180deg, var(--panel-2), var(--bg-1));
+      border-bottom:1px solid var(--border-soft);
+    }
+    .appbar::after {
+      content:""; position:absolute; left:0; right:0; bottom:-1px; height:1px;
+      background:linear-gradient(90deg, transparent, var(--accent), transparent); opacity:.55;
+    }
+    body.tauri .appbar { position:fixed; top:0; left:0; right:0; z-index:1000; box-shadow:0 1px 0 rgba(0,0,0,.25); }
+
+    /* Claude login warning banner: below the topbar, in the main webview.
+       The provider webview is pushed down by the same height (set_provider_top_extra). */
+    .claude-hint {
+      position:fixed; top:var(--topbar-h); left:0; right:0; z-index:900;
+      display:flex; align-items:center; gap:10px; box-sizing:border-box;
+      padding:9px 14px; font-size:13px; line-height:1.35;
+      background:#2a2118; color:#f4e9d7; border-bottom:1px solid #6b4f1d;
+      box-shadow:0 2px 10px rgba(0,0,0,.32);
+    }
+    .claude-hint[hidden] { display:none; }
+    .claude-hint .ch-ico { flex:none; font-size:15px; }
+    .claude-hint .ch-msg { flex:1; min-width:0; }
+    .claude-hint .ch-x {
+      flex:none; cursor:pointer; background:transparent; border:0; color:#f4e9d7;
+      font-size:14px; opacity:.8; padding:2px 7px; border-radius:6px; transition:background .15s,opacity .15s;
+    }
+    .claude-hint .ch-x:hover { opacity:1; background:rgba(255,255,255,.08); }
+
+    .ab-brand { display:flex; align-items:center; gap:9px; padding:0 4px; }
+    .spark {
+      width:28px; height:28px; border-radius:8px; flex:none; display:block;
+      object-fit:cover;
+    }
+    .ab-brand h1 { font-size:15px; font-weight:650; letter-spacing:.2px; white-space:nowrap; }
+    .ab-spacer { flex:1; align-self:stretch; }
+
+    .ab-tools { display:flex; gap:8px; align-items:center; }
+    .icon-btn {
+      background:none; border:none; color:var(--text-dim); cursor:pointer;
+      width:30px; height:30px; border-radius:8px; font-size:16px; line-height:1;
+      display:grid; place-items:center; transition:background-color .15s, color .15s;
+    }
+    .icon-btn:hover { color:var(--accent); background:rgba(255,255,255,.06); }
+
+    .lang { display:flex; gap:2px; background:var(--field); border:1px solid var(--border); border-radius:9px; padding:3px; }
+    .lang button {
+      font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px;
+      color:var(--text-dim); border:none; background:none; cursor:pointer; transition:background-color .15s, color .15s;
+    }
+    .lang button.active { background:var(--accent); color:var(--on-accent); }
+
+    .win-controls { display:none; gap:2px; margin-left:2px; }
+    body.tauri .win-controls { display:flex; }
+    .win-btn {
+      width:34px; height:30px; border:none; background:none; color:var(--text-dim);
+      cursor:pointer; border-radius:7px; font-size:13px; display:grid; place-items:center; transition:background-color .12s, color .12s;
+    }
+    .win-btn:hover { background:rgba(255,255,255,.08); color:var(--text); }
+    .win-btn.win-close:hover { background:var(--danger); color:#1a0a0a; }
+
+    /* in-app provider nav — "magic": brand on the left, provider NAME centered, no URL.
+       In provider-open the brand (left) and spacer stay visible (the spacer pushes the
+       window controls to the right); only lang+⚙ are hidden. */
+    .ab-provnav { display:none; align-items:center; gap:6px; flex:none;
+      margin-left:4px; padding-left:10px; border-left:1px solid var(--border-soft); }
+    body.provider-open .ab-provnav { display:flex; }
+    body.provider-open .ab-tools { display:none; }
+    .pc-btn {
+      width:30px; height:30px; border-radius:8px; flex:none;
+      border:1px solid var(--border); background:var(--field); color:var(--text);
+      cursor:pointer; font-size:15px; display:grid; place-items:center; transition:background .15s, transform .1s;
+    }
+    .pc-btn:hover { background:var(--field-2); }
+    .pc-btn:active { transform:scale(.94); }
+    /* provider name: takes the space between nav and controls, content centered; does not block drag */
+    .pc-title {
+      display:none; flex:1; min-width:0; height:var(--topbar-h);
+      align-items:center; justify-content:center; gap:8px; pointer-events:none;
+      color:var(--text-dim); font-size:12.5px; font-weight:600; letter-spacing:.3px;
+    }
+    body.provider-open .pc-title { display:flex; }
+    /* in provider mode the spacer is not needed (the flex provider name fills it) */
+    body.provider-open .ab-spacer { display:none; }
+    .pc-badge { color:var(--accent); filter:drop-shadow(0 0 6px var(--accent-glow)); flex:none; display:grid; place-items:center; width:18px; height:18px; }
+    .pc-badge svg { width:18px; height:18px; display:block; }
+    #pcName { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* on narrow windows hide the brand text (the logo stays) so it does not
+       collide with the centered provider name */
+    @media (max-width:880px) { body.provider-open .ab-brand h1 { display:none; } }
+    .pc-close {
+      display:flex; align-items:center; gap:6px; flex:none; height:30px; padding:0 12px; border-radius:8px;
+      border:1px solid var(--border); background:var(--field); color:var(--text); cursor:pointer;
+      font-size:12.5px; font-weight:600; transition:background .15s;
+    }
+    .pc-close:hover { background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+
+    /* ===================== Layout ===================== */
+    .layout { display:grid; grid-template-columns:240px 1fr; grid-template-rows:minmax(0,1fr); gap:16px; padding:14px 18px 18px; align-items:stretch; min-height:0; }
+
+    /* Panels with HUD frame (corner brackets) */
+    .hud { position:relative; }
+    .hud::before, .hud::after {
+      content:""; position:absolute; width:13px; height:13px; pointer-events:none;
+      border:1.5px solid var(--accent); opacity:.45;
+    }
+    .hud::before { top:-1px; left:-1px; border-right:0; border-bottom:0; border-top-left-radius:7px; }
+    .hud::after { bottom:-1px; right:-1px; border-left:0; border-top:0; border-bottom-right-radius:7px; }
+
+    /* Section label with accent bar */
+    .seclabel { position:relative; padding-left:11px; }
+    .seclabel::before {
+      content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+      width:3px; height:12px; border-radius:2px; background:var(--accent); box-shadow:0 0 8px var(--accent-glow);
+    }
+
+    /* Recipes sidebar */
+    .sidebar { background:linear-gradient(180deg, var(--panel-glow), transparent 45%), var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius); padding:16px 14px; min-height:0; display:flex; flex-direction:column; }
+    .sidebar-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .sidebar-head span { font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-faint); font-weight:700; }
+    .add-btn {
+      width:26px; height:26px; border-radius:8px; border:1px solid var(--border); background:var(--field);
+      color:var(--accent); cursor:pointer; font-size:17px; line-height:1; display:grid; place-items:center; transition:background-color .15s;
+    }
+    .add-btn:hover { background:var(--field-2); }
+    .recipes { list-style:none; display:flex; flex-direction:column; gap:4px; flex:1; min-height:0; overflow-y:auto; }
+    .recipe {
+      display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:var(--radius-s);
+      cursor:pointer; font-size:14px; color:var(--text); border:1px solid transparent;
+      transition:background .15s, border-color .15s; position:relative;
+    }
+    .recipe .ico { width:18px; text-align:center; opacity:.85; flex:none; }
+    .recipe .rname { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .recipe .rname-edit { flex:1; min-width:0; font:inherit; background:var(--field); color:var(--text); border:1px solid var(--accent); border-radius:6px; padding:1px 6px; outline:none; }
+    /* Context menu (right-click) */
+    .ctxmenu { position:fixed; z-index:1000; min-width:160px; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:5px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:2px; }
+    .ctxmenu[hidden] { display:none; }
+    .ctxitem { display:flex; align-items:center; gap:8px; text-align:left; background:none; border:none; color:var(--text); padding:8px 12px; border-radius:6px; cursor:pointer; font:inherit; }
+    .ctxitem:hover { background:var(--panel-2); }
+    .ctxitem-danger:hover { background:rgba(255,107,107,.16); color:var(--danger); }
+    .recipe:hover { background:var(--panel-2); }
+    .recipe.active { background:var(--panel-2); color:var(--accent); font-weight:600; border-color:var(--border); box-shadow:0 0 0 1px var(--accent-glow) inset; }
+    .recipe.active .ico { opacity:1; }
+    .recipe-del {
+      border:none; background:none; color:var(--text-faint); cursor:pointer; font-size:13px;
+      width:22px; height:22px; border-radius:6px; display:grid; place-items:center; flex:none;
+      opacity:0; visibility:hidden; transition:opacity .12s;   /* slot always reserved → no layout shift on hover */
+    }
+    .recipe-custom:hover .recipe-del { opacity:1; visibility:visible; }
+    .recipe-del:hover { background:rgba(255,107,107,.16); color:var(--danger); }
+
+    /* Right column */
+    .right-col { display:flex; flex-direction:column; gap:14px; min-width:0; min-height:0; }
+    /* label + hint on the same row: label on the left, hint all the way right */
+    .pbar-head { display:flex; align-items:center; gap:12px; }
+    .pbar-label { flex:0 0 auto; font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-faint); font-weight:700; }
+    /* hint on the right, on a single line; visible only on hover over the providers (.show); if it does not fit → .nofit */
+    .pbar-hint { flex:0 1 auto; min-width:0; margin-left:auto; text-align:right; white-space:nowrap; overflow:hidden; font-size:11px; color:var(--text-faint); opacity:0; pointer-events:none; transition:opacity .15s; }
+    .pbar-hint.show { opacity:.85; }
+    .pbar-hint.nofit { visibility:hidden; }
+    .providers { display:flex; gap:9px; margin-top:9px; flex-wrap:wrap; }
+    .prov {
+      position:relative;
+      display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--border-soft);
+      border-radius:11px; padding:8px 12px; cursor:pointer; color:var(--text-dim); transition:background-color .18s var(--ease), color .18s, transform .18s var(--ease), border-color .18s;
+    }
+    /* Star on the default provider (used by toast/shortcut/clipboard) */
+    .prov.is-default::after {
+      content:'★'; position:absolute; top:-6px; right:-6px; font-size:11px; line-height:1;
+      color:var(--accent); background:var(--panel); border:1px solid var(--accent-glow); border-radius:50%;
+      width:17px; height:17px; display:grid; place-items:center; box-shadow:0 1px 4px rgba(0,0,0,.4);
+    }
+    .prov:hover { background:var(--panel-2); color:var(--text); transform:translateY(-1px); border-color:var(--border); }
+    .prov.active {
+      color:var(--text); background:var(--panel-2); border-color:var(--pc, var(--accent));
+      box-shadow:0 0 0 1px var(--pc, var(--accent)) inset;
+    }
+    .prov .glyph { width:22px; height:22px; display:grid; place-items:center; color:var(--pc); }
+    .prov svg { display:block; }
+    .prov .pname { font-size:13px; font-weight:600; }
+
+    /* Instructions panel */
+    .panel { background:linear-gradient(180deg, var(--panel-glow), transparent 35%), var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius); padding:18px; display:flex; flex-direction:column; gap:13px; }
+    /* the Instructions panel fills the column; the textarea acts as the elastic element → no page scroll */
+    .panel.hud { flex:1; min-height:0; }
+    .panel-head { display:flex; align-items:center; gap:8px; }
+    .panel-head h2 { font-size:13px; text-transform:uppercase; letter-spacing:.6px; font-weight:700; color:var(--text-dim); }
+    .panel-head .edit { color:var(--text-faint); cursor:default; font-size:13px; }
+    .instr-save { margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:var(--on-accent); font-size:12px; font-weight:700; cursor:pointer; }
+    .instr-save:hover { filter:brightness(1.06); }
+    .instr-save[hidden] { display:none; }
+    .instruction {
+      background:var(--field); border:1px solid var(--border); border-radius:var(--radius-s);
+      padding:11px 14px; font-size:14px; color:var(--text); width:100%; resize:none; font-family:inherit;
+      transition:border-color .15s, box-shadow .15s; flex:none; overflow:hidden;
+    }
+    /* in the Instructions panel only the Description textarea (.content) is elastic; the other rows stay fixed */
+    .panel.hud > .panel-head, .panel.hud > .controls, .panel.hud > .footer { flex:none; }
+    .instruction:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+    .content {
+      background:var(--field); border:1px solid var(--border); border-radius:var(--radius-s);
+      padding:14px; font-size:14px; line-height:1.55; color:var(--text); width:100%; min-height:80px;
+      flex:1; resize:none; font-family:inherit; transition:border-color .15s, box-shadow .15s;
+    }
+    .content:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+
+    .controls { display:flex; flex-wrap:wrap; gap:12px; }
+    .control { display:flex; flex-direction:column; gap:6px; }
+    .control label { font-size:11px; color:var(--text-faint); padding-left:4px; font-weight:600; }
+    .select { display:flex; align-items:center; gap:8px; background:var(--field); border:1px solid var(--border); border-radius:var(--radius-s); padding:8px 12px; transition:border-color .15s; }
+    .select:focus-within { border-color:var(--accent); }
+    .select .ico { opacity:.8; }
+    .select select { background:none; border:none; color:var(--text); font-size:13px; font-family:inherit; cursor:pointer; appearance:none; padding-right:4px; }
+    .select select:focus { outline:none; }
+    .select select option { background:var(--panel); color:var(--text); }
+
+    /* ===== Custom themed dropdown (replaces the native popup) ===== */
+    .cs { position:relative; }
+    /* the native <select>/.select stays in the DOM (value source) but hidden */
+    .cs-host-hidden { position:absolute!important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); border:0; opacity:0; pointer-events:none; }
+    .cs-trigger { width:100%; display:flex; align-items:center; gap:8px; background:var(--field); border:1px solid var(--border); border-radius:var(--radius-s); color:var(--text); font:inherit; font-size:13px; padding:8px 12px; cursor:pointer; transition:border-color .15s, background .15s; }
+    .cs-trigger:hover { background:var(--field-2); }
+    .cs.open .cs-trigger { border-color:var(--accent); }
+    .cs-ico { opacity:.8; display:inline-flex; align-items:center; }
+    .cs-val { flex:1; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cs-caret { color:var(--text-faint); font-size:11px; transition:transform .18s var(--ease); }
+    .cs.open .cs-caret { transform:rotate(180deg); }
+    .cs-panel { position:absolute; left:0; right:0; top:calc(100% + 5px); z-index:60; background:var(--field-2);
+      border:1px solid var(--border); border-radius:var(--radius-s); box-shadow:var(--shadow-s); padding:5px;
+      max-height:240px; overflow:auto; opacity:0; transform:translateY(-4px); pointer-events:none;
+      transition:opacity .14s var(--ease), transform .14s var(--ease); }
+    .cs.open .cs-panel { opacity:1; transform:none; pointer-events:auto; }
+    /* opens upward when there is no space below (content always visible) */
+    .cs.up .cs-panel { top:auto; bottom:calc(100% + 5px); transform:translateY(4px); }
+    .cs.up.open .cs-panel { transform:none; }
+    .cs-opt { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:8px; font-size:13px; color:var(--text); cursor:pointer; }
+    .cs-opt:hover { background:var(--field); }
+    .cs-opt.active { color:var(--accent); font-weight:600; }
+    .cs-opt.active::after { content:'✓'; font-size:12px; color:var(--accent); }
+
+    .footer { display:flex; align-items:center; justify-content:space-between; margin-top:4px; gap:12px; }
+    .hint { font-size:12px; color:var(--text-faint); line-height:1.4; }
+    .send {
+      width:50px; height:50px; border-radius:50%; flex:none;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2)); border:none; cursor:pointer;
+      color:var(--on-accent); font-size:21px; font-weight:700; display:grid; place-items:center;
+      box-shadow:0 8px 24px var(--accent-glow), 0 0 0 1px rgba(255,255,255,.07) inset;
+      transition:transform .18s var(--ease), filter .15s;
+    }
+    .send:hover { transform:translateY(-2px) scale(1.05); filter:brightness(1.05); }
+    .send:active { transform:translateY(0) scale(.97); }
+
+    /* Output */
+    .output { margin:0 18px 18px; background:var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius); padding:16px; display:none; flex:none; max-height:45%; overflow:auto; }
+    .output.show { display:block; animation:fade .25s var(--ease); }
+    .output-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .output-head h3 { font-size:12px; text-transform:uppercase; letter-spacing:.6px; color:var(--accent); }
+    .copy-btn { background:var(--field); border:1px solid var(--border); color:var(--text); padding:6px 12px; border-radius:8px; font-size:12px; cursor:pointer; transition:background .15s; }
+    .copy-btn:hover { background:var(--field-2); }
+    .output pre { white-space:pre-wrap; word-break:break-word; font-size:13px; line-height:1.55; color:var(--text-dim); font-family:"Consolas","SFMono-Regular",monospace; }
+
+    /* In-page toast */
+    .toast {
+      position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+      background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+      padding:12px 18px; border-radius:12px; font-size:13px; max-width:520px;
+      box-shadow:var(--shadow-s); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:1200;
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* Provider loading overlay: visible only with body.provider-loading; below the
+       topbar; when the provider webview comes back on screen it covers it (native webview on top). */
+    #provLoading { position:fixed; top:var(--topbar-h); left:0; right:0; bottom:0; z-index:800;
+      display:none; align-items:center; justify-content:center; background:var(--bg-1); }
+    body.provider-loading #provLoading { display:flex; }
+    #provLoading .pl-box { display:flex; flex-direction:column; align-items:center; gap:14px; color:var(--text-dim); }
+    #provLoading .pl-txt { font-size:13px; font-weight:600; letter-spacing:.3px; }
+    #provLoading .pl-spin { width:34px; height:34px; border-radius:50%;
+      border:3px solid var(--border); border-top-color:var(--accent); animation:plspin .8s linear infinite; }
+    @keyframes plspin { to { transform:rotate(360deg); } }
+
+    /* Modals */
+    .modal-overlay { position:fixed; inset:0; background:rgba(2,6,5,.82); display:none; align-items:center; justify-content:center; z-index:1500; padding:24px; }
+    /* the confirm dialog must ALWAYS sit above the other modals (e.g. "Customize fields") */
+    #confirmOverlay { z-index:1700; }
+    .modal-overlay.show { display:flex; animation:fade .2s var(--ease); }
+    /* max-height + flex: head/foot fixed, body scrollable → no overflow/clipping */
+    .modal { width:100%; max-width:460px; max-height:calc(100vh - 48px); display:flex; flex-direction:column; background:linear-gradient(180deg, var(--panel-glow), transparent 50%), var(--bg-1); border:1px solid var(--border); border-radius:var(--radius-l); box-shadow:var(--shadow); overflow:hidden; }
+    .modal.sm { max-width:380px; }
+    .modal--wide { max-width:640px; }
+    .modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border-soft); flex:none; }
+    .modal-head h2 { font-size:15px; font-weight:650; }
+    .modal-head .x { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:18px; }
+    .modal-head .x:hover { color:var(--accent); }
+    .modal-body { padding:8px 18px 4px; display:flex; flex-direction:column; overflow-y:auto; flex:1; min-height:0; }
+    .modal-body.pad { padding:18px; }
+    /* Settings sections: ordered groups, pairs in 2 columns */
+    .set-section { padding:12px 0; border-bottom:1px solid var(--border-soft); }
+    .set-section:last-child { border-bottom:none; }
+    .set-h { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-faint); font-weight:700; margin-bottom:8px; }
+    .set-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; align-items:start; }
+    /* each setting = box (card): label and control inside the same box → clear association */
+    .set-section .setting { border-bottom:none; background:var(--field); border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:11px 13px; gap:8px; }
+    /* space between consecutive rows in the same section (not after the heading) */
+    .set-section > .setting + .setting,
+    .set-section > .set-grid + .setting,
+    .set-section > .setting + .set-grid,
+    .set-section > .set-grid + .set-grid { margin-top:12px; }
+    @media (max-width:560px){ .set-grid { grid-template-columns:1fr; } }
+
+    /* About section */
+    .about-box { display:flex; flex-direction:row; align-items:center; gap:16px; background:var(--field); border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:14px; }
+    .about-logo { height:60px; width:auto; opacity:.95; flex:none; }
+    .about-meta { flex:1; min-width:0; }
+    .about-name { font-weight:700; font-size:14px; color:var(--text); }
+    .about-line { font-size:12px; color:var(--text-faint); margin-top:2px; }
+    .about-links { display:flex; flex-wrap:wrap; gap:14px; margin-top:8px; }
+    .about-links .lnk { background:none; border:none; padding:0; cursor:pointer; font:inherit; font-size:12.5px; color:var(--accent); text-decoration:none; }
+    .about-links .lnk:hover { text-decoration:underline; }
+
+    /* Custom fields editor */
+    .fields-btn { width:auto; height:auto; padding:7px 12px; font-size:13px; gap:6px; display:inline-flex; align-items:center; }
+    .fld-empty { font-size:13px; color:var(--text-faint); padding:16px 4px; text-align:center; }
+    .fld-block { background:var(--field); border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:12px; margin-bottom:12px; }
+    .fld-top { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .fld-top .field { flex:1; }
+    .fld-mv { border:1px solid var(--border); background:var(--field-2); color:var(--text-dim); cursor:pointer; width:28px; height:28px; border-radius:var(--radius-s); flex:none; display:grid; place-items:center; font-size:13px; }
+    .fld-mv:hover { color:var(--accent); }
+    .fld-del { border:none; background:none; color:var(--text-faint); cursor:pointer; width:28px; height:28px; border-radius:var(--radius-s); flex:none; display:grid; place-items:center; font-size:14px; }
+    .fld-del:hover { background:rgba(255,107,107,.16); color:var(--danger); }
+    /* delete field: button with text (not just an icon) */
+    .fld-del-text { width:auto; padding:0 12px; gap:6px; display:inline-flex; align-items:center; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--field-2); }
+    .fld-del-text:hover { background:rgba(255,107,107,.16); color:var(--danger); border-color:var(--danger); }
+    .fld-opts { display:flex; flex-direction:column; gap:6px; padding-left:4px; }
+    .fld-opt { display:flex; align-items:center; gap:8px; }
+    .fld-opt .field { flex:1; padding:7px 10px; }
+    .fld-opt .fld-del { width:24px; height:24px; font-size:13px; }
+    .fld-addopt { align-self:flex-start; background:none; border:none; color:var(--accent); cursor:pointer; font-size:12.5px; padding:4px 2px; }
+    .fld-addopt:hover { text-decoration:underline; }
+    [data-theme="sumi"] .fld-mv,[data-theme="sumi"] .fld-del,[data-theme="sumi"] .fields-btn { border-radius:2px; }
+    /* update check result (inline in the modal) */
+    .upd-status { margin-top:8px; font-size:12px; display:flex; align-items:center; gap:10px; }
+    .upd-status[hidden] { display:none; }
+    .upd-status.busy { color:var(--text-dim); }
+    .upd-status.ok { color:#4cd07d; }
+    .upd-status.avail { color:var(--accent); font-weight:600; }
+    .upd-status.err { color:var(--danger); }
+    .upd-status .btn { padding:6px 12px; font-size:12px; }
+    .setting { display:flex; flex-direction:column; gap:7px; padding:14px 0; border-bottom:1px solid var(--border-soft); }
+    .setting:last-child { border-bottom:none; }
+    .setting > label { font-size:13px; font-weight:600; }
+    .setting .sub { font-size:11.5px; color:var(--text-faint); }
+    .field {
+      background:var(--field); border:1px solid var(--border); border-radius:var(--radius-s);
+      padding:9px 12px; color:var(--text); font-size:13px; font-family:inherit; width:100%;
+    }
+    .field:focus { outline:none; border-color:var(--accent); }
+    textarea.field { resize:vertical; min-height:84px; line-height:1.5; }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .hotkey-field { display:flex; align-items:center; gap:10px; }
+    .hotkey-field input { flex:1; cursor:pointer; text-align:center; font-weight:600; letter-spacing:.5px; }
+    .hotkey-field input.capturing { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); color:var(--accent); }
+    .switch { position:relative; width:44px; height:24px; flex:none; }
+    .switch input { opacity:0; width:0; height:0; }
+    .switch .slider { position:absolute; inset:0; cursor:pointer; border-radius:24px; background:var(--field-2); border:1px solid var(--border); transition:.2s; }
+    .switch .slider::before { content:""; position:absolute; height:16px; width:16px; left:3px; top:3px; background:var(--text-dim); border-radius:50%; transition:.2s; }
+    .switch input:checked + .slider { background:var(--accent-soft); border-color:var(--accent); }
+    .switch input:checked + .slider::before { transform:translateX(20px); background:var(--on-accent); }
+    .modal-foot { display:flex; justify-content:flex-end; align-items:center; gap:10px; padding:14px 18px; border-top:1px solid var(--border-soft); }
+    .app-version { margin-right:auto; color:var(--text-faint); font-size:11.5px; letter-spacing:.3px; }
+    .btn { padding:9px 16px; border-radius:var(--radius-s); font-size:13px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--field); color:var(--text); transition:background-color .15s; }
+    .btn:hover { background:var(--field-2); }
+    .btn.primary { background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:var(--on-accent); border-color:var(--accent); }
+    .btn.primary:hover { filter:brightness(1.06); }
+    .btn.danger { background:var(--danger); color:#1a0a0a; border-color:var(--danger); }
+
+    @keyframes fade { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:none; } }
+    @media (max-width:680px) { .layout { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Top bar: titlebar (drag) + provider nav + window controls -->
+    <div class="appbar" id="appbar" data-tauri-drag-region>
+      <div class="ab-brand" data-tauri-drag-region>
+        <img class="spark" src="logo.png" alt="Kotodama" data-tauri-drag-region>
+        <h1 data-tauri-drag-region>Kotodama</h1>
+      </div>
+
+      <div class="ab-provnav">
+        <button class="pc-close" id="pcClose">← <span data-i18n="builder">Ai Prompt Builder</span></button>
+        <button class="pc-btn" id="pcReload" data-i18n-title="reload" title="Ricarica">⟳</button>
+      </div>
+      <div class="pc-title"><span class="pc-badge">✦</span><span id="pcName"></span></div>
+
+      <div class="ab-spacer" data-tauri-drag-region></div>
+
+      <div class="ab-tools">
+        <!-- buttons built in JS: [OS language] + [EN] -->
+        <div class="lang" id="lang"></div>
+        <button class="icon-btn" id="btnSettings" data-i18n-title="settings" title="Impostazioni">⚙</button>
+      </div>
+
+      <div class="win-controls">
+        <button class="win-btn" id="winMin" data-i18n-title="winMin" title="Minimizza">—</button>
+        <button class="win-btn" id="winMax" data-i18n-title="winMax" title="Massimizza">▢</button>
+        <button class="win-btn win-close" id="winClose" data-i18n-title="winClose" title="Chiudi">✕</button>
+      </div>
+    </div>
+
+    <!-- Native warning: on Claude, Google sign-in does not work in embedded browsers.
+         It lives in the main UI, below the topbar; the provider webview is pushed
+         down (set_provider_top_extra) so it does not cover it. -->
+    <div class="claude-hint" id="claudeHint" hidden>
+      <span class="ch-ico">⚠️</span>
+      <span class="ch-msg" data-i18n="claudeHintMsg">Per Claude accedi con «Continua con email»: il login Google non funziona nei browser integrati.</span>
+      <button class="ch-x" id="claudeHintClose" data-i18n-title="bannerDismiss" title="Non mostrare più">✕</button>
+    </div>
+
+    <div class="main">
+    <div class="layout">
+      <!-- Sidebar: Recipes -->
+      <aside class="sidebar hud">
+        <div class="sidebar-head">
+          <span class="seclabel" data-i18n="recipes">Ricette</span>
+          <button class="add-btn" id="addRecipe" data-i18n-title="newRecipe" title="Nuova ricetta">+</button>
+        </div>
+        <ul class="recipes" id="recipes">
+          <li class="recipe active" data-key="rephrase"><span class="ico">↻</span> <span class="rname">Rephrase</span></li>
+          <li class="recipe" data-key="summarise"><span class="ico">☰</span> <span class="rname">Summarise</span></li>
+          <li class="recipe" data-key="reply"><span class="ico">↩</span> <span class="rname">Reply</span></li>
+          <li class="recipe" data-key="email"><span class="ico">✉</span> <span class="rname">Create Email</span></li>
+        </ul>
+      </aside>
+
+      <div class="right-col">
+        <div class="provider-bar">
+          <div class="pbar-head">
+            <span class="pbar-label seclabel" data-i18n="providerLabel">Provider IA</span>
+            <span class="pbar-hint" data-i18n="providerOpenHint">Doppio clic o tasto destro su un provider per aprirlo subito, senza prompt</span>
+          </div>
+          <div class="providers" id="providers">
+            <div class="prov active" data-prov="openai" style="--pc:#10a37f">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7476-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg></span>
+              <span class="pname">ChatGPT</span>
+            </div>
+            <div class="prov" data-prov="anthropic" style="--pc:#d97757">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.541Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg></span>
+              <span class="pname">Claude</span>
+            </div>
+            <div class="prov" data-prov="grok" style="--pc:#e7f3f1">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 3h3.7l5.3 7.4L17.4 3H21l-7.2 9.7L21 21h-3.7l-5.3-7.4L6.6 21H3l7.2-9.7z"/></svg></span>
+              <span class="pname">Grok</span>
+            </div>
+            <div class="prov" data-prov="gemini" style="--pc:#4285f4">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M12 0c.5 6.34 5.66 11.5 12 12-6.34.5-11.5 5.66-12 12-.5-6.34-5.66-11.5-12-12C6.34 11.5 11.5 6.34 12 0Z"/></svg></span>
+              <span class="pname">Gemini</span>
+            </div>
+            <div class="prov" data-prov="perplexity" style="--pc:#20b8cd">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v16M5 8l7 4 7-4M5 16l7-4 7 4M5 8v8M19 8v8"/></svg></span>
+              <span class="pname">Perplexity</span>
+            </div>
+            <div class="prov" data-prov="qwen" style="--pc:#615ced">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">Q</text></svg></span>
+              <span class="pname">Qwen</span>
+            </div>
+            <div class="prov" data-prov="deepseek" style="--pc:#4d6bfe">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">D</text></svg></span>
+              <span class="pname">DeepSeek</span>
+            </div>
+            <div class="prov" data-prov="zai" style="--pc:#1ab39d">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">Z</text></svg></span>
+              <span class="pname">Z.ai</span>
+            </div>
+            <div class="prov" data-prov="other" style="--pc:#9fc4be">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></span>
+              <span class="pname">Altro</span>
+            </div>
+          </div>
+        </div>
+
+        <section class="panel hud">
+          <div class="panel-head">
+            <h2 class="seclabel" data-i18n="instructions">Istruzioni</h2>
+            <span class="edit" data-i18n-title="editInstr" title="Modifica l'istruzione e premi Salva">✎</span>
+            <button class="instr-save" id="saveInstr" hidden>✓ <span data-i18n="save">Salva</span></button>
+          </div>
+          <textarea class="instruction" id="instruction" rows="1"></textarea>
+          <textarea class="content" id="content" data-i18n-ph="placeholder"></textarea>
+          <div class="controls" id="controls">
+            <div class="control">
+              <label data-i18n="length">Lunghezza</label>
+              <div class="select"><span class="ico">▦</span><select id="length"></select></div>
+            </div>
+            <div class="control">
+              <label data-i18n="tone">Tono</label>
+              <div class="select"><span class="ico">👤</span><select id="tone"></select></div>
+            </div>
+          </div>
+          <div class="footer">
+            <button class="add-btn fields-btn" id="manageFields" data-i18n-title="fieldsTitle" title="Personalizza campi">⚙</button>
+            <span class="hint" data-i18n="hint">Compila i campi e premi → per aprire il provider selezionato</span>
+            <button class="send" id="generate" data-i18n-title="generate" title="Apri nel provider">→</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="output" id="output">
+      <div class="output-head">
+        <h3 data-i18n="generatedPrompt">Prompt generato</h3>
+        <button class="copy-btn" id="copy" data-i18n="copy">Copia</button>
+      </div>
+      <pre id="result"></pre>
+    </div>
+    </div><!-- /.main -->
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Provider loading overlay: covers the area below the topbar while the page
+       loads off-screen, so the previous provider page is not visible. -->
+  <div id="provLoading"><div class="pl-box"><span class="pl-spin"></span><span class="pl-txt" id="plText"></span></div></div>
+
+  <!-- Settings modal -->
+  <div class="modal-overlay" id="settingsOverlay">
+    <div class="modal modal--wide">
+      <div class="modal-head">
+        <h2 data-i18n="settingsTitle">Impostazioni</h2>
+        <button class="x" id="settingsX" title="Chiudi">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Appearance -->
+        <div class="set-section">
+          <div class="set-h" data-i18n="setSecAppearance">Aspetto</div>
+          <div class="set-grid">
+            <div class="setting">
+              <label data-i18n="setTheme">Tema</label>
+              <select class="field" id="setTheme">
+                <option value="ginga" data-i18n="themeGinga">Ginga</option>
+                <option value="hisui" data-i18n="themeHisui">Hisui</option>
+                <option value="kohaku" data-i18n="themeKohaku">Kohaku</option>
+                <option value="murasaki" data-i18n="themeMurasaki">Murasaki</option>
+                <option value="sumi" data-i18n="themeSumi">Sumi</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label data-i18n="setLanguage">Lingua</label>
+              <select class="field" id="setLang"></select>
+            </div>
+          </div>
+        </div>
+        <!-- General -->
+        <div class="set-section">
+          <div class="set-h" data-i18n="setSecGeneral">Generale</div>
+          <div class="setting">
+            <label data-i18n="setProvider">Provider predefinito</label>
+            <span class="sub" data-i18n="setProviderHint">Provider predefinito, usato anche quando copi del testo.</span>
+            <select class="field" id="setProvider"></select>
+          </div>
+          <div class="setting">
+            <label data-i18n="setHotkey">Scorciatoia globale</label>
+            <span class="sub" data-i18n="setHotkeyHint">Clicca e premi la combinazione.</span>
+            <div class="hotkey-field">
+              <input type="text" class="field" id="setHotkey" readonly>
+              <button class="btn" id="hotkeyClear" data-i18n="reset">Reset</button>
+            </div>
+          </div>
+        </div>
+        <!-- System -->
+        <div class="set-section">
+          <div class="set-h" data-i18n="setSecSystem">Sistema</div>
+          <div class="set-grid">
+            <div class="setting">
+              <div class="row">
+                <div>
+                  <label data-i18n="setMonitor">Monitor appunti</label>
+                  <div class="sub" data-i18n="setMonitorHint">Mostra il toast quando copi del testo.</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="setMonitor"><span class="slider"></span></label>
+              </div>
+            </div>
+            <div class="setting">
+              <div class="row">
+                <div>
+                  <label data-i18n="setAutostart">Avvia col sistema</label>
+                  <div class="sub" data-i18n="setAutostartHint">Parte minimizzato nel tray al login.</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="setAutostart"><span class="slider"></span></label>
+              </div>
+            </div>
+          </div>
+          <div class="setting">
+            <div class="row">
+              <div>
+                <label data-i18n="setUpdates">Aggiornamenti</label>
+                <div class="sub" data-i18n="setUpdatesHint">Controlla se è disponibile una nuova versione.</div>
+              </div>
+              <button class="btn" id="btnCheckUpdate" data-i18n="checkUpdates">Cerca aggiornamenti</button>
+            </div>
+            <div class="upd-status" id="updateStatus" hidden>
+              <span id="updateMsg"></span>
+              <button class="btn primary" id="btnInstallUpdate" hidden data-i18n="install">Installa</button>
+            </div>
+          </div>
+        </div>
+        <div class="set-section">
+          <div class="set-h" data-i18n="about">Info</div>
+          <div class="about-box">
+            <img class="about-logo" src="kuramalab.png" alt="KuramaLab">
+            <div class="about-meta">
+              <div class="about-name">Kotodama <span id="aboutVer"></span></div>
+              <div class="about-line" data-i18n="aboutLine">Open source · GPL-3.0 · A KuramaLab project</div>
+              <div class="about-links">
+                <button type="button" class="lnk" data-url="https://kotodama.kuramalab.net" data-i18n="linkWebsite">Sito web</button>
+                <button type="button" class="lnk" data-url="https://github.com/Michel-IT/Kotodama" data-i18n="linkSource">Codice sorgente</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <span class="app-version" id="appVersion" title="Versione"></span>
+        <button class="btn" id="settingsCancel" data-i18n="cancel">Annulla</button>
+        <button class="btn primary" id="settingsSave" data-i18n="save">Salva</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic context menu (right-click): items built at runtime by showCtxMenu() -->
+  <div class="ctxmenu" id="ctxMenu" hidden></div>
+
+  <!-- New recipe modal -->
+  <div class="modal-overlay" id="recipeOverlay">
+    <div class="modal sm">
+      <div class="modal-head">
+        <h2 data-i18n="newRecipeTitle">Nuova ricetta</h2>
+        <button class="x" id="recipeX" title="Chiudi">✕</button>
+      </div>
+      <div class="modal-body pad">
+        <div class="setting" style="border:none; padding:0 0 12px;">
+          <label data-i18n="recipeName">Nome</label>
+          <input type="text" class="field" id="recipeName" data-i18n-ph="recipeNamePh">
+        </div>
+        <div class="setting" style="border:none; padding:0;">
+          <label data-i18n="recipeInstr">Istruzione</label>
+          <textarea class="field" id="recipeInstr" data-i18n-ph="recipeInstrPh"></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="recipeCancel" data-i18n="cancel">Annulla</button>
+        <button class="btn primary" id="recipeSave" data-i18n="save">Salva</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm modal -->
+  <div class="modal-overlay" id="confirmOverlay">
+    <div class="modal sm">
+      <div class="modal-head">
+        <h2 id="confirmTitle" data-i18n="confirmTitle">Conferma</h2>
+        <button class="x" id="confirmX" title="Chiudi">✕</button>
+      </div>
+      <div class="modal-body pad"><p id="confirmMsg" style="font-size:13.5px; color:var(--text-dim); line-height:1.5;"></p></div>
+      <div class="modal-foot">
+        <button class="btn" id="confirmCancel" data-i18n="cancel">Annulla</button>
+        <button class="btn danger" id="confirmOk" data-i18n="confirm">Conferma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customize fields modal -->
+  <div class="modal-overlay" id="fieldsOverlay">
+    <div class="modal modal--wide">
+      <div class="modal-head">
+        <h2 data-i18n="fieldsTitle">Personalizza campi</h2>
+        <button class="x" id="fieldsX" title="Chiudi">✕</button>
+      </div>
+      <div class="modal-body" id="fieldsBody"></div>
+      <div class="modal-foot">
+        <button class="btn" id="addFieldBtn" data-i18n="addField">＋ Aggiungi campo</button>
+        <button class="btn primary" id="fieldsDone" data-i18n="done">Fatto</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Release build: no right-click menu or devtools shortcuts */
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    document.addEventListener('keydown', function(e){ var k=(e.key||'').toUpperCase(); if(k==='F12'||((e.ctrlKey||e.metaKey)&&e.shiftKey&&(k==='I'||k==='J'||k==='C'))||((e.ctrlKey||e.metaKey)&&k==='U')){ e.preventDefault(); e.stopPropagation(); } });
+    /* ===================== TAURI BRIDGE ===================== */
+    const T = window.__TAURI__;
+    const TAURI = !!(T && T.core);
+    const invoke = TAURI ? T.core.invoke : null;
+    const listen = TAURI ? T.event.listen : null;
+    const tauriWin = (TAURI && T.window) ? T.window.getCurrentWindow() : null;
+    if (TAURI) document.body.classList.add('tauri');
+
+    /* ===================== PROVIDER ===================== */
+    // autosend:true → after opening we inject fill+submit. NOT on grok/perplexity
+    // (they already auto-submit via ?q=, this would cause a double submit) nor claude/other.
+    const PROVIDERS = {
+      openai:     { name:'ChatGPT',    base:'https://chatgpt.com/',             q:'?q=', mode:'query',     autosend:true },
+      anthropic:  { name:'Claude',     base:'https://claude.ai/new',            q:'?q=', mode:'query' },
+      grok:       { name:'Grok',       base:'https://grok.com/',                q:'?q=', mode:'query' },
+      gemini:     { name:'Gemini',     base:'https://gemini.google.com/app',    q:'',    mode:'clipboard', autosend:true },
+      perplexity: { name:'Perplexity', base:'https://www.perplexity.ai/search', q:'?q=', mode:'query' },
+      qwen:       { name:'Qwen',       base:'https://chat.qwen.ai/',            q:'',    mode:'clipboard', autosend:true },
+      deepseek:   { name:'DeepSeek',   base:'https://chat.deepseek.com/',       q:'',    mode:'clipboard', autosend:true },
+      zai:        { name:'Z.ai',       base:'https://chat.z.ai/',               q:'',    mode:'clipboard', autosend:true },
+      other:      { name:'Altro',      base:'',                                 q:'',    mode:'manual' }
+    };
+    let lastProviderUrl='';
+    let selectedProvider = 'openai';
+    // Auto-open anti-loop (toast/hotkey): auto-open writes the prompt to the clipboard as
+    // a safety net; a held-down shortcut (auto-repeat) would read it back and nest it.
+    let lastAutoPrompt='';   // last prompt generated by auto-open (not to be re-processed)
+    let autoOpenBusy=false;  // cooldown against rapid repetitions
+    const MAX_URL = 7000;
+
+    /* ===================== TRANSLATIONS ===================== */
+    // ===== i18n: INLINE English (base + instant fallback); the other languages load
+    // on demand from ui/i18n/<code>.json (lazy → light/fast app, not 50 languages in memory). =====
+    const EN = {
+      _htmlLang:'en',
+      recipes:'Recipes', instructions:'Instructions', length:'Length', tone:'Tone',
+      providerLabel:'AI Provider',
+      providerOpenHint:'Double-click to open · right-click for options',
+      providerTileTitle:'{name} — double-click to open, right-click for options',
+      hint:'Fill in the fields and press → to open the selected provider',
+      generatedPrompt:'Generated prompt', copy:'Copy', copied:'Copied ✓',
+      placeholder:'Description…',
+      settings:'Settings', newRecipe:'New recipe', generate:'Open in provider',
+      recipeNames:{ rephrase:'Rephrase', summarise:'Summarise', reply:'Reply', email:'Create Email' },
+      instr:{ rephrase:'Rephrase the following text:', summarise:'Summarise the following text:', reply:'Write a reply to the following message:', email:'Write an email based on:' },
+      lengthOpts:['Short and concise','Medium','Long and detailed'],
+      toneOpts:['Professional','Friendly','Formal','Casual','Persuasive'],
+      constraints:'Constraints:', cLength:'Length', cTone:'Tone',
+      defaultInstr:'Process the following text:',
+      copyFail:'Copy failed: please select the text manually.',
+      opening:'Opening', clipNote:'— prompt copied to clipboard (Ctrl+V if it does not auto-fill)',
+      popupBlocked:'Popup blocked by the browser: please allow popups for this site.',
+      otherName:'Other', manualNote:'Prompt generated and copied to clipboard.',
+      openError:'Error opening the provider',
+      builder:'Ai Prompt Builder', reload:'Reload',
+      claudeHintMsg:'For Claude, sign in with “Continue with email”: Google sign-in doesn\'t work in embedded browsers.', bannerDismiss:'Don\'t show again',
+      winMin:'Minimize', winMax:'Maximize', winClose:'Close',
+      settingsTitle:'Settings', setTheme:'Theme', themeGinga:'Ginga', themeHisui:'Hisui', themeKohaku:'Kohaku', themeMurasaki:'Murasaki', themeSumi:'Sumi',
+      setSecAppearance:'Appearance', setSecGeneral:'General', setSecSystem:'System',
+      setLanguage:'Language', setProvider:'Default provider', setProviderHint:'Default provider, also used when you copy text.',
+      setHotkey:'Global shortcut', setHotkeyHint:'Click and press the combo (e.g. Ctrl + \\).',
+      setMonitor:'Clipboard monitor', setMonitorHint:'Show the toast when you copy text.',
+      setAutostart:'Start on login', setAutostartHint:'Starts minimized in the tray at login.',
+      save:'Save', cancel:'Cancel', reset:'Reset', pressCombo:'Press a combo…', settingsSaved:'Settings saved ✓',
+      hotkeyFallback:'Shortcut unavailable on Windows: using {k}',
+      setUpdates:'Updates', setUpdatesHint:'Check whether a new version is available.', checkUpdates:'Check for updates',
+      about:'About', aboutLine:'Open source · GPL-3.0 · A KuramaLab project', linkWebsite:'Website', linkSource:'Source code',
+      updateAvailable:'Update {v} available. <br>Install now? The app will restart.', noUpdate:'You are on the latest version ✓', updating:'Downloading update…', updateError:'Update error',
+      updChecking:'Checking for updates…', updNewVersion:'New version {v} available', install:'Install',
+      newRecipeTitle:'New recipe', recipeName:'Name', recipeInstr:'Instruction',
+      recipeNamePh:'E.g. Translate to English', recipeInstrPh:'E.g. Translate the following text to English:',
+      confirmTitle:'Confirm', confirm:'Confirm', delete:'Delete', rename:'Rename', edit:'Edit', duplicate:'Duplicate', open:'Open', setAsDefault:'Set as default', cut:'Cut', paste:'Paste', selectAll:'Select all',
+      deleteRecipeMsg:'Delete this recipe?',
+      instrSaved:'Instruction saved ✓', editInstr:'Edit the instruction below and press Save',
+      fieldsTitle:'Customize fields', addField:'＋ Add field', addOption:'＋ Add option', done:'Done',
+      fieldNamePh:'Field name (e.g. Format)', optionPh:'Option', noFields:'No custom fields. Add one to include new sections in the prompt.',
+      newFieldName:'New field', newOption:'Option', deleteFieldMsg:'Delete this field?', moveUp:'Move up', moveDown:'Move down', manageFields:'Customize fields',
+      toast:{ title:'You copied some text', open:'Open', press:'press', or:'or click', empty:'(empty text)' }
+    };
+    // Supported languages: code + native name (for the menu). EN inline; the others from file.
+    const LANGS = [
+      {code:'en',native:'English'},{code:'it',native:'Italiano'},{code:'zh',native:'中文'},{code:'hi',native:'हिन्दी'},
+      {code:'es',native:'Español'},{code:'fr',native:'Français'},{code:'ar',native:'العربية'},{code:'bn',native:'বাংলা'},
+      {code:'ru',native:'Русский'},{code:'pt',native:'Português'},{code:'ur',native:'اردو'},{code:'id',native:'Bahasa Indonesia'},
+      {code:'de',native:'Deutsch'},{code:'ja',native:'日本語'},{code:'sw',native:'Kiswahili'},{code:'mr',native:'मराठी'},
+      {code:'te',native:'తెలుగు'},{code:'tr',native:'Türkçe'},{code:'ta',native:'தமிழ்'},{code:'vi',native:'Tiếng Việt'},
+      {code:'ko',native:'한국어'},{code:'pa',native:'ਪੰਜਾਬੀ'},{code:'gu',native:'ગુજરાતી'},{code:'fa',native:'فارسی'},
+      {code:'pl',native:'Polski'},{code:'uk',native:'Українська'},{code:'ml',native:'മലയാളം'},{code:'kn',native:'ಕನ್ನಡ'},
+      {code:'or',native:'ଓଡ଼ିଆ'},{code:'bho',native:'भोजपुरी'},{code:'th',native:'ไทย'},{code:'nl',native:'Nederlands'},
+      {code:'ro',native:'Română'},{code:'el',native:'Ελληνικά'},{code:'cs',native:'Čeština'},{code:'hu',native:'Magyar'},
+      {code:'sv',native:'Svenska'},{code:'fi',native:'Suomi'},{code:'da',native:'Dansk'},{code:'no',native:'Norsk'},
+      {code:'he',native:'עברית'},{code:'sk',native:'Slovenčina'},{code:'bg',native:'Български'},{code:'hr',native:'Hrvatski'},
+      {code:'sr',native:'Српски'},{code:'sl',native:'Slovenščina'},{code:'lt',native:'Lietuvių'},{code:'lv',native:'Latviešu'},
+      {code:'et',native:'Eesti'},{code:'ca',native:'Català'},{code:'eu',native:'Euskara'}
+    ];
+    const RTL = new Set(['ar','ur','fa','he']);
+    const LANG_CODES = new Set(LANGS.map(l=>l.code));
+    function validLang(code){ return LANG_CODES.has(code) ? code : 'en'; }
+    const i18nCache = {};   // 'en' included: the master is i18n/en.json (inline EN = emergency fallback)
+    let TR = EN;   // current translations
+    // deep merge over EN: any missing key/object/array falls back to English
+    function mergeLang(obj){
+      const out = { ...EN, ...obj };
+      out.recipeNames = { ...EN.recipeNames, ...(obj.recipeNames||{}) };
+      out.instr = { ...EN.instr, ...(obj.instr||{}) };
+      out.toast = { ...EN.toast, ...(obj.toast||{}) };
+      if(!Array.isArray(out.lengthOpts) || !out.lengthOpts.length) out.lengthOpts = EN.lengthOpts;
+      if(!Array.isArray(out.toneOpts) || !out.toneOpts.length) out.toneOpts = EN.toneOpts;
+      return out;
+    }
+    // Load (on demand) and cache a language; English fallback if file missing/error.
+    async function loadLang(code){
+      code = validLang(code);
+      if(i18nCache[code]) return i18nCache[code];
+      try{
+        const r = await fetch('i18n/'+code+'.json');
+        if(r.ok){ const merged = mergeLang(await r.json()); i18nCache[code]=merged; return merged; }
+      }catch(e){}
+      return EN;
+    }
+    // Maps an OS/browser locale (e.g. "pt-BR","zh-Hans") to the supported code.
+    function mapOsToSupported(loc){
+      if(!loc) return '';
+      const low = String(loc).toLowerCase().replace('_','-');
+      const base = low.split('-')[0];
+      if(base==='nb' || base==='nn') return 'no';
+      if(LANG_CODES.has(base)) return base;
+      return '';
+    }
+
+    const THEMES = ['ginga','hisui','kohaku','murasaki','sumi'];
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, theme:'sumi', recipe:'key:rephrase', length:0, tone:0 };
+    // Version: single source of truth = desktop/package.json.
+    // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
+    // in web mode we read it via fetch of the same package.json. No hardcoded number.
+
+    /* ===================== ELEMENTS ===================== */
+    const providers=document.getElementById('providers');
+    const recipesEl=document.getElementById('recipes');
+    const instruction=document.getElementById('instruction');
+    const saveInstrBtn=document.getElementById('saveInstr');
+    const content=document.getElementById('content');
+    const lengthSel=document.getElementById('length');
+    const toneSel=document.getElementById('tone');
+    const output=document.getElementById('output');
+    const result=document.getElementById('result');
+    const toastEl=document.getElementById('toast');
+    const pcName=document.getElementById('pcName');
+    const hintEl=document.querySelector('.pbar-hint');
+    const plText=document.getElementById('plText');
+    const body=document.body;
+
+    let lang='it';
+    let currentSettings={ ...DEFAULT_SETTINGS };
+    let customRecipes=[];
+    let customFields=[];
+    let activeRecipe={ kind:'key', key:'rephrase' };
+
+    /* ===================== THEME ===================== */
+    function validTheme(t){ return THEMES.includes(t) ? t : 'sumi'; }
+    function applyTheme(theme){ document.documentElement.setAttribute('data-theme', validTheme(theme)); }
+
+    /* ===================== LANGUAGE ===================== */
+    async function applyLang(code){
+      code=validLang(code);
+      lang=code;
+      const t=await loadLang(code); TR=t;
+      document.documentElement.lang=t._htmlLang||code;
+      document.documentElement.dir = RTL.has(code) ? 'rtl' : 'ltr';
+      document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(t[k]!==undefined) el.textContent=t[k]; });
+      document.querySelectorAll('[data-i18n-title]').forEach(el=>{ const k=el.getAttribute('data-i18n-title'); if(t[k]!==undefined) el.title=t[k]; });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(t[k]!==undefined) el.placeholder=t[k]; });
+      recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]) li.querySelector('.rname').textContent=t.recipeNames[k]; });
+      const otherTile=providers.querySelector('.prov[data-prov="other"] .pname'); if(otherTile) otherTile.textContent=t.otherName;
+      // "open on the fly" tooltip on each provider (excluding Other)
+      providers.querySelectorAll('.prov').forEach(tile=>{
+        if(tile.dataset.prov==='other'){ tile.removeAttribute('title'); return; }
+        const nm=(tile.querySelector('.pname')||{}).textContent||'';
+        tile.title=t.providerTileTitle.replace('{name}', nm);
+      });
+
+      const li=lengthSel.selectedIndex<0?0:lengthSel.selectedIndex;
+      const ti=toneSel.selectedIndex<0?0:toneSel.selectedIndex;
+      lengthSel.innerHTML=t.lengthOpts.map(o=>`<option>${o}</option>`).join('');
+      toneSel.innerHTML=t.toneOpts.map(o=>`<option>${o}</option>`).join('');
+      lengthSel.selectedIndex=Math.min(li,t.lengthOpts.length-1);
+      toneSel.selectedIndex=Math.min(ti,t.toneOpts.length-1);
+      if(lengthSel.__cs) lengthSel.__cs.refresh();   // rebuild the custom dropdown with the new entries
+      if(toneSel.__cs) toneSel.__cs.refresh();
+
+      document.querySelectorAll('#lang button').forEach(b=>b.classList.toggle('active', b.dataset.lang===code));
+      renderCustomRecipes();
+      setActiveInstruction();
+      recomputeHintFit();   // the hint length changes with the language → recompute whether it fits
+    }
+
+    // The providers hint sits on the title row, on the right: if there is no space (it would be truncated)
+    // we hide it entirely (.nofit), even on hover. Keeps the box in layout so it can reappear.
+    function recomputeHintFit(){ if(hintEl) hintEl.classList.toggle('nofit', hintEl.scrollWidth > hintEl.clientWidth + 1); }
+
+    /* ===================== IN-PAGE TOAST ===================== */
+    let toastTimer;
+    function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),4200); }
+
+    /* ===================== PROMPT ===================== */
+    function buildPrompt(){
+      const t=TR;
+      let out=instruction.value.trim()+'\n\n"""\n'+content.value.trim()+'\n"""\n\n'+t.constraints+'\n- '+t.cLength+': '+lengthSel.value+'\n- '+t.cTone+': '+toneSel.value;
+      // custom fields: append "- Label: selected option"
+      for(const f of customFields){
+        if(!f.options||!f.options.length) continue;
+        const v=f.options[Math.min(f.value||0, f.options.length-1)];
+        if(f.label && v) out+='\n- '+f.label+': '+v;
+      }
+      return out;
+    }
+    function showOutput(text){ result.textContent=text; output.classList.add('show'); }
+    async function writeClipboard(text){
+      if(TAURI){ try{ await invoke('app_write_clipboard',{text}); return; }catch(e){} }
+      if(navigator.clipboard){ try{ await navigator.clipboard.writeText(text); }catch(e){} }
+    }
+
+    /* ===================== OPEN PROVIDER ===================== */
+    async function openProvider(){
+      const t=TR; const p=PROVIDERS[selectedProvider]; const promptText=buildPrompt();
+      if(p.mode==='manual'){ showOutput(promptText); await writeClipboard(promptText); toast(t.manualNote); output.scrollIntoView({behavior:'smooth',block:'nearest'}); return; }
+      output.classList.remove('show');
+      const encoded=encodeURIComponent(promptText);
+      const useQuery=p.mode==='query'&&encoded.length<=MAX_URL;
+      const url=useQuery?(p.base+p.q+encoded):p.base;
+      lastProviderUrl=url;
+      if(TAURI){
+        await writeClipboard(promptText);            // always: safety net (paste with Ctrl+V)
+        startProviderLoading(p.name);                // bar + overlay immediately (the page loads off-screen)
+        try{
+          await setClaudeHint(selectedProvider==='anthropic');   // Claude login warning banner
+          await invoke('open_provider_view',{url});
+          // auto-submit: query providers (?q=) are already prefilled → only submit;
+          // clipboard ones must be filled first. provider_fill handles both.
+          if(p.autosend){
+            setTimeout(()=>{ invoke('provider_fill',{text:promptText}).catch(()=>{}); }, useQuery?1200:900);
+          }
+        }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
+        setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000); // overlay safety net
+        return;
+      }
+      const win=window.open(url,'_blank'); await writeClipboard(promptText);
+      if(!win){ toast(t.popupBlocked); return; }
+      toast(`${t.opening} ${p.name} ${t.clipNote}`);
+    }
+
+    // Opens the provider RIGHT AWAY, without a prompt (double-click / right-click on the tile).
+    // Reuses the same pipeline as openProvider but without buildPrompt/clipboard/autosend.
+    async function openProviderDirect(key){
+      const p=PROVIDERS[key]; if(!p || p.mode==='manual' || !p.base) return;   // excludes "Other"
+      const t=TR;
+      selectProviderTile(key); lastProviderUrl=p.base;   // selection (does not change the default)
+      if(TAURI){
+        startProviderLoading(p.name);                // bar + overlay immediately (page off-screen)
+        try{
+          await setClaudeHint(key==='anthropic');
+          await invoke('open_provider_view',{url:p.base});
+        }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
+        setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000); // overlay safety net
+        return;
+      }
+      const win=window.open(p.base,'_blank');
+      if(!win){ toast(t.popupBlocked); return; }
+      toast(`${t.opening} ${p.name}`);
+    }
+
+    /* ===================== IN-APP BAR (provider name, no URL) ===================== */
+    const pcBadge=document.querySelector('.pc-badge');
+    function openProviderBar(name){
+      body.classList.add('provider-open');
+      pcName.textContent=name||'';
+      // real icon of the selected provider (taken from the tile) with its color
+      const tile=document.querySelector(`.prov[data-prov="${selectedProvider}"]`);
+      const glyph=tile?tile.querySelector('.glyph'):null;
+      if(pcBadge){
+        if(glyph){ pcBadge.innerHTML=glyph.innerHTML; pcBadge.style.color=(tile.style.getPropertyValue('--pc')||'').trim()||'var(--accent)'; }
+        else { pcBadge.textContent='✦'; pcBadge.style.color='var(--accent)'; }
+      }
+    }
+    // Show the bar + loading overlay immediately (instant feedback; the provider page
+    // loads off-screen and will appear once loaded → no flash of the old page).
+    function startProviderLoading(name){
+      openProviderBar(name);
+      body.classList.add('provider-loading');
+      if(plText) plText.textContent=`${TR.opening} ${name||''}…`;
+    }
+    function closeProviderBar(){ body.classList.remove('provider-open','provider-loading'); setClaudeHint(false); }
+    document.getElementById('pcClose').addEventListener('click', async()=>{ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); });
+    document.getElementById('pcReload').addEventListener('click', ()=>{ if(TAURI) invoke('provider_reload').catch(()=>{}); });
+
+    /* ===================== CLAUDE LOGIN WARNING BANNER ===================== */
+    // Shows/hides the native banner and pushes the provider webview down by the same
+    // height (measured at runtime → robust to wrap/DPI). px=0 → no banner.
+    const claudeHint=document.getElementById('claudeHint');
+    const claudeHintClose=document.getElementById('claudeHintClose');
+    const CLAUDE_HINT_KEY='koto-claude-hint-off';
+    async function setClaudeHint(show){
+      if(show && localStorage.getItem(CLAUDE_HINT_KEY)==='1') show=false; // "don't show again"
+      claudeHint.hidden=!show;
+      const px=show?(claudeHint.offsetHeight||0):0;
+      if(TAURI){ try{ await invoke('set_provider_top_extra',{px}); }catch(e){} }
+    }
+    claudeHintClose.addEventListener('click', ()=>{ localStorage.setItem(CLAUDE_HINT_KEY,'1'); setClaudeHint(false); });
+    // if the window changes width the banner may wrap → re-measure
+    let chRAF=0;
+    window.addEventListener('resize', ()=>{ if(!claudeHint.hidden){ cancelAnimationFrame(chRAF); chRAF=requestAnimationFrame(()=>setClaudeHint(true)); } });
+
+    /* ===================== WINDOW CONTROLS ===================== */
+    document.getElementById('winMin').addEventListener('click', ()=>{ if(tauriWin) tauriWin.minimize(); });
+    document.getElementById('winMax').addEventListener('click', ()=>{ if(tauriWin) tauriWin.toggleMaximize(); });
+    document.getElementById('winClose').addEventListener('click', ()=>{ if(TAURI) invoke('hide_main').catch(()=>{}); });
+
+    /* ===================== MODALS ===================== */
+    function openModal(o){ o.classList.add('show'); }
+    function closeModal(o){ o.classList.remove('show'); }
+    const settingsOverlay=document.getElementById('settingsOverlay');
+    const recipeOverlay=document.getElementById('recipeOverlay');
+    const confirmOverlay=document.getElementById('confirmOverlay');
+    [settingsOverlay,recipeOverlay,confirmOverlay].forEach(o=>o.addEventListener('click',e=>{ if(e.target===o){ if(o===settingsOverlay) applyTheme(currentSettings.theme); applyLang(currentSettings.language); closeModal(o); } }));
+
+    let confirmAction=null;
+    // innerHTML: the messages are controlled i18n strings (e.g. with <br> for line breaks),
+    // no user input → safe. {v} is a semver version.
+    function askConfirm(message,onOk){ document.getElementById('confirmMsg').innerHTML=message; confirmAction=onOk; openModal(confirmOverlay); }
+    document.getElementById('confirmOk').addEventListener('click', ()=>{ const a=confirmAction; confirmAction=null; closeModal(confirmOverlay); if(a) a(); });
+    document.getElementById('confirmX').addEventListener('click', ()=>closeModal(confirmOverlay));
+    document.getElementById('confirmCancel').addEventListener('click', ()=>closeModal(confirmOverlay));
+
+    /* ===================== SETTINGS ===================== */
+    const setTheme=document.getElementById('setTheme');
+    const setLang=document.getElementById('setLang');
+    const setProvider=document.getElementById('setProvider');
+    const setHotkey=document.getElementById('setHotkey');
+    const setMonitor=document.getElementById('setMonitor');
+    const setAutostart=document.getElementById('setAutostart');
+    let capturedHotkey=DEFAULT_SETTINGS.hotkey;
+
+    function keyLabel(part){
+      switch(part){
+        case 'Control': case 'CommandOrControl': case 'CmdOrCtrl': return 'Ctrl';
+        case 'Super': case 'Meta': return 'Win'; case 'Command': return 'Cmd';
+        case 'Alt': case 'Option': return 'Alt'; case 'Shift': return 'Shift';
+        case 'IntlBackslash': return '<'; case 'Backslash': return '\\'; case 'Backquote': return '`';
+        case 'BracketLeft': return '['; case 'BracketRight': return ']'; case 'Semicolon': return ';';
+        case 'Quote': return "'"; case 'Comma': return ','; case 'Period': return '.'; case 'Slash': return '/';
+        case 'Minus': return '-'; case 'Equal': return '='; case 'Space': return 'Space';
+        case 'Enter': return 'Enter'; case 'Tab': return 'Tab'; case 'Escape': return 'Esc';
+        case 'ArrowUp': return '↑'; case 'ArrowDown': return '↓'; case 'ArrowLeft': return '←'; case 'ArrowRight': return '→';
+        default:
+          if(part.startsWith('Key')) return part.slice(3);
+          if(part.startsWith('Digit')) return part.slice(5);
+          if(part.startsWith('Numpad')) return 'Num '+part.slice(6);
+          return part;
+      }
+    }
+    function friendlyHotkey(accel){ return accel?accel.split('+').map(keyLabel).join(' + '):'—'; }
+    function accelFromEvent(e){
+      const mods=[];
+      if(e.ctrlKey) mods.push('Control'); if(e.shiftKey) mods.push('Shift'); if(e.altKey) mods.push('Alt'); if(e.metaKey) mods.push('Super');
+      const modCodes=['ControlLeft','ControlRight','ShiftLeft','ShiftRight','AltLeft','AltRight','MetaLeft','MetaRight'];
+      if(modCodes.includes(e.code)) return null;
+      return mods.concat([e.code]).join('+');
+    }
+    setHotkey.addEventListener('focus', ()=>{ setHotkey.classList.add('capturing'); setHotkey.value=TR.pressCombo; });
+    setHotkey.addEventListener('blur', ()=>{ setHotkey.classList.remove('capturing'); setHotkey.value=friendlyHotkey(capturedHotkey); });
+    setHotkey.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a){ capturedHotkey=a; setHotkey.value=friendlyHotkey(a); setHotkey.blur(); } });
+    document.getElementById('hotkeyClear').addEventListener('click', ()=>{ capturedHotkey=DEFAULT_SETTINGS.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey); });
+
+    function fillSettingsForm(){
+      setTheme.value=validTheme(currentSettings.theme);
+      setLang.value=currentSettings.language;
+      setProvider.value=(currentSettings.default_provider in PROVIDERS)?currentSettings.default_provider:'openai';
+      [setTheme,setLang,setProvider].forEach(s=>{ if(s.__cs) s.__cs.refresh(); }); // refresh the custom dropdowns
+      capturedHotkey=currentSettings.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey);
+      setMonitor.checked=!!currentSettings.monitor_enabled;
+      setAutostart.checked=!!currentSettings.autostart;
+    }
+    function openSettings(){ fillSettingsForm(); openModal(settingsOverlay); checkUpdate(true); }
+    setTheme.addEventListener('change', ()=>applyTheme(setTheme.value)); // live preview
+    setLang.addEventListener('change', ()=>{ applyLang(setLang.value); }); // live language preview (restored on Cancel)
+
+    async function saveSettings(){
+      // spread of currentSettings → does not reset provider/recipe/length/tone (managed by the tiles/controls)
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:setMonitor.checked, autostart:setAutostart.checked, theme:setTheme.value, default_provider:setProvider.value };
+      const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
+      currentSettings=eff; await applySettings(eff);
+      closeModal(settingsOverlay);
+      // warn if the chosen shortcut was not registrable and was replaced
+      if(eff.hotkey!==desired.hotkey){ toast(TR.hotkeyFallback.replace('{k}', friendlyHotkey(eff.hotkey))); }
+      else { toast(TR.settingsSaved); }
+    }
+    let restoring=false;   // during restore do not re-save (avoids resetting the indices)
+    async function applySettings(s){
+      restoring=true;
+      applyTheme(s.theme);
+      await applyLang(s.language);   // async: loads the language and repopulates Length/Tone → restore AFTER
+      selectProviderTile(s.default_provider in PROVIDERS?s.default_provider:'openai');   // at startup we start from the default
+      renderDefaultStar();
+      restoreRecipe(s.recipe);
+      restoreLengthTone(s.length, s.tone);
+      restoring=false;
+    }
+    // Restores the recipe from the last state ("key:rephrase" | "id:xxxx").
+    function restoreRecipe(str){
+      if(typeof str!=='string') return;
+      const i=str.indexOf(':'); if(i<0) return;
+      const kind=str.slice(0,i), val=str.slice(i+1);
+      let li=null;
+      if(kind==='key') li=recipesEl.querySelector('.recipe[data-key="'+val+'"]');
+      else if(kind==='id') li=Array.from(recipesEl.querySelectorAll('.recipe-custom')).find(el=>el.dataset.id===val);
+      if(li) selectRecipe(li);
+    }
+    // Restores the Length/Tone indices (the options already exist from applyLang).
+    function restoreLengthTone(len,tone){
+      if(typeof len==='number' && len>=0 && len<lengthSel.options.length){ lengthSel.selectedIndex=len; if(lengthSel.__cs) lengthSel.__cs.refresh(); }
+      if(typeof tone==='number' && tone>=0 && tone<toneSel.options.length){ toneSel.selectedIndex=tone; if(toneSel.__cs) toneSel.__cs.refresh(); }
+    }
+    // Saves ONLY the UI state (provider/recipe/length/tone) — lightweight, no hotkey re-register.
+    function recipeToStr(){ return activeRecipe.kind==='key' ? 'key:'+activeRecipe.key : 'id:'+activeRecipe.id; }
+    function saveUiState(){
+      if(restoring) return;
+      // NB: default_provider does NOT follow the tile selection (changed via menu/Settings → setDefaultProvider)
+      currentSettings.recipe=recipeToStr();
+      currentSettings.length=lengthSel.selectedIndex<0?0:lengthSel.selectedIndex;
+      currentSettings.tone=toneSel.selectedIndex<0?0:toneSel.selectedIndex;
+      if(TAURI){ invoke('save_ui_state',{ provider:currentSettings.default_provider, recipe:currentSettings.recipe, length:currentSettings.length, tone:currentSettings.tone }).catch(()=>{}); }
+      else { try{ localStorage.setItem('apb-settings', JSON.stringify(currentSettings)); }catch(e){} }
+    }
+    // Tile selection (for manual submit) — does NOT change the default.
+    function selectProviderTile(key){
+      selectedProvider=key;
+      providers.querySelectorAll('.prov').forEach(p=>p.classList.toggle('active', p.dataset.prov===key));
+    }
+    // Star ★ on the default provider (used by toast/shortcut/clipboard).
+    function renderDefaultStar(){
+      providers.querySelectorAll('.prov').forEach(p=>p.classList.toggle('is-default', p.dataset.prov===currentSettings.default_provider));
+    }
+    // Sets the default (from the provider menu or Settings) and persists it.
+    function setDefaultProvider(key){
+      if(!(key in PROVIDERS)) return;
+      currentSettings.default_provider=key;
+      renderDefaultStar();
+      saveUiState();   // persists currentSettings (including the new default)
+    }
+    async function loadSettings(){
+      if(TAURI){ try{ return { ...DEFAULT_SETTINGS, ...(await invoke('get_settings')) }; }catch(e){} }
+      try{ return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem('apb-settings')||'{}') }; }catch(e){ return { ...DEFAULT_SETTINGS }; }
+    }
+    // Returns the EFFECTIVE settings (in Tauri the backend may replace the hotkey with the fallback).
+    async function persistSettings(s){
+      if(TAURI){ try{ const eff=await invoke('set_settings',{settings:s}); return eff||s; }catch(e){} }
+      try{ localStorage.setItem('apb-settings', JSON.stringify(s)); }catch(e){}
+      return s;
+    }
+    document.getElementById('btnSettings').addEventListener('click', openSettings);
+    document.getElementById('settingsX').addEventListener('click', ()=>{ applyTheme(currentSettings.theme); applyLang(currentSettings.language); closeModal(settingsOverlay); });
+    document.getElementById('settingsCancel').addEventListener('click', ()=>{ applyTheme(currentSettings.theme); applyLang(currentSettings.language); closeModal(settingsOverlay); });
+    document.getElementById('settingsSave').addEventListener('click', saveSettings);
+
+    /* ===================== UPDATES ===================== */
+    const updateStatusEl=document.getElementById('updateStatus');
+    const updateMsgEl=document.getElementById('updateMsg');
+    const btnInstallUpdate=document.getElementById('btnInstallUpdate');
+    // Inline status in the modal: state = busy|ok|avail|err (empty = hidden).
+    function setUpd(state, msg, showInstall){
+      if(!state){ updateStatusEl.hidden=true; return; }
+      updateStatusEl.hidden=false;
+      updateStatusEl.className='upd-status '+state;
+      updateMsgEl.textContent=msg||'';
+      btnInstallUpdate.hidden=!showInstall;
+    }
+    // manual=true → INLINE feedback in the modal (button click or opening settings).
+    // manual=false → silent at startup; if there is an update it shows the confirm dialog.
+    async function checkUpdate(manual){
+      const t=TR;
+      if(!TAURI){ if(manual) setUpd('ok', t.noUpdate); return; }
+      if(manual) setUpd('busy', t.updChecking);
+      let info=null;
+      try{ info=await invoke('check_for_update'); }
+      catch(e){ if(manual) setUpd('err', `${t.updateError}: ${e}`); return; }
+      if(info && info.version){
+        if(manual){ setUpd('avail', t.updNewVersion.replace('{v}','v'+info.version), true); }
+        else { askConfirm(t.updateAvailable.replace('{v}','v'+info.version), doInstallUpdate); }
+      } else if(manual){ setUpd('ok', t.noUpdate); }
+    }
+    async function doInstallUpdate(){
+      const t=TR;
+      setUpd('busy', t.updating); btnInstallUpdate.hidden=true;
+      try{ await invoke('install_update'); }   // downloads, installs and restarts the app
+      catch(e){ setUpd('err', `${t.updateError}: ${e}`); }
+    }
+    document.getElementById('btnCheckUpdate').addEventListener('click', ()=>checkUpdate(true));
+    btnInstallUpdate.addEventListener('click', doInstallUpdate);
+
+    /* ===================== RECIPES ===================== */
+    function genId(){ try{ return crypto.randomUUID(); }catch(e){ return 'r'+Date.now()+Math.floor(Math.random()*1e6); } }
+    async function loadRecipes(){
+      if(TAURI){ try{ return await invoke('get_recipes'); }catch(e){} }
+      try{ return JSON.parse(localStorage.getItem('apb-recipes')||'[]'); }catch(e){ return []; }
+    }
+    async function persistRecipes(){
+      if(TAURI){ try{ await invoke('save_recipes',{recipes:customRecipes}); return; }catch(e){} }
+      try{ localStorage.setItem('apb-recipes', JSON.stringify(customRecipes)); }catch(e){}
+    }
+    function renderCustomRecipes(){
+      recipesEl.querySelectorAll('.recipe-custom').forEach(el=>el.remove());
+      const t=TR;
+      customRecipes.forEach(r=>{
+        const li=document.createElement('li');
+        li.className='recipe recipe-custom'; li.dataset.id=r.id; li.dataset.instruction=r.instruction;
+        li.innerHTML='<span class="ico">★</span><span class="rname"></span><button class="recipe-del">✕</button>';
+        li.querySelector('.rname').textContent=r.name;
+        li.querySelector('.recipe-del').title=t.delete;
+        recipesEl.appendChild(li);
+      });
+      if(activeRecipe.kind==='id'){ const li=recipesEl.querySelector(`.recipe-custom[data-id="${activeRecipe.id}"]`); if(li) li.classList.add('active'); }
+    }
+    // "Canonical" instruction of the active recipe (built-in from i18n, custom from customRecipes).
+    function canonicalInstruction(){
+      const t=TR;
+      if(activeRecipe.kind==='key') return t.instr[activeRecipe.key]||'';
+      const r=customRecipes.find(x=>x.id===activeRecipe.id); return r?r.instruction:'';
+    }
+    // Show "Save" only if the instruction has been modified (and is not empty).
+    function updateSaveInstr(){
+      const v=instruction.value.trim();
+      saveInstrBtn.hidden = (v==='' || v===canonicalInstruction().trim());
+    }
+    function setActiveInstruction(){
+      const t=TR;
+      if(activeRecipe.kind==='key'&&t.instr[activeRecipe.key]) instruction.value=t.instr[activeRecipe.key];
+      else if(activeRecipe.kind==='id'){ const r=customRecipes.find(x=>x.id===activeRecipe.id); if(r) instruction.value=r.instruction; }
+      updateSaveInstr();
+    }
+    instruction.addEventListener('input', updateSaveInstr);
+    // Save the modified instruction: custom → updates the recipe; built-in → creates a custom copy.
+    saveInstrBtn.addEventListener('click', async ()=>{
+      const text=instruction.value.trim(); if(!text) return;
+      if(activeRecipe.kind==='id'){
+        const r=customRecipes.find(x=>x.id===activeRecipe.id);
+        if(r){ r.instruction=text; await persistRecipes(); renderCustomRecipes();
+          const li=recipesEl.querySelector(`.recipe-custom[data-id="${r.id}"]`); if(li) li.classList.add('active'); }
+      } else {
+        const t=TR; const name=(t.recipeNames[activeRecipe.key]||activeRecipe.key);
+        const id=genId(); customRecipes.push({id,name,instruction:text});
+        await persistRecipes(); renderCustomRecipes();
+        const li=recipesEl.querySelector(`.recipe-custom[data-id="${id}"]`); if(li) selectRecipe(li);
+      }
+      updateSaveInstr();
+      toast(TR.instrSaved);
+    });
+    function selectRecipe(li){
+      recipesEl.querySelectorAll('.recipe').forEach(r=>r.classList.remove('active'));
+      li.classList.add('active');
+      activeRecipe=li.dataset.key?{kind:'key',key:li.dataset.key}:{kind:'id',id:li.dataset.id};
+      setActiveInstruction();
+      saveUiState();
+    }
+    recipesEl.addEventListener('click', e=>{
+      const del=e.target.closest('.recipe-del');
+      if(del){ e.stopPropagation(); const li=del.closest('.recipe'); requestDeleteRecipe(li.dataset.id); return; }
+      const li=e.target.closest('.recipe'); if(li) selectRecipe(li);
+    });
+    // Double-click on a custom recipe → inline rename (built-in ones have i18n names).
+    recipesEl.addEventListener('dblclick', e=>{
+      if(e.target.closest('.recipe-del')) return;
+      const li=e.target.closest('.recipe-custom'); if(li) startRenameRecipe(li);
+    });
+    function startRenameRecipe(li){
+      const r=customRecipes.find(x=>x.id===li.dataset.id); if(!r) return;
+      const span=li.querySelector('.rname'); if(!span || li.querySelector('.rname-edit')) return;
+      const input=document.createElement('input');
+      input.type='text'; input.className='rname rname-edit'; input.value=r.name;
+      span.replaceWith(input); input.focus(); input.select();
+      let done=false;
+      async function commit(save){
+        if(done) return; done=true;
+        const v=input.value.trim();
+        if(save && v && v!==r.name){ r.name=v; await persistRecipes(); }
+        renderCustomRecipes();
+      }
+      input.addEventListener('click', ev=>ev.stopPropagation());
+      input.addEventListener('keydown', ev=>{
+        if(ev.key==='Enter'){ ev.preventDefault(); commit(true); }
+        else if(ev.key==='Escape'){ ev.preventDefault(); commit(false); }
+      });
+      input.addEventListener('blur', ()=>commit(true));
+    }
+    // ---- Generic context menu (reused by recipes / fields / provider / text) ----
+    const ctxMenu=document.getElementById('ctxMenu');
+    function hideCtxMenu(){ if(!ctxMenu.hidden){ ctxMenu.hidden=true; ctxMenu.innerHTML=''; } }
+    function showCtxMenu(items, x, y){
+      ctxMenu.innerHTML='';
+      items.forEach(it=>{
+        const b=document.createElement('button');
+        b.type='button'; b.className='ctxitem'+(it.danger?' ctxitem-danger':'');
+        b.textContent=it.label;
+        b.addEventListener('click', ()=>{ hideCtxMenu(); it.onClick(); });
+        ctxMenu.appendChild(b);
+      });
+      ctxMenu.hidden=false;
+      const mw=ctxMenu.offsetWidth, mh=ctxMenu.offsetHeight;
+      if(x+mw>innerWidth) x=innerWidth-mw-6;
+      if(y+mh>innerHeight) y=innerHeight-mh-6;
+      ctxMenu.style.left=Math.max(6,x)+'px'; ctxMenu.style.top=Math.max(6,y)+'px';
+    }
+    document.addEventListener('click', e=>{ if(!ctxMenu.hidden && !ctxMenu.contains(e.target)) hideCtxMenu(); });
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideCtxMenu(); });
+    window.addEventListener('blur', hideCtxMenu);
+    window.addEventListener('scroll', hideCtxMenu, true);
+
+    // Right-click on an editable text field → Cut/Copy/Paste/Select all menu
+    // (the WebView2 menu is disabled upstream; this replaces it). The specific areas
+    // (recipes/fields/provider) call stopPropagation, so they do not reach here.
+    document.addEventListener('contextmenu', e=>{
+      const el=e.target;
+      const isText = el && (el.tagName==='TEXTAREA' || (el.tagName==='INPUT' && /^(text|search|url|email|tel|password|number|)$/i.test(el.getAttribute('type')||'text')));
+      if(!isText || el.readOnly || el.disabled) return;
+      e.preventDefault();
+      const t=TR;
+      showCtxMenu([
+        { label:t.cut, onClick:()=>{ el.focus(); document.execCommand('cut'); } },
+        { label:t.copy, onClick:()=>{ el.focus(); document.execCommand('copy'); } },
+        { label:t.paste, onClick:async()=>{ el.focus(); try{ const txt=await navigator.clipboard.readText(); document.execCommand('insertText', false, txt); }catch(err){} } },
+        { label:t.selectAll, onClick:()=>{ el.focus(); el.select && el.select(); } },
+      ], e.clientX, e.clientY);
+    });
+
+    // Right-click on a recipe: custom → Rename/Delete; built-in → Duplicate.
+    recipesEl.addEventListener('contextmenu', e=>{
+      const li=e.target.closest('.recipe'); if(!li) return;
+      e.preventDefault(); e.stopPropagation();
+      const t=TR;
+      if(li.classList.contains('recipe-custom')){
+        showCtxMenu([
+          { label:t.rename, onClick:()=>startRenameRecipe(li) },
+          { label:t.delete, danger:true, onClick:()=>requestDeleteRecipe(li.dataset.id) },
+        ], e.clientX, e.clientY);
+      } else if(li.dataset.key){
+        showCtxMenu([{ label:t.duplicate, onClick:()=>duplicateBuiltin(li.dataset.key) }], e.clientX, e.clientY);
+      }
+    });
+    async function duplicateBuiltin(key){
+      const t=TR; const name=(t.recipeNames[key]||key); const instruction=(t.instr[key]||t.defaultInstr);
+      const id=genId(); customRecipes.push({id,name,instruction});
+      await persistRecipes(); renderCustomRecipes();
+      const li=recipesEl.querySelector(`.recipe-custom[data-id="${id}"]`); if(li) selectRecipe(li);
+    }
+    function requestDeleteRecipe(id){
+      askConfirm(TR.deleteRecipeMsg, async()=>{
+        const wasActive=activeRecipe.kind==='id'&&activeRecipe.id===id;
+        customRecipes=customRecipes.filter(r=>r.id!==id);
+        await persistRecipes(); renderCustomRecipes();
+        if(wasActive){ const first=recipesEl.querySelector('.recipe[data-key]'); if(first) selectRecipe(first); }
+      });
+    }
+    document.getElementById('addRecipe').addEventListener('click', ()=>{
+      document.getElementById('recipeName').value=''; document.getElementById('recipeInstr').value='';
+      openModal(recipeOverlay); setTimeout(()=>document.getElementById('recipeName').focus(),50);
+    });
+    document.getElementById('recipeX').addEventListener('click', ()=>closeModal(recipeOverlay));
+    document.getElementById('recipeCancel').addEventListener('click', ()=>closeModal(recipeOverlay));
+    document.getElementById('recipeSave').addEventListener('click', async()=>{
+      const name=document.getElementById('recipeName').value.trim();
+      if(!name){ document.getElementById('recipeName').focus(); return; }
+      const instr=document.getElementById('recipeInstr').value.trim()||TR.defaultInstr;
+      const id=genId(); customRecipes.push({id,name,instruction:instr});
+      await persistRecipes(); renderCustomRecipes(); closeModal(recipeOverlay);
+      const li=recipesEl.querySelector(`.recipe-custom[data-id="${id}"]`); if(li) selectRecipe(li);
+    });
+
+    /* ===================== CUSTOM FIELDS ===================== */
+    // Extra sections created by the user (besides Length/Tone, which stay fixed).
+    // Each field = {id, label, options:[String], value:Int}. Automatic saving.
+    const fieldsOverlay=document.getElementById('fieldsOverlay');
+    const fieldsBody=document.getElementById('fieldsBody');
+    const controlsEl=document.getElementById('controls');
+    let fieldsSaveTimer=0, renderCFTimer=0;
+
+    async function loadFields(){
+      if(TAURI){ try{ return await invoke('get_fields'); }catch(e){} }
+      try{ return JSON.parse(localStorage.getItem('apb-fields')||'[]'); }catch(e){ return []; }
+    }
+    function persistFields(){
+      clearTimeout(fieldsSaveTimer);   // debounce: the editor fires many changes in quick succession
+      fieldsSaveTimer=setTimeout(()=>{
+        if(TAURI){ invoke('save_fields',{fields:customFields}).catch(()=>{}); }
+        else { try{ localStorage.setItem('apb-fields', JSON.stringify(customFields)); }catch(e){} }
+      }, 250);
+    }
+    // Render the fields as themed dropdowns in the page, after Length/Tone.
+    function renderCustomFields(){
+      controlsEl.querySelectorAll('.control-custom').forEach(el=>el.remove());
+      customFields.forEach(f=>{
+        if(!f.options||!f.options.length) return;   // a field with no options is not shown
+        const ctrl=document.createElement('div'); ctrl.className='control control-custom'; ctrl.dataset.id=f.id;
+        const label=document.createElement('label'); label.textContent=f.label||'';
+        const box=document.createElement('div'); box.className='select';
+        const ico=document.createElement('span'); ico.className='ico'; ico.textContent='◆';
+        const sel=document.createElement('select');
+        f.options.forEach(o=>{ const op=document.createElement('option'); op.textContent=o; sel.appendChild(op); });
+        sel.selectedIndex=Math.min(f.value||0, f.options.length-1);
+        box.appendChild(ico); box.appendChild(sel);
+        ctrl.appendChild(label); ctrl.appendChild(box);
+        controlsEl.appendChild(ctrl);
+        enhanceSelect(sel);
+        sel.addEventListener('change', ()=>{ f.value=sel.selectedIndex; persistFields(); });
+      });
+    }
+    function renderCustomFieldsDebounced(){ clearTimeout(renderCFTimer); renderCFTimer=setTimeout(renderCustomFields,300); }
+
+    // Editor: blocks per field (label, options add/rename/delete, reorder, delete field).
+    function renderFieldsEditor(){
+      const t=TR;
+      fieldsBody.innerHTML='';
+      if(!customFields.length){
+        const empty=document.createElement('div'); empty.className='fld-empty'; empty.textContent=t.noFields;
+        fieldsBody.appendChild(empty); return;
+      }
+      customFields.forEach((f,idx)=>{
+        const block=document.createElement('div'); block.className='fld-block';
+        const top=document.createElement('div'); top.className='fld-top';
+        const lbl=document.createElement('input'); lbl.type='text'; lbl.className='field'; lbl.value=f.label||''; lbl.placeholder=t.fieldNamePh;
+        lbl.addEventListener('input', ()=>{ f.label=lbl.value; persistFields(); renderCustomFieldsDebounced(); });
+        const up=document.createElement('button'); up.className='fld-mv'; up.textContent='↑'; up.title=t.moveUp; up.disabled=idx===0;
+        up.addEventListener('click', ()=>{ if(idx>0){ const a=customFields; [a[idx-1],a[idx]]=[a[idx],a[idx-1]]; persistFields(); renderFieldsEditor(); renderCustomFields(); } });
+        const down=document.createElement('button'); down.className='fld-mv'; down.textContent='↓'; down.title=t.moveDown; down.disabled=idx===customFields.length-1;
+        down.addEventListener('click', ()=>{ if(idx<customFields.length-1){ const a=customFields; [a[idx+1],a[idx]]=[a[idx],a[idx+1]]; persistFields(); renderFieldsEditor(); renderCustomFields(); } });
+        const del=document.createElement('button'); del.className='fld-del fld-del-text'; del.textContent='✕ '+t.delete;
+        del.addEventListener('click', ()=>{ askConfirm(t.deleteFieldMsg, ()=>{ customFields.splice(idx,1); persistFields(); renderFieldsEditor(); renderCustomFields(); }); });
+        top.appendChild(lbl); top.appendChild(up); top.appendChild(down); top.appendChild(del);
+        block.appendChild(top);
+        const opts=document.createElement('div'); opts.className='fld-opts';
+        (f.options||[]).forEach((opt,oi)=>{
+          const row=document.createElement('div'); row.className='fld-opt';
+          const inp=document.createElement('input'); inp.type='text'; inp.className='field'; inp.value=opt; inp.placeholder=t.optionPh;
+          inp.addEventListener('input', ()=>{ f.options[oi]=inp.value; persistFields(); renderCustomFieldsDebounced(); });
+          const od=document.createElement('button'); od.className='fld-del'; od.textContent='✕'; od.title=t.delete;
+          od.addEventListener('click', ()=>{ f.options.splice(oi,1); if((f.value||0)>=f.options.length) f.value=Math.max(0,f.options.length-1); persistFields(); renderFieldsEditor(); renderCustomFields(); });
+          row.appendChild(inp); row.appendChild(od); opts.appendChild(row);
+        });
+        const addOpt=document.createElement('button'); addOpt.className='fld-addopt'; addOpt.textContent=t.addOption;
+        addOpt.addEventListener('click', ()=>{ f.options=f.options||[]; f.options.push(t.newOption+' '+(f.options.length+1)); persistFields(); renderFieldsEditor(); renderCustomFields(); });
+        opts.appendChild(addOpt); block.appendChild(opts);
+        fieldsBody.appendChild(block);
+      });
+    }
+    document.getElementById('manageFields').addEventListener('click', ()=>{ renderFieldsEditor(); openModal(fieldsOverlay); });
+    // Right-click on a custom field → Edit (opens editor) / Delete.
+    controlsEl.addEventListener('contextmenu', e=>{
+      const ctrl=e.target.closest('.control-custom'); if(!ctrl) return;
+      e.preventDefault(); e.stopPropagation();
+      const id=ctrl.dataset.id, t=TR;
+      showCtxMenu([
+        { label:t.edit, onClick:()=>{ renderFieldsEditor(); openModal(fieldsOverlay); } },
+        { label:t.delete, danger:true, onClick:()=>requestDeleteField(id) },
+      ], e.clientX, e.clientY);
+    });
+    function requestDeleteField(id){
+      askConfirm(TR.deleteFieldMsg, ()=>{
+        const i=customFields.findIndex(f=>f.id===id); if(i<0) return;
+        customFields.splice(i,1); persistFields(); renderFieldsEditor(); renderCustomFields();
+      });
+    }
+    document.getElementById('fieldsX').addEventListener('click', ()=>closeModal(fieldsOverlay));
+    document.getElementById('fieldsDone').addEventListener('click', ()=>closeModal(fieldsOverlay));
+    fieldsOverlay.addEventListener('click', e=>{ if(e.target===fieldsOverlay) closeModal(fieldsOverlay); });
+    document.getElementById('addFieldBtn').addEventListener('click', ()=>{
+      const t=TR;
+      customFields.push({ id:genId(), label:t.newFieldName, options:[t.newOption+' 1', t.newOption+' 2'], value:0 });
+      persistFields(); renderFieldsEditor(); renderCustomFields();
+    });
+
+    /* ===================== BASE EVENTS ===================== */
+    document.getElementById('lang').addEventListener('click', async e=>{
+      const b=e.target.closest('button[data-lang]'); if(!b) return;
+      await applyLang(b.dataset.lang); currentSettings.language=b.dataset.lang; persistSettings(currentSettings);
+    });
+    providers.addEventListener('click', e=>{
+      const tile=e.target.closest('.prov'); if(!tile) return;
+      selectProviderTile(tile.dataset.prov);   // selection only for manual submit (the default does not change)
+    });
+    // "double-click / right-click" hint visible only while the mouse is over the providers
+    providers.addEventListener('mouseenter', ()=>{ if(hintEl) hintEl.classList.add('show'); });
+    providers.addEventListener('mouseleave', ()=>{ if(hintEl) hintEl.classList.remove('show'); });
+    // recompute whether the hint fits next to the title when the window changes size
+    const pbarHead=document.querySelector('.pbar-head');
+    if(pbarHead && window.ResizeObserver){ new ResizeObserver(()=>recomputeHintFit()).observe(pbarHead); }
+    recomputeHintFit();
+    // Double-click on the tile → opens the provider on the fly (without a prompt).
+    providers.addEventListener('dblclick', e=>{
+      const tile=e.target.closest('.prov'); if(!tile) return;
+      openProviderDirect(tile.dataset.prov);
+    });
+    // Right-click on the tile → menu: Open / Set as default (only real providers, excluding "Other").
+    providers.addEventListener('contextmenu', e=>{
+      const tile=e.target.closest('.prov'); if(!tile) return;
+      e.preventDefault(); e.stopPropagation();
+      const key=tile.dataset.prov, p=PROVIDERS[key]; if(!p || !p.base) return;   // "Other"/manual: no menu
+      const t=TR;
+      showCtxMenu([
+        { label:t.open, onClick:()=>openProviderDirect(key) },
+        { label:t.setAsDefault, onClick:()=>setDefaultProvider(key) },
+      ], e.clientX, e.clientY);
+    });
+    lengthSel.addEventListener('change', saveUiState);
+    toneSel.addEventListener('change', saveUiState);
+    document.getElementById('generate').addEventListener('click', openProvider);
+    document.getElementById('copy').addEventListener('click', async()=>{
+      const t=TR;
+      try{ await writeClipboard(result.textContent); const btn=document.getElementById('copy'); btn.textContent=t.copied; setTimeout(()=>btn.textContent=t.copy,1500); }
+      catch(err){ toast(t.copyFail); }
+    });
+
+    document.addEventListener('keydown', async e=>{
+      if(e.key!=='Escape') return;
+      const open=[confirmOverlay,recipeOverlay,settingsOverlay,fieldsOverlay].find(o=>o.classList.contains('show'));
+      if(open){ if(open===settingsOverlay) applyTheme(currentSettings.theme); applyLang(currentSettings.language); closeModal(open); return; }
+      if(body.classList.contains('provider-open')){ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); }
+    });
+
+    /* ===================== TAURI LISTENERS ===================== */
+    function wireTauri(){
+      if(!TAURI) return;
+      listen('app://insert-clipboard', e=>{
+        const txt=e.payload||'';
+        // If the clipboard contains the prompt WE just generated, do not re-process it (avoids nesting).
+        if(txt && txt===lastAutoPrompt) return;
+        content.value=txt; closeProviderBar(); content.focus();
+        // Open/hotkey = "process and go": if there is text, build the prompt and open the provider right away.
+        if(!txt.trim() || autoOpenBusy) return;
+        autoOpenBusy=true;
+        // toast/shortcut/clipboard → use the DEFAULT provider (the star), not the last one manually selected
+        if(currentSettings.default_provider in PROVIDERS) selectProviderTile(currentSettings.default_provider);
+        setTimeout(()=>{
+          lastAutoPrompt=buildPrompt();   // = what openProvider will write to the clipboard
+          openProvider();
+          setTimeout(()=>{ autoOpenBusy=false; }, 1200);   // delay: avoids the race with focus + anti-repetition
+        }, 150);
+      });
+      // Open from the tray: fill the description and stay on the builder (NO auto-open provider).
+      listen('app://fill-clipboard', e=>{ content.value=e.payload||''; closeProviderBar(); content.focus(); });
+      listen('app://provider-opened', ()=>{ body.classList.add('provider-open'); });
+      listen('app://provider-loaded', ()=>{ body.classList.remove('provider-loading'); }); // page ready → remove overlay
+      listen('app://provider-closed', ()=>{ closeProviderBar(); });
+    }
+
+    /* ===================== VERSION ===================== */
+    async function showAppVersion(){
+      let v='dev';
+      try{
+        const a=window.__TAURI__&&window.__TAURI__.app;
+        if(a&&a.getVersion){ v=await a.getVersion(); }                 // Tauri: from the bundle (← package.json)
+        else { const r=await fetch('../package.json'); if(r.ok){ v=(await r.json()).version||v; } } // web: same file
+      }catch(e){}
+      const el=document.getElementById('appVersion'); if(el) el.textContent='v'+v;
+      const av=document.getElementById('aboutVer'); if(av) av.textContent='v'+v;
+    }
+    // About links: open in the system default browser (Tauri), else a new tab (web).
+    document.querySelectorAll('.about-links .lnk').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const url=b.dataset.url; if(!url) return;
+        if(TAURI){ invoke('open_url',{url}).catch(()=>{}); } else { window.open(url,'_blank'); }
+      });
+    });
+
+    /* ===================== CUSTOM DROPDOWN ===================== */
+    // Progressive enhancement: the native <select> stays the source of truth
+    // (value + change event); we add a themed UI alongside it. buildPrompt and the
+    // existing listeners do not change.
+    function closeAllCs(){ document.querySelectorAll('.cs.open').forEach(c=>c.classList.remove('open')); }
+    document.addEventListener('click', closeAllCs);
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllCs(); });
+    function enhanceSelect(sel){
+      if(!sel || sel.__cs) return sel && sel.__cs;
+      const inBox = sel.parentElement && sel.parentElement.classList.contains('select');
+      const host = inBox ? sel.parentElement : sel;            // visual container to hide
+      const iconEl = inBox ? sel.parentElement.querySelector('.ico') : null;
+      const cs=document.createElement('div'); cs.className='cs';
+      const trigger=document.createElement('button'); trigger.type='button'; trigger.className='cs-trigger';
+      if(iconEl){ const ic=document.createElement('span'); ic.className='cs-ico'; ic.innerHTML=iconEl.innerHTML; trigger.appendChild(ic); }
+      const val=document.createElement('span'); val.className='cs-val';
+      const caret=document.createElement('span'); caret.className='cs-caret'; caret.textContent='▾';
+      trigger.appendChild(val); trigger.appendChild(caret);
+      const panel=document.createElement('div'); panel.className='cs-panel'; panel.setAttribute('role','listbox');
+      host.parentNode.insertBefore(cs, host);
+      cs.appendChild(trigger); cs.appendChild(panel); cs.appendChild(host);
+      host.classList.add('cs-host-hidden');
+      function render(){
+        const o=sel.options[sel.selectedIndex];
+        val.textContent = o ? o.textContent : '';
+        panel.innerHTML='';
+        Array.from(sel.options).forEach((opt,i)=>{
+          const it=document.createElement('div');
+          it.className='cs-opt'+(i===sel.selectedIndex?' active':'');
+          it.setAttribute('role','option'); it.dataset.i=i; it.textContent=opt.textContent;
+          panel.appendChild(it);
+        });
+      }
+      // position the panel: if there is little space below and more above, open upward;
+      // limit the height to the available space (with scroll) → content always visible.
+      function placePanel(){
+        const r=trigger.getBoundingClientRect();
+        const below=window.innerHeight - r.bottom - 10, above=r.top - 10;
+        const up = below < 200 && above > below;
+        cs.classList.toggle('up', up);
+        panel.style.maxHeight = Math.max(120, Math.min(260, up?above:below)) + 'px';
+      }
+      trigger.addEventListener('click', e=>{ e.stopPropagation(); const wasOpen=cs.classList.contains('open'); closeAllCs(); if(!wasOpen){ placePanel(); cs.classList.add('open'); } });
+      panel.addEventListener('click', e=>{ const it=e.target.closest('.cs-opt'); if(!it) return; e.stopPropagation(); sel.selectedIndex=+it.dataset.i; sel.dispatchEvent(new Event('change',{bubbles:true})); render(); cs.classList.remove('open'); });
+      sel.__cs={ refresh:render };
+      render();
+      return sel.__cs;
+    }
+    function enhanceSelects(){
+      [lengthSel, toneSel, setTheme, setLang, setProvider].forEach(enhanceSelect);
+    }
+
+    /* ===================== LANGUAGES: top bar + select + OS detection ===================== */
+    let osLang='en';
+    // Top bar = [OS language] + [EN] (if OS==en or unsupported → only EN).
+    function buildLangBar(){
+      const el=document.getElementById('lang'); if(!el) return;
+      const codes=[]; if(osLang && osLang!=='en') codes.push(osLang); codes.push('en');
+      el.innerHTML=codes.map(c=>`<button data-lang="${c}">${c.toUpperCase()}</button>`).join('');
+      el.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
+    }
+    // Settings select = all languages with their native name.
+    function populateLangSelect(){
+      setLang.innerHTML=LANGS.map(l=>`<option value="${l.code}">${l.native}</option>`).join('');
+    }
+    // "Default provider" select = real providers (with base; excluding "Other").
+    function populateProviderSelect(){
+      setProvider.innerHTML=Object.keys(PROVIDERS).filter(k=>PROVIDERS[k].base).map(k=>`<option value="${k}">${PROVIDERS[k].name}</option>`).join('');
+    }
+    async function detectOsLang(){
+      let loc='';
+      if(TAURI){ try{ loc=await invoke('get_system_locale'); }catch(e){} }
+      if(!loc) loc=navigator.language||'';
+      return mapOsToSupported(loc) || 'en';
+    }
+
+    /* ===================== INIT ===================== */
+    (async function init(){
+      currentSettings=await loadSettings();
+      customRecipes=await loadRecipes();
+      customFields=await loadFields();
+      // Language: if the saved one is not valid (first launch = "auto") use the OS language (en fallback).
+      osLang=await detectOsLang();
+      if(!LANG_CODES.has(currentSettings.language)){
+        currentSettings.language=osLang;
+        persistSettings(currentSettings);   // remember the automatic choice
+      }
+      populateLangSelect();
+      populateProviderSelect();
+      buildLangBar();
+      await applySettings(currentSettings); // async: loads and applies the language
+      enhanceSelects();           // after applySettings: the length/tone options exist
+      renderCustomRecipes();
+      renderCustomFields();       // custom field dropdowns next to Length/Tone
+      wireTauri();
+      showAppVersion();
+      setTimeout(()=>checkUpdate(false), 2500);   // silent update check at startup
+      // ...and then periodically (every hour), without stacking a second prompt if a dialog is already open
+      setInterval(()=>{ if(!confirmOverlay.classList.contains('show')) checkUpdate(false); }, 3600000);
+    })();
+  </script>
+</body>
+</html>

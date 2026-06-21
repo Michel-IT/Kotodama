@@ -1,0 +1,15 @@
+# Rust / Tauri
+**/target/
+**/src-tauri/gen/
+**/*.rs.bk
+
+# Node
+node_modules/
+dist/
+.npm/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

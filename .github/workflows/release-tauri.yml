@@ -1,0 +1,92 @@
+name: Release Kotodama
+
+# Builds the Kotodama desktop app from THIS repository's own source (desktop/)
+# and publishes the installers as a GitHub Release here.
+#
+# Fully transparent: the build runs on the public source you can read.
+# The updater signing key is NOT in the source — it lives only in repo secrets
+# (TAURI_SIGNING_PRIVATE_KEY / _PASSWORD), used by tauri-action to sign installers
+# and generate latest.json for auto-update.
+#
+# Trigger: push a tag  vX.Y.Z  (recommended), or Actions -> "Release Kotodama" -> Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag/version (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write   # needed to create the Release in this repo
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, args: '' }
+          - { os: macos-14,       args: '--bundles app,dmg',      experimental: true }
+          - { os: ubuntu-22.04,   args: '--bundles deb,appimage', experimental: true }
+
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental || false }}
+
+    steps:
+      - name: Resolve release tag
+        id: vars
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.inputs.release_tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Linux dependencies (WebKitGTK + tray)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: 'desktop/src-tauri -> target'
+
+      - name: Install npm deps (Tauri CLI)
+        run: npm ci || npm install
+        working-directory: desktop
+
+      - name: Build Tauri + publish Release (draft)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Updater signing: with createUpdaterArtifacts the action signs the
+          # installers and generates/uploads latest.json for auto-update.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: desktop
+          tagName: ${{ steps.vars.outputs.tag }}
+          releaseName: 'Kotodama ${{ steps.vars.outputs.tag }}'
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
