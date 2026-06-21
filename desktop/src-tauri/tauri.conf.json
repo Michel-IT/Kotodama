@@ -19,8 +19,7 @@
         "minHeight": 600,
         "resizable": true,
         "decorations": false,
-        "visible": false,
-        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-quic"
+        "visible": false
       },
       {
         "label": "toast",
@@ -34,8 +33,7 @@
         "skipTaskbar": true,
         "shadow": false,
         "focus": false,
-        "visible": false,
-        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-quic"
+        "visible": false
       }
     ],
     "security": {

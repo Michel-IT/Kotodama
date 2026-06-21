@@ -16,6 +16,8 @@ use tauri::webview::{PageLoadEvent, WebviewBuilder};
 use tauri::{Emitter, LogicalPosition, LogicalSize, Manager, Runtime, WebviewUrl, WebviewWindow, Window};
 use tauri_plugin_opener::OpenerExt;   // open external links in the system browser
 
+use crate::debug;
+
 /// The provider is "active" (on screen) or "parked" out of view. Used by
 /// `resize_provider` to NOT bring it back on screen on a resize when it is parked.
 static PROVIDER_ACTIVE: AtomicBool = AtomicBool::new(false);
@@ -108,6 +110,17 @@ fn provider_bounds(window: &Window) -> Result<(f64, f64), String> {
 /// deadlock (WebView2). The async command runs off the UI thread.
 #[tauri::command]
 pub async fn open_provider_view(window: Window, url: String) -> Result<(), String> {
+    debug::log(format!("open_provider_view url={url}"));
+    #[cfg(windows)]
+    debug::log(format!(
+        "sys_locale={:?} provider_args={}",
+        sys_locale::get_locale(),
+        provider_browser_args()
+    ));
+    debug::log(format!(
+        "provider webview already exists = {}",
+        window.get_webview(PROVIDER_LABEL).is_some()
+    ));
     let parsed = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
     let (w, h) = provider_bounds(&window)?;
 
@@ -124,10 +137,11 @@ pub async fn open_provider_view(window: Window, url: String) -> Result<(), Strin
         // no show() here: show_provider() does it once the page is ready.
     } else {
         let win_for_nav = window.clone();
-        let mut builder = WebviewBuilder::new(PROVIDER_LABEL, WebviewUrl::External(parsed))
+        let builder = WebviewBuilder::new(PROVIDER_LABEL, WebviewUrl::External(parsed))
             .user_agent(PROVIDER_UA)
             .initialization_script(NO_MENU_JS)
             .on_navigation(move |u| {
+                debug::log(format!("on_navigation -> {u}"));
                 // External links funneled here (sentinel host) open in the system
                 // default browser; the in-app navigation is then blocked.
                 if u.host_str() == Some("kotodama.external") {
@@ -141,6 +155,11 @@ pub async fn open_provider_view(window: Window, url: String) -> Result<(), Strin
                 true
             })
             .on_page_load(|webview, payload| {
+                debug::log(format!(
+                    "on_page_load {:?} url={}",
+                    payload.event(),
+                    payload.url()
+                ));
                 // Once loading is finished, if we were waiting, bring the provider on screen.
                 if payload.event() == PageLoadEvent::Finished
                     && PROVIDER_PENDING_SHOW.swap(false, Ordering::Relaxed)
@@ -148,14 +167,12 @@ pub async fn open_provider_view(window: Window, url: String) -> Result<(), Strin
                     show_provider(&webview.window());
                 }
             });
-        // On Windows the child-webview must have the same flags as the main
-        // (in particular --disable-quic): otherwise some providers stay blank
-        // due to ERR_QUIC_PROTOCOL_ERROR (fixing only the main is not enough).
-        #[cfg(windows)]
-        {
-            let args = provider_browser_args();
-            builder = builder.additional_browser_args(&args);
-        }
+        // NOTE: WebView2 browser arguments (incl. --disable-quic and the dynamic
+        // --accept-lang) are set ONCE process-wide in lib.rs::run() via the
+        // WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS env var, so EVERY webview (main,
+        // toast, provider) shares identical arguments. Setting them per-webview
+        // here would diverge from the main webview's environment and make this
+        // child webview fail to initialize (blank page, no navigation).
         // Created PARKED (PARK_Y): the first page loads out of view.
         window
             .add_child(
@@ -179,6 +196,7 @@ pub async fn open_provider_view(window: Window, url: String) -> Result<(), Strin
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(3500));
         if PROVIDER_PENDING_SHOW.swap(false, Ordering::Relaxed) {
+            debug::log("show_provider via FALLBACK (on_page_load Finished never fired)");
             let _ = app.run_on_main_thread(move || show_provider(&win_fallback));
         }
     });
@@ -189,6 +207,7 @@ pub async fn open_provider_view(window: Window, url: String) -> Result<(), Strin
 /// topbar, sizes it and shows it; marks ACTIVE and notifies the frontend
 /// (removes the loading overlay). Idempotent: calling it multiple times is harmless.
 fn show_provider(window: &Window) {
+    debug::log("show_provider");
     if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
         if let Ok((w, h)) = provider_bounds(window) {
             let _ = webview.set_position(LogicalPosition::new(0.0, provider_top()));

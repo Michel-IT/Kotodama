@@ -8,6 +8,7 @@
 
 mod browser;
 mod clipboard;
+mod debug;
 mod settings;
 mod toast;
 
@@ -400,6 +401,23 @@ async fn install_update(app: AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // WebView2 (Windows): ALL webviews of the process must create their environment
+    // with the SAME additional browser arguments, otherwise the 2nd webview (the
+    // provider child) fails to initialize and stays BLANK. We therefore set the
+    // arguments once, process-wide, BEFORE any webview is created — instead of
+    // per-window (which previously diverged: main/toast without `--accept-lang`,
+    // provider with it). This keeps the dynamic OS-language accept-lang AND keeps
+    // every webview consistent. We append to any pre-existing value (e.g. debug flags).
+    #[cfg(windows)]
+    {
+        let extra = browser::provider_browser_args();
+        let value = match std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS") {
+            Ok(existing) if !existing.trim().is_empty() => format!("{existing} {extra}"),
+            _ => extra,
+        };
+        std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", value);
+    }
+
     tauri::Builder::default()
         // MUST be the first plugin: a 2nd launch (e.g. from the Start menu) does
         // not create a new process but recalls the window of the already-running
@@ -468,6 +486,23 @@ pub fn run() {
             // Clipboard monitor + hotkey (with per-platform fallback).
             clipboard::start(&handle);
             register_and_persist_hotkey(&handle, &loaded.hotkey);
+
+            // DEBUG-only: auto-open a provider a few seconds after start, via the
+            // real JS path (like a double-click), so the debug tool can reproduce
+            // issues without manual interaction. Set KOTO_AUTOOPEN=<provider key>
+            // (e.g. openai, anthropic). No effect unless the env var is set.
+            if let Ok(which) = std::env::var("KOTO_AUTOOPEN") {
+                let which = if which.is_empty() { "openai".to_string() } else { which };
+                if let Some(main) = handle.get_webview_window("main") {
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(6000));
+                        debug::log(format!("auto-open provider: {which}"));
+                        let _ = main.eval(format!(
+                            "window.openProviderDirect && openProviderDirect('{which}')"
+                        ));
+                    });
+                }
+            }
 
             Ok(())
         })
