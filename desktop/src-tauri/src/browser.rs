@@ -284,6 +284,7 @@ pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
     var attempts = 0;
     function attempt(){
       if (getVal(el).trim().length === 0) return;            // inviato: stop
+      try { el.focus(); } catch (e) {}                       // focus prima dell'Invio (Claude)
       // 1) Enter (invia su ChatGPT/Gemini/DeepSeek/Z.ai)
       ['keydown','keypress','keyup'].forEach(function(t){
         el.dispatchEvent(new KeyboardEvent(t, {key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true, cancelable:true}));
@@ -295,7 +296,7 @@ pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
         if (b) b.click();
       }, 250);
       attempts++;
-      if (attempts < 6) setTimeout(attempt, 900);
+      if (attempts < 10) setTimeout(attempt, 900);
     }
     attempt();
   }
@@ -306,10 +307,11 @@ pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
           || document.querySelector('[contenteditable="true"]')
           || document.querySelector('div[role="textbox"]');
     if (el) {
-      // riempi SOLO se vuoto (i provider ?q= sono già precompilati)
+      el.focus();   // SEMPRE: Claude/ProseMirror ignora l'Invio se l'editor non e' a fuoco
+      var isText = (el.tagName === 'TEXTAREA' || el.value !== undefined);
       if (getVal(el).trim().length === 0) {
-        el.focus();
-        if (el.tagName === 'TEXTAREA' || el.value !== undefined) {
+        // vuoto → riempi (provider clipboard, o ?q= che non ha precompilato)
+        if (isText) {
           try {
             var set = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
             set.call(el, text);
@@ -319,9 +321,14 @@ pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
           try { document.execCommand('selectAll', false, null); document.execCommand('insertText', false, text); }
           catch (e) { el.textContent = text; el.dispatchEvent(new InputEvent('input', { bubbles: true })); }
         }
+      } else if (!isText) {
+        // gia' precompilato (?q=) in un editor rich (Claude): porta il caret in fondo
+        // e notifica un input, cosi' React abilita l'invio e accetta l'Enter.
+        try { var rng = document.createRange(); rng.selectNodeContents(el); rng.collapse(false); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rng); } catch (e) {}
+        el.dispatchEvent(new InputEvent('input', { bubbles: true }));
       }
       // invia se l'input ha testo (riempito ora o precompilato da ?q=)
-      setTimeout(function(){ if (getVal(el).trim().length) submit(el); }, 400);
+      setTimeout(function(){ if (getVal(el).trim().length) submit(el); }, 500);
       clearInterval(iv);
     }
     if (tries > 66) clearInterval(iv);

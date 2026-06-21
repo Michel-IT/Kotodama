@@ -830,11 +830,12 @@
     if (TAURI) document.body.classList.add('tauri');
 
     /* ===================== PROVIDER ===================== */
-    // autosend:true → after opening we inject fill+submit. NOT on grok/perplexity
-    // (they already auto-submit via ?q=, this would cause a double submit) nor claude/other.
+    // autosend:true → after opening we inject fill+focus+submit. NOT on grok/perplexity
+    // (they already auto-submit via ?q=, this would cause a double submit) nor "other".
+    // Claude (?q=) prefills but does NOT auto-submit → it needs autosend (focus+Enter).
     const PROVIDERS = {
       openai:     { name:'ChatGPT',    base:'https://chatgpt.com/',             q:'?q=', mode:'query',     autosend:true },
-      anthropic:  { name:'Claude',     base:'https://claude.ai/new',            q:'?q=', mode:'query' },
+      anthropic:  { name:'Claude',     base:'https://claude.ai/new',            q:'',    mode:'clipboard', autosend:true },
       grok:       { name:'Grok',       base:'https://grok.com/',                q:'?q=', mode:'query' },
       gemini:     { name:'Gemini',     base:'https://gemini.google.com/app',    q:'',    mode:'clipboard', autosend:true },
       perplexity: { name:'Perplexity', base:'https://www.perplexity.ai/search', q:'?q=', mode:'query' },
@@ -1044,6 +1045,9 @@
     }
 
     /* ===================== OPEN PROVIDER ===================== */
+    // Prompt in attesa di invio: l'auto-invio parte quando la pagina del provider
+    // ha finito di caricare (evento app://provider-loaded), NON a tempo fisso.
+    let pendingSend = null;
     async function openProvider(){
       const t=TR; const p=PROVIDERS[selectedProvider]; const promptText=buildPrompt();
       if(p.mode==='manual'){ showOutput(promptText); await writeClipboard(promptText); toast(t.manualNote); output.scrollIntoView({behavior:'smooth',block:'nearest'}); return; }
@@ -1060,8 +1064,12 @@
           await invoke('open_provider_view',{url});
           // auto-submit: query providers (?q=) are already prefilled → only submit;
           // clipboard ones must be filled first. provider_fill handles both.
+          // Parte quando la pagina e' PRONTA (provider-loaded), non a tempo fisso:
+          // risolve la prima apertura "a freddo" (es. ChatGPT) col composer non
+          // ancora pronto. Safety net qui sotto se l'evento non dovesse arrivare.
           if(p.autosend){
-            setTimeout(()=>{ invoke('provider_fill',{text:promptText}).catch(()=>{}); }, useQuery?1200:900);
+            pendingSend = promptText;
+            setTimeout(()=>{ if(pendingSend!==null){ const t=pendingSend; pendingSend=null; invoke('provider_fill',{text:t}).catch(()=>{}); } }, 8000);
           }
         }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
         setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000); // overlay safety net
@@ -1077,6 +1085,7 @@
     async function openProviderDirect(key){
       const p=PROVIDERS[key]; if(!p || p.mode==='manual' || !p.base) return;   // excludes "Other"
       const t=TR;
+      pendingSend = null;   // apertura senza prompt: nessun auto-invio in sospeso
       selectProviderTile(key); lastProviderUrl=p.base;   // selection (does not change the default)
       if(TAURI){
         startProviderLoading(p.name);                // bar + overlay immediately (page off-screen)
@@ -1669,7 +1678,11 @@
       // Open from the tray: fill the description and stay on the builder (NO auto-open provider).
       listen('app://fill-clipboard', e=>{ content.value=e.payload||''; closeProviderBar(); content.focus(); });
       listen('app://provider-opened', ()=>{ body.classList.add('provider-open'); });
-      listen('app://provider-loaded', ()=>{ body.classList.remove('provider-loading'); }); // page ready → remove overlay
+      listen('app://provider-loaded', ()=>{
+        body.classList.remove('provider-loading'); // page ready → remove overlay
+        // pagina del provider pronta → ora (con un piccolo assestamento) invia
+        if(pendingSend!==null){ const t=pendingSend; pendingSend=null; setTimeout(()=>{ if(TAURI) invoke('provider_fill',{text:t}).catch(()=>{}); }, 700); }
+      });
       listen('app://provider-closed', ()=>{ closeProviderBar(); });
     }
 
