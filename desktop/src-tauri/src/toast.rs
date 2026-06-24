@@ -8,7 +8,6 @@
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition};
 
-const MARGIN: f64 = 16.0;
 const PREVIEW_CHARS: usize = 160;
 
 #[derive(Clone, Serialize)]
@@ -75,12 +74,13 @@ pub fn show(app: &AppHandle, text: &str) {
     // Bottom-right of the monitor WORK AREA (excludes the taskbar), so the toast
     // sits right next to the taskbar like a native notification.
     if let Ok(Some(monitor)) = window.current_monitor() {
-        let scale = monitor.scale_factor();
         let wa = monitor.work_area(); // physical px, taskbar already excluded
         if let Ok(win_size) = window.outer_size() {
-            let margin = (MARGIN * scale) as i32;
-            let x = wa.position.x + wa.size.width as i32 - win_size.width as i32 - margin;
-            let y = wa.position.y + wa.size.height as i32 - win_size.height as i32 - margin;
+            // Angolo basso-destra, A FILO (niente margini): bordi destro/basso della
+            // finestra = bordi destro/basso della work area. La card nel toast.html arriva
+            // a filo di destra e basso (padding solo top+left) ed e' squadrata in basso.
+            let x = wa.position.x + wa.size.width as i32 - win_size.width as i32;
+            let y = wa.position.y + wa.size.height as i32 - win_size.height as i32;
             let _ = window.set_position(PhysicalPosition::new(x, y));
         }
     }

@@ -40,14 +40,16 @@
     html, body { background: transparent; overflow: hidden; }
     body {
       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-      padding: 8px; -webkit-user-select: none; user-select: none; cursor: default;
+      /* a filo SOTTO (taskbar, padding 0); 5px da DESTRA; 8px alone a sinistra/top per l'ombra */
+      padding: 8px 5px 0 8px; -webkit-user-select: none; user-select: none; cursor: default;
     }
     .card {
-      height: calc(138px - 16px);
+      height: calc(138px - 8px);
       display: flex; flex-direction: column; gap: 9px; justify-content: flex-start;
       background: linear-gradient(180deg, var(--card-a), var(--card-b));
       border: 1px solid var(--border);
-      border-radius: 14px; padding: 13px 15px;
+      /* angoli alti arrotondati, basso squadrato (stile barra) */
+      border-radius: 14px 14px 0 0; padding: 13px 15px;
       box-shadow: var(--card-shadow);
       -webkit-backdrop-filter: var(--card-blur); backdrop-filter: var(--card-blur);
       animation: slideup .28s cubic-bezier(.22,.61,.36,1);
