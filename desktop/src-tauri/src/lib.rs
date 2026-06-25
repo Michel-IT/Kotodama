@@ -40,11 +40,25 @@ fn accept_clipboard(app: AppHandle) -> Result<(), String> {
     let clipboard = app.state::<Clipboard>();
     let text = clipboard.read_text().unwrap_or_default();
 
+    // Ricetta "Neutra": apri SOLO l'interfaccia di Kotodama (riempi il builder),
+    // niente apertura provider ne' auto-invio. Le altre ricette: processa e apri il provider.
+    let neutral = {
+        let st = app.state::<AppState>();
+        let g = st.settings.lock().unwrap();
+        g.recipe == "key:neutral"
+    };
+
     if let Some(main) = app.get_window("main") {
         browser::park_provider(&main);
         bring_to_front(&main);
         let _ = main.emit("app://provider-closed", ());
-        let _ = main.emit("app://insert-clipboard", text);
+        if neutral {
+            if !text.trim().is_empty() {
+                let _ = main.emit("app://fill-clipboard", text); // solo builder, nessun provider
+            }
+        } else {
+            let _ = main.emit("app://insert-clipboard", text);
+        }
     }
     toast::hide(&app);
     Ok(())

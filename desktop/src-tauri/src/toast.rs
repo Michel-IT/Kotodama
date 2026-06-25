@@ -48,12 +48,14 @@ pub fn show(app: &AppHandle, text: &str) {
     let (hotkey, theme, provider, language) = {
         let s = app.state::<crate::AppState>();
         let g = s.settings.lock().unwrap();
-        (
-            g.hotkey.clone(),
-            g.theme.clone(),
-            provider_name(&g.default_provider).to_string(),
-            g.language.clone(),
-        )
+        // Ricetta "Neutra": il toast apre SOLO l'interfaccia di Kotodama (non il provider) →
+        // la label diventa "Apri Kotodama" invece di "Apri <provider>".
+        let target = if g.recipe == "key:neutral" {
+            "Kotodama".to_string()
+        } else {
+            provider_name(&g.default_provider).to_string()
+        };
+        (g.hotkey.clone(), g.theme.clone(), target, g.language.clone())
     };
 
     let mut preview: String = text.chars().take(PREVIEW_CHARS).collect();

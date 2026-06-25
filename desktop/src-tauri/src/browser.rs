@@ -254,10 +254,11 @@ pub fn provider_reload(window: Window) -> Result<(), String> {
 /// rich editors (ProseMirror/Quill), the most compatible. After filling it sends
 /// the message by simulating Enter — used for providers without ?q=.
 #[tauri::command]
-pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
+pub fn provider_fill(window: Window, text: String, submit: bool) -> Result<(), String> {
     if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
         let json = serde_json::to_string(&text).map_err(|e| e.to_string())?;
-        let js = format!("var __apb_text = {json};")
+        // submit=false (ricetta "Neutra"): riempie il campo ma NON invia (l'utente preme Invio).
+        let js = format!("var __apb_text = {json}; var __apb_submit = {submit};")
             + r#"
 (function(){
   var text = __apb_text;
@@ -327,8 +328,8 @@ pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
         try { var rng = document.createRange(); rng.selectNodeContents(el); rng.collapse(false); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rng); } catch (e) {}
         el.dispatchEvent(new InputEvent('input', { bubbles: true }));
       }
-      // invia se l'input ha testo (riempito ora o precompilato da ?q=)
-      setTimeout(function(){ if (getVal(el).trim().length) submit(el); }, 500);
+      // invia se richiesto e l'input ha testo (riempito ora o precompilato da ?q=)
+      setTimeout(function(){ if (__apb_submit && getVal(el).trim().length) submit(el); }, 500);
       clearInterval(iv);
     }
     if (tries > 66) clearInterval(iv);

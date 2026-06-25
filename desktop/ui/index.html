@@ -1068,12 +1068,15 @@
     // Prompt in attesa di invio: l'auto-invio parte quando la pagina del provider
     // ha finito di caricare (evento app://provider-loaded), NON a tempo fisso.
     let pendingSend = null;
+    let pendingSubmit = true;   // false = ricetta "Neutra": apri+riempi ma NON inviare (l'utente preme Invio)
     async function openProvider(){
       const t=TR; const p=PROVIDERS[selectedProvider]; const promptText=buildPrompt();
       if(p.mode==='manual'){ showOutput(promptText); await writeClipboard(promptText); toast(t.manualNote); output.scrollIntoView({behavior:'smooth',block:'nearest'}); return; }
       output.classList.remove('show');
+      const isNeutral = activeRecipe.kind==='key' && activeRecipe.key==='neutral';
       const encoded=encodeURIComponent(promptText);
-      const useQuery=p.mode==='query'&&encoded.length<=MAX_URL;
+      // Neutra: niente ?q= (alcuni provider auto-inviano col query) → apri l'URL base e riempi senza Invio
+      const useQuery=p.mode==='query'&&encoded.length<=MAX_URL&&!isNeutral;
       const url=useQuery?(p.base+p.q+encoded):p.base;
       lastProviderUrl=url;
       if(TAURI){
@@ -1087,9 +1090,10 @@
           // Parte quando la pagina e' PRONTA (provider-loaded), non a tempo fisso:
           // risolve la prima apertura "a freddo" (es. ChatGPT) col composer non
           // ancora pronto. Safety net qui sotto se l'evento non dovesse arrivare.
-          if(p.autosend){
-            pendingSend = promptText;
-            setTimeout(()=>{ if(pendingSend!==null){ const t=pendingSend; pendingSend=null; invoke('provider_fill',{text:t}).catch(()=>{}); } }, 8000);
+          // Neutra: riempi ma NON inviare (l'utente preme Invio). Altre ricette: invio automatico.
+          if(isNeutral || p.autosend){
+            pendingSend = promptText; pendingSubmit = !isNeutral;
+            setTimeout(()=>{ if(pendingSend!==null){ const t=pendingSend, s=pendingSubmit; pendingSend=null; invoke('provider_fill',{text:t, submit:s}).catch(()=>{}); } }, 8000);
           }
         }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
         setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000); // overlay safety net
@@ -1726,8 +1730,8 @@
       listen('app://provider-opened', ()=>{ body.classList.add('provider-open'); });
       listen('app://provider-loaded', ()=>{
         body.classList.remove('provider-loading'); // page ready → remove overlay
-        // pagina del provider pronta → ora (con un piccolo assestamento) invia
-        if(pendingSend!==null){ const t=pendingSend; pendingSend=null; setTimeout(()=>{ if(TAURI) invoke('provider_fill',{text:t}).catch(()=>{}); }, 700); }
+        // pagina del provider pronta → ora (con un piccolo assestamento) riempi (e invia se non Neutra)
+        if(pendingSend!==null){ const t=pendingSend, s=pendingSubmit; pendingSend=null; setTimeout(()=>{ if(TAURI) invoke('provider_fill',{text:t, submit:s}).catch(()=>{}); }, 700); }
       });
       listen('app://provider-closed', ()=>{ closeProviderBar(); });
     }
