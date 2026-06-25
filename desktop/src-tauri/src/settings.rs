@@ -30,7 +30,8 @@ pub struct Settings {
     pub autostart: bool,
     /// Interface theme: "teal" | "glass" | "flat".
     pub theme: String,
-    /// Last UI state restored at startup: selected recipe (key or "id:custom").
+    /// Ricetta predefinita (★) usata quando si copia; all'avvio diventa anche l'attiva.
+    /// Formato: "key:<builtin>" oppure "id:<custom>".
     pub recipe: String,
     /// Last UI state: Length option index.
     pub length: u32,
@@ -47,7 +48,7 @@ impl Default for Settings {
             monitor_enabled: true,
             autostart: false,
             theme: "sumi".into(),
-            recipe: "key:rephrase".into(),
+            recipe: "key:neutral".into(),
             length: 0,
             tone: 0,
         }

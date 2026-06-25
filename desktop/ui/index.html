@@ -274,6 +274,15 @@
     .recipe:hover { background:var(--panel-2); }
     .recipe.active { background:var(--panel-2); color:var(--accent); font-weight:600; border-color:var(--border); box-shadow:0 0 0 1px var(--accent-glow) inset; }
     .recipe.active .ico { opacity:1; }
+    /* ★ sulla ricetta predefinita (usata quando si copia). Nascosta in hover sulle custom (lascia spazio alla ✕). */
+    .recipe.is-default::after { content:'★'; position:absolute; top:50%; right:10px; transform:translateY(-50%); font-size:10px; line-height:1; color:var(--accent); pointer-events:none; }
+    .recipe-custom.is-default:hover::after { opacity:0; }
+    /* Ricetta "Neutra" attiva: l'editor istruzione + i vincoli non servono (testo grezzo). */
+    body.recipe-neutral .panel-head,
+    body.recipe-neutral #instruction,
+    body.recipe-neutral #controls { display:none; }
+    .neutral-hint { display:none; font-size:12px; color:var(--text-faint); line-height:1.5; margin:2px 2px 6px; }
+    body.recipe-neutral .neutral-hint { display:block; }
     .recipe-del {
       border:none; background:none; color:var(--text-faint); cursor:pointer; font-size:13px;
       width:22px; height:22px; border-radius:6px; display:grid; place-items:center; flex:none;
@@ -420,7 +429,7 @@
     /* max-height + flex: head/foot fixed, body scrollable → no overflow/clipping */
     .modal { width:100%; max-width:460px; max-height:calc(100vh - 48px); display:flex; flex-direction:column; background:linear-gradient(180deg, var(--panel-glow), transparent 50%), var(--bg-1); border:1px solid var(--border); border-radius:var(--radius-l); box-shadow:var(--shadow); overflow:hidden; }
     .modal.sm { max-width:380px; }
-    .modal--wide { max-width:640px; }
+    .modal--wide { max-width:min(94vw, 800px); }
     .modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border-soft); flex:none; }
     .modal-head h2 { font-size:15px; font-weight:650; }
     .modal-head .x { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:18px; }
@@ -428,12 +437,12 @@
     .modal-body { padding:8px 18px 4px; display:flex; flex-direction:column; overflow-y:auto; flex:1; min-height:0; }
     .modal-body.pad { padding:18px; }
     /* Settings sections: ordered groups, pairs in 2 columns */
-    .set-section { padding:12px 0; border-bottom:1px solid var(--border-soft); }
+    .set-section { padding:9px 0; border-bottom:1px solid var(--border-soft); }
     .set-section:last-child { border-bottom:none; }
     .set-h { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-faint); font-weight:700; margin-bottom:8px; }
-    .set-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 14px; align-items:start; }
+    .set-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px 14px; align-items:start; }
     /* each setting = box (card): label and control inside the same box → clear association */
-    .set-section .setting { border-bottom:none; background:var(--field); border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:11px 13px; gap:8px; }
+    .set-section .setting { border-bottom:none; background:var(--field); border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:9px 12px; gap:6px; }
     /* space between consecutive rows in the same section (not after the heading) */
     .set-section > .setting + .setting,
     .set-section > .set-grid + .setting,
@@ -559,7 +568,8 @@
           <button class="add-btn" id="addRecipe" data-i18n-title="newRecipe" title="Nuova ricetta">+</button>
         </div>
         <ul class="recipes" id="recipes">
-          <li class="recipe active" data-key="rephrase"><span class="ico">↻</span> <span class="rname">Rephrase</span></li>
+          <li class="recipe active" data-key="neutral"><span class="ico">↦</span> <span class="rname">Neutral</span></li>
+          <li class="recipe" data-key="rephrase"><span class="ico">↻</span> <span class="rname">Rephrase</span></li>
           <li class="recipe" data-key="summarise"><span class="ico">☰</span> <span class="rname">Summarise</span></li>
           <li class="recipe" data-key="reply"><span class="ico">↩</span> <span class="rname">Reply</span></li>
           <li class="recipe" data-key="email"><span class="ico">✉</span> <span class="rname">Create Email</span></li>
@@ -618,6 +628,7 @@
             <span class="edit" data-i18n-title="editInstr" title="Modifica l'istruzione e premi Salva">✎</span>
             <button class="instr-save" id="saveInstr" hidden>✓ <span data-i18n="save">Salva</span></button>
           </div>
+          <p class="neutral-hint" data-i18n="neutralHint">Il testo viene inviato cosi' com'e' al provider predefinito.</p>
           <textarea class="instruction" id="instruction" rows="1"></textarea>
           <textarea class="content" id="content" data-i18n-ph="placeholder"></textarea>
           <div class="controls" id="controls">
@@ -686,10 +697,17 @@
         <!-- General -->
         <div class="set-section">
           <div class="set-h" data-i18n="setSecGeneral">Generale</div>
-          <div class="setting">
-            <label data-i18n="setProvider">Provider predefinito</label>
-            <span class="sub" data-i18n="setProviderHint">Provider predefinito, usato anche quando copi del testo.</span>
-            <select class="field" id="setProvider"></select>
+          <div class="set-grid">
+            <div class="setting">
+              <label data-i18n="setProvider">Provider predefinito</label>
+              <span class="sub" data-i18n="setProviderHint">Provider predefinito, usato anche quando copi del testo.</span>
+              <select class="field" id="setProvider"></select>
+            </div>
+            <div class="setting">
+              <label data-i18n="setRecipe">Ricetta predefinita</label>
+              <span class="sub" data-i18n="setRecipeHint">Ricetta usata quando copi del testo.</span>
+              <select class="field" id="setRecipe"></select>
+            </div>
           </div>
           <div class="setting">
             <label data-i18n="setHotkey">Scorciatoia globale</label>
@@ -953,7 +971,7 @@
     }
 
     const THEMES = ['ginga','hisui','kohaku','murasaki','sumi'];
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, theme:'sumi', recipe:'key:rephrase', length:0, tone:0 };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0 };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -1029,6 +1047,8 @@
     /* ===================== PROMPT ===================== */
     function buildPrompt(){
       const t=TR;
+      // Ricetta "Neutra": invia il testo cosi' com'e' (nessuna istruzione, nessun vincolo).
+      if(activeRecipe.kind==='key' && activeRecipe.key==='neutral') return content.value.trim();
       let out=instruction.value.trim()+'\n\n"""\n'+content.value.trim()+'\n"""\n\n'+t.constraints+'\n- '+t.cLength+': '+lengthSel.value+'\n- '+t.cTone+': '+toneSel.value;
       // custom fields: append "- Label: selected option"
       for(const f of customFields){
@@ -1167,6 +1187,7 @@
     const setTheme=document.getElementById('setTheme');
     const setLang=document.getElementById('setLang');
     const setProvider=document.getElementById('setProvider');
+    const setRecipe=document.getElementById('setRecipe');
     const setHotkey=document.getElementById('setHotkey');
     const setMonitor=document.getElementById('setMonitor');
     const setAutostart=document.getElementById('setAutostart');
@@ -1207,7 +1228,8 @@
       setTheme.value=validTheme(currentSettings.theme);
       setLang.value=currentSettings.language;
       setProvider.value=(currentSettings.default_provider in PROVIDERS)?currentSettings.default_provider:'openai';
-      [setTheme,setLang,setProvider].forEach(s=>{ if(s.__cs) s.__cs.refresh(); }); // refresh the custom dropdowns
+      populateRecipeSelect(); setRecipe.value=currentSettings.recipe;
+      [setTheme,setLang,setProvider,setRecipe].forEach(s=>{ if(s.__cs) s.__cs.refresh(); }); // refresh the custom dropdowns
       capturedHotkey=currentSettings.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey);
       setMonitor.checked=!!currentSettings.monitor_enabled;
       setAutostart.checked=!!currentSettings.autostart;
@@ -1218,7 +1240,7 @@
 
     async function saveSettings(){
       // spread of currentSettings → does not reset provider/recipe/length/tone (managed by the tiles/controls)
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:setMonitor.checked, autostart:setAutostart.checked, theme:setTheme.value, default_provider:setProvider.value };
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:setMonitor.checked, autostart:setAutostart.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
       closeModal(settingsOverlay);
@@ -1234,6 +1256,7 @@
       selectProviderTile(s.default_provider in PROVIDERS?s.default_provider:'openai');   // at startup we start from the default
       renderDefaultStar();
       restoreRecipe(s.recipe);
+      renderDefaultRecipeStar();
       restoreLengthTone(s.length, s.tone);
       restoring=false;
     }
@@ -1256,8 +1279,8 @@
     function recipeToStr(){ return activeRecipe.kind==='key' ? 'key:'+activeRecipe.key : 'id:'+activeRecipe.id; }
     function saveUiState(){
       if(restoring) return;
-      // NB: default_provider does NOT follow the tile selection (changed via menu/Settings → setDefaultProvider)
-      currentSettings.recipe=recipeToStr();
+      // NB: ne' default_provider ne' recipe seguono la selezione: la ricetta predefinita (currentSettings.recipe)
+      // si cambia solo via menu tasto-destro/Impostazioni (setDefaultRecipe), come il provider predefinito.
       currentSettings.length=lengthSel.selectedIndex<0?0:lengthSel.selectedIndex;
       currentSettings.tone=toneSel.selectedIndex<0?0:toneSel.selectedIndex;
       if(TAURI){ invoke('save_ui_state',{ provider:currentSettings.default_provider, recipe:currentSettings.recipe, length:currentSettings.length, tone:currentSettings.tone }).catch(()=>{}); }
@@ -1278,6 +1301,19 @@
       currentSettings.default_provider=key;
       renderDefaultStar();
       saveUiState();   // persists currentSettings (including the new default)
+    }
+    // ★ sulla RICETTA predefinita (usata quando si copia). Stringa = 'key:<key>' | 'id:<id>'.
+    function renderDefaultRecipeStar(){
+      const def = (currentSettings && currentSettings.recipe) || '';
+      recipesEl.querySelectorAll('.recipe').forEach(li=>{
+        const s = li.dataset.key ? ('key:'+li.dataset.key) : ('id:'+li.dataset.id);
+        li.classList.toggle('is-default', s===def);
+      });
+    }
+    function setDefaultRecipe(str){
+      currentSettings.recipe=str;
+      renderDefaultRecipeStar();
+      saveUiState();   // persiste la ricetta predefinita
     }
     async function loadSettings(){
       if(TAURI){ try{ return { ...DEFAULT_SETTINGS, ...(await invoke('get_settings')) }; }catch(e){} }
@@ -1351,6 +1387,7 @@
         recipesEl.appendChild(li);
       });
       if(activeRecipe.kind==='id'){ const li=recipesEl.querySelector(`.recipe-custom[data-id="${activeRecipe.id}"]`); if(li) li.classList.add('active'); }
+      renderDefaultRecipeStar();   // ri-applica la ★ della predefinita anche sulle custom
     }
     // "Canonical" instruction of the active recipe (built-in from i18n, custom from customRecipes).
     function canonicalInstruction(){
@@ -1365,7 +1402,10 @@
     }
     function setActiveInstruction(){
       const t=TR;
-      if(activeRecipe.kind==='key'&&t.instr[activeRecipe.key]) instruction.value=t.instr[activeRecipe.key];
+      const isNeutral = activeRecipe.kind==='key' && activeRecipe.key==='neutral';
+      document.body.classList.toggle('recipe-neutral', isNeutral);   // CSS nasconde istruzione+vincoli
+      if(isNeutral) instruction.value='';
+      else if(activeRecipe.kind==='key'&&t.instr[activeRecipe.key]) instruction.value=t.instr[activeRecipe.key];
       else if(activeRecipe.kind==='id'){ const r=customRecipes.find(x=>x.id===activeRecipe.id); if(r) instruction.value=r.instruction; }
       updateSaveInstr();
     }
@@ -1468,13 +1508,18 @@
       const li=e.target.closest('.recipe'); if(!li) return;
       e.preventDefault(); e.stopPropagation();
       const t=TR;
+      const defStr = li.dataset.key ? ('key:'+li.dataset.key) : ('id:'+li.dataset.id);
       if(li.classList.contains('recipe-custom')){
         showCtxMenu([
+          { label:t.setAsDefault, onClick:()=>setDefaultRecipe(defStr) },
           { label:t.rename, onClick:()=>startRenameRecipe(li) },
           { label:t.delete, danger:true, onClick:()=>requestDeleteRecipe(li.dataset.id) },
         ], e.clientX, e.clientY);
       } else if(li.dataset.key){
-        showCtxMenu([{ label:t.duplicate, onClick:()=>duplicateBuiltin(li.dataset.key) }], e.clientX, e.clientY);
+        showCtxMenu([
+          { label:t.setAsDefault, onClick:()=>setDefaultRecipe(defStr) },
+          { label:t.duplicate, onClick:()=>duplicateBuiltin(li.dataset.key) },
+        ], e.clientX, e.clientY);
       }
     });
     async function duplicateBuiltin(key){
@@ -1669,6 +1714,7 @@
         autoOpenBusy=true;
         // toast/shortcut/clipboard → use the DEFAULT provider (the star), not the last one manually selected
         if(currentSettings.default_provider in PROVIDERS) selectProviderTile(currentSettings.default_provider);
+        restoreRecipe(currentSettings.recipe);   // forza anche la RICETTA predefinita (★), non l'ultima selezionata
         setTimeout(()=>{
           lastAutoPrompt=buildPrompt();   // = what openProvider will write to the clipboard
           openProvider();
@@ -1754,7 +1800,7 @@
       return sel.__cs;
     }
     function enhanceSelects(){
-      [lengthSel, toneSel, setTheme, setLang, setProvider].forEach(enhanceSelect);
+      [lengthSel, toneSel, setTheme, setLang, setProvider, setRecipe].forEach(enhanceSelect);
     }
 
     /* ===================== LANGUAGES: top bar + select + OS detection ===================== */
@@ -1773,6 +1819,17 @@
     // "Default provider" select = real providers (with base; excluding "Other").
     function populateProviderSelect(){
       setProvider.innerHTML=Object.keys(PROVIDERS).filter(k=>PROVIDERS[k].base).map(k=>`<option value="${k}">${PROVIDERS[k].name}</option>`).join('');
+    }
+    // "Default recipe" select = built-in (nomi tradotti) + custom (per id). Costruito via DOM (nomi utente → no HTML injection).
+    function populateRecipeSelect(){
+      const t=TR;
+      setRecipe.innerHTML='';
+      recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{
+        const k=li.dataset.key, o=document.createElement('option');
+        o.value='key:'+k; o.textContent=(t.recipeNames&&t.recipeNames[k])||li.querySelector('.rname').textContent||k;
+        setRecipe.appendChild(o);
+      });
+      customRecipes.forEach(r=>{ const o=document.createElement('option'); o.value='id:'+r.id; o.textContent=r.name; setRecipe.appendChild(o); });
     }
     async function detectOsLang(){
       let loc='';
@@ -1794,6 +1851,7 @@
       }
       populateLangSelect();
       populateProviderSelect();
+      populateRecipeSelect();
       buildLangBar();
       await applySettings(currentSettings); // async: loads and applies the language
       enhanceSelects();           // after applySettings: the length/tone options exist
