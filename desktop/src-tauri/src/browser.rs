@@ -55,6 +55,15 @@ pub fn provider_browser_args() -> String {
 /// (in particular the Google/Gemini login) block or degrade embedded browsers
 /// by recognizing the `Edg/`/WebView2 markers; a standard Chrome UA maximizes
 /// compatibility and login success.
+// User-Agent del webview provider. DEVE essere coerente col motore reale, altrimenti
+// Google ("browser non sicuro") e Cloudflare ("verifica anti-bot") bloccano il login:
+//   - Windows: WebView2 = Chromium  -> UA Chrome (coerente).
+//   - macOS:   WKWebView = WebKit/Safari -> UA Safari macOS (coerente; un UA "Windows Chrome"
+//              su WebKit crea l'incongruenza che fa scattare i blocchi).
+#[cfg(target_os = "macos")]
+pub const PROVIDER_UA: &str =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15";
+#[cfg(not(target_os = "macos"))]
 pub const PROVIDER_UA: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
