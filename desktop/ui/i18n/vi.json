@@ -138,5 +138,7 @@
   },
   "neutralHint": "Văn bản đã sao chép được gửi nguyên trạng đến nhà cung cấp mặc định.",
   "setRecipe": "Công thức mặc định",
-  "setRecipeHint": "Công thức dùng khi bạn sao chép văn bản."
+  "setRecipeHint": "Công thức dùng khi bạn sao chép văn bản.",
+  "neutralAutosend": "Gửi tự động",
+  "neutralAutosendHint": "Gửi tự động: khi bật, văn bản được gửi ngay đến nhà cung cấp; khi tắt, văn bản chỉ được dán để bạn có thể chỉnh sửa trước khi gửi."
 }

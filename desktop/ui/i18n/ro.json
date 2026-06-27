@@ -138,5 +138,7 @@
   },
   "neutralHint": "Textul copiat este trimis ca atare către furnizorul implicit.",
   "setRecipe": "Rețetă implicită",
-  "setRecipeHint": "Rețeta folosită când copiezi un text."
+  "setRecipeHint": "Rețeta folosită când copiezi un text.",
+  "neutralAutosend": "Trimitere automată",
+  "neutralAutosendHint": "Trimitere automată: când este activată, textul este trimis imediat către furnizor; când este dezactivată, este doar lipit ca să îl poți edita înainte de a-l trimite."
 }

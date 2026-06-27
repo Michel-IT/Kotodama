@@ -138,5 +138,7 @@
   },
   "neutralHint": "A másolt szöveg változtatás nélkül megy az alapértelmezett szolgáltatónak.",
   "setRecipe": "Alapértelmezett recept",
-  "setRecipeHint": "Szövegmásoláskor használt recept."
+  "setRecipeHint": "Szövegmásoláskor használt recept.",
+  "neutralAutosend": "Automatikus küldés",
+  "neutralAutosendHint": "Automatikus küldés: bekapcsolva a szöveg azonnal a szolgáltatóhoz kerül; kikapcsolva csak beillesztődik, hogy küldés előtt szerkeszthesd."
 }

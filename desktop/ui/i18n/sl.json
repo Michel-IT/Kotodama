@@ -138,5 +138,7 @@
   },
   "neutralHint": "Kopirano besedilo se nespremenjeno pošlje privzetemu ponudniku.",
   "setRecipe": "Privzeti recept",
-  "setRecipeHint": "Recept, uporabljen ob kopiranju besedila."
+  "setRecipeHint": "Recept, uporabljen ob kopiranju besedila.",
+  "neutralAutosend": "Samodejno pošiljanje",
+  "neutralAutosendHint": "Samodejno pošiljanje: ko je vklopljeno, se besedilo takoj pošlje ponudniku; ko je izklopljeno, se samo prilepi, da ga lahko pred pošiljanjem uredite."
 }

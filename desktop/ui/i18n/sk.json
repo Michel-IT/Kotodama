@@ -138,5 +138,7 @@
   },
   "neutralHint": "Skopírovaný text sa odošle bez zmien predvolenému poskytovateľovi.",
   "setRecipe": "Predvolený recept",
-  "setRecipeHint": "Recept použitý pri kopírovaní textu."
+  "setRecipeHint": "Recept použitý pri kopírovaní textu.",
+  "neutralAutosend": "Automatické odoslanie",
+  "neutralAutosendHint": "Automatické odoslanie: keď je zapnuté, text sa hneď odošle poskytovateľovi; keď je vypnuté, iba sa vloží, aby ste ho mohli pred odoslaním upraviť."
 }

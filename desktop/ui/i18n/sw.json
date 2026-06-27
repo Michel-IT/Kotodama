@@ -138,5 +138,7 @@
   },
   "neutralHint": "Maandishi yaliyonakiliwa hutumwa kama yalivyo kwa mtoa huduma chaguo-msingi.",
   "setRecipe": "Kichocheo chaguo-msingi",
-  "setRecipeHint": "Kichocheo kinachotumika unaponakili maandishi."
+  "setRecipeHint": "Kichocheo kinachotumika unaponakili maandishi.",
+  "neutralAutosend": "Tuma kiotomatiki",
+  "neutralAutosendHint": "Tuma kiotomatiki: ikiwashwa, maandishi hutumwa mara moja kwa mtoa huduma; ikizimwa, hubandikwa tu ili uweze kuyahariri kabla ya kutuma."
 }

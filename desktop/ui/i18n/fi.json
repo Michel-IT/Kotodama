@@ -138,5 +138,7 @@
   },
   "neutralHint": "Kopioitu teksti lähetetään sellaisenaan oletuspalveluun.",
   "setRecipe": "Oletusresepti",
-  "setRecipeHint": "Resepti, jota käytetään, kun kopioit tekstiä."
+  "setRecipeHint": "Resepti, jota käytetään, kun kopioit tekstiä.",
+  "neutralAutosend": "Lähetä automaattisesti",
+  "neutralAutosendHint": "Automaattinen lähetys: kun päällä, teksti lähetetään palveluntarjoajalle heti; kun pois, se vain liitetään, jotta voit muokata sitä ennen lähettämistä."
 }

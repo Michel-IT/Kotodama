@@ -138,5 +138,7 @@
   },
   "neutralHint": "Kopirani tekst šalje se kakav jest zadanom pružatelju.",
   "setRecipe": "Zadani recept",
-  "setRecipeHint": "Recept koji se koristi kada kopirate tekst."
+  "setRecipeHint": "Recept koji se koristi kada kopirate tekst.",
+  "neutralAutosend": "Automatsko slanje",
+  "neutralAutosendHint": "Automatsko slanje: kad je uključeno, tekst se odmah šalje pružatelju; kad je isključeno, samo se zalijepi kako biste ga mogli urediti prije slanja."
 }

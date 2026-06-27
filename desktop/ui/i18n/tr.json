@@ -138,5 +138,7 @@
   },
   "neutralHint": "Kopyalanan metin olduğu gibi varsayılan sağlayıcıya gönderilir.",
   "setRecipe": "Varsayılan tarif",
-  "setRecipeHint": "Metin kopyaladığınızda kullanılan tarif."
+  "setRecipeHint": "Metin kopyaladığınızda kullanılan tarif.",
+  "neutralAutosend": "Otomatik gönder",
+  "neutralAutosendHint": "Otomatik gönder: açıkken metin sağlayıcıya hemen gönderilir; kapalıyken yalnızca yapıştırılır, böylece göndermeden önce düzenleyebilirsiniz."
 }

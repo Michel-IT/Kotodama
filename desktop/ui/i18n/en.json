@@ -11,6 +11,7 @@
   "recipeNames": { "neutral": "Neutral", "rephrase": "Rephrase", "summarise": "Summarise", "reply": "Reply", "email": "Create Email" },
   "instr": { "rephrase": "Rephrase the following text:", "summarise": "Summarise the following text:", "reply": "Write a reply to the following message:", "email": "Write an email based on:" },
   "neutralHint": "The copied text is sent as-is to the default provider.",
+  "neutralAutosend": "Auto-send", "neutralAutosendHint": "Auto-send: when on, the text is sent to the provider right away; when off, it is only pasted so you can edit it before sending.",
   "lengthOpts": ["Short and concise", "Medium", "Long and detailed"],
   "toneOpts": ["Professional", "Friendly", "Formal", "Casual", "Persuasive"],
   "constraints": "Constraints:", "cLength": "Length", "cTone": "Tone",

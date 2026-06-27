@@ -138,5 +138,7 @@
   },
   "neutralHint": "复制的文本将原样发送至默认提供商。",
   "setRecipe": "默认配方",
-  "setRecipeHint": "复制文本时使用的配方。"
+  "setRecipeHint": "复制文本时使用的配方。",
+  "neutralAutosend": "自动发送",
+  "neutralAutosendHint": "自动发送：开启时，文本会立即发送给提供商；关闭时，仅粘贴文本，方便你在发送前进行编辑。"
 }

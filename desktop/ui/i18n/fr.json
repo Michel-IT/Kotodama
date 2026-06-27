@@ -138,5 +138,7 @@
   },
   "neutralHint": "Le texte copié est envoyé tel quel au fournisseur par défaut.",
   "setRecipe": "Recette par défaut",
-  "setRecipeHint": "Recette utilisée lorsque vous copiez du texte."
+  "setRecipeHint": "Recette utilisée lorsque vous copiez du texte.",
+  "neutralAutosend": "Envoi auto",
+  "neutralAutosendHint": "Envoi automatique : activé, le texte est envoyé directement au fournisseur ; désactivé, il est seulement collé pour que vous puissiez le modifier avant l'envoi."
 }

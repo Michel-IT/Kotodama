@@ -138,5 +138,7 @@
   },
   "neutralHint": "Kopeeritud tekst saadetakse muutmata kujul vaikepakkujale.",
   "setRecipe": "Vaikeretsept",
-  "setRecipeHint": "Retsept, mida kasutatakse teksti kopeerimisel."
+  "setRecipeHint": "Retsept, mida kasutatakse teksti kopeerimisel.",
+  "neutralAutosend": "Automaatsaatmine",
+  "neutralAutosendHint": "Automaatsaatmine: kui see on sees, saadetakse tekst kohe teenusepakkujale; kui see on väljas, üksnes kleebitakse, et saaksid seda enne saatmist muuta."
 }

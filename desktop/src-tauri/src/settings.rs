@@ -37,6 +37,8 @@ pub struct Settings {
     pub length: u32,
     /// Last UI state: Tone option index.
     pub tone: u32,
+    /// Ricetta "Neutra": invio automatico al provider (true) oppure solo incolla per editare (false).
+    pub neutral_autosend: bool,
 }
 
 impl Default for Settings {
@@ -51,6 +53,7 @@ impl Default for Settings {
             recipe: "key:neutral".into(),
             length: 0,
             tone: 0,
+            neutral_autosend: true,
         }
     }
 }

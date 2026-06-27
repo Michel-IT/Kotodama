@@ -11,6 +11,7 @@
   "recipeNames": { "neutral": "Neutra", "rephrase": "Riformula", "summarise": "Riassumi", "reply": "Rispondi", "email": "Crea email" },
   "instr": { "rephrase": "Riformula il seguente testo:", "summarise": "Riassumi il seguente testo:", "reply": "Scrivi una risposta al seguente messaggio:", "email": "Scrivi un'email a partire da:" },
   "neutralHint": "Il testo copiato viene inviato cosi' com'e' al provider predefinito.",
+  "neutralAutosend": "Auto-invio", "neutralAutosendHint": "Auto-invio: se attivo, il testo viene inviato subito al provider; se spento, viene solo incollato cosi puoi modificarlo prima di inviare.",
   "lengthOpts": ["Breve e conciso", "Media", "Lungo e dettagliato"],
   "toneOpts": ["Professionale", "Amichevole", "Formale", "Informale", "Persuasivo"],
   "constraints": "Vincoli:", "cLength": "Lunghezza", "cTone": "Tono",

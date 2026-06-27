@@ -138,5 +138,7 @@
   },
   "neutralHint": "El text copiat s'envia tal qual al proveïdor predeterminat.",
   "setRecipe": "Recepta predeterminada",
-  "setRecipeHint": "Recepta utilitzada quan copies text."
+  "setRecipeHint": "Recepta utilitzada quan copies text.",
+  "neutralAutosend": "Enviament automàtic",
+  "neutralAutosendHint": "Enviament automàtic: si està actiu, el text s'envia immediatament al proveïdor; si està desactivat, només s'enganxa perquè el puguis editar abans d'enviar-lo."
 }

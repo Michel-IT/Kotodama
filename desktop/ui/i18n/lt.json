@@ -138,5 +138,7 @@
   },
   "neutralHint": "Nukopijuotas tekstas siunčiamas toks, koks yra, į numatytąjį provaiderį.",
   "setRecipe": "Numatytasis receptas",
-  "setRecipeHint": "Receptas, naudojamas kopijuojant tekstą."
+  "setRecipeHint": "Receptas, naudojamas kopijuojant tekstą.",
+  "neutralAutosend": "Automatinis siuntimas",
+  "neutralAutosendHint": "Automatinis siuntimas: kai įjungta, tekstas iškart siunčiamas tiekėjui; kai išjungta, jis tik įklijuojamas, kad galėtumėte jį redaguoti prieš siųsdami."
 }

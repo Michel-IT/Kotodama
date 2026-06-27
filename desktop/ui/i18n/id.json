@@ -138,5 +138,7 @@
   },
   "neutralHint": "Teks yang disalin dikirim apa adanya ke penyedia default.",
   "setRecipe": "Resep default",
-  "setRecipeHint": "Resep yang dipakai saat Anda menyalin teks."
+  "setRecipeHint": "Resep yang dipakai saat Anda menyalin teks.",
+  "neutralAutosend": "Kirim otomatis",
+  "neutralAutosendHint": "Kirim otomatis: saat aktif, teks langsung dikirim ke penyedia; saat nonaktif, teks hanya ditempel agar bisa kamu edit sebelum dikirim."
 }

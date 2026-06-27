@@ -138,5 +138,7 @@
   },
   "neutralHint": "Kopiatutako testua dagoen bezala bidaltzen da hornitzaile lehenetsira.",
   "setRecipe": "Errezeta lehenetsia",
-  "setRecipeHint": "Testua kopiatzean erabiltzen den errezeta."
+  "setRecipeHint": "Testua kopiatzean erabiltzen den errezeta.",
+  "neutralAutosend": "Bidalketa automatikoa",
+  "neutralAutosendHint": "Bidalketa automatikoa: aktibatuta dagoenean, testua berehala bidaltzen zaio hornitzaileari; desaktibatuta dagoenean, itsatsi besterik ez da egiten, bidali aurretik edita dezazun."
 }

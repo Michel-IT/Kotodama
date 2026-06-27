@@ -138,5 +138,7 @@
   },
   "neutralHint": "Den kopierade texten skickas som den är till standardleverantören.",
   "setRecipe": "Standardrecept",
-  "setRecipeHint": "Recept som används när du kopierar text."
+  "setRecipeHint": "Recept som används när du kopierar text.",
+  "neutralAutosend": "Skicka automatiskt",
+  "neutralAutosendHint": "Skicka automatiskt: när det är på skickas texten direkt till leverantören; när det är av klistras den bara in så att du kan redigera den innan du skickar."
 }

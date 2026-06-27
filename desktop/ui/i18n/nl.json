@@ -138,5 +138,7 @@
   },
   "neutralHint": "De gekopieerde tekst wordt ongewijzigd naar de standaardprovider gestuurd.",
   "setRecipe": "Standaardrecept",
-  "setRecipeHint": "Recept dat wordt gebruikt wanneer je tekst kopieert."
+  "setRecipeHint": "Recept dat wordt gebruikt wanneer je tekst kopieert.",
+  "neutralAutosend": "Automatisch verzenden",
+  "neutralAutosendHint": "Automatisch verzenden: indien aan wordt de tekst meteen naar de provider gestuurd; indien uit wordt deze alleen geplakt zodat je hem kunt bewerken voordat je verzendt."
 }

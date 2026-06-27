@@ -138,5 +138,7 @@
   },
   "neutralHint": "Den kopierede tekst sendes som den er til standardudbyderen.",
   "setRecipe": "Standardopskrift",
-  "setRecipeHint": "Opskrift, der bruges, når du kopierer tekst."
+  "setRecipeHint": "Opskrift, der bruges, når du kopierer tekst.",
+  "neutralAutosend": "Auto-send",
+  "neutralAutosendHint": "Auto-send: når det er slået til, sendes teksten straks til udbyderen; når det er slået fra, indsættes den blot, så du kan redigere den før afsendelse."
 }

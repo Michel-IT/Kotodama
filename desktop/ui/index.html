@@ -508,6 +508,13 @@
     .switch .slider::before { content:""; position:absolute; height:16px; width:16px; left:3px; top:3px; background:var(--text-dim); border-radius:50%; transition:.2s; }
     .switch input:checked + .slider { background:var(--accent-soft); border-color:var(--accent); }
     .switch input:checked + .slider::before { transform:translateX(20px); background:var(--on-accent); }
+    .switch.sm { width:36px; height:20px; }
+    .switch.sm .slider::before { height:14px; width:14px; }
+    .switch.sm input:checked + .slider::before { transform:translateX(16px); }
+    /* Toggle "Auto-invio" della ricetta Neutra: solo quando la Neutra e' attiva, nel footer accanto a → */
+    .neutral-auto { display:none; }
+    body.recipe-neutral .neutral-auto { display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--text-dim); cursor:pointer; user-select:none; margin-left:auto; }
+    body.recipe-neutral .footer .hint { display:none; }
     .modal-foot { display:flex; justify-content:flex-end; align-items:center; gap:10px; padding:14px 18px; border-top:1px solid var(--border-soft); }
     .app-version { margin-right:auto; color:var(--text-faint); font-size:11.5px; letter-spacing:.3px; }
     .btn { padding:9px 16px; border-radius:var(--radius-s); font-size:13px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--field); color:var(--text); transition:background-color .15s; }
@@ -644,6 +651,10 @@
           <div class="footer">
             <button class="add-btn fields-btn" id="manageFields" data-i18n-title="fieldsTitle" title="Personalizza campi">⚙</button>
             <span class="hint" data-i18n="hint">Compila i campi e premi → per aprire il provider selezionato</span>
+            <label class="neutral-auto" data-i18n-title="neutralAutosendHint" title="Auto-invio: se attivo, il testo viene inviato subito al provider; se spento viene solo incollato, cosi puoi modificarlo prima di inviare.">
+              <span class="neutral-auto-lbl" data-i18n="neutralAutosend">Auto-invio</span>
+              <span class="switch sm"><input type="checkbox" id="neutralAutosend"><span class="slider"></span></span>
+            </label>
             <button class="send" id="generate" data-i18n-title="generate" title="Apri nel provider">→</button>
           </div>
         </section>
@@ -971,7 +982,7 @@
     }
 
     const THEMES = ['ginga','hisui','kohaku','murasaki','sumi'];
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0 };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, neutral_autosend:true };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -984,6 +995,7 @@
     const content=document.getElementById('content');
     const lengthSel=document.getElementById('length');
     const toneSel=document.getElementById('tone');
+    const neutralAutosend=document.getElementById('neutralAutosend');   // toggle auto-invio ricetta Neutra
     const output=document.getElementById('output');
     const result=document.getElementById('result');
     const toastEl=document.getElementById('toast');
@@ -1068,15 +1080,12 @@
     // Prompt in attesa di invio: l'auto-invio parte quando la pagina del provider
     // ha finito di caricare (evento app://provider-loaded), NON a tempo fisso.
     let pendingSend = null;
-    let pendingSubmit = true;   // false = ricetta "Neutra": apri+riempi ma NON inviare (l'utente preme Invio)
     async function openProvider(){
       const t=TR; const p=PROVIDERS[selectedProvider]; const promptText=buildPrompt();
       if(p.mode==='manual'){ showOutput(promptText); await writeClipboard(promptText); toast(t.manualNote); output.scrollIntoView({behavior:'smooth',block:'nearest'}); return; }
       output.classList.remove('show');
-      const isNeutral = activeRecipe.kind==='key' && activeRecipe.key==='neutral';
       const encoded=encodeURIComponent(promptText);
-      // Neutra: niente ?q= (alcuni provider auto-inviano col query) → apri l'URL base e riempi senza Invio
-      const useQuery=p.mode==='query'&&encoded.length<=MAX_URL&&!isNeutral;
+      const useQuery=p.mode==='query'&&encoded.length<=MAX_URL;
       const url=useQuery?(p.base+p.q+encoded):p.base;
       lastProviderUrl=url;
       if(TAURI){
@@ -1087,13 +1096,10 @@
           await invoke('open_provider_view',{url});
           // auto-submit: query providers (?q=) are already prefilled → only submit;
           // clipboard ones must be filled first. provider_fill handles both.
-          // Parte quando la pagina e' PRONTA (provider-loaded), non a tempo fisso:
-          // risolve la prima apertura "a freddo" (es. ChatGPT) col composer non
-          // ancora pronto. Safety net qui sotto se l'evento non dovesse arrivare.
-          // Neutra: riempi ma NON inviare (l'utente preme Invio). Altre ricette: invio automatico.
-          if(isNeutral || p.autosend){
-            pendingSend = promptText; pendingSubmit = !isNeutral;
-            setTimeout(()=>{ if(pendingSend!==null){ const t=pendingSend, s=pendingSubmit; pendingSend=null; invoke('provider_fill',{text:t, submit:s}).catch(()=>{}); } }, 8000);
+          // (Il → invia sempre: il toggle "Auto-invio" della Neutra agisce solo sul flusso COPIA→toast.)
+          if(p.autosend){
+            pendingSend = promptText;
+            setTimeout(()=>{ if(pendingSend!==null){ const t=pendingSend; pendingSend=null; invoke('provider_fill',{text:t}).catch(()=>{}); } }, 8000);
           }
         }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
         setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000); // overlay safety net
@@ -1407,13 +1413,15 @@
     function setActiveInstruction(){
       const t=TR;
       const isNeutral = activeRecipe.kind==='key' && activeRecipe.key==='neutral';
-      document.body.classList.toggle('recipe-neutral', isNeutral);   // CSS nasconde istruzione+vincoli
-      if(isNeutral) instruction.value='';
+      document.body.classList.toggle('recipe-neutral', isNeutral);   // CSS nasconde istruzione+vincoli, mostra il toggle auto-invio
+      if(isNeutral){ instruction.value=''; if(neutralAutosend&&currentSettings) neutralAutosend.checked = currentSettings.neutral_autosend!==false; }
       else if(activeRecipe.kind==='key'&&t.instr[activeRecipe.key]) instruction.value=t.instr[activeRecipe.key];
       else if(activeRecipe.kind==='id'){ const r=customRecipes.find(x=>x.id===activeRecipe.id); if(r) instruction.value=r.instruction; }
       updateSaveInstr();
     }
     instruction.addEventListener('input', updateSaveInstr);
+    // Toggle "Auto-invio" Neutra: salva la preferenza (persistente).
+    if(neutralAutosend) neutralAutosend.addEventListener('change', ()=>{ currentSettings.neutral_autosend = neutralAutosend.checked; persistSettings(currentSettings); });
     // Save the modified instruction: custom → updates the recipe; built-in → creates a custom copy.
     saveInstrBtn.addEventListener('click', async ()=>{
       const text=instruction.value.trim(); if(!text) return;
@@ -1730,8 +1738,8 @@
       listen('app://provider-opened', ()=>{ body.classList.add('provider-open'); });
       listen('app://provider-loaded', ()=>{
         body.classList.remove('provider-loading'); // page ready → remove overlay
-        // pagina del provider pronta → ora (con un piccolo assestamento) riempi (e invia se non Neutra)
-        if(pendingSend!==null){ const t=pendingSend, s=pendingSubmit; pendingSend=null; setTimeout(()=>{ if(TAURI) invoke('provider_fill',{text:t, submit:s}).catch(()=>{}); }, 700); }
+        // pagina del provider pronta → ora (con un piccolo assestamento) invia
+        if(pendingSend!==null){ const t=pendingSend; pendingSend=null; setTimeout(()=>{ if(TAURI) invoke('provider_fill',{text:t}).catch(()=>{}); }, 700); }
       });
       listen('app://provider-closed', ()=>{ closeProviderBar(); });
     }

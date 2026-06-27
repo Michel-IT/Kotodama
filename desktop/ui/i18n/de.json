@@ -138,5 +138,7 @@
   },
   "neutralHint": "Der kopierte Text wird unverändert an den Standardanbieter gesendet.",
   "setRecipe": "Standardrezept",
-  "setRecipeHint": "Rezept, das beim Kopieren von Text verwendet wird."
+  "setRecipeHint": "Rezept, das beim Kopieren von Text verwendet wird.",
+  "neutralAutosend": "Auto-Senden",
+  "neutralAutosendHint": "Auto-Senden: wenn aktiviert, wird der Text sofort an den Provider gesendet; wenn deaktiviert, wird er nur eingefügt, damit du ihn vor dem Senden bearbeiten kannst."
 }

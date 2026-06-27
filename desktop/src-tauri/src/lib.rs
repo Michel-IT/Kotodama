@@ -40,19 +40,19 @@ fn accept_clipboard(app: AppHandle) -> Result<(), String> {
     let clipboard = app.state::<Clipboard>();
     let text = clipboard.read_text().unwrap_or_default();
 
-    // Ricetta "Neutra": apri SOLO l'interfaccia di Kotodama (riempi il builder),
-    // niente apertura provider ne' auto-invio. Le altre ricette: processa e apri il provider.
-    let neutral = {
+    // Neutra con "Auto-invio" OFF: apri SOLO Kotodama (builder) per editare il testo;
+    // niente apertura provider ne' invio. Le altre ricette / Neutra ON: processa e apri il provider.
+    let edit_in_builder = {
         let st = app.state::<AppState>();
         let g = st.settings.lock().unwrap();
-        g.recipe == "key:neutral"
+        g.recipe == "key:neutral" && !g.neutral_autosend
     };
 
     if let Some(main) = app.get_window("main") {
         browser::park_provider(&main);
         bring_to_front(&main);
         let _ = main.emit("app://provider-closed", ());
-        if neutral {
+        if edit_in_builder {
             if !text.trim().is_empty() {
                 let _ = main.emit("app://fill-clipboard", text); // solo builder, nessun provider
             }

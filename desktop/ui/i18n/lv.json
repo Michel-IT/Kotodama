@@ -138,5 +138,7 @@
   },
   "neutralHint": "Kopētais teksts tiek nosūtīts tāds, kāds ir, uz noklusējuma nodrošinātāju.",
   "setRecipe": "Noklusējuma recepte",
-  "setRecipeHint": "Recepte, ko izmanto, kopējot tekstu."
+  "setRecipeHint": "Recepte, ko izmanto, kopējot tekstu.",
+  "neutralAutosend": "Automātiska sūtīšana",
+  "neutralAutosendHint": "Automātiska sūtīšana: kad ieslēgta, teksts tiek uzreiz nosūtīts pakalpojumu sniedzējam; kad izslēgta, tas tiek tikai ielīmēts, lai jūs to varētu rediģēt pirms sūtīšanas."
 }

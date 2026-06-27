@@ -138,5 +138,7 @@
   "selectAll": "Zaznacz wszystko",
   "neutralHint": "Skopiowany tekst jest wysyłany bez zmian do domyślnego dostawcy.",
   "setRecipe": "Domyślny przepis",
-  "setRecipeHint": "Przepis używany podczas kopiowania tekstu."
+  "setRecipeHint": "Przepis używany podczas kopiowania tekstu.",
+  "neutralAutosend": "Automatyczne wysyłanie",
+  "neutralAutosendHint": "Automatyczne wysyłanie: gdy włączone, tekst jest od razu wysyłany do dostawcy; gdy wyłączone, jest tylko wklejany, aby można było go edytować przed wysłaniem."
 }
