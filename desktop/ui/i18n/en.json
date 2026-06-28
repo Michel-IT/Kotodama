@@ -39,7 +39,7 @@
   "updChecking": "Checking for updates…", "updNewVersion": "New version {v} available", "install": "Install",
   "newRecipeTitle": "New recipe", "recipeName": "Name", "recipeInstr": "Instruction",
   "recipeNamePh": "E.g. Translate to English", "recipeInstrPh": "E.g. Translate the following text to English:",
-  "confirmTitle": "Confirm", "confirm": "Confirm", "delete": "Delete", "rename": "Rename", "edit": "Edit", "duplicate": "Duplicate", "open": "Open", "setAsDefault": "Set as default", "cut": "Cut", "paste": "Paste", "selectAll": "Select all",
+  "confirmTitle": "Confirm", "confirm": "Confirm", "delete": "Delete", "rename": "Rename", "edit": "Edit", "duplicate": "Duplicate", "open": "Open", "quit": "Quit", "setAsDefault": "Set as default", "cut": "Cut", "paste": "Paste", "selectAll": "Select all",
   "deleteRecipeMsg": "Delete this recipe?",
   "instrSaved": "Instruction saved ✓", "editInstr": "Edit the instruction below and press Save",
   "fieldsTitle": "Customize fields", "addField": "＋ Add field", "addOption": "＋ Add option", "done": "Done",

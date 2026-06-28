@@ -15,7 +15,7 @@ mod toast;
 use std::sync::Mutex;
 
 use settings::Settings;
-use tauri::menu::CheckMenuItem;
+use tauri::menu::{CheckMenuItem, MenuItem};
 use tauri::{AppHandle, Emitter, Manager, WindowEvent, Wry};
 use tauri_plugin_clipboard::Clipboard;
 
@@ -29,6 +29,9 @@ pub struct AppState {
     pub settings: Mutex<Settings>,
     /// Reference to the "Start on login" menu item (to sync its check).
     pub autostart_item: Mutex<Option<CheckMenuItem<Wry>>>,
+    /// Tray "Open" / "Quit" items, to localize their text at runtime (set_tray_labels).
+    pub open_item: Mutex<Option<MenuItem<Wry>>>,
+    pub quit_item: Mutex<Option<MenuItem<Wry>>>,
 }
 
 // ============================ COMMANDS ============================
@@ -190,6 +193,21 @@ fn save_ui_state(app: AppHandle, provider: String, recipe: String, length: u32, 
     save_settings_bg(&app, snapshot);
 }
 
+/// Localizes the tray labels (Open / Start-on-login / Quit) in the app language.
+/// Called by the frontend at startup and on every language change.
+#[tauri::command]
+fn set_tray_labels(app: AppHandle, open: String, autostart: String, quit: String) {
+    if let Some(i) = app.state::<AppState>().open_item.lock().unwrap().as_ref() {
+        let _ = i.set_text(open);
+    }
+    if let Some(i) = app.state::<AppState>().autostart_item.lock().unwrap().as_ref() {
+        let _ = i.set_text(autostart);
+    }
+    if let Some(i) = app.state::<AppState>().quit_item.lock().unwrap().as_ref() {
+        let _ = i.set_text(quit);
+    }
+}
+
 /// Returns the custom recipes.
 #[tauri::command]
 fn get_recipes(app: AppHandle) -> Vec<settings::Recipe> {
@@ -300,28 +318,35 @@ fn register_and_persist_hotkey(app: &AppHandle, requested: &str) {
 }
 
 fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
-    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+    use tauri::menu::{Menu, PredefinedMenuItem};
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
-    let open_i = MenuItem::with_id(app, "open", "Apri / Open", true, None::<&str>)?;
-    let login_i = CheckMenuItem::with_id(
-        app,
-        "autostart",
-        "Avvia col sistema / Start on login",
-        true,
-        autostart_on,
-        None::<&str>,
-    )?;
+    // Etichette MONOLINGUA nella lingua dell'app (it/en hardcoded; en di default). Le bilingue
+    // ("Apri / Open"...) erano troppo lunghe. Il frontend poi le localizza per TUTTE le lingue
+    // via set_tray_labels (all'avvio e ad ogni cambio lingua).
+    let it = {
+        let st = app.state::<AppState>();
+        let g = st.settings.lock().unwrap();
+        g.language == "it"
+    };
+    let (open_lbl, auto_lbl, quit_lbl) = if it {
+        ("Apri", "Apri al login", "Esci")
+    } else {
+        ("Open", "Start on login", "Quit")
+    };
+    let open_i = MenuItem::with_id(app, "open", open_lbl, true, None::<&str>)?;
+    let login_i = CheckMenuItem::with_id(app, "autostart", auto_lbl, true, autostart_on, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
-    let quit_i = MenuItem::with_id(app, "quit", "Esci / Quit", true, None::<&str>)?;
+    let quit_i = MenuItem::with_id(app, "quit", quit_lbl, true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open_i, &login_i, &sep, &quit_i])?;
 
-    // Store the item to sync its check from settings/tray.
-    app.state::<AppState>()
-        .autostart_item
-        .lock()
-        .unwrap()
-        .replace(login_i.clone());
+    // Store items: sync check + localize text at runtime.
+    {
+        let st = app.state::<AppState>();
+        st.autostart_item.lock().unwrap().replace(login_i.clone());
+        st.open_item.lock().unwrap().replace(open_i.clone());
+        st.quit_item.lock().unwrap().replace(quit_i.clone());
+    }
 
     let mut builder = TrayIconBuilder::with_id("main-tray")
         .tooltip("Kotodama • Ai Prompt Builder")
@@ -461,6 +486,8 @@ pub fn run() {
             last_seen: Mutex::new(None),
             settings: Mutex::new(Settings::default()),
             autostart_item: Mutex::new(None),
+            open_item: Mutex::new(None),
+            quit_item: Mutex::new(None),
         })
         .setup(|app| {
             let handle = app.handle().clone();
@@ -553,6 +580,7 @@ pub fn run() {
             open_url,
             set_settings,
             save_ui_state,
+            set_tray_labels,
             get_recipes,
             save_recipes,
             get_fields,

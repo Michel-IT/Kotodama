@@ -1046,6 +1046,8 @@
       renderCustomRecipes();
       setActiveInstruction();
       recomputeHintFit();   // the hint length changes with the language → recompute whether it fits
+      // Localizza le voci della tray (Apri / Avvia col sistema / Esci) nella lingua corrente.
+      if(TAURI){ try{ invoke('set_tray_labels', { open:t.open, autostart:t.setAutostart, quit:t.quit }); }catch(e){} }
     }
 
     // The providers hint sits on the title row, on the right: if there is no space (it would be truncated)
