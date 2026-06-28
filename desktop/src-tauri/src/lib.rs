@@ -348,6 +348,11 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
                     g.clone()
                 };
                 save_settings_bg(app, snapshot);
+                // Tieni il frontend in sync: altrimenti currentSettings.autostart resta vecchio e
+                // un successivo set_settings lo sovrascriverebbe (ri-disabilitando l'autostart).
+                if let Some(main) = app.get_window("main") {
+                    let _ = main.emit("app://autostart-changed", want);
+                }
             }
             "quit" => app.exit(0),
             _ => {}
@@ -494,8 +499,20 @@ pub fn run() {
                 use tauri_plugin_autostart::ManagerExt;
                 handle.autolaunch().is_enabled().unwrap_or(false)
             };
-            build_tray(&handle, autostart_on || loaded.autostart)?;
-            apply_autostart(&handle, loaded.autostart);
+            // Il login-item/registro (gestito dal plugin autostart) e' la FONTE DI VERITA':
+            // la spunta della tray e settings.json riflettono lo stato REALE. NON forziamo piu'
+            // il registro al valore di settings.json: poteva essere "stale" (es. il frontend lo
+            // sovrascriveva) e all'avvio DISABILITAVA l'autostart appena abilitato, togliendo la spunta.
+            build_tray(&handle, autostart_on)?;
+            if loaded.autostart != autostart_on {
+                let snapshot = {
+                    let st = app.state::<AppState>();
+                    let mut g = st.settings.lock().unwrap();
+                    g.autostart = autostart_on;
+                    g.clone()
+                };
+                save_settings_bg(&handle, snapshot);
+            }
 
             // Clipboard monitor + hotkey (with per-platform fallback).
             clipboard::start(&handle);

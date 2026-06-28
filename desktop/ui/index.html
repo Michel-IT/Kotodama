@@ -1742,6 +1742,8 @@
         if(pendingSend!==null){ const t=pendingSend; pendingSend=null; setTimeout(()=>{ if(TAURI) invoke('provider_fill',{text:t}).catch(()=>{}); }, 700); }
       });
       listen('app://provider-closed', ()=>{ closeProviderBar(); });
+      // Autostart cambiato dalla tray: tieni currentSettings in sync (altrimenti un set_settings lo riazzera).
+      listen('app://autostart-changed', e=>{ currentSettings.autostart = !!e.payload; });
     }
 
     /* ===================== VERSION ===================== */
