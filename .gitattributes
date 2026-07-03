@@ -1,0 +1,4 @@
+# Kotodama is a Tauri desktop app; Rust is the primary language.
+# The single-file HTML UI shell in desktop/ui skews GitHub Linguist toward
+# HTML, so exclude those bundled files from language statistics.
+desktop/ui/*.html linguist-vendored
