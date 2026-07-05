@@ -140,5 +140,11 @@
   "setRecipe": "Varsayılan tarif",
   "setRecipeHint": "Metin kopyaladığınızda kullanılan tarif.",
   "neutralAutosend": "Otomatik gönder",
-  "neutralAutosendHint": "Otomatik gönder: açıkken metin sağlayıcıya hemen gönderilir; kapalıyken yalnızca yapıştırılır, böylece göndermeden önce düzenleyebilirsiniz."
+  "neutralAutosendHint": "Otomatik gönder: açıkken metin sağlayıcıya hemen gönderilir; kapalıyken yalnızca yapıştırılır, böylece göndermeden önce düzenleyebilirsiniz.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Her zaman üstte",
+  "setAlwaysOnTopHint": "Kotodama diğer pencerelerin üzerinde kalır."
 }

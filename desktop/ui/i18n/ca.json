@@ -140,5 +140,11 @@
   "setRecipe": "Recepta predeterminada",
   "setRecipeHint": "Recepta utilitzada quan copies text.",
   "neutralAutosend": "Enviament automàtic",
-  "neutralAutosendHint": "Enviament automàtic: si està actiu, el text s'envia immediatament al proveïdor; si està desactivat, només s'enganxa perquè el puguis editar abans d'enviar-lo."
+  "neutralAutosendHint": "Enviament automàtic: si està actiu, el text s'envia immediatament al proveïdor; si està desactivat, només s'enganxa perquè el puguis editar abans d'enviar-lo.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Sempre a primer pla",
+  "setAlwaysOnTopHint": "Kotodama es manté sobre les altres finestres."
 }

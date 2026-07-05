@@ -140,5 +140,11 @@
   "setRecipe": "الوصفة الافتراضية",
   "setRecipeHint": "الوصفة المستخدَمة عند نسخ نص.",
   "neutralAutosend": "إرسال تلقائي",
-  "neutralAutosendHint": "إرسال تلقائي: عند التفعيل، يُرسَل النص إلى المزوّد فورًا؛ وعند الإيقاف، يُلصَق فقط لتتمكّن من تعديله قبل الإرسال."
+  "neutralAutosendHint": "إرسال تلقائي: عند التفعيل، يُرسَل النص إلى المزوّد فورًا؛ وعند الإيقاف، يُلصَق فقط لتتمكّن من تعديله قبل الإرسال.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "دائمًا في المقدمة",
+  "setAlwaysOnTopHint": "يبقى Kotodama فوق النوافذ الأخرى."
 }

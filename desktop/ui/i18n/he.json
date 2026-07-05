@@ -140,5 +140,11 @@
   "setRecipe": "מתכון ברירת מחדל",
   "setRecipeHint": "המתכון שבו משתמשים כשמעתיקים טקסט.",
   "neutralAutosend": "שליחה אוטומטית",
-  "neutralAutosendHint": "שליחה אוטומטית: כשמופעל, הטקסט נשלח מיד לספק; כשכבוי, הוא רק מודבק כדי שתוכל לערוך אותו לפני השליחה."
+  "neutralAutosendHint": "שליחה אוטומטית: כשמופעל, הטקסט נשלח מיד לספק; כשכבוי, הוא רק מודבק כדי שתוכל לערוך אותו לפני השליחה.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "תמיד עליון",
+  "setAlwaysOnTopHint": "Kotodama נשאר מעל החלונות האחרים."
 }

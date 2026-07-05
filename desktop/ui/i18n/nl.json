@@ -140,5 +140,11 @@
   "setRecipe": "Standaardrecept",
   "setRecipeHint": "Recept dat wordt gebruikt wanneer je tekst kopieert.",
   "neutralAutosend": "Automatisch verzenden",
-  "neutralAutosendHint": "Automatisch verzenden: indien aan wordt de tekst meteen naar de provider gestuurd; indien uit wordt deze alleen geplakt zodat je hem kunt bewerken voordat je verzendt."
+  "neutralAutosendHint": "Automatisch verzenden: indien aan wordt de tekst meteen naar de provider gestuurd; indien uit wordt deze alleen geplakt zodat je hem kunt bewerken voordat je verzendt.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Altijd op de voorgrond",
+  "setAlwaysOnTopHint": "Kotodama blijft boven andere vensters."
 }

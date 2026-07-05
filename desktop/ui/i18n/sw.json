@@ -140,5 +140,11 @@
   "setRecipe": "Kichocheo chaguo-msingi",
   "setRecipeHint": "Kichocheo kinachotumika unaponakili maandishi.",
   "neutralAutosend": "Tuma kiotomatiki",
-  "neutralAutosendHint": "Tuma kiotomatiki: ikiwashwa, maandishi hutumwa mara moja kwa mtoa huduma; ikizimwa, hubandikwa tu ili uweze kuyahariri kabla ya kutuma."
+  "neutralAutosendHint": "Tuma kiotomatiki: ikiwashwa, maandishi hutumwa mara moja kwa mtoa huduma; ikizimwa, hubandikwa tu ili uweze kuyahariri kabla ya kutuma.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Daima juu",
+  "setAlwaysOnTopHint": "Kotodama hubaki juu ya madirisha mengine."
 }

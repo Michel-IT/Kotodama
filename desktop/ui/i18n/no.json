@@ -140,5 +140,11 @@
   "setRecipe": "Standardoppskrift",
   "setRecipeHint": "Oppskrift som brukes når du kopierer tekst.",
   "neutralAutosend": "Automatisk sending",
-  "neutralAutosendHint": "Automatisk sending: når på sendes teksten til leverandøren med en gang; når av limes den bare inn slik at du kan redigere den før du sender."
+  "neutralAutosendHint": "Automatisk sending: når på sendes teksten til leverandøren med en gang; når av limes den bare inn slik at du kan redigere den før du sender.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Alltid øverst",
+  "setAlwaysOnTopHint": "Kotodama holder seg over andre vinduer."
 }

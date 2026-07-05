@@ -32,6 +32,8 @@ pub struct AppState {
     /// Tray "Open" / "Quit" items, to localize their text at runtime (set_tray_labels).
     pub open_item: Mutex<Option<MenuItem<Wry>>>,
     pub quit_item: Mutex<Option<MenuItem<Wry>>>,
+    /// Localized labels for the native provider context menu (set_provider_menu_labels).
+    pub menu_labels: Mutex<browser::MenuLabels>,
 }
 
 // ============================ COMMANDS ============================
@@ -80,16 +82,68 @@ fn app_write_clipboard(app: AppHandle, text: String) -> Result<(), String> {
     app.state::<Clipboard>().write_text(text)
 }
 
-/// Brings the window to the front on the CURRENT virtual desktop. On Windows a
-/// hidden window stays "tied" to the desktop it was on: the
-/// visible-on-all-workspaces toggle recalls it onto the active desktop, then focuses it.
+/// Brings the window to the front on the CURRENT virtual desktop, in the foreground.
+/// - Windows: we replicate the exact "close with the X, then reopen" flow the user confirmed lands
+///   on the CURRENT desktop. `hide_to_tray` fully hides the window (SW_HIDE + skip taskbar); then,
+///   after a short DELAY, we re-show it (SW_SHOW) on the current desktop. A *synchronous* hide->show
+///   does NOT relocate: Windows/DWM needs a moment after the hide to unassign the window from its old
+///   virtual desktop before the re-show can land it on the one we're summoning from. Version-
+///   independent (works on Win10 and every Win11 build), unlike the virtual-desktop COM APIs.
+/// - macOS/Linux: `set_visible_on_all_workspaces(true)` is left ON so the window follows the active space.
 fn bring_to_front(w: &tauri::Window) {
     let _ = w.set_skip_taskbar(false);
-    let _ = w.unminimize();
-    let _ = w.show();
-    let _ = w.set_visible_on_all_workspaces(true);
-    let _ = w.set_visible_on_all_workspaces(false);
-    let _ = w.set_focus();
+    #[cfg(not(windows))]
+    {
+        let _ = w.set_visible_on_all_workspaces(true);
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+    #[cfg(windows)]
+    {
+        hide_to_tray(w); // exactly the X close-to-tray (set_skip_taskbar(true) + SW_HIDE)
+        // Reopen after a real gap so the OS unassigns the old desktop; the delayed SW_SHOW then lands
+        // the window on the CURRENT desktop. Same deferred main-thread pattern as browser.rs's fallback.
+        let app = w.app_handle().clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(120));
+            let app2 = app.clone();
+            let _ = app.run_on_main_thread(move || {
+                if let Some(win) = app2.get_window("main") {
+                    let _ = win.set_skip_taskbar(false);
+                    if let Ok(h) = win.hwnd() {
+                        win_show(h.0 as isize, true); // SW_SHOW -> current desktop
+                    }
+                    let _ = win.set_focus();
+                }
+            });
+        });
+    }
+}
+
+/// Windows only: hide (SW_HIDE) is what sends the window to the tray so that the next SW_SHOW puts it
+/// on the CURRENT virtual desktop. Raw ShowWindow on the top-level HWND (Tauri's `hide()` does not hide
+/// a multi-webview window; a minimized window stays tied to its desktop). Best-effort.
+#[cfg(windows)]
+fn win_show(hwnd_raw: isize, show: bool) {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE, SW_SHOW};
+    unsafe {
+        let hwnd = HWND(hwnd_raw as *mut core::ffi::c_void);
+        let _ = ShowWindow(hwnd, if show { SW_SHOW } else { SW_HIDE });
+    }
+}
+
+/// Hide the window to the tray. Windows: SW_HIDE (so the next SW_SHOW lands on the CURRENT desktop);
+/// macOS/Linux: minimize. Both skip the taskbar. (Tauri `hide()` can't hide a multi-webview window.)
+fn hide_to_tray(w: &tauri::Window) {
+    let _ = w.set_skip_taskbar(true);
+    #[cfg(windows)]
+    if let Ok(h) = w.hwnd() {
+        win_show(h.0 as isize, false); // SW_HIDE (not minimize: keeps it off any desktop)
+    }
+    #[cfg(not(windows))]
+    let _ = w.minimize();
 }
 
 /// Open from the tray: brings the builder to the front and inserts the copied
@@ -129,9 +183,7 @@ fn hide_main(app: AppHandle) {
         // "presence" doesn't block the minimize and on reopen it doesn't cover the builder.
         browser::park_provider(&w);
         let _ = w.emit("app://provider-closed", ()); // bring the UI back to the builder
-        // Hide the window: skip taskbar + minimize.
-        let _ = w.set_skip_taskbar(true);
-        let _ = w.minimize();
+        hide_to_tray(&w);
     }
 }
 
@@ -159,6 +211,9 @@ fn open_url(app: AppHandle, url: String) {
 #[tauri::command]
 fn set_settings(app: AppHandle, settings: Settings) -> Result<Settings, String> {
     apply_autostart(&app, settings.autostart);
+    if let Some(w) = app.get_window("main") {
+        let _ = w.set_always_on_top(settings.always_on_top);
+    }
 
     // Register the requested hotkey; if it is not registrable on this platform,
     // use the fallback that is actually active, so disk and UI stay faithful.
@@ -488,6 +543,24 @@ pub fn run() {
             autostart_item: Mutex::new(None),
             open_item: Mutex::new(None),
             quit_item: Mutex::new(None),
+            menu_labels: Mutex::new(browser::MenuLabels::default()),
+        })
+        // App-level menu events: the provider's native context menu (browser.rs) puts
+        // "Switch provider" items with ids "sw:<key>:<send|paste>". Copy/Cut/Paste/Select-all
+        // are predefined items and act on the focused webview by themselves (no event here).
+        .on_menu_event(|app, event| {
+            let id = event.id.as_ref();
+            if let Some(rest) = id.strip_prefix("sw:") {
+                if let Some((key, mode)) = rest.rsplit_once(':') {
+                    let send = mode == "send";
+                    if let Some(w) = app.get_window("main") {
+                        let _ = w.emit(
+                            "app://switch-provider",
+                            serde_json::json!({ "key": key, "send": send }),
+                        );
+                    }
+                }
+            }
         })
         .setup(|app| {
             let handle = app.handle().clone();
@@ -506,8 +579,10 @@ pub fn run() {
                         api.prevent_close();
                         browser::park_provider(&win);
                         let _ = win.emit("app://provider-closed", ());
-                        let _ = win.set_skip_taskbar(true);
-                        let _ = win.minimize();
+                        // hide_to_tray wants a Window; `win` is the WebviewWindow -> fetch the Window.
+                        if let Some(w) = win.get_window("main") {
+                            hide_to_tray(&w);
+                        }
                     }
                     WindowEvent::Resized(_) => browser::resize_provider(&win),
                     _ => {}
@@ -519,6 +594,14 @@ pub fn run() {
                     let _ = main.show();
                     let _ = main.set_focus();
                 }
+                let _ = main.set_always_on_top(loaded.always_on_top);
+                // macOS/Linux: join ALL Spaces/virtual desktops from creation (NSWindow
+                // canJoinAllSpaces), so summoning always finds the window on the CURRENT one with no
+                // relocation and no dragging to another Space. Must be set here (not only in
+                // bring_to_front, where the window is already assigned to a Space). Windows can't do
+                // this (no-op) -> there the hide/show recall in bring_to_front handles it.
+                #[cfg(not(windows))]
+                let _ = main.set_visible_on_all_workspaces(true);
             }
 
             // Non-visual init (after the show): tray + autostart sync.
@@ -570,6 +653,9 @@ pub fn run() {
             browser::set_provider_top_extra,
             browser::provider_reload,
             browser::provider_fill,
+            browser::provider_paste,
+            browser::provider_menu,
+            browser::set_provider_menu_labels,
             accept_clipboard,
             hide_toast,
             app_write_clipboard,

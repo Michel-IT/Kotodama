@@ -140,5 +140,11 @@
   "setRecipe": "Resep default",
   "setRecipeHint": "Resep yang dipakai saat Anda menyalin teks.",
   "neutralAutosend": "Kirim otomatis",
-  "neutralAutosendHint": "Kirim otomatis: saat aktif, teks langsung dikirim ke penyedia; saat nonaktif, teks hanya ditempel agar bisa kamu edit sebelum dikirim."
+  "neutralAutosendHint": "Kirim otomatis: saat aktif, teks langsung dikirim ke penyedia; saat nonaktif, teks hanya ditempel agar bisa kamu edit sebelum dikirim.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Selalu di atas",
+  "setAlwaysOnTopHint": "Kotodama tetap berada di atas jendela lain."
 }

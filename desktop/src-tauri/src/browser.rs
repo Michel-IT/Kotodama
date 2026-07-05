@@ -68,15 +68,17 @@ pub const PROVIDER_UA: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
 /// Script injected into EVERY provider page (external sites):
-/// - disables the right-click menu and devtools shortcuts (no browser/Tauri hints);
+/// - right-click -> OUR native context menu: preventDefault the page menu and navigate to the
+///   `kotodama.menu` sentinel, which Rust `on_navigation` turns into a native `popup_menu`
+///   (Copy/Paste/... + Switch provider), drawn OVER this child webview. Devtools shortcuts are
+///   NOT blocked here: available in a dev build, off in release (Tauri gates them).
 /// - sends links meant for a new tab (target="_blank") to the system default
 ///   browser, via a sentinel URL that the Rust `on_navigation` handler intercepts.
 pub const NO_MENU_JS: &str = r#"
 (function(){
-  document.addEventListener('contextmenu', function(e){ e.preventDefault(); }, {capture:true});
-  document.addEventListener('keydown', function(e){
-    var k=(e.key||'').toUpperCase();
-    if(k==='F12'||((e.ctrlKey||e.metaKey)&&e.shiftKey&&(k==='I'||k==='J'||k==='C'))||((e.ctrlKey||e.metaKey)&&k==='U')){ e.preventDefault(); e.stopPropagation(); }
+  document.addEventListener('contextmenu', function(e){
+    e.preventDefault(); e.stopPropagation();
+    window.location.href = 'https://kotodama.menu/';
   }, {capture:true});
   // External links (open-in-new-tab) -> system browser. Same-tab navigations
   // (SPA, login redirects) are left untouched so provider login keeps working.
@@ -111,6 +113,115 @@ fn provider_bounds(window: &Window) -> Result<(f64, f64), String> {
     let scale = window.scale_factor().map_err(|e| e.to_string())?;
     let logical = size.to_logical::<f64>(scale);
     Ok((logical.width, (logical.height - provider_top()).max(0.0)))
+}
+
+/// Localized labels for the native provider menu, pushed by the frontend in the active app language
+/// (field names match the i18n keys). Stored in AppState; read when the menu is built. Defaults are
+/// empty -> `show_provider_menu` falls back to English until the frontend sets them.
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct MenuLabels {
+    #[serde(default)]
+    pub copy: String,
+    #[serde(default)]
+    pub cut: String,
+    #[serde(default)]
+    pub paste: String,
+    #[serde(default, rename = "selectAll")]
+    pub select_all: String,
+    #[serde(default, rename = "switchProvider")]
+    pub switch: String,
+    #[serde(default, rename = "openAndSend")]
+    pub open_send: String,
+    #[serde(default, rename = "openAndPaste")]
+    pub open_paste: String,
+}
+
+/// Frontend pushes the menu labels (all app languages) at startup and on every language change,
+/// mirroring `set_tray_labels`. Stored for `show_provider_menu` to use.
+#[tauri::command]
+pub fn set_provider_menu_labels(window: Window, labels: MenuLabels) {
+    if let Some(state) = window.try_state::<crate::AppState>() {
+        *state.menu_labels.lock().unwrap() = labels;
+    }
+}
+
+/// Providers offered in the right-click "Switch provider" submenu (key -> display name).
+/// Keys match the frontend PROVIDERS registry; "other"/manual is intentionally excluded.
+const SWITCH_PROVIDERS: &[(&str, &str)] = &[
+    ("openai", "ChatGPT"),
+    ("anthropic", "Claude"),
+    ("grok", "Grok"),
+    ("gemini", "Gemini"),
+    ("perplexity", "Perplexity"),
+    ("qwen", "Qwen"),
+    ("deepseek", "DeepSeek"),
+    ("zai", "Z.ai"),
+];
+
+/// Builds + pops OUR native context menu over the provider child webview (triggered by the
+/// right-click sentinel intercepted in `on_navigation`). A native menu draws ABOVE the opaque
+/// child webview (an HTML menu cannot). Copy/Cut/Paste/Select-all are `PredefinedMenuItem`s that
+/// act natively on the focused webview (real paste) and carry OS-localized labels; the
+/// "Switch provider" submenu carries custom ids `sw:<key>:send` / `sw:<key>:paste` handled by the
+/// app-level `on_menu_event`. Must run on the main thread (caller uses `run_on_main_thread`).
+pub fn show_provider_menu(window: &Window) {
+    use tauri::menu::{IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
+    let app = window.app_handle().clone();
+    // Labels come from the frontend in the ACTIVE app language (set_provider_menu_labels, all langs).
+    // muda's predefined Copy/Cut/Paste/Select-all carry FIXED English text, so we override each item's
+    // text with our i18n label. English is only a fallback for the brief window before labels arrive.
+    let l = app.state::<crate::AppState>().menu_labels.lock().unwrap().clone();
+    let pick = |s: &str, fb: &str| if s.trim().is_empty() { fb.to_string() } else { s.to_string() };
+    let copy_t = pick(&l.copy, "Copy");
+    let cut_t = pick(&l.cut, "Cut");
+    let paste_t = pick(&l.paste, "Paste");
+    let sel_t = pick(&l.select_all, "Select all");
+    let switch_t = pick(&l.switch, "Switch provider");
+    let send_t = pick(&l.open_send, "Open and send");
+    let open_paste_t = pick(&l.open_paste, "Open and paste");
+
+    let build = || -> tauri::Result<Menu<tauri::Wry>> {
+        let copy = PredefinedMenuItem::copy(&app, Some(copy_t.as_str()))?;
+        let cut = PredefinedMenuItem::cut(&app, Some(cut_t.as_str()))?;
+        let paste = PredefinedMenuItem::paste(&app, Some(paste_t.as_str()))?;
+        let select_all = PredefinedMenuItem::select_all(&app, Some(sel_t.as_str()))?;
+        let sep = PredefinedMenuItem::separator(&app)?;
+
+        // "Switch provider" -> one submenu per provider -> [Open and send, Open and paste].
+        let mut subs: Vec<Submenu<tauri::Wry>> = Vec::new();
+        for (key, name) in SWITCH_PROVIDERS {
+            let send_i =
+                MenuItem::with_id(&app, format!("sw:{key}:send"), &send_t, true, None::<&str>)?;
+            let paste_i =
+                MenuItem::with_id(&app, format!("sw:{key}:paste"), &open_paste_t, true, None::<&str>)?;
+            subs.push(Submenu::with_items(&app, *name, true, &[&send_i, &paste_i])?);
+        }
+        let sub_refs: Vec<&dyn IsMenuItem<tauri::Wry>> =
+            subs.iter().map(|s| s as &dyn IsMenuItem<tauri::Wry>).collect();
+        let switch = Submenu::with_items(&app, &switch_t, true, &sub_refs)?;
+
+        Menu::with_items(&app, &[&copy, &cut, &paste, &select_all, &sep, &switch])
+    };
+
+    match build() {
+        Ok(menu) => {
+            if let Err(e) = window.popup_menu(&menu) {
+                debug::log(format!("popup_menu error: {e}"));
+            }
+        }
+        Err(e) => debug::log(format!("build provider menu error: {e}")),
+    }
+}
+
+/// Pops OUR native provider menu on demand (the in-app bar's ⇄ button). Same menu as the
+/// right-click; pops at the cursor (which is on the button). Runs on the main thread.
+#[tauri::command]
+pub fn provider_menu(window: Window) -> Result<(), String> {
+    let w = window.clone();
+    window
+        .app_handle()
+        .run_on_main_thread(move || show_provider_menu(&w))
+        .map_err(|e| e.to_string())
 }
 
 /// Opens (or re-navigates) the provider view to the given `url`.
@@ -151,6 +262,13 @@ pub async fn open_provider_view(window: Window, url: String) -> Result<(), Strin
             .initialization_script(NO_MENU_JS)
             .on_navigation(move |u| {
                 debug::log(format!("on_navigation -> {u}"));
+                // Right-click sentinel: pop OUR native context menu (over this child webview),
+                // on the main thread (popup_menu requires it). The navigation itself is blocked.
+                if u.host_str() == Some("kotodama.menu") {
+                    let w = win_for_nav.clone();
+                    let _ = win_for_nav.app_handle().run_on_main_thread(move || show_provider_menu(&w));
+                    return false;
+                }
                 // External links funneled here (sentinel host) open in the system
                 // default browser; the in-app navigation is then blocked.
                 if u.host_str() == Some("kotodama.external") {
@@ -262,11 +380,10 @@ pub fn provider_reload(window: Window) -> Result<(), String> {
 /// Uses the native setter for textareas and `execCommand('insertText')` for
 /// rich editors (ProseMirror/Quill), the most compatible. After filling it sends
 /// the message by simulating Enter — used for providers without ?q=.
-#[tauri::command]
-pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
+fn fill_impl(window: &Window, text: String, send: bool) -> Result<(), String> {
     if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
         let json = serde_json::to_string(&text).map_err(|e| e.to_string())?;
-        let js = format!("var __apb_text = {json};")
+        let js = format!("var __apb_text = {json}; var __apb_send = {send};")
             + r#"
 (function(){
   var text = __apb_text;
@@ -337,7 +454,7 @@ pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
         el.dispatchEvent(new InputEvent('input', { bubbles: true }));
       }
       // invia se l'input ha testo (riempito ora o precompilato da ?q=)
-      setTimeout(function(){ if (getVal(el).trim().length) submit(el); }, 500);
+      setTimeout(function(){ if (__apb_send && getVal(el).trim().length) submit(el); }, 500);
       clearInterval(iv);
     }
     if (tries > 66) clearInterval(iv);
@@ -347,6 +464,18 @@ pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
         webview.eval(&js).map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+/// Fill the provider AND submit (normal open + autosend). Original signature -> autosend unchanged.
+#[tauri::command]
+pub fn provider_fill(window: Window, text: String) -> Result<(), String> {
+    fill_impl(&window, text, true)
+}
+
+/// Fill the provider WITHOUT submitting ("switch provider -> open and paste").
+#[tauri::command]
+pub fn provider_paste(window: Window, text: String) -> Result<(), String> {
+    fill_impl(&window, text, false)
 }
 
 /// Sets the extra offset (logical px) below the topbar and immediately

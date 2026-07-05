@@ -42,24 +42,6 @@ leaves your computer.
 **Kotodama** (言霊) is a Japanese concept: the *spiritual power of words* — the idea that words can shape reality.
 Hence the project's promise: **give your words power**.
 
-## 🎯 Who is this for?
-
-- **Power users** who switch between ChatGPT and Claude 20 times a day and want one window for all of them
-- **Privacy-conscious** developers who don't want their prompts routed through a third-party backend
-- **Prompt engineers** who want to send the same prompt to multiple models and compare answers side by side
-- **Offline-first** users: everything runs locally, your data never leaves your machine
-
-## 🔑 Key features
-
-| Feature | Description |
-|---|---|
-| **8 AI assistants** | ChatGPT, Claude, Gemini, Grok, Perplexity, Qwen, DeepSeek, Z.ai — in one window |
-| **Auto-send prompts** | Write once, pick the provider, send automatically — no copy-paste |
-| **Fully local** | No backend, no telemetry, no account. Your data stays on your machine |
-| **Cross-platform** | Windows, macOS, Linux — same app, same experience |
-| **Open source** | GPL-3.0, auditable, no hidden code paths |
-| **Fast & lightweight** | Built with Tauri + Rust, not Electron. Small binary, low RAM |
-
 ## ⬇️ Download (free)
 
 Grab the installer from the **[Releases](../../releases)** page — no account, no sign-up:

@@ -140,5 +140,11 @@
   "setRecipe": "Vaikeretsept",
   "setRecipeHint": "Retsept, mida kasutatakse teksti kopeerimisel.",
   "neutralAutosend": "Automaatsaatmine",
-  "neutralAutosendHint": "Automaatsaatmine: kui see on sees, saadetakse tekst kohe teenusepakkujale; kui see on väljas, üksnes kleebitakse, et saaksid seda enne saatmist muuta."
+  "neutralAutosendHint": "Automaatsaatmine: kui see on sees, saadetakse tekst kohe teenusepakkujale; kui see on väljas, üksnes kleebitakse, et saaksid seda enne saatmist muuta.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Alati pealmine",
+  "setAlwaysOnTopHint": "Kotodama püsib teiste akende peal."
 }

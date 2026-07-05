@@ -140,5 +140,11 @@
   "setRecipe": "Rețetă implicită",
   "setRecipeHint": "Rețeta folosită când copiezi un text.",
   "neutralAutosend": "Trimitere automată",
-  "neutralAutosendHint": "Trimitere automată: când este activată, textul este trimis imediat către furnizor; când este dezactivată, este doar lipit ca să îl poți edita înainte de a-l trimite."
+  "neutralAutosendHint": "Trimitere automată: când este activată, textul este trimis imediat către furnizor; când este dezactivată, este doar lipit ca să îl poți edita înainte de a-l trimite.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Întotdeauna deasupra",
+  "setAlwaysOnTopHint": "Kotodama rămâne deasupra celorlalte ferestre."
 }

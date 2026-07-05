@@ -140,5 +140,11 @@
   "setRecipe": "Predvolený recept",
   "setRecipeHint": "Recept použitý pri kopírovaní textu.",
   "neutralAutosend": "Automatické odoslanie",
-  "neutralAutosendHint": "Automatické odoslanie: keď je zapnuté, text sa hneď odošle poskytovateľovi; keď je vypnuté, iba sa vloží, aby ste ho mohli pred odoslaním upraviť."
+  "neutralAutosendHint": "Automatické odoslanie: keď je zapnuté, text sa hneď odošle poskytovateľovi; keď je vypnuté, iba sa vloží, aby ste ho mohli pred odoslaním upraviť.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Vždy navrchu",
+  "setAlwaysOnTopHint": "Kotodama zostáva nad ostatnými oknami."
 }

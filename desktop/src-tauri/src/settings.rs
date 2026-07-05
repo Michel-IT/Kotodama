@@ -39,6 +39,8 @@ pub struct Settings {
     pub tone: u32,
     /// Ricetta "Neutra": invio automatico al provider (true) oppure solo incolla per editare (false).
     pub neutral_autosend: bool,
+    /// Finestra sempre in primo piano (galleggia sopra le altre finestre). Default: off.
+    pub always_on_top: bool,
 }
 
 impl Default for Settings {
@@ -54,6 +56,7 @@ impl Default for Settings {
             length: 0,
             tone: 0,
             neutral_autosend: true,
+            always_on_top: false,
         }
     }
 }

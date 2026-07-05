@@ -140,5 +140,11 @@
   "setRecipe": "Numatytasis receptas",
   "setRecipeHint": "Receptas, naudojamas kopijuojant tekstą.",
   "neutralAutosend": "Automatinis siuntimas",
-  "neutralAutosendHint": "Automatinis siuntimas: kai įjungta, tekstas iškart siunčiamas tiekėjui; kai išjungta, jis tik įklijuojamas, kad galėtumėte jį redaguoti prieš siųsdami."
+  "neutralAutosendHint": "Automatinis siuntimas: kai įjungta, tekstas iškart siunčiamas tiekėjui; kai išjungta, jis tik įklijuojamas, kad galėtumėte jį redaguoti prieš siųsdami.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Visada viršuje",
+  "setAlwaysOnTopHint": "Kotodama lieka virš kitų langų."
 }

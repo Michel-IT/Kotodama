@@ -140,5 +140,11 @@
   "setRecipe": "Privzeti recept",
   "setRecipeHint": "Recept, uporabljen ob kopiranju besedila.",
   "neutralAutosend": "Samodejno pošiljanje",
-  "neutralAutosendHint": "Samodejno pošiljanje: ko je vklopljeno, se besedilo takoj pošlje ponudniku; ko je izklopljeno, se samo prilepi, da ga lahko pred pošiljanjem uredite."
+  "neutralAutosendHint": "Samodejno pošiljanje: ko je vklopljeno, se besedilo takoj pošlje ponudniku; ko je izklopljeno, se samo prilepi, da ga lahko pred pošiljanjem uredite.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Vedno na vrhu",
+  "setAlwaysOnTopHint": "Kotodama ostane nad drugimi okni."
 }

@@ -140,5 +140,11 @@
   "setRecipe": "डिफॉल्ट रेसिपी",
   "setRecipeHint": "जब रउआ टेक्स्ट कॉपी करीं त इस्तेमाल होखे वाली रेसिपी।",
   "neutralAutosend": "ऑटो-भेजल",
-  "neutralAutosendHint": "ऑटो-भेजल: चालू रहे त टेक्स्ट तुरंते प्रोवाइडर के भेज दिहल जाला; बंद रहे त खाली पेस्ट होखेला, ताकि भेजे से पहिले रउआ ओकरा के बदल सकीं।"
+  "neutralAutosendHint": "ऑटो-भेजल: चालू रहे त टेक्स्ट तुरंते प्रोवाइडर के भेज दिहल जाला; बंद रहे त खाली पेस्ट होखेला, ताकि भेजे से पहिले रउआ ओकरा के बदल सकीं।",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "हमेशा ऊपर",
+  "setAlwaysOnTopHint": "Kotodama दोसर विंडो सभ के ऊपर रहेला।"
 }

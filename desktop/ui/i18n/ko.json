@@ -140,5 +140,11 @@
   "setRecipe": "기본 레시피",
   "setRecipeHint": "텍스트를 복사할 때 사용되는 레시피.",
   "neutralAutosend": "자동 전송",
-  "neutralAutosendHint": "자동 전송: 켜면 텍스트가 곧바로 제공자로 전송됩니다. 끄면 붙여넣기만 되어 전송 전에 편집할 수 있습니다."
+  "neutralAutosendHint": "자동 전송: 켜면 텍스트가 곧바로 제공자로 전송됩니다. 끄면 붙여넣기만 되어 전송 전에 편집할 수 있습니다.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "항상 위에 표시",
+  "setAlwaysOnTopHint": "Kotodama가 다른 창 위에 유지됩니다."
 }

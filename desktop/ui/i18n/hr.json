@@ -140,5 +140,11 @@
   "setRecipe": "Zadani recept",
   "setRecipeHint": "Recept koji se koristi kada kopirate tekst.",
   "neutralAutosend": "Automatsko slanje",
-  "neutralAutosendHint": "Automatsko slanje: kad je uključeno, tekst se odmah šalje pružatelju; kad je isključeno, samo se zalijepi kako biste ga mogli urediti prije slanja."
+  "neutralAutosendHint": "Automatsko slanje: kad je uključeno, tekst se odmah šalje pružatelju; kad je isključeno, samo se zalijepi kako biste ga mogli urediti prije slanja.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Uvijek na vrhu",
+  "setAlwaysOnTopHint": "Kotodama ostaje iznad drugih prozora."
 }

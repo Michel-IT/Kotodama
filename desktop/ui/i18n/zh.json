@@ -140,5 +140,11 @@
   "setRecipe": "默认配方",
   "setRecipeHint": "复制文本时使用的配方。",
   "neutralAutosend": "自动发送",
-  "neutralAutosendHint": "自动发送：开启时，文本会立即发送给提供商；关闭时，仅粘贴文本，方便你在发送前进行编辑。"
+  "neutralAutosendHint": "自动发送：开启时，文本会立即发送给提供商；关闭时，仅粘贴文本，方便你在发送前进行编辑。",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "总在最前",
+  "setAlwaysOnTopHint": "Kotodama 始终显示在其他窗口之上。"
 }

@@ -140,5 +140,11 @@
   "setRecipe": "Công thức mặc định",
   "setRecipeHint": "Công thức dùng khi bạn sao chép văn bản.",
   "neutralAutosend": "Gửi tự động",
-  "neutralAutosendHint": "Gửi tự động: khi bật, văn bản được gửi ngay đến nhà cung cấp; khi tắt, văn bản chỉ được dán để bạn có thể chỉnh sửa trước khi gửi."
+  "neutralAutosendHint": "Gửi tự động: khi bật, văn bản được gửi ngay đến nhà cung cấp; khi tắt, văn bản chỉ được dán để bạn có thể chỉnh sửa trước khi gửi.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Luôn ở trên cùng",
+  "setAlwaysOnTopHint": "Kotodama luôn nằm trên các cửa sổ khác."
 }

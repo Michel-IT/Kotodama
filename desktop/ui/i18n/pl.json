@@ -140,5 +140,11 @@
   "setRecipe": "Domyślny przepis",
   "setRecipeHint": "Przepis używany podczas kopiowania tekstu.",
   "neutralAutosend": "Automatyczne wysyłanie",
-  "neutralAutosendHint": "Automatyczne wysyłanie: gdy włączone, tekst jest od razu wysyłany do dostawcy; gdy wyłączone, jest tylko wklejany, aby można było go edytować przed wysłaniem."
+  "neutralAutosendHint": "Automatyczne wysyłanie: gdy włączone, tekst jest od razu wysyłany do dostawcy; gdy wyłączone, jest tylko wklejany, aby można było go edytować przed wysłaniem.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Zawsze na wierzchu",
+  "setAlwaysOnTopHint": "Kotodama pozostaje nad innymi oknami."
 }

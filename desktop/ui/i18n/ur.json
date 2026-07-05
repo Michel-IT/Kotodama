@@ -140,5 +140,11 @@
   "setRecipe": "ڈیفالٹ ریسیپی",
   "setRecipeHint": "متن کاپی کرنے پر استعمال ہونے والی ریسیپی۔",
   "neutralAutosend": "خودکار بھیجیں",
-  "neutralAutosendHint": "خودکار بھیجیں: آن ہونے پر متن فوراً فراہم کنندہ کو بھیج دیا جاتا ہے؛ آف ہونے پر صرف چسپاں کیا جاتا ہے تاکہ آپ بھیجنے سے پہلے اسے ترمیم کر سکیں۔"
+  "neutralAutosendHint": "خودکار بھیجیں: آن ہونے پر متن فوراً فراہم کنندہ کو بھیج دیا جاتا ہے؛ آف ہونے پر صرف چسپاں کیا جاتا ہے تاکہ آپ بھیجنے سے پہلے اسے ترمیم کر سکیں۔",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "ہمیشہ اوپر",
+  "setAlwaysOnTopHint": "Kotodama دیگر ونڈوز کے اوپر رہتا ہے۔"
 }

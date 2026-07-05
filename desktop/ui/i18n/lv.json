@@ -140,5 +140,11 @@
   "setRecipe": "Noklusējuma recepte",
   "setRecipeHint": "Recepte, ko izmanto, kopējot tekstu.",
   "neutralAutosend": "Automātiska sūtīšana",
-  "neutralAutosendHint": "Automātiska sūtīšana: kad ieslēgta, teksts tiek uzreiz nosūtīts pakalpojumu sniedzējam; kad izslēgta, tas tiek tikai ielīmēts, lai jūs to varētu rediģēt pirms sūtīšanas."
+  "neutralAutosendHint": "Automātiska sūtīšana: kad ieslēgta, teksts tiek uzreiz nosūtīts pakalpojumu sniedzējam; kad izslēgta, tas tiek tikai ielīmēts, lai jūs to varētu rediģēt pirms sūtīšanas.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Vienmēr virspusē",
+  "setAlwaysOnTopHint": "Kotodama paliek virs citiem logiem."
 }

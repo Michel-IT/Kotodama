@@ -140,5 +140,11 @@
   "setRecipe": "डिफ़ॉल्ट रेसिपी",
   "setRecipeHint": "टेक्स्ट कॉपी करने पर उपयोग की जाने वाली रेसिपी।",
   "neutralAutosend": "स्वतः भेजें",
-  "neutralAutosendHint": "स्वतः भेजें: चालू होने पर टेक्स्ट तुरंत प्रोवाइडर को भेजा जाता है; बंद होने पर इसे केवल पेस्ट किया जाता है ताकि आप भेजने से पहले इसे संपादित कर सकें."
+  "neutralAutosendHint": "स्वतः भेजें: चालू होने पर टेक्स्ट तुरंत प्रोवाइडर को भेजा जाता है; बंद होने पर इसे केवल पेस्ट किया जाता है ताकि आप भेजने से पहले इसे संपादित कर सकें.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "हमेशा सबसे ऊपर",
+  "setAlwaysOnTopHint": "Kotodama अन्य विंडो के ऊपर रहता है।"
 }

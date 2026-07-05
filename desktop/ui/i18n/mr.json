@@ -140,5 +140,11 @@
   "setRecipe": "डीफॉल्ट रेसिपी",
   "setRecipeHint": "मजकूर कॉपी करताना वापरली जाणारी रेसिपी.",
   "neutralAutosend": "स्वयं-पाठवा",
-  "neutralAutosendHint": "स्वयं-पाठवा: चालू असल्यास, मजकूर लगेच प्रदात्याला पाठवला जातो; बंद असल्यास, तो फक्त पेस्ट केला जातो जेणेकरून पाठवण्यापूर्वी तुम्ही तो संपादित करू शकता."
+  "neutralAutosendHint": "स्वयं-पाठवा: चालू असल्यास, मजकूर लगेच प्रदात्याला पाठवला जातो; बंद असल्यास, तो फक्त पेस्ट केला जातो जेणेकरून पाठवण्यापूर्वी तुम्ही तो संपादित करू शकता.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "नेहमी वर",
+  "setAlwaysOnTopHint": "Kotodama इतर विंडोंच्या वर राहते."
 }

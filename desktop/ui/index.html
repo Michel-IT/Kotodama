@@ -538,6 +538,7 @@
 
       <div class="ab-provnav">
         <button class="pc-close" id="pcClose">← <span data-i18n="builder">Ai Prompt Builder</span></button>
+        <button class="pc-btn" id="pcSwitch" data-i18n-title="switchProvider" title="Cambia provider">⇄</button>
         <button class="pc-btn" id="pcReload" data-i18n-title="reload" title="Ricarica">⟳</button>
       </div>
       <div class="pc-title"><span class="pc-badge">✦</span><span id="pcName"></span></div>
@@ -751,6 +752,15 @@
                 <label class="switch"><input type="checkbox" id="setAutostart"><span class="slider"></span></label>
               </div>
             </div>
+            <div class="setting">
+              <div class="row">
+                <div>
+                  <label data-i18n="setAlwaysOnTop">Sempre in primo piano</label>
+                  <div class="sub" data-i18n="setAlwaysOnTopHint">Kotodama resta sopra le altre finestre.</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="setAlwaysOnTop"><span class="slider"></span></label>
+              </div>
+            </div>
           </div>
           <div class="setting">
             <div class="row">
@@ -906,6 +916,7 @@
       otherName:'Other', manualNote:'Prompt generated and copied to clipboard.',
       openError:'Error opening the provider',
       builder:'Ai Prompt Builder', reload:'Reload',
+      switchProvider:'Switch provider', openAndSend:'Open and send', openAndPaste:'Open and paste',
       claudeHintMsg:'For Claude, sign in with “Continue with email”: Google sign-in doesn\'t work in embedded browsers.', bannerDismiss:'Don\'t show again',
       winMin:'Minimize', winMax:'Maximize', winClose:'Close',
       settingsTitle:'Settings', setTheme:'Theme', themeGinga:'Ginga', themeHisui:'Hisui', themeKohaku:'Kohaku', themeMurasaki:'Murasaki', themeSumi:'Sumi',
@@ -914,6 +925,7 @@
       setHotkey:'Global shortcut', setHotkeyHint:'Click and press the combo (e.g. Ctrl + \\).',
       setMonitor:'Clipboard monitor', setMonitorHint:'Show the toast when you copy text.',
       setAutostart:'Start on login', setAutostartHint:'Starts minimized in the tray at login.',
+      setAlwaysOnTop:'Always on top', setAlwaysOnTopHint:'Kotodama stays above other windows.',
       save:'Save', cancel:'Cancel', reset:'Reset', pressCombo:'Press a combo…', settingsSaved:'Settings saved ✓',
       hotkeyFallback:'Shortcut unavailable on Windows: using {k}',
       setUpdates:'Updates', setUpdatesHint:'Check whether a new version is available.', checkUpdates:'Check for updates',
@@ -982,7 +994,7 @@
     }
 
     const THEMES = ['ginga','hisui','kohaku','murasaki','sumi'];
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, neutral_autosend:true };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, always_on_top:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, neutral_autosend:true };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -1048,6 +1060,8 @@
       recomputeHintFit();   // the hint length changes with the language → recompute whether it fits
       // Localizza le voci della tray (Apri / Avvia col sistema / Esci) nella lingua corrente.
       if(TAURI){ try{ invoke('set_tray_labels', { open:t.open, autostart:t.setAutostart, quit:t.quit }); }catch(e){} }
+      // Localize the NATIVE provider context menu (muda's predefined items are English-only otherwise).
+      if(TAURI){ try{ invoke('set_provider_menu_labels', { labels:{ copy:t.copy, cut:t.cut, paste:t.paste, selectAll:t.selectAll, switchProvider:t.switchProvider, openAndSend:t.openAndSend, openAndPaste:t.openAndPaste } }); }catch(e){} }
     }
 
     // The providers hint sits on the title row, on the right: if there is no space (it would be truncated)
@@ -1082,6 +1096,8 @@
     // Prompt in attesa di invio: l'auto-invio parte quando la pagina del provider
     // ha finito di caricare (evento app://provider-loaded), NON a tempo fisso.
     let pendingSend = null;
+    let pendingFill = null;   // {text, send}: testo da portare al provider su cui si cambia
+    let lastPrompt = '';      // ultimo prompt inviato/aperto (riusato dal "cambia provider")
     async function openProvider(){
       const t=TR; const p=PROVIDERS[selectedProvider]; const promptText=buildPrompt();
       if(p.mode==='manual'){ showOutput(promptText); await writeClipboard(promptText); toast(t.manualNote); output.scrollIntoView({behavior:'smooth',block:'nearest'}); return; }
@@ -1089,7 +1105,7 @@
       const encoded=encodeURIComponent(promptText);
       const useQuery=p.mode==='query'&&encoded.length<=MAX_URL;
       const url=useQuery?(p.base+p.q+encoded):p.base;
-      lastProviderUrl=url;
+      lastProviderUrl=url; lastPrompt=promptText;
       if(TAURI){
         await writeClipboard(promptText);            // always: safety net (paste with Ctrl+V)
         startProviderLoading(p.name);                // bar + overlay immediately (the page loads off-screen)
@@ -1133,6 +1149,27 @@
       toast(`${t.opening} ${p.name}`);
     }
 
+    // Switch to another provider carrying the CURRENT main-page prompt (fallback: last one): open
+    // it, fill it, and send if `send`. Uses buildPrompt() so it works even when the current provider
+    // was opened via double-click (openProviderDirect), which does not set lastPrompt.
+    async function switchProvider(key, send){
+      const p=PROVIDERS[key]; if(!p || !p.base || p.mode==='manual') return;
+      const t=TR; const text=(buildPrompt()||'').trim() || (lastPrompt||'').trim();
+      pendingSend=null;
+      selectProviderTile(key); lastProviderUrl=p.base;
+      if(!TAURI){ const w=window.open(p.base,'_blank'); if(!w) toast(t.popupBlocked); return; }
+      startProviderLoading(p.name);
+      try{
+        await setClaudeHint(key==='anthropic');
+        pendingFill = text ? { text, send } : null;   // filled on app://provider-loaded
+        await invoke('open_provider_view',{url:p.base});
+      }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
+      setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000);
+    }
+    // "Cambia provider": handled by the NATIVE menu (Rust) — an HTML menu cannot render over the
+    // opaque provider webview. Triggered by right-click in the provider or the ⇄ button (both call
+    // the native popup); the choice comes back via the `app://switch-provider` event -> switchProvider.
+
     /* ===================== IN-APP BAR (provider name, no URL) ===================== */
     const pcBadge=document.querySelector('.pc-badge');
     function openProviderBar(name){
@@ -1156,6 +1193,7 @@
     function closeProviderBar(){ body.classList.remove('provider-open','provider-loading'); setClaudeHint(false); }
     document.getElementById('pcClose').addEventListener('click', async()=>{ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); });
     document.getElementById('pcReload').addEventListener('click', ()=>{ if(TAURI) invoke('provider_reload').catch(()=>{}); });
+    document.getElementById('pcSwitch').addEventListener('click', (e)=>{ e.stopPropagation(); if(TAURI) invoke('provider_menu').catch(()=>{}); });
 
     /* ===================== CLAUDE LOGIN WARNING BANNER ===================== */
     // Shows/hides the native banner and pushes the provider webview down by the same
@@ -1203,6 +1241,7 @@
     const setHotkey=document.getElementById('setHotkey');
     const setMonitor=document.getElementById('setMonitor');
     const setAutostart=document.getElementById('setAutostart');
+    const setAlwaysOnTop=document.getElementById('setAlwaysOnTop');
     let capturedHotkey=DEFAULT_SETTINGS.hotkey;
 
     function keyLabel(part){
@@ -1245,6 +1284,7 @@
       capturedHotkey=currentSettings.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey);
       setMonitor.checked=!!currentSettings.monitor_enabled;
       setAutostart.checked=!!currentSettings.autostart;
+      setAlwaysOnTop.checked=!!currentSettings.always_on_top;
     }
     function openSettings(){ fillSettingsForm(); openModal(settingsOverlay); checkUpdate(true); }
     setTheme.addEventListener('change', ()=>applyTheme(setTheme.value)); // live preview
@@ -1252,7 +1292,7 @@
 
     async function saveSettings(){
       // spread of currentSettings → does not reset provider/recipe/length/tone (managed by the tiles/controls)
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:setMonitor.checked, autostart:setAutostart.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value };
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:setMonitor.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
       closeModal(settingsOverlay);
@@ -1742,7 +1782,10 @@
         body.classList.remove('provider-loading'); // page ready → remove overlay
         // pagina del provider pronta → ora (con un piccolo assestamento) invia
         if(pendingSend!==null){ const t=pendingSend; pendingSend=null; setTimeout(()=>{ if(TAURI) invoke('provider_fill',{text:t}).catch(()=>{}); }, 700); }
+        else if(pendingFill){ const f=pendingFill; pendingFill=null; setTimeout(()=>{ if(TAURI) invoke(f.send?'provider_fill':'provider_paste',{text:f.text}).catch(()=>{}); }, 700); }
       });
+      // "Cambia provider" chosen from the NATIVE menu (Rust emits key + whether to send).
+      listen('app://switch-provider', e=>{ const d=e.payload||{}; if(d.key) switchProvider(d.key, !!d.send); });
       listen('app://provider-closed', ()=>{ closeProviderBar(); });
       // Autostart cambiato dalla tray: tieni currentSettings in sync (altrimenti un set_settings lo riazzera).
       listen('app://autostart-changed', e=>{ currentSettings.autostart = !!e.payload; });

@@ -140,5 +140,11 @@
   "setRecipe": "دستور پیش‌فرض",
   "setRecipeHint": "دستوری که هنگام کپی متن استفاده می‌شود.",
   "neutralAutosend": "ارسال خودکار",
-  "neutralAutosendHint": "ارسال خودکار: وقتی روشن است، متن بلافاصله به ارائه‌دهنده ارسال می‌شود؛ وقتی خاموش است، فقط جای‌گذاری می‌شود تا پیش از ارسال بتوانید آن را ویرایش کنید."
+  "neutralAutosendHint": "ارسال خودکار: وقتی روشن است، متن بلافاصله به ارائه‌دهنده ارسال می‌شود؛ وقتی خاموش است، فقط جای‌گذاری می‌شود تا پیش از ارسال بتوانید آن را ویرایش کنید.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "همیشه در بالا",
+  "setAlwaysOnTopHint": "Kotodama بالای پنجره‌های دیگر می‌ماند."
 }

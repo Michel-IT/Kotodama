@@ -140,5 +140,11 @@
   "setRecipe": "Alapértelmezett recept",
   "setRecipeHint": "Szövegmásoláskor használt recept.",
   "neutralAutosend": "Automatikus küldés",
-  "neutralAutosendHint": "Automatikus küldés: bekapcsolva a szöveg azonnal a szolgáltatóhoz kerül; kikapcsolva csak beillesztődik, hogy küldés előtt szerkeszthesd."
+  "neutralAutosendHint": "Automatikus küldés: bekapcsolva a szöveg azonnal a szolgáltatóhoz kerül; kikapcsolva csak beillesztődik, hogy küldés előtt szerkeszthesd.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Mindig felül",
+  "setAlwaysOnTopHint": "A Kotodama a többi ablak felett marad."
 }

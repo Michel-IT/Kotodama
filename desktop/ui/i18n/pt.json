@@ -140,5 +140,11 @@
   "setRecipe": "Receita padrão",
   "setRecipeHint": "Receita usada ao copiar texto.",
   "neutralAutosend": "Envio automático",
-  "neutralAutosendHint": "Envio automático: quando ativado, o texto é enviado imediatamente ao provedor; quando desativado, ele é apenas colado para que você possa editá-lo antes de enviar."
+  "neutralAutosendHint": "Envio automático: quando ativado, o texto é enviado imediatamente ao provedor; quando desativado, ele é apenas colado para que você possa editá-lo antes de enviar.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Sempre à frente",
+  "setAlwaysOnTopHint": "O Kotodama permanece sobre as outras janelas."
 }

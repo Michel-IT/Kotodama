@@ -140,5 +140,11 @@
   "setRecipe": "デフォルトのレシピ",
   "setRecipeHint": "テキストをコピーしたときに使うレシピ。",
   "neutralAutosend": "自動送信",
-  "neutralAutosendHint": "自動送信: オンの場合、テキストはすぐにプロバイダーへ送信されます。オフの場合は貼り付けられるだけなので、送信前に編集できます。"
+  "neutralAutosendHint": "自動送信: オンの場合、テキストはすぐにプロバイダーへ送信されます。オフの場合は貼り付けられるだけなので、送信前に編集できます。",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "常に手前に表示",
+  "setAlwaysOnTopHint": "Kotodama をほかのウィンドウの手前に表示します。"
 }

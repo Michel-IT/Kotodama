@@ -140,5 +140,11 @@
   "setRecipe": "Oletusresepti",
   "setRecipeHint": "Resepti, jota käytetään, kun kopioit tekstiä.",
   "neutralAutosend": "Lähetä automaattisesti",
-  "neutralAutosendHint": "Automaattinen lähetys: kun päällä, teksti lähetetään palveluntarjoajalle heti; kun pois, se vain liitetään, jotta voit muokata sitä ennen lähettämistä."
+  "neutralAutosendHint": "Automaattinen lähetys: kun päällä, teksti lähetetään palveluntarjoajalle heti; kun pois, se vain liitetään, jotta voit muokata sitä ennen lähettämistä.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Aina päällimmäisenä",
+  "setAlwaysOnTopHint": "Kotodama pysyy muiden ikkunoiden päällä."
 }

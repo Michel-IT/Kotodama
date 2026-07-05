@@ -140,5 +140,11 @@
   "setRecipe": "Errezeta lehenetsia",
   "setRecipeHint": "Testua kopiatzean erabiltzen den errezeta.",
   "neutralAutosend": "Bidalketa automatikoa",
-  "neutralAutosendHint": "Bidalketa automatikoa: aktibatuta dagoenean, testua berehala bidaltzen zaio hornitzaileari; desaktibatuta dagoenean, itsatsi besterik ez da egiten, bidali aurretik edita dezazun."
+  "neutralAutosendHint": "Bidalketa automatikoa: aktibatuta dagoenean, testua berehala bidaltzen zaio hornitzaileari; desaktibatuta dagoenean, itsatsi besterik ez da egiten, bidali aurretik edita dezazun.",
+  "switchProvider": "Switch provider",
+  "openAndSend": "Open and send",
+  "openAndPaste": "Open and paste",
+  "quit": "Quit",
+  "setAlwaysOnTop": "Beti goian",
+  "setAlwaysOnTopHint": "Kotodama beste leihoen gainean geratzen da."
 }
