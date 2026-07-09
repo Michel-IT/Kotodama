@@ -27,6 +27,12 @@ static PROVIDER_ACTIVE: AtomicBool = AtomicBool::new(false);
 /// the fallback. Avoids the "flash" of the previous provider's page during the switch.
 static PROVIDER_PENDING_SHOW: AtomicBool = AtomicBool::new(false);
 
+/// The provider is temporarily "suppressed" (parked out of view) because an app
+/// modal (e.g. the Download manager) is showing on top. Unlike close/park, this
+/// keeps PROVIDER_ACTIVE=true so we can restore the exact bounds afterwards;
+/// `resize_provider` also bails out while suppressed so a resize does not pop it back.
+static PROVIDER_SUPPRESSED: AtomicBool = AtomicBool::new(false);
+
 /// Park Y: we move the provider webview well outside the window. It is a
 /// `set_position` (NON-blocking, unlike `close()`/`hide()` on Windows once the
 /// page has navigated), so the ✕ never freezes.
@@ -85,6 +91,9 @@ pub const NO_MENU_JS: &str = r#"
   document.addEventListener('click', function(e){
     var a = e.target && e.target.closest && e.target.closest('a[href]');
     if(!a) return;
+    // Download link (attributo download): NON dirottare al browser di sistema,
+    // lascialo scaricare qui dentro (lo cattura on_download lato Rust).
+    if(a.hasAttribute('download')) return;
     var href = a.href || '';
     if(!/^https?:\/\//i.test(href)) return;
     if(a.target !== '_blank') return;
@@ -107,12 +116,21 @@ fn provider_top() -> f64 {
     TOPBAR_H + *provider_top_extra().lock().unwrap()
 }
 
-/// Logical size available below the top bar (+ banner).
+/// Width (logical px) reserved ON THE RIGHT for the docked Download panel. The
+/// provider webview is narrowed by this much so the HTML side panel (main webview)
+/// is no longer covered by the opaque provider. 0 = no dock (provider full width).
+fn provider_dock_px() -> &'static Mutex<f64> {
+    static D: OnceLock<Mutex<f64>> = OnceLock::new();
+    D.get_or_init(|| Mutex::new(0.0))
+}
+
+/// Logical size available below the top bar (+ banner), minus the docked panel width.
 fn provider_bounds(window: &Window) -> Result<(f64, f64), String> {
     let size = window.inner_size().map_err(|e| e.to_string())?;
     let scale = window.scale_factor().map_err(|e| e.to_string())?;
     let logical = size.to_logical::<f64>(scale);
-    Ok((logical.width, (logical.height - provider_top()).max(0.0)))
+    let w = (logical.width - *provider_dock_px().lock().unwrap()).max(0.0);
+    Ok((w, (logical.height - provider_top()).max(0.0)))
 }
 
 /// Localized labels for the native provider menu, pushed by the frontend in the active app language
@@ -130,10 +148,16 @@ pub struct MenuLabels {
     pub select_all: String,
     #[serde(default, rename = "switchProvider")]
     pub switch: String,
+    #[serde(default, rename = "openOnly")]
+    pub open_only: String,
     #[serde(default, rename = "openAndSend")]
     pub open_send: String,
     #[serde(default, rename = "openAndPaste")]
     pub open_paste: String,
+    #[serde(default, rename = "copyUrl")]
+    pub copy_url: String,
+    #[serde(default)]
+    pub downloads: String,
 }
 
 /// Frontend pushes the menu labels (all app languages) at startup and on every language change,
@@ -160,47 +184,44 @@ const SWITCH_PROVIDERS: &[(&str, &str)] = &[
 
 /// Builds + pops OUR native context menu over the provider child webview (triggered by the
 /// right-click sentinel intercepted in `on_navigation`). A native menu draws ABOVE the opaque
-/// child webview (an HTML menu cannot). Copy/Cut/Paste/Select-all are `PredefinedMenuItem`s that
-/// act natively on the focused webview (real paste) and carry OS-localized labels; the
-/// "Switch provider" submenu carries custom ids `sw:<key>:send` / `sw:<key>:paste` handled by the
-/// app-level `on_menu_event`. Must run on the main thread (caller uses `run_on_main_thread`).
+/// child webview (an HTML menu cannot). It carries just two entries: "Download manager" (id
+/// `downloads` → opens the in-app panel) and the "Switch provider" submenu (custom ids
+/// `sw:<key>:send` / `sw:<key>:paste`), both handled by the app-level `on_menu_event`. Must run
+/// on the main thread (caller uses `run_on_main_thread`).
 pub fn show_provider_menu(window: &Window) {
     use tauri::menu::{IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
     let app = window.app_handle().clone();
     // Labels come from the frontend in the ACTIVE app language (set_provider_menu_labels, all langs).
-    // muda's predefined Copy/Cut/Paste/Select-all carry FIXED English text, so we override each item's
-    // text with our i18n label. English is only a fallback for the brief window before labels arrive.
+    // English is only a fallback for the brief window before labels arrive.
     let l = app.state::<crate::AppState>().menu_labels.lock().unwrap().clone();
     let pick = |s: &str, fb: &str| if s.trim().is_empty() { fb.to_string() } else { s.to_string() };
-    let copy_t = pick(&l.copy, "Copy");
-    let cut_t = pick(&l.cut, "Cut");
-    let paste_t = pick(&l.paste, "Paste");
-    let sel_t = pick(&l.select_all, "Select all");
     let switch_t = pick(&l.switch, "Switch provider");
-    let send_t = pick(&l.open_send, "Open and send");
-    let open_paste_t = pick(&l.open_paste, "Open and paste");
+    let open_only_t = pick(&l.open_only, "Open");
+    let open_paste_t = pick(&l.open_paste, "Open + paste");
+    let send_t = pick(&l.open_send, "Open + paste + send");
+    let downloads_t = pick(&l.downloads, "Download manager");
 
     let build = || -> tauri::Result<Menu<tauri::Wry>> {
-        let copy = PredefinedMenuItem::copy(&app, Some(copy_t.as_str()))?;
-        let cut = PredefinedMenuItem::cut(&app, Some(cut_t.as_str()))?;
-        let paste = PredefinedMenuItem::paste(&app, Some(paste_t.as_str()))?;
-        let select_all = PredefinedMenuItem::select_all(&app, Some(sel_t.as_str()))?;
+        // Gestore download (apre il pannello in-app) + separatore + "Cambia provider".
+        let downloads = MenuItem::with_id(&app, "downloads", &downloads_t, true, None::<&str>)?;
         let sep = PredefinedMenuItem::separator(&app)?;
 
-        // "Switch provider" -> one submenu per provider -> [Open and send, Open and paste].
+        // "Switch provider" -> one submenu per provider -> [Open, Open+paste, Open+paste+send].
         let mut subs: Vec<Submenu<tauri::Wry>> = Vec::new();
         for (key, name) in SWITCH_PROVIDERS {
-            let send_i =
-                MenuItem::with_id(&app, format!("sw:{key}:send"), &send_t, true, None::<&str>)?;
+            let open_i =
+                MenuItem::with_id(&app, format!("sw:{key}:open"), &open_only_t, true, None::<&str>)?;
             let paste_i =
                 MenuItem::with_id(&app, format!("sw:{key}:paste"), &open_paste_t, true, None::<&str>)?;
-            subs.push(Submenu::with_items(&app, *name, true, &[&send_i, &paste_i])?);
+            let send_i =
+                MenuItem::with_id(&app, format!("sw:{key}:send"), &send_t, true, None::<&str>)?;
+            subs.push(Submenu::with_items(&app, *name, true, &[&open_i, &paste_i, &send_i])?);
         }
         let sub_refs: Vec<&dyn IsMenuItem<tauri::Wry>> =
             subs.iter().map(|s| s as &dyn IsMenuItem<tauri::Wry>).collect();
         let switch = Submenu::with_items(&app, &switch_t, true, &sub_refs)?;
 
-        Menu::with_items(&app, &[&copy, &cut, &paste, &select_all, &sep, &switch])
+        Menu::with_items(&app, &[&downloads, &sep, &switch])
     };
 
     match build() {
@@ -293,6 +314,66 @@ pub async fn open_provider_view(window: Window, url: String) -> Result<(), Strin
                 {
                     show_provider(&webview.window());
                 }
+            })
+            // Abilita i DOWNLOAD nella webview del provider: senza un handler, wry/WebView2 li scarta
+            // (es. il .docx generato da ChatGPT). Salviamo nella cartella Download e notifichiamo il frontend.
+            .on_download(|webview, event| {
+                use tauri::webview::DownloadEvent;
+                match event {
+                    DownloadEvent::Requested { url, destination } => {
+                        debug::log(format!("on_download REQUESTED url={url}"));
+                        if let Ok(dir) = webview.app_handle().path().download_dir() {
+                            let name = destination
+                                .file_name()
+                                .map(|n| n.to_os_string())
+                                .unwrap_or_else(|| std::ffi::OsString::from("download"));
+                            // Sottocartella dedicata: Download/Kotodama (ordinata + punto unico
+                            // per condividere i file tra i vari provider). Creata se manca.
+                            let kdir = dir.join("Kotodama");
+                            let _ = std::fs::create_dir_all(&kdir);
+                            *destination = kdir.join(name);
+                        }
+                        debug::log(format!("on_download DEST={}", destination.display()));
+                        // Avvisa il frontend all'INIZIO: apre la modale "Gestore download" e mostra
+                        // una riga "in corso" (poi finalizzata su Finished). Il download prosegue
+                        // anche con la webview provider parcheggiata fuori vista dalla modale.
+                        let name = destination
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_else(|| "download".to_string());
+                        let _ = webview.app_handle().emit(
+                            "app://provider-download-start",
+                            serde_json::json!({ "name": name, "url": url.to_string() }),
+                        );
+                        true // consenti il download
+                    }
+                    DownloadEvent::Finished { url, path, success } => {
+                        let p = path.map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                        debug::log(format!("on_download FINISHED ok={success} url={url} path={p}"));
+                        if success {
+                            // Notifica NATIVA (si vede anche sopra la webview provider, a differenza del toast HTML).
+                            use tauri_plugin_notification::NotificationExt;
+                            let name = std::path::Path::new(&p)
+                                .file_name()
+                                .map(|n| n.to_string_lossy().to_string())
+                                .unwrap_or_else(|| p.clone());
+                            let _ = webview
+                                .app_handle()
+                                .notification()
+                                .builder()
+                                .title("Kotodama")
+                                .body(format!("Download/Kotodama: {name}"))
+                                .show();
+                        }
+                        let size = std::fs::metadata(&p).map(|m| m.len()).unwrap_or(0);
+                        let _ = webview.app_handle().emit(
+                            "app://provider-download",
+                            serde_json::json!({ "ok": success, "path": p, "url": url.to_string(), "size": size }),
+                        );
+                        true
+                    }
+                    _ => true,
+                }
             });
         // NOTE: WebView2 browser arguments (incl. --disable-quic and the dynamic
         // --accept-lang) are set ONCE process-wide in lib.rs::run() via the
@@ -369,6 +450,17 @@ pub fn provider_reload(window: Window) -> Result<(), String> {
     if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
         webview
             .eval("location.reload()")
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Navigates the embedded page back in its history (← button in the in-app bar).
+#[tauri::command]
+pub fn provider_back(window: Window) -> Result<(), String> {
+    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
+        webview
+            .eval("history.back()")
             .map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -497,6 +589,42 @@ pub fn set_provider_top_extra(window: Window, px: f64) -> Result<(), String> {
     Ok(())
 }
 
+/// Temporarily hides (`on=true`) or restores (`on=false`) the provider webview so an
+/// app modal (Download manager) can show on top of it — the provider webview is opaque
+/// and would otherwise cover any HTML overlay. Restore repositions to the current bounds.
+#[tauri::command]
+pub fn provider_suppress(window: Window, on: bool) -> Result<(), String> {
+    PROVIDER_SUPPRESSED.store(on, Ordering::Relaxed);
+    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
+        if on {
+            let _ = webview.set_position(LogicalPosition::new(0.0, PARK_Y));
+        } else if PROVIDER_ACTIVE.load(Ordering::Relaxed) {
+            *last_provider_bounds().lock().unwrap() = None; // force reposition
+            let (w, h) = provider_bounds(&window)?;
+            let _ = webview.set_position(LogicalPosition::new(0.0, provider_top()));
+            let _ = webview.set_size(LogicalSize::new(w, h));
+        }
+    }
+    Ok(())
+}
+
+/// Docks (`px>0`) or undocks (`px=0`) the Download side panel: narrows the provider
+/// webview on the right by `px` logical pixels so the HTML panel (main webview) shows
+/// beside it instead of behind it. Repositions the provider immediately if on screen.
+#[tauri::command]
+pub fn provider_dock(window: Window, px: f64) -> Result<(), String> {
+    *provider_dock_px().lock().unwrap() = px.max(0.0);
+    *last_provider_bounds().lock().unwrap() = None; // force reposition
+    if PROVIDER_ACTIVE.load(Ordering::Relaxed) {
+        if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
+            let (w, h) = provider_bounds(&window)?;
+            let _ = webview.set_position(LogicalPosition::new(0.0, provider_top()));
+            let _ = webview.set_size(LogicalSize::new(w, h));
+        }
+    }
+    Ok(())
+}
+
 /// Last bounds applied to the provider (to skip redundant set_size/set_position:
 /// Windows emits `Resized` even duplicated / with unchanged measurements).
 fn last_provider_bounds() -> &'static Mutex<Option<(f64, f64)>> {
@@ -506,15 +634,15 @@ fn last_provider_bounds() -> &'static Mutex<Option<(f64, f64)>> {
 
 /// Keeps the child webview's bounds aligned with the window resize.
 pub fn resize_provider(window: &WebviewWindow) {
-    // If the provider is parked (builder on screen), do NOT bring it back up on a
-    // resize: it would stay on top of the builder.
-    if !PROVIDER_ACTIVE.load(Ordering::Relaxed) {
+    // If the provider is parked (builder on screen) or suppressed (a modal is on
+    // top), do NOT bring it back up on a resize: it would cover the builder/modal.
+    if !PROVIDER_ACTIVE.load(Ordering::Relaxed) || PROVIDER_SUPPRESSED.load(Ordering::Relaxed) {
         return;
     }
     if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
         if let (Ok(size), Ok(scale)) = (window.inner_size(), window.scale_factor()) {
             let logical = size.to_logical::<f64>(scale);
-            let w = logical.width;
+            let w = (logical.width - *provider_dock_px().lock().unwrap()).max(0.0);
             let top = provider_top();
             let h = (logical.height - top).max(0.0);
 

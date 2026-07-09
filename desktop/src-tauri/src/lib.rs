@@ -207,6 +207,27 @@ fn open_url(app: AppHandle, url: String) {
     let _ = app.opener().open_url(url, None::<&str>);
 }
 
+/// Opens a downloaded file with the OS default app (Download manager: click the name).
+#[tauri::command]
+fn open_download_path(app: AppHandle, path: String) {
+    use tauri_plugin_opener::OpenerExt;
+    let _ = app.opener().open_path(path, None::<&str>);
+}
+
+/// Reveals a downloaded file in the system file manager (Download manager: folder icon).
+/// Falls back to opening the parent directory if reveal is unavailable.
+#[tauri::command]
+fn reveal_download_path(app: AppHandle, path: String) {
+    use tauri_plugin_opener::OpenerExt;
+    if app.opener().reveal_item_in_dir(&path).is_err() {
+        if let Some(parent) = std::path::Path::new(&path).parent() {
+            let _ = app
+                .opener()
+                .open_path(parent.to_string_lossy().to_string(), None::<&str>);
+        }
+    }
+}
+
 /// Saves and applies new settings (hotkey, autostart, monitor, language…).
 #[tauri::command]
 fn set_settings(app: AppHandle, settings: Settings) -> Result<Settings, String> {
@@ -529,6 +550,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -550,13 +572,21 @@ pub fn run() {
         // are predefined items and act on the focused webview by themselves (no event here).
         .on_menu_event(|app, event| {
             let id = event.id.as_ref();
+            if id == "downloads" {
+                // Apre la modale "Gestore download" (in-app): il frontend sopprime la
+                // webview provider e mostra la cronologia.
+                if let Some(w) = app.get_window("main") {
+                    let _ = w.emit("app://open-downloads", ());
+                }
+                return;
+            }
             if let Some(rest) = id.strip_prefix("sw:") {
+                // id = "sw:<key>:<open|paste|send>": switch provider with that mode.
                 if let Some((key, mode)) = rest.rsplit_once(':') {
-                    let send = mode == "send";
                     if let Some(w) = app.get_window("main") {
                         let _ = w.emit(
                             "app://switch-provider",
-                            serde_json::json!({ "key": key, "send": send }),
+                            serde_json::json!({ "key": key, "mode": mode }),
                         );
                     }
                 }
@@ -652,10 +682,15 @@ pub fn run() {
             browser::close_provider_view,
             browser::set_provider_top_extra,
             browser::provider_reload,
+            browser::provider_back,
             browser::provider_fill,
             browser::provider_paste,
             browser::provider_menu,
             browser::set_provider_menu_labels,
+            browser::provider_suppress,
+            browser::provider_dock,
+            open_download_path,
+            reveal_download_path,
             accept_clipboard,
             hide_toast,
             app_write_clipboard,

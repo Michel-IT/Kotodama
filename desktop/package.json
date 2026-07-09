@@ -1,7 +1,7 @@
 {
   "name": "kotodama",
   "private": true,
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Kotodama • Ai Prompt Builder — Tauri desktop app",
   "scripts": {
     "tauri": "tauri",

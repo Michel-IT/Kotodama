@@ -206,6 +206,8 @@
     }
     .pc-btn:hover { background:var(--field-2); }
     .pc-btn:active { transform:scale(.94); }
+    .pc-btn { position:relative; }
+    .pc-btn.has-new::after { content:""; position:absolute; top:3px; right:3px; width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 2px var(--bg-1); }
     /* provider name: takes the space between nav and controls, content centered; does not block drag */
     .pc-title {
       display:none; flex:1; min-width:0; height:var(--topbar-h);
@@ -429,7 +431,57 @@
     /* max-height + flex: head/foot fixed, body scrollable → no overflow/clipping */
     .modal { width:100%; max-width:460px; max-height:calc(100vh - 48px); display:flex; flex-direction:column; background:linear-gradient(180deg, var(--panel-glow), transparent 50%), var(--bg-1); border:1px solid var(--border); border-radius:var(--radius-l); box-shadow:var(--shadow); overflow:hidden; }
     .modal.sm { max-width:380px; }
+    .wc-modal { max-width:600px; }
+    .wc-body { gap:0; }
+    .wc-brand { display:flex; align-items:center; gap:13px; margin-bottom:16px; }
+    .wc-logo { width:48px; height:48px; border-radius:12px; flex:none; box-shadow:0 6px 20px var(--accent-glow); }
+    .wc-title { font-size:19px; font-weight:700; color:var(--text); }
+    .wc-sub { color:var(--text-dim); font-size:12.5px; margin-top:2px; }
+    .wc-p { line-height:1.6; font-size:14px; color:var(--text); margin:0 0 13px; }
+    .wc-p.wc-small { font-size:13.5px; color:var(--text-dim); }
+    .wc-p strong { color:var(--text); font-weight:650; }
+    .wc-div { height:1px; background:var(--border-soft); margin:14px 0; }
+    .wc-tldr { margin:16px 0 6px; padding:12px 14px; border-radius:11px; background:var(--panel-glow); border:1px solid var(--accent-glow); color:var(--text); font-size:14px; line-height:1.5; }
+    .wc-tldr b { color:var(--accent); }
+    .wc-foot { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:22px; flex-wrap:wrap; }
+    .wc-chk { display:flex; align-items:center; gap:9px; color:var(--text-dim); font-size:13.5px; cursor:pointer; user-select:none; }
+    .wc-chk input { appearance:none; width:18px; height:18px; border-radius:5px; border:1.5px solid var(--border); background:var(--field); display:grid; place-items:center; cursor:pointer; flex:none; }
+    .wc-chk input:checked { background:var(--accent); border-color:var(--accent); }
+    .wc-chk input:checked::after { content:""; width:5px; height:9px; border:2px solid var(--on-accent); border-top:0; border-left:0; transform:rotate(45deg); margin-top:-2px; }
     .modal--wide { max-width:min(94vw, 800px); }
+    /* Download manager: side panel docked to the right (provider narrows to make room) */
+    .dl-dock { position:fixed; top:46px; right:0; bottom:0; width:340px; z-index:1400;
+      display:flex; flex-direction:column; background:var(--bg-1); border-left:1px solid var(--border);
+      box-shadow:-14px 0 34px rgba(0,0,0,.28); transform:translateX(100%); transition:transform .22s var(--ease); }
+    .dl-dock.show { transform:translateX(0); }
+    .dl-dock-head { flex:none; padding:12px 14px 10px; border-bottom:1px solid var(--border-soft); display:flex; flex-direction:column; gap:9px; }
+    .dl-dock-top { display:flex; align-items:center; justify-content:space-between; }
+    .dl-dock-top h2 { font-size:14px; font-weight:650; }
+    .dl-dock-top .x { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:17px; }
+    .dl-dock-top .x:hover { color:var(--accent); }
+    .dl-dock-actions { display:flex; justify-content:flex-end; }
+    .dl-dock-body { flex:1; min-height:0; overflow-y:auto; padding:8px 14px 14px; }
+    .dl-search { display:flex; align-items:center; gap:8px; background:var(--field); border:1px solid var(--border); border-radius:999px; padding:7px 12px; }
+    .dl-search-i { color:var(--text-faint); font-size:15px; line-height:1; }
+    .dl-search input { flex:1; min-width:0; background:none; border:none; outline:none; color:var(--text); font-size:13px; }
+    .dl-clear { font-size:12px; padding:5px 11px; }
+    .dl-confirm { padding:16px 4px; text-align:center; }
+    .dl-confirm-msg { font-size:13px; color:var(--text); line-height:1.5; margin-bottom:12px; }
+    .dl-confirm-btns { display:flex; gap:8px; justify-content:center; }
+    .dl-day { font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-faint); font-weight:700; margin:16px 2px 8px; }
+    .dl-day:first-child { margin-top:2px; }
+    .dl-item { display:flex; align-items:center; gap:12px; background:var(--field); border:1px solid var(--border-soft); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+    .dl-ico { width:34px; height:34px; border-radius:8px; flex:none; display:grid; place-items:center; background:var(--panel-glow); font-size:16px; }
+    .dl-meta { flex:1; min-width:0; }
+    .dl-name { font-size:13.5px; font-weight:600; color:var(--accent); cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dl-name:hover { text-decoration:underline; }
+    .dl-sub { font-size:11.5px; color:var(--text-faint); margin-top:2px; }
+    .dl-acts { display:flex; align-items:center; gap:2px; flex:none; }
+    .dl-act { width:30px; height:30px; border-radius:8px; border:none; background:none; color:var(--text-dim); cursor:pointer; display:grid; place-items:center; font-size:14px; }
+    .dl-act:hover { background:var(--panel-glow); color:var(--accent); }
+    .dl-empty { text-align:center; color:var(--text-faint); font-size:13.5px; padding:44px 10px; }
+    .dl-spin { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--accent); animation:plspin .8s linear infinite; }
+    .dl-act[disabled] { opacity:.32; pointer-events:none; }
     .modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border-soft); flex:none; }
     .modal-head h2 { font-size:15px; font-weight:650; }
     .modal-head .x { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:18px; }
@@ -538,6 +590,7 @@
 
       <div class="ab-provnav">
         <button class="pc-close" id="pcClose">← <span data-i18n="builder">Ai Prompt Builder</span></button>
+        <button class="pc-btn" id="pcBack" data-i18n-title="back" title="Indietro">‹</button>
         <button class="pc-btn" id="pcSwitch" data-i18n-title="switchProvider" title="Cambia provider">⇄</button>
         <button class="pc-btn" id="pcReload" data-i18n-title="reload" title="Ricarica">⟳</button>
       </div>
@@ -677,6 +730,30 @@
   <!-- Provider loading overlay: covers the area below the topbar while the page
        loads off-screen, so the previous provider page is not visible. -->
   <div id="provLoading"><div class="pl-box"><span class="pl-spin"></span><span class="pl-txt" id="plText"></span></div></div>
+
+  <!-- Welcome modal (first launch: privacy + provider boundary) -->
+  <!-- Backdrop draggable (data-tauri-drag-region) so the window can be moved without dismissing; the card is not. -->
+  <div class="modal-overlay" id="welcomeOverlay" data-tauri-drag-region>
+    <div class="modal wc-modal" data-tauri-drag-region="false">
+      <div class="modal-body pad wc-body">
+        <div class="wc-brand">
+          <img class="wc-logo" src="logo.png" alt="Kotodama">
+          <div>
+            <div class="wc-title" id="wcTitle"></div>
+            <div class="wc-sub" id="wcSub"></div>
+          </div>
+        </div>
+        <p class="wc-p" id="wcP1"></p>
+        <div class="wc-div"></div>
+        <p class="wc-p wc-small" id="wcP2"></p>
+        <div class="wc-tldr"><b id="wcTldrLabel"></b><br><span id="wcTldr"></span></div>
+        <div class="wc-foot">
+          <label class="wc-chk"><input type="checkbox" id="wcDont" checked><span id="wcDontLabel"></span></label>
+          <button class="btn" id="wcOk"></button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Settings modal -->
   <div class="modal-overlay" id="settingsOverlay">
@@ -856,6 +933,24 @@
     </div>
   </div>
 
+  <!-- Download manager: side panel docked to the right of the provider webview -->
+  <div class="dl-dock" id="downloadsDock">
+    <div class="dl-dock-head">
+      <div class="dl-dock-top">
+        <h2 data-i18n="dlTitle">Download</h2>
+        <button class="x" id="downloadsX" title="Chiudi">✕</button>
+      </div>
+      <div class="dl-search">
+        <span class="dl-search-i">⌕</span>
+        <input id="dlSearch" type="text" data-i18n-ph="dlSearch" placeholder="Cerca nei download">
+      </div>
+      <div class="dl-dock-actions">
+        <button class="btn dl-clear" id="dlClear" data-i18n="dlClear">Cancella tutto</button>
+      </div>
+    </div>
+    <div class="dl-dock-body" id="downloadsBody"></div>
+  </div>
+
   <script>
     /* Release build: no right-click menu or devtools shortcuts */
     document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
@@ -915,8 +1010,9 @@
       popupBlocked:'Popup blocked by the browser: please allow popups for this site.',
       otherName:'Other', manualNote:'Prompt generated and copied to clipboard.',
       openError:'Error opening the provider',
-      builder:'Ai Prompt Builder', reload:'Reload',
-      switchProvider:'Switch provider', openAndSend:'Open and send', openAndPaste:'Open and paste',
+      builder:'Ai Prompt Builder', reload:'Reload', back:'Back',
+      switchProvider:'Switch provider', openOnly:'Open', openAndPaste:'Open + paste', openAndSend:'Open + paste + send',
+      copyUrl:'Copy URL', downloads:'Download manager',
       claudeHintMsg:'For Claude, sign in with “Continue with email”: Google sign-in doesn\'t work in embedded browsers.', bannerDismiss:'Don\'t show again',
       winMin:'Minimize', winMax:'Maximize', winClose:'Close',
       settingsTitle:'Settings', setTheme:'Theme', themeGinga:'Ginga', themeHisui:'Hisui', themeKohaku:'Kohaku', themeMurasaki:'Murasaki', themeSumi:'Sumi',
@@ -926,6 +1022,15 @@
       setMonitor:'Clipboard monitor', setMonitorHint:'Show the toast when you copy text.',
       setAutostart:'Start on login', setAutostartHint:'Starts minimized in the tray at login.',
       setAlwaysOnTop:'Always on top', setAlwaysOnTopHint:'Kotodama stays above other windows.',
+      downloadDone:'Saved to Downloads/Kotodama', downloadFail:'Download failed',
+      dlTitle:'Download history', dlSearch:'Search downloads', dlClear:'Clear all',
+      dlEmpty:'No downloads yet', dlNoMatch:'No matches', dlCopyLink:'Copy link', dlFolder:'Open folder', dlRemove:'Remove from list', dlLinkCopied:'Link copied', dlDownloading:'Downloading…',
+      dlClearConfirm:'Clear the whole download list?<br>(The files are not deleted.)',
+      welcomeTitle:'Welcome to Kotodama', welcomeSub:'Ai Prompt Builder · open source',
+      welcomeP1:'Kotodama runs <strong>entirely on your computer</strong>. No account, no sign-up, no telemetry, no tracking. Your prompts and settings stay on your device, and it\'s open source (GPL-3.0), so anyone can verify it.',
+      welcomeP2:'One thing to be clear about: Kotodama is a <strong>window</strong> onto the AI providers (ChatGPT, Claude, Gemini, Perplexity and others). When you open and use them, you\'re using their services directly, under <strong>their</strong> privacy policies and terms. Kotodama doesn\'t sit in the middle and can\'t control how they handle your data, exactly as if you opened them in your browser.',
+      welcomeTldrLabel:'In short', welcomeTldr:'Kotodama answers for Kotodama; each provider answers for itself.',
+      welcomeDont:'Don\'t show this again at startup', welcomeOk:'Got it',
       save:'Save', cancel:'Cancel', reset:'Reset', pressCombo:'Press a combo…', settingsSaved:'Settings saved ✓',
       hotkeyFallback:'Shortcut unavailable on Windows: using {k}',
       setUpdates:'Updates', setUpdatesHint:'Check whether a new version is available.', checkUpdates:'Check for updates',
@@ -994,7 +1099,7 @@
     }
 
     const THEMES = ['ginga','hisui','kohaku','murasaki','sumi'];
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, always_on_top:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, neutral_autosend:true };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, always_on_top:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, neutral_autosend:true, welcome_ack:false };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -1061,7 +1166,7 @@
       // Localizza le voci della tray (Apri / Avvia col sistema / Esci) nella lingua corrente.
       if(TAURI){ try{ invoke('set_tray_labels', { open:t.open, autostart:t.setAutostart, quit:t.quit }); }catch(e){} }
       // Localize the NATIVE provider context menu (muda's predefined items are English-only otherwise).
-      if(TAURI){ try{ invoke('set_provider_menu_labels', { labels:{ copy:t.copy, cut:t.cut, paste:t.paste, selectAll:t.selectAll, switchProvider:t.switchProvider, openAndSend:t.openAndSend, openAndPaste:t.openAndPaste } }); }catch(e){} }
+      if(TAURI){ try{ invoke('set_provider_menu_labels', { labels:{ copy:t.copy, cut:t.cut, paste:t.paste, selectAll:t.selectAll, switchProvider:t.switchProvider, openOnly:t.openOnly, openAndSend:t.openAndSend, openAndPaste:t.openAndPaste, copyUrl:t.copyUrl, downloads:t.downloads } }); }catch(e){} }
     }
 
     // The providers hint sits on the title row, on the right: if there is no space (it would be truncated)
@@ -1190,8 +1295,9 @@
       body.classList.add('provider-loading');
       if(plText) plText.textContent=`${TR.opening} ${name||''}…`;
     }
-    function closeProviderBar(){ body.classList.remove('provider-open','provider-loading'); setClaudeHint(false); }
+    function closeProviderBar(){ body.classList.remove('provider-open','provider-loading'); setClaudeHint(false); closeDownloads(); }
     document.getElementById('pcClose').addEventListener('click', async()=>{ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); });
+    document.getElementById('pcBack').addEventListener('click', ()=>{ if(TAURI) invoke('provider_back').catch(()=>{}); });
     document.getElementById('pcReload').addEventListener('click', ()=>{ if(TAURI) invoke('provider_reload').catch(()=>{}); });
     document.getElementById('pcSwitch').addEventListener('click', (e)=>{ e.stopPropagation(); if(TAURI) invoke('provider_menu').catch(()=>{}); });
 
@@ -1222,6 +1328,19 @@
     function closeModal(o){ o.classList.remove('show'); }
     const settingsOverlay=document.getElementById('settingsOverlay');
     const recipeOverlay=document.getElementById('recipeOverlay');
+    const welcomeOverlay=document.getElementById('welcomeOverlay');
+    function renderWelcome(){
+      const t=TR, set=(id,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
+      set('wcTitle',t.welcomeTitle); set('wcSub',t.welcomeSub);
+      set('wcP1',t.welcomeP1); set('wcP2',t.welcomeP2);
+      set('wcTldrLabel',t.welcomeTldrLabel); set('wcTldr',t.welcomeTldr);
+      set('wcDontLabel',t.welcomeDont); set('wcOk',t.welcomeOk);
+    }
+    function showWelcome(){ renderWelcome(); openModal(welcomeOverlay); }
+    document.getElementById('wcOk').addEventListener('click', ()=>{
+      closeModal(welcomeOverlay);
+      if(document.getElementById('wcDont').checked){ currentSettings.welcome_ack=true; persistSettings(currentSettings); }
+    });
     const confirmOverlay=document.getElementById('confirmOverlay');
     [settingsOverlay,recipeOverlay,confirmOverlay].forEach(o=>o.addEventListener('click',e=>{ if(e.target===o){ if(o===settingsOverlay) applyTheme(currentSettings.theme); applyLang(currentSettings.language); closeModal(o); } }));
 
@@ -1232,6 +1351,100 @@
     document.getElementById('confirmOk').addEventListener('click', ()=>{ const a=confirmAction; confirmAction=null; closeModal(confirmOverlay); if(a) a(); });
     document.getElementById('confirmX').addEventListener('click', ()=>closeModal(confirmOverlay));
     document.getElementById('confirmCancel').addEventListener('click', ()=>closeModal(confirmOverlay));
+
+    /* ===================== DOWNLOAD MANAGER (docked side panel) ===================== */
+    const downloadsDock=document.getElementById('downloadsDock');
+    const downloadsBody=document.getElementById('downloadsBody');
+    const dlSearch=document.getElementById('dlSearch');
+    const DL_KEY='kotodama.downloads';
+    const DL_PANEL_PX=340; // must match .dl-dock width in CSS
+    function dlEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function dlOpen(){ return downloadsDock.classList.contains('show'); }
+    function loadDownloads(){ try{ return JSON.parse(localStorage.getItem(DL_KEY)||'[]'); }catch(e){ return []; } }
+    function saveDownloads(){ try{ localStorage.setItem(DL_KEY, JSON.stringify(downloadsArr.slice(0,200))); }catch(e){} }
+    let downloadsArr=loadDownloads();
+    function fmtSize(b){ if(!b) return ''; const u=['B','KB','MB','GB']; let i=0,n=b; while(n>=1024&&i<u.length-1){ n/=1024; i++; } return (i?n.toFixed(1):n)+' '+u[i]; }
+    const pcDownloadsBtn=document.getElementById('pcDownloads');
+    function markNewDownload(){ if(pcDownloadsBtn && !dlOpen()) pcDownloadsBtn.classList.add('has-new'); }
+    function addDownload(d){
+      const name=(d.path||'').split(/[\\/]/).pop()||'download';
+      downloadsArr.unshift({ name, path:d.path||'', url:d.url||'', ts:Date.now(), size:d.size||0, status:'done' });
+      saveDownloads();
+      if(dlOpen()) renderDownloads();
+    }
+    // Inizio download (evento Rust): riga "in corso" + apri il pannello (stile Edge).
+    function startDownload(d){
+      downloadsArr.unshift({ name:d.name||'download', path:'', url:d.url||'', ts:Date.now(), size:0, status:'downloading' });
+      saveDownloads(); markNewDownload();
+      if(dlOpen()) renderDownloads();
+      openDownloads();
+    }
+    // Fine download: finalizza la riga "in corso" col path/dimensione reali (match per url).
+    function finishDownload(d){
+      const i=downloadsArr.findIndex(x=> x.status==='downloading' && (x.url||'')===(d.url||''));
+      if(i>=0){ const e=downloadsArr[i]; e.path=d.path||''; e.size=d.size||0; e.status='done'; if(d.path){ const n=d.path.split(/[\\/]/).pop(); if(n) e.name=n; } saveDownloads(); markNewDownload(); if(dlOpen()) renderDownloads(); }
+      else addDownload(d);
+    }
+    function renderDownloads(){
+      const q=(dlSearch.value||'').trim().toLowerCase();
+      const loc=(currentSettings&&currentSettings.language)||'en';
+      const items=downloadsArr.filter(d=> !q || (d.name||'').toLowerCase().includes(q));
+      if(!items.length){ downloadsBody.innerHTML='<div class="dl-empty">'+dlEsc(downloadsArr.length?(TR.dlNoMatch||'No matches'):(TR.dlEmpty||'No downloads yet'))+'</div>'; return; }
+      let html='', lastDay='';
+      items.forEach(d=>{
+        const gi=downloadsArr.indexOf(d);
+        const dt=new Date(d.ts);
+        let day; try{ day=dt.toLocaleDateString(loc,{year:'numeric',month:'long',day:'numeric'}); }catch(e){ day=dt.toDateString(); }
+        if(day!==lastDay){ html+='<div class="dl-day">'+dlEsc(day)+'</div>'; lastDay=day; }
+        let time; try{ time=dt.toLocaleTimeString(loc,{hour:'2-digit',minute:'2-digit'}); }catch(e){ time=''; }
+        const pending=d.status==='downloading';
+        const sub=pending ? (TR.dlDownloading||'Downloading…') : [fmtSize(d.size),time].filter(Boolean).join('  ·  ');
+        const dis=pending?' disabled':'';
+        html+='<div class="dl-item">'
+          +'<div class="dl-ico">'+(pending?'<div class="dl-spin"></div>':'📄')+'</div>'
+          +'<div class="dl-meta"><div class="dl-name" '+(pending?'':'data-open="'+gi+'" ')+'title="'+dlEsc(d.path||d.name)+'">'+dlEsc(d.name)+'</div><div class="dl-sub">'+dlEsc(sub)+'</div></div>'
+          +'<div class="dl-acts">'
+          +(d.url?'<button class="dl-act" data-link="'+gi+'" title="'+dlEsc(TR.dlCopyLink||'Copy link')+'">🔗</button>':'')
+          +'<button class="dl-act" data-folder="'+gi+'" title="'+dlEsc(TR.dlFolder||'Open folder')+'"'+dis+'>📁</button>'
+          +'<button class="dl-act" data-remove="'+gi+'" title="'+dlEsc(TR.dlRemove||'Remove')+'">✕</button>'
+          +'</div></div>';
+      });
+      downloadsBody.innerHTML=html;
+    }
+    async function openDownloads(){
+      if(pcDownloadsBtn) pcDownloadsBtn.classList.remove('has-new');
+      if(dlOpen()){ renderDownloads(); return; }
+      // Aggancia il pannello a destra: restringe la webview provider di DL_PANEL_PX cosi'
+      // il pannello (HTML) si vede accanto al provider invece che dietro.
+      if(TAURI && body.classList.contains('provider-open')){ try{ await invoke('provider_dock',{px:DL_PANEL_PX}); }catch(e){} }
+      // allinea il top del pannello al provider (46px topbar + eventuale banner Claude)
+      try{ downloadsDock.style.top=(46 + ((claudeHint && !claudeHint.hidden)?(claudeHint.offsetHeight||0):0))+'px'; }catch(e){}
+      renderDownloads();
+      downloadsDock.classList.add('show');
+      setTimeout(()=>{ try{ dlSearch.focus(); }catch(e){} },60);
+    }
+    async function closeDownloads(){
+      if(!dlOpen()) return;
+      downloadsDock.classList.remove('show');
+      if(TAURI){ try{ await invoke('provider_dock',{px:0}); }catch(e){} }
+    }
+    function toggleDownloads(){ if(dlOpen()) closeDownloads(); else openDownloads(); }
+    downloadsBody.addEventListener('click', async e=>{
+      const el=e.target.closest('[data-open],[data-link],[data-folder],[data-remove]'); if(!el) return;
+      if(el.dataset.open!==undefined){ const d=downloadsArr[+el.dataset.open]; if(d&&TAURI) invoke('open_download_path',{path:d.path}).catch(()=>{}); }
+      else if(el.dataset.link!==undefined){ const d=downloadsArr[+el.dataset.link]; if(d&&d.url){ await writeClipboard(d.url); toast(TR.dlLinkCopied||'Link copied'); } }
+      else if(el.dataset.folder!==undefined){ const d=downloadsArr[+el.dataset.folder]; if(d&&TAURI) invoke('reveal_download_path',{path:d.path}).catch(()=>{}); }
+      else if(el.dataset.remove!==undefined){ downloadsArr.splice(+el.dataset.remove,1); saveDownloads(); renderDownloads(); }
+    });
+    dlSearch.addEventListener('input', renderDownloads);
+    document.getElementById('downloadsX').addEventListener('click', closeDownloads);
+    // Conferma "Cancella tutto" INLINE nel pannello (una modale centrata finirebbe dietro il provider).
+    document.getElementById('dlClear').addEventListener('click', ()=>{
+      if(!downloadsArr.length) return;
+      downloadsBody.innerHTML='<div class="dl-confirm"><div class="dl-confirm-msg">'+(TR.dlClearConfirm||'Clear the whole list? (Files are not deleted.)')+'</div><div class="dl-confirm-btns"><button class="btn" id="dlClearNo">'+dlEsc(TR.cancel||'Cancel')+'</button><button class="btn primary" id="dlClearYes">'+dlEsc(TR.dlClear||'Clear all')+'</button></div></div>';
+      document.getElementById('dlClearNo').onclick=()=>renderDownloads();
+      document.getElementById('dlClearYes').onclick=()=>{ downloadsArr=[]; saveDownloads(); renderDownloads(); };
+    });
 
     /* ===================== SETTINGS ===================== */
     const setTheme=document.getElementById('setTheme');
@@ -1750,6 +1963,7 @@
 
     document.addEventListener('keydown', async e=>{
       if(e.key!=='Escape') return;
+      if(dlOpen()){ closeDownloads(); return; }
       const open=[confirmOverlay,recipeOverlay,settingsOverlay,fieldsOverlay].find(o=>o.classList.contains('show'));
       if(open){ if(open===settingsOverlay) applyTheme(currentSettings.theme); applyLang(currentSettings.language); closeModal(open); return; }
       if(body.classList.contains('provider-open')){ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); }
@@ -1785,8 +1999,12 @@
         else if(pendingFill){ const f=pendingFill; pendingFill=null; setTimeout(()=>{ if(TAURI) invoke(f.send?'provider_fill':'provider_paste',{text:f.text}).catch(()=>{}); }, 700); }
       });
       // "Cambia provider" chosen from the NATIVE menu (Rust emits key + whether to send).
-      listen('app://switch-provider', e=>{ const d=e.payload||{}; if(d.key) switchProvider(d.key, !!d.send); });
+      listen('app://switch-provider', e=>{ const d=e.payload||{}; if(!d.key) return; if(d.mode==='open') openProviderDirect(d.key); else switchProvider(d.key, d.mode==='send'); });
       listen('app://provider-closed', ()=>{ closeProviderBar(); });
+      // Download da un provider (es. .docx di ChatGPT): salvato in Download/Kotodama.
+      listen('app://provider-download-start', e=>{ const d=e.payload||{}; startDownload(d); });
+      listen('app://provider-download', e=>{ const d=e.payload||{}; if(d.ok){ finishDownload(d); const f=(d.path||'').split(/[\\/]/).pop(); toast((TR.downloadDone||'Saved to Downloads/Kotodama')+(f?(': '+f):'')); } else { toast(TR.downloadFail||'Download failed'); } });
+      listen('app://open-downloads', ()=>{ openDownloads(); });
       // Autostart cambiato dalla tray: tieni currentSettings in sync (altrimenti un set_settings lo riazzera).
       listen('app://autostart-changed', e=>{ currentSettings.autostart = !!e.payload; });
     }
@@ -1918,6 +2136,7 @@
       renderCustomFields();       // custom field dropdowns next to Length/Tone
       wireTauri();
       showAppVersion();
+      if(!currentSettings.welcome_ack) showWelcome();   // benvenuto al primo avvio: privacy + confine provider
       setTimeout(()=>checkUpdate(false), 2500);   // silent update check at startup
       // ...and then periodically (every hour), without stacking a second prompt if a dialog is already open
       setInterval(()=>{ if(!confirmOverlay.classList.contains('show')) checkUpdate(false); }, 3600000);

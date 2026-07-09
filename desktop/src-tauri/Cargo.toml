@@ -24,7 +24,8 @@ tauri = { version = "2", features = ["unstable", "tray-icon", "image-png", "maco
 tauri-plugin-clipboard = "2"          # clipboard monitor + read/write
 tauri-plugin-global-shortcut = "2"    # global hotkey
 tauri-plugin-autostart = "2"          # start on login
-tauri-plugin-opener = "2"             # open links in the system browser
+tauri-plugin-opener = "2"             # open links in the system browser + open the Downloads folder
+tauri-plugin-notification = "2"       # native OS notification (e.g. provider file downloaded)
 tauri-plugin-updater = "2"            # auto-update from the public Kotodama repo Releases
 tauri-plugin-single-instance = "2"    # single instance: a 2nd launch focuses the existing one
 sys-locale = "0.3"                    # OS language detection (multilingual first launch)

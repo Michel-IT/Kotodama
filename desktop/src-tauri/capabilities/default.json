@@ -6,6 +6,9 @@
   "permissions": [
     "core:default",
     "opener:default",
+    "opener:allow-open-path",
+    "opener:allow-reveal-item-in-dir",
+    "notification:default",
     "updater:default",
     "core:window:allow-start-dragging",
     "core:window:allow-minimize",

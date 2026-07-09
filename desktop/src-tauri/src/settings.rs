@@ -41,6 +41,9 @@ pub struct Settings {
     pub neutral_autosend: bool,
     /// Finestra sempre in primo piano (galleggia sopra le altre finestre). Default: off.
     pub always_on_top: bool,
+    /// La modale di benvenuto (primo avvio, privacy + confine provider) e' stata confermata
+    /// con "non mostrare piu'": se true non ricompare all'avvio. Default: false.
+    pub welcome_ack: bool,
 }
 
 impl Default for Settings {
@@ -57,6 +60,7 @@ impl Default for Settings {
             tone: 0,
             neutral_autosend: true,
             always_on_top: false,
+            welcome_ack: false,
         }
     }
 }
