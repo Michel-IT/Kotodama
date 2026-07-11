@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permessi per le finestre locali dell'app (main + toast). Le viste provider sono remote: l'IPC è bloccato di default.",
-  "windows": ["main", "toast"],
+  "description": "Permessi per le finestre locali dell'app (main + toast + menu). Le viste provider sono remote: l'IPC è bloccato di default.",
+  "windows": ["main", "toast", "menu"],
   "permissions": [
     "core:default",
     "opener:default",

@@ -879,6 +879,7 @@
   <!-- Generic context menu (right-click): items built at runtime by showCtxMenu() -->
   <div class="ctxmenu" id="ctxMenu" hidden></div>
 
+
   <!-- New recipe modal -->
   <div class="modal-overlay" id="recipeOverlay">
     <div class="modal sm">
@@ -1271,9 +1272,10 @@
       }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
       setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000);
     }
-    // "Cambia provider": handled by the NATIVE menu (Rust) — an HTML menu cannot render over the
-    // opaque provider webview. Triggered by right-click in the provider or the ⇄ button (both call
-    // the native popup); the choice comes back via the `app://switch-provider` event -> switchProvider.
+    // Provider switching lives in TWO places now: the header ⇄ button opens an HTML menu with icons
+    // (showProviderMenu, below), and right-click inside the provider opens the native EDITING menu
+    // (Cut/Copy/Paste/Select all, Rust show_context_menu). The old shared native "switch provider"
+    // popup is gone. `app://switch-provider` (Rust) is kept only as a harmless legacy path.
 
     /* ===================== IN-APP BAR (provider name, no URL) ===================== */
     const pcBadge=document.querySelector('.pc-badge');
@@ -1299,7 +1301,35 @@
     document.getElementById('pcClose').addEventListener('click', async()=>{ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); });
     document.getElementById('pcBack').addEventListener('click', ()=>{ if(TAURI) invoke('provider_back').catch(()=>{}); });
     document.getElementById('pcReload').addEventListener('click', ()=>{ if(TAURI) invoke('provider_reload').catch(()=>{}); });
-    document.getElementById('pcSwitch').addEventListener('click', (e)=>{ e.stopPropagation(); if(TAURI) invoke('provider_menu').catch(()=>{}); });
+    /* ===================== PROVIDER QUICK MENU (header ⇄) ===================== */
+    // The menu is a SEPARATE always-on-top window (menu.html), drawn OVER the provider WITHOUT hiding
+    // it. Here we only gather the data (provider icons taken from the tiles + labels + the resolved
+    // theme colors) and open that window under the ⇄ button. A pick comes back via `app://switch-provider`
+    // (or `app://open-downloads`), handled by the existing listeners.
+    function providerMenuData(){
+      const t=TR, provs=[];
+      Object.keys(PROVIDERS).forEach(key=>{
+        const p=PROVIDERS[key]; if(!p.base || p.mode==='manual') return;   // exclude "Other"/manual
+        const tile=document.querySelector(`.prov[data-prov="${key}"]`);
+        const glyph=tile?tile.querySelector('.glyph'):null;
+        provs.push({ key, name:p.name, svg: glyph?glyph.innerHTML:'', color:((tile&&tile.style.getPropertyValue('--pc'))||'').trim() });
+      });
+      const cs=getComputedStyle(document.documentElement), gv=n=>cs.getPropertyValue(n).trim();
+      return {
+        providers: provs,
+        labels: { downloads:t.downloads, openOnly:t.openOnly, openAndPaste:t.openAndPaste, openAndSend:t.openAndSend },
+        theme: { panel:gv('--panel'), panel2:gv('--panel-2'), border:gv('--border'), text:gv('--text'), accent:gv('--accent'), shadow:gv('--shadow') }
+      };
+    }
+    document.getElementById('pcSwitch').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!TAURI) return;
+      const r=document.getElementById('pcSwitch').getBoundingClientRect();
+      invoke('show_provider_menu_window', { data: providerMenuData(), ax: r.right, ay: r.bottom+4 }).catch(()=>{});
+      // Focus-independent dismiss: close the floating menu on the next click anywhere in the builder/topbar
+      // (the menu is a separate OS window, so its own blur is unreliable on Windows). menu_dismiss is idempotent.
+      setTimeout(()=>{ document.addEventListener('mousedown', ()=>{ invoke('menu_dismiss').catch(()=>{}); }, { once:true, capture:true }); }, 0);
+    });
 
     /* ===================== CLAUDE LOGIN WARNING BANNER ===================== */
     // Shows/hides the native banner and pushes the provider webview down by the same

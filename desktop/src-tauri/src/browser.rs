@@ -13,7 +13,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 
 use tauri::webview::{PageLoadEvent, WebviewBuilder};
-use tauri::{Emitter, LogicalPosition, LogicalSize, Manager, Runtime, WebviewUrl, WebviewWindow, Window};
+use tauri::{
+    AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, PhysicalPosition, PhysicalSize,
+    Runtime, WebviewUrl, WebviewWindow, Window,
+};
 use tauri_plugin_opener::OpenerExt;   // open external links in the system browser
 
 use crate::debug;
@@ -234,6 +237,42 @@ pub fn show_provider_menu(window: &Window) {
     }
 }
 
+/// Builds + pops the EDITING context menu (Cut / Copy / Paste / Select all) over the provider
+/// child webview, triggered by right-click. These are PredefinedMenuItems: they act on the
+/// focused webview by themselves (no `on_menu_event`). Localized via `MenuLabels`, English
+/// fallback. A native menu is required to draw ABOVE the opaque child webview. Main thread only.
+pub fn show_context_menu(window: &Window) {
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+    let app = window.app_handle().clone();
+    let l = app.state::<crate::AppState>().menu_labels.lock().unwrap().clone();
+    let pick = |s: &str, fb: &str| if s.trim().is_empty() { fb.to_string() } else { s.to_string() };
+    let cut_t = pick(&l.cut, "Cut");
+    let copy_t = pick(&l.copy, "Copy");
+    let paste_t = pick(&l.paste, "Paste");
+    let select_all_t = pick(&l.select_all, "Select All");
+    let copy_url_t = pick(&l.copy_url, "Copy URL");
+
+    let build = || -> tauri::Result<Menu<tauri::Wry>> {
+        let cut = PredefinedMenuItem::cut(&app, Some(&cut_t))?;
+        let copy = PredefinedMenuItem::copy(&app, Some(&copy_t))?;
+        let paste = PredefinedMenuItem::paste(&app, Some(&paste_t))?;
+        let sep = PredefinedMenuItem::separator(&app)?;
+        let select_all = PredefinedMenuItem::select_all(&app, Some(&select_all_t))?;
+        let sep2 = PredefinedMenuItem::separator(&app)?;
+        // "Copy URL": custom id, handled in the app-level on_menu_event (copies the provider's URL).
+        let copy_url = MenuItem::with_id(&app, "copy_url", &copy_url_t, true, None::<&str>)?;
+        Menu::with_items(&app, &[&cut, &copy, &paste, &sep, &select_all, &sep2, &copy_url])
+    };
+    match build() {
+        Ok(menu) => {
+            if let Err(e) = window.popup_menu(&menu) {
+                debug::log(format!("context popup_menu error: {e}"));
+            }
+        }
+        Err(e) => debug::log(format!("build context menu error: {e}")),
+    }
+}
+
 /// Pops OUR native provider menu on demand (the in-app bar's ⇄ button). Same menu as the
 /// right-click; pops at the cursor (which is on the button). Runs on the main thread.
 #[tauri::command]
@@ -243,6 +282,140 @@ pub fn provider_menu(window: Window) -> Result<(), String> {
         .app_handle()
         .run_on_main_thread(move || show_provider_menu(&w))
         .map_err(|e| e.to_string())
+}
+
+/// Payload for the floating provider-menu window: provider rows (each with inline SVG icon + color) +
+/// localized labels + resolved theme colors (so the menu window matches the app theme without
+/// duplicating the theme definitions). Passed as-is from the main webview.
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
+pub struct ProviderMenuData {
+    providers: serde_json::Value,
+    labels: serde_json::Value,
+    theme: serde_json::Value,
+}
+
+/// Shows the floating provider menu (window `menu`) anchored under the ⇄ button, drawn ABOVE the
+/// provider webview WITHOUT hiding it (a separate always-on-top window, unlike the old HTML overlay
+/// that had to park the provider). `ax`/`ay` = the button's bottom-right in the main webview's
+/// LOGICAL viewport coords; converted to screen physical px via the main window's client origin.
+#[tauri::command]
+pub fn show_provider_menu_window(
+    app: AppHandle,
+    data: ProviderMenuData,
+    ax: f64,
+    ay: f64,
+) -> Result<(), String> {
+    debug::log(format!("show_provider_menu_window: entry ax={ax} ay={ay}"));
+    let Some(menu) = app.get_webview_window("menu") else {
+        debug::log("show_provider_menu_window: MENU WINDOW MISSING");
+        return Err("menu window missing".into());
+    };
+    // get_window (NOT get_webview_window): with the provider child-webview the "main" window has 2
+    // webviews and get_webview_window("main") returns None -> the menu would never show.
+    let Some(main) = app.get_window("main") else {
+        debug::log("show_provider_menu_window: MAIN WINDOW MISSING");
+        return Err("main window missing".into());
+    };
+    let scale = main.scale_factor().map_err(|e| e.to_string())?;
+    let inner = main.inner_position().map_err(|e| e.to_string())?;
+    // Cover the monitor the app is on with a transparent full-screen backdrop, so a click ANYWHERE
+    // outside the menu box dismisses it (real menu behaviour, multi-monitor safe). menu.html then
+    // places the menu box inside it at the ⇄ button anchor.
+    let Some(mon) = main.current_monitor().map_err(|e| e.to_string())? else {
+        return Err("no current monitor".into());
+    };
+    let mpos = mon.position();
+    let msz = mon.size();
+    // Button anchor (bottom-right) relative to the monitor, in LOGICAL px for the CSS in menu.html.
+    let anchor_x = (inner.x + (ax * scale) as i32 - mpos.x) as f64 / scale;
+    let anchor_y = (inner.y + (ay * scale) as i32 - mpos.y) as f64 / scale;
+    let _ = menu.emit(
+        "menu://data",
+        serde_json::json!({
+            "providers": data.providers,
+            "labels": data.labels,
+            "theme": data.theme,
+            "anchorX": anchor_x,
+            "anchorY": anchor_y,
+        }),
+    );
+    debug::log(format!(
+        "show_provider_menu_window: anchor=({anchor_x:.0},{anchor_y:.0}) monitor=({},{}) {}x{} scale={scale}",
+        mpos.x, mpos.y, msz.width, msz.height
+    ));
+    *menu_shown_at().lock().unwrap() = Some(std::time::Instant::now()); // arm the anti-flash guard
+    let _ = menu.set_position(PhysicalPosition::new(mpos.x, mpos.y));
+    let _ = menu.set_size(PhysicalSize::new(msz.width, msz.height));
+    let _ = menu.show();
+    let _ = menu.set_focus();
+    debug::log(format!("show_provider_menu_window: shown, visible={:?}", menu.is_visible()));
+    Ok(())
+}
+
+/// Diagnostic hook: the menu window (menu.html) calls this so its lifecycle shows up in the
+/// gated `[KDBG]` log (the menu window has no console we can read).
+#[tauri::command]
+pub fn menu_log(msg: String) {
+    debug::log(format!("[menu.html] {msg}"));
+}
+
+/// Menu window → a provider was chosen: tell the main webview (reuses `app://switch-provider`) and hide the menu.
+#[tauri::command]
+pub fn menu_pick(app: AppHandle, key: String, mode: String) -> Result<(), String> {
+    // get_window: the "main" window has 2 webviews while a provider is open (get_webview_window = None).
+    if let Some(w) = app.get_window("main") {
+        let _ = w.emit("app://switch-provider", serde_json::json!({ "key": key, "mode": mode }));
+    }
+    if let Some(m) = app.get_webview_window("menu") {
+        let _ = m.hide();
+    }
+    Ok(())
+}
+
+/// Menu window → "Download manager" chosen.
+#[tauri::command]
+pub fn menu_downloads(app: AppHandle) -> Result<(), String> {
+    // get_window: the "main" window has 2 webviews while a provider is open (get_webview_window = None).
+    if let Some(w) = app.get_window("main") {
+        let _ = w.emit("app://open-downloads", ());
+    }
+    if let Some(m) = app.get_webview_window("menu") {
+        let _ = m.hide();
+    }
+    Ok(())
+}
+
+/// Menu window → dismissed (focus lost / click-outside / Esc).
+#[tauri::command]
+pub fn menu_dismiss(app: AppHandle) -> Result<(), String> {
+    if let Some(m) = app.get_webview_window("menu") {
+        let _ = m.hide();
+    }
+    Ok(())
+}
+
+/// When the floating menu was last shown — anti-flash guard for the focus-lost dismiss below.
+fn menu_shown_at() -> &'static Mutex<Option<std::time::Instant>> {
+    static M: OnceLock<Mutex<Option<std::time::Instant>>> = OnceLock::new();
+    M.get_or_init(|| Mutex::new(None))
+}
+
+/// Hides the floating provider-menu window (single-webview window: get_webview_window works).
+pub fn hide_menu_window<R: Runtime, M: Manager<R>>(manager: &M) {
+    if let Some(m) = manager.get_webview_window("menu") {
+        let _ = m.hide();
+    }
+}
+
+/// The menu window lost OS focus -> dismiss it. Ignores the transient toggle right after show
+/// (~250ms) so opening the menu does not immediately close it.
+pub fn on_menu_focus_lost<R: Runtime, M: Manager<R>>(manager: &M) {
+    if let Some(t) = *menu_shown_at().lock().unwrap() {
+        if t.elapsed().as_millis() < 250 {
+            return;
+        }
+    }
+    hide_menu_window(manager);
 }
 
 /// Opens (or re-navigates) the provider view to the given `url`.
@@ -283,11 +456,12 @@ pub async fn open_provider_view(window: Window, url: String) -> Result<(), Strin
             .initialization_script(NO_MENU_JS)
             .on_navigation(move |u| {
                 debug::log(format!("on_navigation -> {u}"));
-                // Right-click sentinel: pop OUR native context menu (over this child webview),
-                // on the main thread (popup_menu requires it). The navigation itself is blocked.
+                // Right-click sentinel: pop OUR native EDITING menu (Cut/Copy/Paste/Select all)
+                // over this child webview, on the main thread (popup_menu requires it). Provider
+                // switching now lives in the header ⇄ HTML menu, so it is NOT here. Nav is blocked.
                 if u.host_str() == Some("kotodama.menu") {
                     let w = win_for_nav.clone();
-                    let _ = win_for_nav.app_handle().run_on_main_thread(move || show_provider_menu(&w));
+                    let _ = win_for_nav.app_handle().run_on_main_thread(move || show_context_menu(&w));
                     return false;
                 }
                 // External links funneled here (sentinel host) open in the system
@@ -438,6 +612,7 @@ pub fn close_provider_view(window: Window) -> Result<(), String> {
     if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
         let _ = webview.set_position(LogicalPosition::new(0.0, PARK_Y));
     }
+    hide_menu_window(&window); // closing the provider also dismisses the floating ⇄ menu
     window
         .emit("app://provider-closed", ())
         .map_err(|e| e.to_string())?;
@@ -673,5 +848,6 @@ pub fn park_provider<R: Runtime, M: Manager<R>>(manager: &M) {
     if let Some(webview) = manager.get_webview(PROVIDER_LABEL) {
         let _ = webview.set_position(LogicalPosition::new(0.0, PARK_Y));
     }
+    hide_menu_window(manager); // returning to the builder also dismisses the floating ⇄ menu
 }
 

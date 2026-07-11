@@ -580,6 +580,18 @@ pub fn run() {
                 }
                 return;
             }
+            if id == "copy_url" {
+                // Right-click "Copy URL": copy the provider webview's current URL to the clipboard
+                // (ignore-self marker set so the clipboard monitor doesn't pop a toast for it).
+                if let Some(pv) = app.get_webview(browser::PROVIDER_LABEL) {
+                    if let Ok(url) = pv.url() {
+                        let s = url.to_string();
+                        *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(s.clone());
+                        let _ = app.state::<Clipboard>().write_text(s);
+                    }
+                }
+                return;
+            }
             if let Some(rest) = id.strip_prefix("sw:") {
                 // id = "sw:<key>:<open|paste|send>": switch provider with that mode.
                 if let Some((key, mode)) = rest.rsplit_once(':') {
@@ -634,6 +646,17 @@ pub fn run() {
                 let _ = main.set_visible_on_all_workspaces(true);
             }
 
+            // The floating provider menu (⇄) is its own always-on-top window; dismiss it when it
+            // loses OS focus (the JS `window.blur` inside it does NOT fire reliably on Windows).
+            if let Some(menu) = app.get_webview_window("menu") {
+                let mh = menu.clone();
+                menu.on_window_event(move |event| {
+                    if let WindowEvent::Focused(false) = event {
+                        browser::on_menu_focus_lost(&mh);
+                    }
+                });
+            }
+
             // Non-visual init (after the show): tray + autostart sync.
             let autostart_on = {
                 use tauri_plugin_autostart::ManagerExt;
@@ -686,6 +709,11 @@ pub fn run() {
             browser::provider_fill,
             browser::provider_paste,
             browser::provider_menu,
+            browser::show_provider_menu_window,
+            browser::menu_pick,
+            browser::menu_downloads,
+            browser::menu_dismiss,
+            browser::menu_log,
             browser::set_provider_menu_labels,
             browser::provider_suppress,
             browser::provider_dock,

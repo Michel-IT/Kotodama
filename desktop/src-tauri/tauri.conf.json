@@ -34,6 +34,20 @@
         "shadow": false,
         "focus": false,
         "visible": false
+      },
+      {
+        "label": "menu",
+        "url": "menu.html",
+        "width": 430,
+        "height": 470,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "shadow": false,
+        "focus": true,
+        "visible": false
       }
     ],
     "security": {
