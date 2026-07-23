@@ -199,6 +199,10 @@
       margin-left:4px; padding-left:10px; border-left:1px solid var(--border-soft); }
     body.provider-open .ab-provnav { display:flex; }
     body.provider-open .ab-tools { display:none; }
+    /* Kotodama meta-chat: same appbar nav as the provider view (uniform) */
+    .ab-ktnav { display:none; align-items:center; gap:6px; flex:none;
+      margin-left:4px; padding-left:10px; border-left:1px solid var(--border-soft); }
+    body.kotodama-open .ab-ktnav { display:flex; }
     .pc-btn {
       width:30px; height:30px; border-radius:8px; flex:none;
       border:1px solid var(--border); background:var(--field); color:var(--text);
@@ -208,20 +212,40 @@
     .pc-btn:active { transform:scale(.94); }
     .pc-btn { position:relative; }
     .pc-btn.has-new::after { content:""; position:absolute; top:3px; right:3px; width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 2px var(--bg-1); }
-    /* provider name: takes the space between nav and controls, content centered; does not block drag */
-    .pc-title {
+    /* provider tabs: an icon strip of ALL providers (switcher). Takes the space between the nav
+       buttons and the window controls; scrolls horizontally if it does not fit. The ACTIVE tab
+       shows icon + name and is highlighted with the provider color; the others are icon-only. */
+    .pc-tabs {
       display:none; flex:1; min-width:0; height:var(--topbar-h);
-      align-items:center; justify-content:center; gap:8px; pointer-events:none;
-      color:var(--text-dim); font-size:12.5px; font-weight:600; letter-spacing:.3px;
+      align-items:center; gap:3px; padding:0 8px;
+      overflow-x:auto; overflow-y:hidden; scrollbar-width:none;
     }
-    body.provider-open .pc-title { display:flex; }
-    /* in provider mode the spacer is not needed (the flex provider name fills it) */
+    .pc-tabs::-webkit-scrollbar { display:none; }
+    body.provider-open .pc-tabs { display:flex; }
+    /* in provider mode the spacer is not needed (the strip fills it) */
     body.provider-open .ab-spacer { display:none; }
-    .pc-badge { color:var(--accent); filter:drop-shadow(0 0 6px var(--accent-glow)); flex:none; display:grid; place-items:center; width:18px; height:18px; }
-    .pc-badge svg { width:18px; height:18px; display:block; }
-    #pcName { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pc-tab {
+      flex:none; height:30px; display:flex; align-items:center; gap:6px;
+      padding:0 6px; border-radius:8px; border:1px solid transparent;
+      background:transparent; color:var(--text); cursor:pointer;
+      transition:background .15s, border-color .15s;
+    }
+    .pc-tab:hover { background:var(--field-2); }
+    .pc-tab:active { transform:scale(.96); }
+    .pc-tab .ic { flex:none; width:18px; height:18px; display:grid; place-items:center; color:var(--pc,var(--accent)); }
+    .pc-tab .ic svg { width:18px; height:18px; display:block; }
+    .pc-tab .nm {
+      max-width:0; overflow:hidden; white-space:nowrap; opacity:0;
+      font-size:12.5px; font-weight:600; letter-spacing:.2px;
+      transition:max-width .2s ease, opacity .2s ease;
+    }
+    .pc-tab.active {
+      background:var(--field); border-color:var(--pc,var(--accent));
+      box-shadow:0 0 10px -4px var(--pc,var(--accent));
+    }
+    .pc-tab.active .nm { max-width:140px; opacity:1; }
     /* on narrow windows hide the brand text (the logo stays) so it does not
-       collide with the centered provider name */
+       collide with the provider strip */
     @media (max-width:880px) { body.provider-open .ab-brand h1 { display:none; } }
     .pc-close {
       display:flex; align-items:center; gap:6px; flex:none; height:30px; padding:0 12px; border-radius:8px;
@@ -449,6 +473,10 @@
     .wc-chk input:checked { background:var(--accent); border-color:var(--accent); }
     .wc-chk input:checked::after { content:""; width:5px; height:9px; border:2px solid var(--on-accent); border-top:0; border-left:0; transform:rotate(45deg); margin-top:-2px; }
     .modal--wide { max-width:min(94vw, 800px); }
+    /* Settings: FIXED height filling the window (minus the header bar): switching tabs
+       must not make the modal jump in size */
+    #settingsOverlay { padding-top:calc(var(--topbar-h) + 12px); align-items:stretch; }
+    #settingsOverlay .modal--wide { height:100%; max-height:none; }
     /* Download manager: side panel docked to the right (provider narrows to make room) */
     .dl-dock { position:fixed; top:46px; right:0; bottom:0; width:340px; z-index:1400;
       display:flex; flex-direction:column; background:var(--bg-1); border-left:1px solid var(--border);
@@ -482,6 +510,85 @@
     .dl-empty { text-align:center; color:var(--text-faint); font-size:13.5px; padding:44px 10px; }
     .dl-spin { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--accent); animation:plspin .8s linear infinite; }
     .dl-act[disabled] { opacity:.32; pointer-events:none; }
+    /* ===== Kotodama meta-chat overlay (full page over the builder; providers stay parked) ===== */
+    .kt-view { position:fixed; inset:0; top:var(--topbar-h); z-index:1200; display:none;
+      flex-direction:row; background:var(--bg-0, var(--bg-1)); }
+    body.kotodama-open .kt-view { display:flex; }
+    /* session sidebar (left column) */
+    .kt-side { flex:none; width:242px; display:flex; flex-direction:column; min-height:0;
+      background:var(--bg-1); border-right:1px solid var(--border-soft); }
+    .kt-side-head { flex:none; display:flex; flex-direction:column; gap:8px; padding:10px 10px 8px;
+      border-bottom:1px solid var(--border-soft); }
+    .kt-search input { font-size:12.5px; }
+    .kt-new { font-size:12px; }
+    .kt-sess-list { flex:1; min-height:0; overflow-y:auto; padding:6px; }
+    .kt-sess { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:10px;
+      cursor:pointer; border:1px solid transparent; }
+    .kt-sess:hover { background:var(--field); }
+    .kt-sess.active { background:var(--field); border-color:var(--accent); }
+    .kt-sess-meta { flex:1; min-width:0; }
+    .kt-sess-title { font-size:12.5px; font-weight:600; color:var(--text);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kt-sess-date { font-size:10.5px; color:var(--text-faint); margin-top:2px; }
+    .kt-sess-del { flex:none; width:22px; height:22px; border:none; border-radius:6px;
+      background:none; color:var(--text-faint); cursor:pointer; font-size:12px;
+      display:grid; place-items:center; opacity:0; transition:opacity .12s; }
+    .kt-sess:hover .kt-sess-del { opacity:1; }
+    .kt-sess-del:hover { background:var(--panel-glow); color:#e08585; }
+    .kt-sess-del.confirm { opacity:1; background:#5a2323; color:#ffb4b4; font-size:10px; width:auto; padding:0 7px; }
+    .kt-empty { text-align:center; color:var(--text-faint); font-size:12.5px; padding:26px 8px; }
+    .kt-main { flex:1; min-width:0; display:flex; flex-direction:column; min-height:0; }
+    @media (max-width:820px) { .kt-side { display:none; } }
+    .kt-head { flex:none; display:flex; align-items:center; gap:12px; padding:10px 16px;
+      border-bottom:1px solid var(--border-soft); background:var(--bg-1); flex-wrap:wrap; }
+    .kt-title { display:flex; align-items:center; gap:8px; flex:none; }
+    .kt-title h2 { font-size:14.5px; font-weight:650; }
+    .kt-badge { width:20px; height:20px; display:grid; place-items:center; color:#c9a7ff;
+      filter:drop-shadow(0 0 6px rgba(201,167,255,.5)); }
+    .kt-badge svg { width:20px; height:20px; display:block; }
+    .kt-chips { display:flex; align-items:center; gap:6px; flex:1; min-width:0; flex-wrap:wrap; }
+    .kt-chip { display:flex; align-items:center; gap:6px; height:28px; padding:0 10px;
+      border-radius:999px; border:1px solid var(--border); background:var(--field);
+      color:var(--text-dim); cursor:pointer; font-size:12px; font-weight:600;
+      transition:border-color .15s, color .15s, opacity .15s; opacity:.55; }
+    .kt-chip .ic { width:15px; height:15px; display:grid; place-items:center; color:var(--pc,var(--accent)); }
+    .kt-chip .ic svg { width:15px; height:15px; display:block; }
+    .kt-chip.on { opacity:1; color:var(--text); border-color:var(--pc,var(--accent)); }
+    .kt-thread { flex:1; min-height:0; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:14px; }
+    .kt-user { align-self:flex-end; max-width:72%; background:var(--field);
+      border:1px solid var(--accent); border-radius:14px 14px 4px 14px; padding:10px 14px;
+      font-size:13.5px; color:var(--text); white-space:pre-wrap; word-break:break-word; }
+    .kt-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:10px; }
+    .kt-card { display:flex; flex-direction:column; background:var(--field); border:1px solid var(--border-soft);
+      border-radius:12px; overflow:hidden; min-height:80px; }
+    .kt-card-head { flex:none; display:flex; align-items:center; gap:8px; padding:8px 12px;
+      border-bottom:1px solid var(--border-soft); background:var(--panel-glow, transparent); }
+    .kt-card-head .ic { width:16px; height:16px; display:grid; place-items:center; color:var(--pc,var(--accent)); flex:none; }
+    .kt-card-head .ic svg { width:16px; height:16px; display:block; }
+    .kt-card-head .nm { font-size:12.5px; font-weight:650; flex:1; min-width:0; }
+    .kt-status { font-size:11px; color:var(--text-faint); display:flex; align-items:center; gap:6px; flex:none; }
+    .kt-retry { flex:none; width:22px; height:22px; border:1px solid var(--border); border-radius:50%;
+      background:var(--field); color:inherit; cursor:pointer; font-size:13px; line-height:1;
+      display:grid; place-items:center; transition:color .15s, border-color .15s, transform .1s; }
+    .kt-retry:hover { color:var(--accent); border-color:var(--accent); }
+    .kt-retry:active { transform:rotate(180deg); }
+    .kt-status .dl-spin { width:12px; height:12px; border-width:2px; }
+    .kt-card.done .kt-status { color:var(--accent); }
+    .kt-card.error .kt-status, .kt-card.cancelled .kt-status { color:#e08585; }
+    .kt-card.timeout .kt-status { color:#d8b45a; }
+    .kt-card-body { flex:1; padding:10px 12px; font-size:13px; line-height:1.5;
+      white-space:pre-wrap; word-break:break-word; overflow-y:auto; max-height:420px; }
+    .kt-card-body.empty { color:var(--text-faint); font-style:italic; }
+    .kt-card-foot { flex:none; display:flex; justify-content:flex-end; gap:6px; padding:6px 10px;
+      border-top:1px solid var(--border-soft); }
+    .kt-card-foot .btn { font-size:11.5px; padding:4px 10px; }
+    .kt-composer { flex:none; display:flex; align-items:flex-end; gap:10px; padding:12px 16px;
+      border-top:1px solid var(--border-soft); background:var(--bg-1); }
+    .kt-composer textarea { flex:1; min-height:44px; max-height:160px; resize:vertical;
+      background:var(--field); border:1px solid var(--border); border-radius:12px;
+      color:var(--text); font-size:13.5px; padding:10px 14px; outline:none; font-family:inherit; }
+    .kt-composer textarea:focus { border-color:var(--accent); }
+    .kt-send { flex:none; width:48px; height:48px; font-size:20px; }   /* eredita .send (cerchio gradiente) */
     .modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border-soft); flex:none; }
     .modal-head h2 { font-size:15px; font-weight:650; }
     .modal-head .x { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:18px; }
@@ -492,6 +599,24 @@
     .set-section { padding:9px 0; border-bottom:1px solid var(--border-soft); }
     .set-section:last-child { border-bottom:none; }
     .set-h { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-faint); font-weight:700; margin-bottom:8px; }
+    /* Settings tabs: one panel visible at a time (options outgrew a single scroll) */
+    .set-tabs { flex:none; display:flex; gap:4px; padding:10px 18px 0; border-bottom:1px solid var(--border-soft); }
+    .set-tab { border:none; background:none; color:var(--text-dim); cursor:pointer;
+      font-size:12.5px; font-weight:600; padding:8px 12px 9px; border-radius:8px 8px 0 0;
+      border-bottom:2px solid transparent; transition:color .15s, border-color .15s; }
+    .set-tab:hover { color:var(--text); }
+    .set-tab.active { color:var(--text); border-bottom-color:var(--accent); }
+    .set-panel { display:none; border-bottom:none !important; }
+    .set-panel.active { display:block; }
+    /* per-recipe shortcut rows */
+    .rh-row { display:flex; align-items:center; gap:8px; margin-top:7px; }
+    .rh-name { flex:1; min-width:0; font-size:13px; color:var(--text);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rh-row input { width:210px; flex:none; cursor:pointer; }
+    .rh-row input.conflict { border-color:#c0504d; }
+    .rh-clear { flex:none; width:28px; height:28px; border:none; border-radius:8px;
+      background:none; color:var(--text-faint); cursor:pointer; font-size:13px; }
+    .rh-clear:hover { background:var(--panel-glow); color:#e08585; }
     .set-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px 14px; align-items:start; }
     /* each setting = box (card): label and control inside the same box → clear association */
     .set-section .setting { border-bottom:none; background:var(--field); border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:9px 12px; gap:6px; }
@@ -594,7 +719,11 @@
         <button class="pc-btn" id="pcSwitch" data-i18n-title="switchProvider" title="Cambia provider">⇄</button>
         <button class="pc-btn" id="pcReload" data-i18n-title="reload" title="Ricarica">⟳</button>
       </div>
-      <div class="pc-title"><span class="pc-badge">✦</span><span id="pcName"></span></div>
+      <!-- Kotodama meta-chat: same back-to-builder control as the provider view (uniform app bar) -->
+      <div class="ab-ktnav">
+        <button class="pc-close" id="ktBackBar">← <span data-i18n="builder">Ai Prompt Builder</span></button>
+      </div>
+      <div class="pc-tabs" id="pcTabs"></div>
 
       <div class="ab-spacer" data-tauri-drag-region></div>
 
@@ -634,6 +763,7 @@
           <li class="recipe" data-key="summarise"><span class="ico">☰</span> <span class="rname">Summarise</span></li>
           <li class="recipe" data-key="reply"><span class="ico">↩</span> <span class="rname">Reply</span></li>
           <li class="recipe" data-key="email"><span class="ico">✉</span> <span class="rname">Create Email</span></li>
+          <li class="recipe" data-key="translate"><span class="ico">🌐</span> <span class="rname">Translate</span></li>
         </ul>
       </aside>
 
@@ -676,9 +806,9 @@
               <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">Z</text></svg></span>
               <span class="pname">Z.ai</span>
             </div>
-            <div class="prov" data-prov="other" style="--pc:#9fc4be">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></span>
-              <span class="pname">Altro</span>
+            <div class="prov" data-prov="kotodama" style="--pc:#c9a7ff">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="5" r="1.6"/><circle cx="19.5" cy="5" r="1.6"/><circle cx="4.5" cy="19" r="1.6"/><circle cx="19.5" cy="19" r="1.6"/><path d="M6 6.2 10.3 10.5M18 6.2 13.7 10.5M6 17.8 10.3 13.5M18 17.8 13.7 13.5"/></svg></span>
+              <span class="pname">Kotodama</span>
             </div>
           </div>
         </div>
@@ -701,14 +831,14 @@
               <label data-i18n="tone">Tono</label>
               <div class="select"><span class="ico">👤</span><select id="tone"></select></div>
             </div>
+            <div class="control">
+              <label data-i18n="respLabel">Risposta</label>
+              <div class="select"><span class="ico">✎</span><select id="respFmt"></select></div>
+            </div>
           </div>
           <div class="footer">
             <button class="add-btn fields-btn" id="manageFields" data-i18n-title="fieldsTitle" title="Personalizza campi">⚙</button>
             <span class="hint" data-i18n="hint">Compila i campi e premi → per aprire il provider selezionato</span>
-            <label class="neutral-auto" data-i18n-title="neutralAutosendHint" title="Auto-invio: se attivo, il testo viene inviato subito al provider; se spento viene solo incollato, cosi puoi modificarlo prima di inviare.">
-              <span class="neutral-auto-lbl" data-i18n="neutralAutosend">Auto-invio</span>
-              <span class="switch sm"><input type="checkbox" id="neutralAutosend"><span class="slider"></span></span>
-            </label>
             <button class="send" id="generate" data-i18n-title="generate" title="Apri nel provider">→</button>
           </div>
         </section>
@@ -762,10 +892,48 @@
         <h2 data-i18n="settingsTitle">Impostazioni</h2>
         <button class="x" id="settingsX" title="Chiudi">✕</button>
       </div>
+      <!-- tab bar: the options grew too much for a single scroll -->
+      <div class="set-tabs" id="setTabs">
+        <button class="set-tab active" data-tab="general" data-i18n="setTabGeneral">Generale</button>
+        <button class="set-tab" data-tab="shortcuts" data-i18n="setTabShortcuts">Scorciatoie</button>
+        <button class="set-tab" data-tab="appearance" data-i18n="setTabAppearance">Aspetto</button>
+        <button class="set-tab" data-tab="system" data-i18n="setTabSystem">Sistema</button>
+        <button class="set-tab" data-tab="about" data-i18n="setTabAbout">Info</button>
+      </div>
       <div class="modal-body">
+        <!-- General -->
+        <div class="set-section set-panel active" data-panel="general">
+          <div class="set-grid">
+            <div class="setting">
+              <label data-i18n="setProvider">Provider predefinito</label>
+              <span class="sub" data-i18n="setProviderHint">Provider predefinito, usato anche quando copi del testo.</span>
+              <select class="field" id="setProvider"></select>
+            </div>
+            <div class="setting">
+              <label data-i18n="setRecipe">Ricetta predefinita</label>
+              <span class="sub" data-i18n="setRecipeHint">Ricetta usata quando copi del testo.</span>
+              <select class="field" id="setRecipe"></select>
+            </div>
+          </div>
+        </div>
+        <!-- Shortcuts: main hotkey + one per recipe -->
+        <div class="set-section set-panel" data-panel="shortcuts">
+          <div class="setting">
+            <label data-i18n="setHotkey">Scorciatoia globale</label>
+            <span class="sub" data-i18n="setHotkeyHint">Clicca e premi la combinazione.</span>
+            <div class="hotkey-field">
+              <input type="text" class="field" id="setHotkey" readonly>
+              <button class="btn" id="hotkeyClear" data-i18n="reset">Reset</button>
+            </div>
+          </div>
+          <div class="setting">
+            <label data-i18n="setRecipeHotkeys">Scorciatoie per ricetta</label>
+            <span class="sub" data-i18n="setRecipeHotkeysHint">Clicca il campo e premi la combinazione; ✕ la rimuove.</span>
+            <div id="recipeHotkeys"></div>
+          </div>
+        </div>
         <!-- Appearance -->
-        <div class="set-section">
-          <div class="set-h" data-i18n="setSecAppearance">Aspetto</div>
+        <div class="set-section set-panel" data-panel="appearance">
           <div class="set-grid">
             <div class="setting">
               <label data-i18n="setTheme">Tema</label>
@@ -783,33 +951,8 @@
             </div>
           </div>
         </div>
-        <!-- General -->
-        <div class="set-section">
-          <div class="set-h" data-i18n="setSecGeneral">Generale</div>
-          <div class="set-grid">
-            <div class="setting">
-              <label data-i18n="setProvider">Provider predefinito</label>
-              <span class="sub" data-i18n="setProviderHint">Provider predefinito, usato anche quando copi del testo.</span>
-              <select class="field" id="setProvider"></select>
-            </div>
-            <div class="setting">
-              <label data-i18n="setRecipe">Ricetta predefinita</label>
-              <span class="sub" data-i18n="setRecipeHint">Ricetta usata quando copi del testo.</span>
-              <select class="field" id="setRecipe"></select>
-            </div>
-          </div>
-          <div class="setting">
-            <label data-i18n="setHotkey">Scorciatoia globale</label>
-            <span class="sub" data-i18n="setHotkeyHint">Clicca e premi la combinazione.</span>
-            <div class="hotkey-field">
-              <input type="text" class="field" id="setHotkey" readonly>
-              <button class="btn" id="hotkeyClear" data-i18n="reset">Reset</button>
-            </div>
-          </div>
-        </div>
         <!-- System -->
-        <div class="set-section">
-          <div class="set-h" data-i18n="setSecSystem">Sistema</div>
+        <div class="set-section set-panel" data-panel="system">
           <div class="set-grid">
             <div class="setting">
               <div class="row">
@@ -840,6 +983,11 @@
             </div>
           </div>
           <div class="setting">
+            <label data-i18n="setKtTemp">Chat temporanee nei provider</label>
+            <span class="sub" data-i18n="setKtTempHint">Dove supportato: le richieste Kotodama non restano nella cronologia del provider.</span>
+            <div id="ktTempList"></div>
+          </div>
+          <div class="setting">
             <div class="row">
               <div>
                 <label data-i18n="setUpdates">Aggiornamenti</label>
@@ -853,8 +1001,7 @@
             </div>
           </div>
         </div>
-        <div class="set-section">
-          <div class="set-h" data-i18n="about">Info</div>
+        <div class="set-section set-panel" data-panel="about">
           <div class="about-box">
             <img class="about-logo" src="kuramalab.png" alt="KuramaLab">
             <div class="about-meta">
@@ -952,6 +1099,36 @@
     <div class="dl-dock-body" id="downloadsBody"></div>
   </div>
 
+  <!-- Kotodama meta-chat: one message broadcast to all selected providers; answers side by side.
+       Full-page overlay in the MAIN webview; the provider webviews stay parked off-screen. -->
+  <div class="kt-view" id="kotodamaView">
+    <!-- session sidebar: search + new + saved conversations (like a provider's chat list) -->
+    <aside class="kt-side" id="ktSide">
+      <div class="kt-side-head">
+        <div class="dl-search kt-search">
+          <span class="dl-search-i">⌕</span>
+          <input id="ktSearch" type="text" data-i18n-ph="ktSearch" placeholder="Cerca nelle conversazioni...">
+        </div>
+        <button class="btn kt-new" id="ktNew" data-i18n="ktNewChat">Nuova conversazione</button>
+      </div>
+      <div class="kt-sess-list" id="ktSessList"></div>
+    </aside>
+    <div class="kt-main">
+      <div class="kt-head">
+        <div class="kt-title">
+          <span class="kt-badge"></span>
+          <h2 data-i18n="ktTitle">Kotodama · chiedi a tutti</h2>
+        </div>
+        <div class="kt-chips" id="ktChips"></div>
+      </div>
+      <div class="kt-thread" id="ktThread"></div>
+      <div class="kt-composer">
+        <textarea id="ktInput" rows="2" data-i18n-ph="ktPlaceholder" placeholder="Chiedi a tutti i provider selezionati..."></textarea>
+        <button class="send kt-send" id="ktSend" data-i18n-title="ktSendBtn" title="Invia">→</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* Release build: no right-click menu or devtools shortcuts */
     document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
@@ -969,7 +1146,7 @@
     // (they already auto-submit via ?q=, this would cause a double submit) nor "other".
     // Claude (?q=) prefills but does NOT auto-submit → it needs autosend (focus+Enter).
     const PROVIDERS = {
-      openai:     { name:'ChatGPT',    base:'https://chatgpt.com/',             q:'?q=', mode:'query',     autosend:true },
+      openai:     { name:'ChatGPT',    base:'https://chatgpt.com/',             q:'?q=', mode:'query',     autosend:true, temp:'temporary-chat=true' },
       anthropic:  { name:'Claude',     base:'https://claude.ai/new',            q:'',    mode:'clipboard', autosend:true },
       grok:       { name:'Grok',       base:'https://grok.com/',                q:'?q=', mode:'query' },
       gemini:     { name:'Gemini',     base:'https://gemini.google.com/app',    q:'',    mode:'clipboard', autosend:true },
@@ -977,14 +1154,10 @@
       qwen:       { name:'Qwen',       base:'https://chat.qwen.ai/',            q:'',    mode:'clipboard', autosend:true },
       deepseek:   { name:'DeepSeek',   base:'https://chat.deepseek.com/',       q:'',    mode:'clipboard', autosend:true },
       zai:        { name:'Z.ai',       base:'https://chat.z.ai/',               q:'',    mode:'clipboard', autosend:true },
-      other:      { name:'Altro',      base:'',                                 q:'',    mode:'manual' }
+      kotodama:   { name:'Kotodama',   base:'',                                 q:'',    mode:'meta' }
     };
     let lastProviderUrl='';
     let selectedProvider = 'openai';
-    // Auto-open anti-loop (toast/hotkey): auto-open writes the prompt to the clipboard as
-    // a safety net; a held-down shortcut (auto-repeat) would read it back and nest it.
-    let lastAutoPrompt='';   // last prompt generated by auto-open (not to be re-processed)
-    let autoOpenBusy=false;  // cooldown against rapid repetitions
     const MAX_URL = 7000;
 
     /* ===================== TRANSLATIONS ===================== */
@@ -1000,8 +1173,8 @@
       generatedPrompt:'Generated prompt', copy:'Copy', copied:'Copied ✓',
       placeholder:'Description…',
       settings:'Settings', newRecipe:'New recipe', generate:'Open in provider',
-      recipeNames:{ rephrase:'Rephrase', summarise:'Summarise', reply:'Reply', email:'Create Email' },
-      instr:{ rephrase:'Rephrase the following text:', summarise:'Summarise the following text:', reply:'Write a reply to the following message:', email:'Write an email based on:' },
+      recipeNames:{ rephrase:'Rephrase', summarise:'Summarise', reply:'Reply', email:'Create Email', translate:'Translate' },
+      instr:{ rephrase:'Reply only with the text, no preamble or comments. Rephrase the following text:', summarise:'Summarise the following text:', reply:'Write a reply to the following message:', email:'Write an email based on:' },
       lengthOpts:['Short and concise','Medium','Long and detailed'],
       toneOpts:['Professional','Friendly','Formal','Casual','Persuasive'],
       constraints:'Constraints:', cLength:'Length', cTone:'Tone',
@@ -1009,7 +1182,25 @@
       copyFail:'Copy failed: please select the text manually.',
       opening:'Opening', clipNote:'— prompt copied to clipboard (Ctrl+V if it does not auto-fill)',
       popupBlocked:'Popup blocked by the browser: please allow popups for this site.',
-      otherName:'Other', manualNote:'Prompt generated and copied to clipboard.',
+      ktTileTitle:'Kotodama... ask every provider at once',
+      ktTitle:'Kotodama · ask them all', ktPlaceholder:'Ask all selected providers...',
+      ktSendBtn:'Send', ktNewChat:'New conversation',
+      ktPending:'Waiting...', ktGenerating:'Generating...',
+      ktTimeout:'Timed out, partial answer', ktError:'No answer received',
+      ktLogin:'Sign-in required', ktOpenProvider:'Open provider',
+      ktSelectOne:'Select at least one provider', ktTruncated:'(truncated)',
+      ktSearch:'Search conversations...', ktNoSessions:'No conversations yet',
+      ktDeleteConfirm:'Delete?',
+      ktCtxIntro:'Context from our earlier conversation; answer the new message at the end.',
+      ktCtxUser:'User:', ktCtxYou:'You answered:', ktCtxNew:'New message:',
+      ktRetry:'Retry',
+      setTabGeneral:'General', setTabShortcuts:'Shortcuts', setTabAppearance:'Appearance',
+      setTabSystem:'System', setTabAbout:'About',
+      setRecipeHotkeys:'Per-recipe shortcuts',
+      setRecipeHotkeysHint:'Click a field and press the combo; ✕ removes it.',
+      setKtTemp:'Temporary chats in providers',
+      setKtTempHint:'Where supported: Kotodama requests do not stay in the provider chat history.',
+      setKtTempNA:'Not available',
       openError:'Error opening the provider',
       builder:'Ai Prompt Builder', reload:'Reload', back:'Back',
       switchProvider:'Switch provider', openOnly:'Open', openAndPaste:'Open + paste', openAndSend:'Open + paste + send',
@@ -1100,7 +1291,7 @@
     }
 
     const THEMES = ['ginga','hisui','kohaku','murasaki','sumi'];
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, always_on_top:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, neutral_autosend:true, welcome_ack:false };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:false, always_on_top:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -1113,11 +1304,10 @@
     const content=document.getElementById('content');
     const lengthSel=document.getElementById('length');
     const toneSel=document.getElementById('tone');
-    const neutralAutosend=document.getElementById('neutralAutosend');   // toggle auto-invio ricetta Neutra
+    const respSel=document.getElementById('respFmt');   // Risposta: Normale(0) / Solo testo(1)
     const output=document.getElementById('output');
     const result=document.getElementById('result');
     const toastEl=document.getElementById('toast');
-    const pcName=document.getElementById('pcName');
     const hintEl=document.querySelector('.pbar-hint');
     const plText=document.getElementById('plText');
     const body=document.body;
@@ -1143,22 +1333,25 @@
       document.querySelectorAll('[data-i18n-title]').forEach(el=>{ const k=el.getAttribute('data-i18n-title'); if(t[k]!==undefined) el.title=t[k]; });
       document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(t[k]!==undefined) el.placeholder=t[k]; });
       recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]) li.querySelector('.rname').textContent=t.recipeNames[k]; });
-      const otherTile=providers.querySelector('.prov[data-prov="other"] .pname'); if(otherTile) otherTile.textContent=t.otherName;
-      // "open on the fly" tooltip on each provider (excluding Other)
+      // "open on the fly" tooltip on each provider (Kotodama gets its own meta tooltip)
       providers.querySelectorAll('.prov').forEach(tile=>{
-        if(tile.dataset.prov==='other'){ tile.removeAttribute('title'); return; }
+        if(tile.dataset.prov==='kotodama'){ tile.title=t.ktTileTitle; return; }
         const nm=(tile.querySelector('.pname')||{}).textContent||'';
         tile.title=t.providerTileTitle.replace('{name}', nm);
       });
 
       const li=lengthSel.selectedIndex<0?0:lengthSel.selectedIndex;
       const ti=toneSel.selectedIndex<0?0:toneSel.selectedIndex;
+      const ri=respSel.selectedIndex<0?1:respSel.selectedIndex;   // default Solo testo
       lengthSel.innerHTML=t.lengthOpts.map(o=>`<option>${o}</option>`).join('');
       toneSel.innerHTML=t.toneOpts.map(o=>`<option>${o}</option>`).join('');
+      respSel.innerHTML=[t.respNormal,t.respTextOnly].map(o=>`<option>${o}</option>`).join('');
       lengthSel.selectedIndex=Math.min(li,t.lengthOpts.length-1);
       toneSel.selectedIndex=Math.min(ti,t.toneOpts.length-1);
+      respSel.selectedIndex=ri;
       if(lengthSel.__cs) lengthSel.__cs.refresh();   // rebuild the custom dropdown with the new entries
       if(toneSel.__cs) toneSel.__cs.refresh();
+      if(respSel.__cs) respSel.__cs.refresh();
 
       document.querySelectorAll('#lang button').forEach(b=>b.classList.toggle('active', b.dataset.lang===code));
       renderCustomRecipes();
@@ -1190,6 +1383,8 @@
         const v=f.options[Math.min(f.value||0, f.options.length-1)];
         if(f.label && v) out+='\n- '+f.label+': '+v;
       }
+      // Risposta = "Solo testo": append the answer-only constraint (clean output)
+      if(respSel.selectedIndex===1) out+='\n\n'+t.answerOnlyText;
       return out;
     }
     function showOutput(text){ result.textContent=text; output.classList.add('show'); }
@@ -1206,7 +1401,9 @@
     let lastPrompt = '';      // ultimo prompt inviato/aperto (riusato dal "cambia provider")
     async function openProvider(){
       const t=TR; const p=PROVIDERS[selectedProvider]; const promptText=buildPrompt();
-      if(p.mode==='manual'){ showOutput(promptText); await writeClipboard(promptText); toast(t.manualNote); output.scrollIntoView({behavior:'smooth',block:'nearest'}); return; }
+      // Kotodama meta-provider: from the home the → button starts a NEW conversation
+      // broadcast to every selected provider (fresh chat everywhere) with this prompt.
+      if(p.mode==='meta'){ openKotodama(promptText, true); return; }
       output.classList.remove('show');
       const encoded=encodeURIComponent(promptText);
       const useQuery=p.mode==='query'&&encoded.length<=MAX_URL;
@@ -1217,7 +1414,7 @@
         startProviderLoading(p.name);                // bar + overlay immediately (the page loads off-screen)
         try{
           await setClaudeHint(selectedProvider==='anthropic');   // Claude login warning banner
-          await invoke('open_provider_view',{url});
+          await invoke('open_provider_view',{key:selectedProvider, url});   // recipe = new chat on that provider's tab
           // auto-submit: query providers (?q=) are already prefilled → only submit;
           // clipboard ones must be filled first. provider_fill handles both.
           // (Il → invia sempre: il toggle "Auto-invio" della Neutra agisce solo sul flusso COPIA→toast.)
@@ -1237,7 +1434,9 @@
     // Opens the provider RIGHT AWAY, without a prompt (double-click / right-click on the tile).
     // Reuses the same pipeline as openProvider but without buildPrompt/clipboard/autosend.
     async function openProviderDirect(key){
-      const p=PROVIDERS[key]; if(!p || p.mode==='manual' || !p.base) return;   // excludes "Other"
+      const p=PROVIDERS[key]; if(!p) return;
+      if(p.mode==='meta'){ openKotodama(); return; }        // Kotodama tile -> in-app meta chat
+      if(p.mode==='manual' || !p.base) return;
       const t=TR;
       pendingSend = null;   // apertura senza prompt: nessun auto-invio in sospeso
       selectProviderTile(key); lastProviderUrl=p.base;   // selection (does not change the default)
@@ -1245,7 +1444,7 @@
         startProviderLoading(p.name);                // bar + overlay immediately (page off-screen)
         try{
           await setClaudeHint(key==='anthropic');
-          await invoke('open_provider_view',{url:p.base});
+          await invoke('show_provider_tab',{key, baseUrl:p.base});   // switch: keep the tab's page (no reload)
         }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
         setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000); // overlay safety net
         return;
@@ -1268,7 +1467,7 @@
       try{
         await setClaudeHint(key==='anthropic');
         pendingFill = text ? { text, send } : null;   // filled on app://provider-loaded
-        await invoke('open_provider_view',{url:p.base});
+        await invoke('open_provider_view',{key, url:p.base});   // ⇄ paste/send = new chat with the prompt
       }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
       setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000);
     }
@@ -1278,17 +1477,54 @@
     // popup is gone. `app://switch-provider` (Rust) is kept only as a harmless legacy path.
 
     /* ===================== IN-APP BAR (provider name, no URL) ===================== */
-    const pcBadge=document.querySelector('.pc-badge');
+    const pcTabs=document.getElementById('pcTabs');
+    // Build the provider strip ONCE from the real tiles (icon + color per provider, "Other" excluded).
+    // Clicking a chip switches to that provider's tab (keeps its page as-is; only a recipe re-navigates).
+    function buildProviderStrip(){
+      if(!pcTabs) return;
+      pcTabs.innerHTML='';
+      Object.keys(PROVIDERS).forEach(key=>{
+        const p=PROVIDERS[key]; if(!p.base || p.mode==='manual') return;   // exclude "Other"/manual
+        const tile=document.querySelector(`.prov[data-prov="${key}"]`);
+        const glyph=tile?tile.querySelector('.glyph'):null;
+        const color=((tile&&tile.style.getPropertyValue('--pc'))||'').trim();
+        const b=document.createElement('button');
+        b.className='pc-tab'; b.dataset.prov=key; b.title=p.name;
+        if(color) b.style.setProperty('--pc', color);
+        b.innerHTML=`<span class="ic">${glyph?glyph.innerHTML:'✦'}</span><span class="nm"></span>`;
+        b.querySelector('.nm').textContent=p.name;
+        b.addEventListener('click', ()=>switchToTab(key));
+        pcTabs.appendChild(b);
+      });
+      // Kotodama meta-chat chip at the end of the strip (opens the in-app chat overlay).
+      const kt=PROVIDERS.kotodama;
+      if(kt){
+        const tile=document.querySelector('.prov[data-prov="kotodama"]');
+        const glyph=tile?tile.querySelector('.glyph'):null;
+        const color=((tile&&tile.style.getPropertyValue('--pc'))||'').trim();
+        const b=document.createElement('button');
+        b.className='pc-tab'; b.dataset.prov='kotodama'; b.title=kt.name;
+        if(color) b.style.setProperty('--pc', color);
+        b.innerHTML=`<span class="ic">${glyph?glyph.innerHTML:'✦'}</span><span class="nm"></span>`;
+        b.querySelector('.nm').textContent=kt.name;
+        b.addEventListener('click', ()=>openKotodama());
+        pcTabs.appendChild(b);
+      }
+    }
+    // Highlight the active provider chip (icon + name); the others stay icon-only.
+    function updateProviderStrip(){
+      if(!pcTabs) return;
+      pcTabs.querySelectorAll('.pc-tab').forEach(b=>{
+        const on=b.dataset.prov===selectedProvider;
+        b.classList.toggle('active', on);
+        if(on) b.scrollIntoView({block:'nearest', inline:'nearest'});
+      });
+    }
+    // Switch to a provider's tab from the strip: keep its page if already open (no reload).
+    function switchToTab(key){ openProviderDirect(key); }
     function openProviderBar(name){
       body.classList.add('provider-open');
-      pcName.textContent=name||'';
-      // real icon of the selected provider (taken from the tile) with its color
-      const tile=document.querySelector(`.prov[data-prov="${selectedProvider}"]`);
-      const glyph=tile?tile.querySelector('.glyph'):null;
-      if(pcBadge){
-        if(glyph){ pcBadge.innerHTML=glyph.innerHTML; pcBadge.style.color=(tile.style.getPropertyValue('--pc')||'').trim()||'var(--accent)'; }
-        else { pcBadge.textContent='✦'; pcBadge.style.color='var(--accent)'; }
-      }
+      updateProviderStrip();
     }
     // Show the bar + loading overlay immediately (instant feedback; the provider page
     // loads off-screen and will appear once loaded → no flash of the old page).
@@ -1330,6 +1566,430 @@
       // (the menu is a separate OS window, so its own blur is unreliable on Windows). menu_dismiss is idempotent.
       setTimeout(()=>{ document.addEventListener('mousedown', ()=>{ invoke('menu_dismiss').catch(()=>{}); }, { once:true, capture:true }); }, 0);
     });
+
+    /* ===================== KOTODAMA META-CHAT ===================== */
+    // One message -> broadcast to every selected provider (hidden parked webviews);
+    // answers arrive as app://kotodama-answer events and fill the per-provider cards.
+    // Home -> send = NEW conversation on every provider; typing inside the chat
+    // CONTINUES each provider's session (fresh providers added later start their own).
+    const ktView=document.getElementById('kotodamaView');
+    const ktChipsEl=document.getElementById('ktChips');
+    const ktThread=document.getElementById('ktThread');
+    const ktInput=document.getElementById('ktInput');
+    const ktSearch=document.getElementById('ktSearch');
+    let ktSel=null;              // Set of selected provider keys (persisted)
+    let ktStarted={};            // key -> true once used in the CURRENT conversation
+    let ktSeq=0, ktCards={};     // `${bid}:${key}` -> {card, body, status}
+    let ktChipsBuilt=false;
+    /* ---- session database (persisted via get/save_kotodama_sessions -> kotodama-sessions.json) ---- */
+    let ktAllSessions=[];        // [{id,title,created,updated,turns:[{text,answers:{key:{status,text}}}]}]
+    let ktSession=null;          // current session (inserted in ktAllSessions at first send)
+    let ktLiveId=null;           // session whose provider tabs are "warm" in THIS app run
+    let ktTurnByBid={};          // broadcast id -> turn object (routes answers into the right turn)
+    let ktSaveTimer=null;
+    async function ktLoadAll(){
+      if(TAURI){ try{ const v=await invoke('get_kotodama_sessions'); ktAllSessions=Array.isArray(v)?v:[]; }catch(e){ ktAllSessions=[]; } }
+      else { try{ ktAllSessions=JSON.parse(localStorage.getItem('kotodama.sessions')||'[]'); }catch(e){ ktAllSessions=[]; } }
+    }
+    function ktPersist(){
+      clearTimeout(ktSaveTimer);
+      ktSaveTimer=setTimeout(()=>{
+        ktAllSessions.sort((a,b)=>(b.updated||0)-(a.updated||0));
+        if(ktAllSessions.length>200) ktAllSessions.length=200;   // cap: drop the oldest
+        if(TAURI) invoke('save_kotodama_sessions',{sessions:ktAllSessions}).catch(()=>{});
+        else { try{ localStorage.setItem('kotodama.sessions', JSON.stringify(ktAllSessions)); }catch(e){} }
+      }, 800);
+    }
+    function ktFmtDate(ms){
+      const d=new Date(ms||Date.now());
+      return d.toLocaleDateString(undefined,{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    }
+    function renderKtSessions(){
+      const list=document.getElementById('ktSessList'); if(!list) return;
+      const q=((ktSearch&&ktSearch.value)||'').trim().toLowerCase();
+      list.innerHTML='';
+      const items=ktAllSessions.filter(s=>{
+        if(!q) return true;
+        if((s.title||'').toLowerCase().includes(q)) return true;
+        return (s.turns||[]).some(t=>(t.text||'').toLowerCase().includes(q)
+          || Object.values(t.answers||{}).some(a=>((a&&a.text)||'').toLowerCase().includes(q)));
+      });
+      if(!items.length){ const e=document.createElement('div'); e.className='kt-empty'; e.textContent=TR.ktNoSessions; list.appendChild(e); return; }
+      items.forEach(s=>{
+        const row=document.createElement('div'); row.className='kt-sess'+(ktSession&&s.id===ktSession.id?' active':'');
+        const meta=document.createElement('div'); meta.className='kt-sess-meta';
+        const tt=document.createElement('div'); tt.className='kt-sess-title'; tt.textContent=s.title||'...';
+        const dd=document.createElement('div'); dd.className='kt-sess-date'; dd.textContent=ktFmtDate(s.updated||s.created);
+        meta.appendChild(tt); meta.appendChild(dd);
+        const del=document.createElement('button'); del.className='kt-sess-del'; del.textContent='✕';
+        del.addEventListener('click', ev=>{
+          ev.stopPropagation();
+          if(!del.classList.contains('confirm')){                       // 1° click: chiede conferma inline
+            del.classList.add('confirm'); del.textContent=TR.ktDeleteConfirm;
+            setTimeout(()=>{ del.classList.remove('confirm'); del.textContent='✕'; }, 2500);
+            return;
+          }
+          ktAllSessions=ktAllSessions.filter(x=>x.id!==s.id);
+          if(ktSession&&ktSession.id===s.id) ktNewConversation();
+          ktPersist(); renderKtSessions();
+        });
+        row.appendChild(meta); row.appendChild(del);
+        row.addEventListener('click', ()=>ktLoadSession(s.id));
+        list.appendChild(row);
+      });
+    }
+    // Rebuilds one SAVED turn in the thread (final cards, no spinners). Failed cards get
+    // the ⟳ retry too: they are registered under a synthetic bid so ktRetryKey can reuse them.
+    function ktRenderSavedTurn(turn){
+      const u=document.createElement('div'); u.className='kt-user'; u.textContent=turn.text||'';
+      ktThread.appendChild(u);
+      const grid=document.createElement('div'); grid.className='kt-grid';
+      const svBid='sv'+(ktSeq++);
+      let anyRetry=false;
+      Object.keys(turn.answers||{}).forEach(key=>{
+        const p=PROVIDERS[key]; if(!p) return;
+        const a=turn.answers[key]||{};
+        const st=(!a.status||a.status==='pending')?'error':a.status;   // app chiusa a metà -> errore
+        const bits=ktTileBits(key);
+        const card=document.createElement('div');
+        card.className='kt-card '+(st==='done'?'done':(st==='timeout'?'timeout':'error'));
+        if(bits.color) card.style.setProperty('--pc', bits.color);
+        card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
+          +`<span class="kt-status"><span class="kt-st-txt"></span></span></div>`
+          +`<div class="kt-card-body"></div>`
+          +`<div class="kt-card-foot" hidden><button class="btn kt-copy"></button></div>`;
+        card.querySelector('.nm').textContent=p.name;
+        card.querySelector('.kt-st-txt').textContent=ktStatusLabel(st);
+        const body=card.querySelector('.kt-card-body');
+        const text=((a.text)||'').trim();
+        if(text){
+          body.textContent=text;
+          const foot=card.querySelector('.kt-card-foot'); foot.hidden=false;
+          const cp=foot.querySelector('.kt-copy'); cp.textContent=TR.copy;
+          cp.addEventListener('click', async()=>{ await writeClipboard(text); cp.textContent=TR.copied; setTimeout(()=>{ cp.textContent=TR.copy; },1500); });
+        } else { body.classList.add('empty'); body.textContent=ktStatusLabel(st); }
+        if(st!=='done'){
+          anyRetry=true;
+          ktCards[`${svBid}:${key}`]={ card, body, st:card.querySelector('.kt-st-txt'),
+            spin:null, foot:card.querySelector('.kt-card-foot'), text:'' };
+          const stEl=card.querySelector('.kt-status');
+          const rb=document.createElement('button'); rb.className='kt-retry'; rb.textContent='⟳'; rb.title=TR.ktRetry;
+          rb.addEventListener('click', ()=>ktRetryKey(svBid, key));
+          stEl.appendChild(rb);
+        }
+        grid.appendChild(card);
+      });
+      if(anyRetry) ktTurnByBid[svBid]=turn;
+      ktThread.appendChild(grid);
+    }
+    function ktLoadSession(id){
+      const s=ktAllSessions.find(x=>x.id===id); if(!s) return;
+      ktSession=s;
+      ktThread.innerHTML=''; ktCards={}; ktTurnByBid={};
+      (s.turns||[]).forEach(ktRenderSavedTurn);
+      ktThread.scrollTop=ktThread.scrollHeight;
+      // Tab provider "calde" solo per la sessione live di QUESTO run: le altre ripartono
+      // fresh (con reinvio del contesto per-provider al prossimo messaggio).
+      if(ktLiveId!==id) ktStarted={};
+      renderKtSessions();
+      ktInput.focus();
+    }
+    // Per-provider context preamble for a resumed session (or a provider added mid-chat):
+    // each provider gets the user turns + ITS OWN previous answers, then the new message.
+    function ktContextPrompt(key, newText, excludeTurn){
+      const t=TR, parts=[];
+      ktSession.turns.forEach(tr=>{
+        if(tr===excludeTurn) return;                   // exclude the turn being (re)sent now
+        parts.push(t.ktCtxUser+' '+(tr.text||''));
+        const a=(tr.answers||{})[key];
+        if(a&&a.text) parts.push(t.ktCtxYou+' '+a.text.replace(/\s+/g,' ').slice(0,600));
+      });
+      if(!parts.length) return newText;
+      let ctx=parts.join('\n');
+      while(ctx.length>4000 && parts.length>2){ parts.splice(0,2); ctx=parts.join('\n'); }  // drop oldest
+      if(ctx.length>4000) ctx=ctx.slice(-4000);
+      return t.ktCtxIntro+'\n'+ctx+'\n\n'+t.ktCtxNew+' '+newText;
+    }
+    // Dispatch ONE provider for one turn. Warm = plain text into the live tab; fresh = new
+    // provider chat, with the per-provider context preamble when the session has history
+    // (?q= providers embed the personalized prompt in the URL). Shared by send and retry.
+    // Fresh-chat URL for a provider: temporary-chat markers (URL param / dedicated route)
+    // + the ?q= prompt for query providers. Shared by broadcast, retry and inline.
+    function ktBaseUrlFor(key, ptext){
+      const p=PROVIDERS[key]; let u=p.base;
+      const sep=()=>u.includes('?')?'&':'?';
+      const tempOn=ktTempEnabled(key);
+      if(tempOn && p.tempUrl) u=p.tempUrl;
+      if(tempOn && p.temp) u+=sep()+p.temp;
+      if(p.mode==='query'&&p.q){ const enc=encodeURIComponent(ptext); if(enc.length<=MAX_URL) u+=sep()+p.q.replace(/^\?/,'')+enc; }
+      return u;
+    }
+    async function ktDispatchKey(bid, key, text, ctxTurn, freshFlag){
+      if(!freshFlag){
+        const bw={}; bw[key]=PROVIDERS[key].base;      // safety net if the tab died
+        await invoke('kotodama_broadcast',{broadcastId:bid, text, keys:[key], newChat:false, bases:bw});
+        return;
+      }
+      const hasHistory=!!(ktSession && ktSession.turns.some(tr=>tr!==ctxTurn));
+      const ptext=hasHistory ? ktContextPrompt(key, text, ctxTurn) : text;
+      const bk={}; bk[key]=ktBaseUrlFor(key, ptext);
+      await invoke('kotodama_broadcast',{broadcastId:bid, text:ptext, keys:[key], newChat:true, bases:bk});
+    }
+    /* --- INLINE transform (per-recipe hotkey pressed in another app) --- */
+    // Pure helpers: recipe data WITHOUT touching the visible builder state.
+    function instructionFor(recipeStr){
+      const i=recipeStr.indexOf(':'), kind=recipeStr.slice(0,i), val=recipeStr.slice(i+1);
+      if(kind==='key') return val==='neutral' ? '' : ((TR.instr&&TR.instr[val])||'');
+      const r=customRecipes.find(x=>x.id===val); return r?r.instruction:'';
+    }
+    function recipeNameFor(recipeStr){
+      const i=recipeStr.indexOf(':'), kind=recipeStr.slice(0,i), val=recipeStr.slice(i+1);
+      if(kind==='key') return (TR.recipeNames&&TR.recipeNames[val])||val;
+      const r=customRecipes.find(x=>x.id===val); return r?r.name:'';
+    }
+    // Inline prompt: instruction + fenced text. NO Length/Tone/custom fields: the inline
+    // result replaces the user's text, it must be a clean transformation.
+    function buildInlinePrompt(recipeStr, text){
+      const instr=instructionFor(recipeStr);
+      if(!instr) return text;   // neutral -> as-is
+      // inline result is pasted back: ALWAYS answer-only (no preamble/comments), whatever
+      // the builder's Risposta field says.
+      return instr+'\n\n"""\n'+text+'\n"""\n\n'+(TR.answerOnlyText||'');
+    }
+    let inlineSeq=0;
+    const inlinePending={};     // bid -> true (answers routed to inline_finish, not to cards)
+    // live status line in the processing toast (cross-window Tauri event, no re-show).
+    // On 'connect' we also pass the provider (name + tile glyph/color) so the toast can
+    // show WHICH provider is working, highlighted.
+    function inlineToastStage(stage, len, provKey){
+      let prov=null;
+      if(provKey){ const b=ktTileBits(provKey); prov={ name:PROVIDERS[provKey].name, svg:b.svg, color:b.color }; }
+      try{ window.__TAURI__.event.emit('toast://progress', { stage, len: len||0, prov }); }catch(e){}
+    }
+    function ktInlineDispatch(recipeStr, text){
+      const key=(currentSettings.default_provider in PROVIDERS && PROVIDERS[currentSettings.default_provider].base)
+        ? currentSettings.default_provider : 'openai';
+      inlineToastStage('connect', 0, key);   // show WHICH provider (icon + name) in the toast
+      const bid='inl-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
+      inlinePending[bid]=true;
+      const ptext=buildInlinePrompt(recipeStr, text);
+      const bk={}; bk[key]=ktBaseUrlFor(key, ptext);
+      invoke('kotodama_broadcast',{broadcastId:bid, text:ptext, keys:[key], newChat:true, bases:bk})
+        .catch(()=>{ delete inlinePending[bid]; invoke('inline_fail',{reason:'dispatch'}).catch(()=>{}); });
+    }
+    function inlineOnAnswer(d){
+      if(!inlinePending[d.broadcastId]) return false;
+      const st=d.status||'error';
+      if(st==='pending') return true;            // swallow (no cards for inline)
+      delete inlinePending[d.broadcastId];
+      const text=(d.text||'').trim();
+      if((st==='done'||st==='timeout') && text) invoke('inline_finish',{text}).catch(()=>{});
+      else invoke('inline_fail',{reason:st}).catch(()=>{});
+      return true;
+    }
+
+    // Retry ONE failed card (⟳ in its header): reset it to pending and re-dispatch that
+    // provider only, with the same turn text (context-aware on resumed sessions).
+    async function ktRetryKey(oldBid, key){
+      const turn=ktTurnByBid[oldBid]; const ref=ktCards[`${oldBid}:${key}`];
+      if(!turn || !ref || !TAURI) return;
+      const bid='b'+(ktSeq++)+'-r'+Math.random().toString(36).slice(2,6);
+      delete ktCards[`${oldBid}:${key}`];
+      ktCards[`${bid}:${key}`]=ref;
+      ktTurnByBid[bid]=turn;
+      // reset the card UI to pending
+      ref.card.classList.remove('done','error','timeout','cancelled');
+      ref.card.classList.add('pending');
+      ref.body.classList.add('empty'); ref.body.textContent='';
+      ref.foot.hidden=true;
+      ref.foot.querySelectorAll('button').forEach(b=>b.remove());
+      const cp=document.createElement('button'); cp.className='btn kt-copy'; cp.textContent=TR.copy;
+      ref.foot.appendChild(cp);
+      const stEl=ref.card.querySelector('.kt-status');
+      const rb=stEl&&stEl.querySelector('.kt-retry'); if(rb) rb.remove();
+      if(stEl && !stEl.querySelector('.dl-spin')){ const sp=document.createElement('span'); sp.className='dl-spin'; stEl.prepend(sp); ref.spin=sp; }
+      ref.st.textContent=ktStatusLabel('pending');
+      turn.answers[key]={status:'pending', text:''};
+      if(ktSession) ktSession.updated=Date.now();
+      ktPersist();
+      const freshFlag=!ktStarted[key];
+      ktStarted[key]=true;
+      try{ await ktDispatchKey(bid, key, turn.text, turn, freshFlag); }
+      catch(e){ toast(`${TR.openError}: ${e}`); }
+    }
+    function ktRealKeys(){ return Object.keys(PROVIDERS).filter(k=>PROVIDERS[k].base && PROVIDERS[k].mode!=='manual'); }
+    function ktLoadSel(){
+      if(ktSel) return ktSel;
+      let saved=null; try{ saved=JSON.parse(localStorage.getItem('kotodama.sel')||'null'); }catch(e){}
+      const real=ktRealKeys();
+      ktSel=new Set(Array.isArray(saved)?saved.filter(k=>real.includes(k)):real);
+      if(!ktSel.size) ktSel=new Set(real);
+      return ktSel;
+    }
+    function ktSaveSel(){ try{ localStorage.setItem('kotodama.sel', JSON.stringify([...ktSel])); }catch(e){} }
+    function ktTileBits(key){
+      const tile=document.querySelector(`.prov[data-prov="${key}"]`);
+      const glyph=tile?tile.querySelector('.glyph'):null;
+      return { svg: glyph?glyph.innerHTML:'✦', color: ((tile&&tile.style.getPropertyValue('--pc'))||'').trim() };
+    }
+    function renderKtChips(){
+      if(ktChipsBuilt) return;
+      ktChipsBuilt=true;
+      ktLoadSel();
+      ktChipsEl.innerHTML='';
+      ktRealKeys().forEach(key=>{
+        const p=PROVIDERS[key], bits=ktTileBits(key);
+        const c=document.createElement('button');
+        c.className='kt-chip'+(ktSel.has(key)?' on':''); c.dataset.prov=key;
+        if(bits.color) c.style.setProperty('--pc', bits.color);
+        c.innerHTML=`<span class="ic">${bits.svg}</span><span class="nm"></span>`;
+        c.querySelector('.nm').textContent=p.name;
+        c.addEventListener('click', ()=>{
+          if(ktSel.has(key)) ktSel.delete(key); else ktSel.add(key);
+          c.classList.toggle('on', ktSel.has(key)); ktSaveSel();
+        });
+        ktChipsEl.appendChild(c);
+      });
+      const badge=document.querySelector('.kt-badge');
+      if(badge) badge.innerHTML=ktTileBits('kotodama').svg;
+    }
+    // prefill: text from the builder; autosend: → from home = new conversation + immediate broadcast.
+    function openKotodama(prefill, autosend){
+      if(TAURI) invoke('close_provider_view').catch(()=>{});   // park the foreground tab, close the bar
+      closeProviderBar();
+      body.classList.add('kotodama-open');
+      renderKtChips();
+      if(!ktSession) ktNewConversation();
+      renderKtSessions();
+      if(prefill!==undefined && prefill!==null && prefill!=='') ktInput.value=prefill;
+      if(autosend){ ktNewConversation(); ktDoSend(); }
+      else ktInput.focus();
+    }
+    function closeKotodama(){ body.classList.remove('kotodama-open'); }
+    function ktNewConversation(){
+      ktStarted={}; ktThread.innerHTML=''; ktCards={}; ktTurnByBid={};
+      ktSession={ id:'s'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
+                  title:'', created:Date.now(), updated:Date.now(), turns:[] };
+      renderKtSessions();   // persisted only at the first send
+    }
+    function ktStatusLabel(st, extra){
+      const t=TR;
+      if(st==='pending') return t.ktPending;
+      if(st==='streaming') return `${t.ktGenerating}${extra?` (${extra})`:''}`;
+      if(st==='done') return '✓';
+      if(st==='timeout') return t.ktTimeout;
+      if(st==='login') return t.ktLogin;
+      return t.ktError;   // error | sendfail | cancelled
+    }
+    function ktAppendTurn(bid, text, keys){
+      const u=document.createElement('div'); u.className='kt-user'; u.textContent=text;
+      ktThread.appendChild(u);
+      const grid=document.createElement('div'); grid.className='kt-grid';
+      keys.forEach(key=>{
+        const p=PROVIDERS[key], bits=ktTileBits(key);
+        const card=document.createElement('div'); card.className='kt-card pending';
+        if(bits.color) card.style.setProperty('--pc', bits.color);
+        card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
+          +`<span class="kt-status"><span class="dl-spin"></span><span class="kt-st-txt"></span></span></div>`
+          +`<div class="kt-card-body empty"></div>`
+          +`<div class="kt-card-foot" hidden><button class="btn kt-copy" data-i18n="copy"></button></div>`;
+        card.querySelector('.nm').textContent=p.name;
+        card.querySelector('.kt-st-txt').textContent=ktStatusLabel('pending');
+        card.querySelector('.kt-copy').textContent=TR.copy;
+        grid.appendChild(card);
+        ktCards[`${bid}:${key}`]={ card, body:card.querySelector('.kt-card-body'),
+          st:card.querySelector('.kt-st-txt'), spin:card.querySelector('.dl-spin'),
+          foot:card.querySelector('.kt-card-foot'), text:'' };
+      });
+      ktThread.appendChild(grid);
+      ktThread.scrollTop=ktThread.scrollHeight;
+    }
+    function ktOnAnswer(d){
+      if(inlineOnAnswer(d)) return;   // inline transform: paste-back, no cards/sessions
+      const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
+      const st=d.status||'error';
+      if(st==='pending') return;                       // card already rendered as pending
+      // session bookkeeping: store the final answer and persist
+      const turn=ktTurnByBid[d.broadcastId];
+      if(turn && turn.answers && turn.answers[d.key]){
+        turn.answers[d.key]={ status:st, text:(d.text||'').trim() };
+        if(ktSession){ ktSession.updated=Date.now(); }
+        ktPersist(); renderKtSessions();
+      }
+      ref.card.classList.remove('pending');
+      ref.card.classList.add(st==='done'?'done':(st==='timeout'?'timeout':'error'));
+      if(ref.spin) ref.spin.remove();
+      ref.st.textContent=ktStatusLabel(st)+((d.truncated&&st!=='error')?` ${TR.ktTruncated}`:'');
+      // failed/partial card: browser-style ⟳ retry icon right of the status text
+      if(st!=='done'){
+        const stEl=ref.card.querySelector('.kt-status');
+        if(stEl && !stEl.querySelector('.kt-retry')){
+          const rb=document.createElement('button'); rb.className='kt-retry'; rb.textContent='⟳'; rb.title=TR.ktRetry;
+          rb.addEventListener('click', ()=>ktRetryKey(d.broadcastId, d.key));
+          stEl.appendChild(rb);
+        }
+      }
+      const text=(d.text||'').trim();
+      ref.text=text;
+      if(text){
+        ref.body.classList.remove('empty'); ref.body.textContent=text;
+        ref.foot.hidden=false;
+      } else {
+        ref.body.classList.add('empty');
+        ref.body.textContent=ktStatusLabel(st);
+        // login/error: offer to open the provider tab to fix it (login, cookies...)
+        const t=TR, k=d.key;
+        const btn=document.createElement('button'); btn.className='btn'; btn.textContent=t.ktOpenProvider;
+        btn.addEventListener('click', ()=>{ closeKotodama(); openProviderDirect(k); });
+        ref.foot.hidden=false; ref.foot.prepend(btn);
+        const cp=ref.foot.querySelector('.kt-copy'); if(cp) cp.remove();
+      }
+      const cp=ref.foot.querySelector('.kt-copy');
+      if(cp) cp.addEventListener('click', async()=>{ await writeClipboard(ref.text); cp.textContent=TR.copied; setTimeout(()=>{ cp.textContent=TR.copy; }, 1500); });
+    }
+    function ktOnProgress(d){
+      // inline transform: forward the heartbeat to the processing toast (receiving + size)
+      if(inlinePending[d.broadcastId]){ inlineToastStage('work', d.len||0); return; }
+      const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
+      // a stale heartbeat (duplicate in-page script) must never overwrite a FINAL status
+      if(ref.card.classList.contains('done')||ref.card.classList.contains('error')||ref.card.classList.contains('timeout')) return;
+      const len=d.len||0;
+      ref.st.textContent=ktStatusLabel('streaming', len>=1000?`${(len/1000).toFixed(1)}k`:String(len));
+    }
+    async function ktDoSend(){
+      const t=TR, text=ktInput.value.trim();
+      const keys=[...ktLoadSel()];
+      if(!text) return;
+      if(!keys.length){ toast(t.ktSelectOne); return; }
+      if(!TAURI){ toast(t.openError); return; }
+      if(!ktSession) ktNewConversation();
+      const bid='b'+(ktSeq++)+'-'+Math.random().toString(36).slice(2,8);
+      ktAppendTurn(bid, text, keys);
+      ktInput.value='';
+      // session bookkeeping: append the turn, title from the first message, persist
+      const turn={ text, answers:{} }; keys.forEach(k=>{ turn.answers[k]={status:'pending', text:''}; });
+      const hadTurns=ktSession.turns.length>0;
+      if(!ktSession.title) ktSession.title=text.replace(/\s+/g,' ').slice(0,48);
+      ktSession.turns.push(turn); ktSession.updated=Date.now();
+      if(!ktAllSessions.includes(ktSession)) ktAllSessions.unshift(ktSession);
+      ktTurnByBid[bid]=turn;
+      ktLiveId=ktSession.id;              // these provider tabs now carry THIS conversation
+      ktPersist(); renderKtSessions();
+      const fresh=keys.filter(k=>!ktStarted[k]);        // first time in THIS conversation -> new chat
+      const warm=keys.filter(k=>ktStarted[k]);          // already talking -> continue the session
+      keys.forEach(k=>ktStarted[k]=true);
+      try{
+        // Per-key dispatch (same bid -> Rust merges): warm tabs continue their session with
+        // plain text; fresh ones get the per-provider context preamble when history exists.
+        for(const k of warm)  await ktDispatchKey(bid, k, text, turn, false);
+        for(const k of fresh) await ktDispatchKey(bid, k, text, turn, true);
+      }catch(e){ toast(`${t.openError}: ${e}`); }
+    }
+    document.getElementById('ktSend').addEventListener('click', ktDoSend);
+    document.getElementById('ktNew').addEventListener('click', ktNewConversation);
+    document.getElementById('ktBackBar').addEventListener('click', closeKotodama);
+    ktInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); ktDoSend(); } });
+    if(ktSearch) ktSearch.addEventListener('input', renderKtSessions);
 
     /* ===================== CLAUDE LOGIN WARNING BANNER ===================== */
     // Shows/hides the native banner and pushes the provider webview down by the same
@@ -1518,6 +2178,80 @@
     setHotkey.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a){ capturedHotkey=a; setHotkey.value=friendlyHotkey(a); setHotkey.blur(); } });
     document.getElementById('hotkeyClear').addEventListener('click', ()=>{ capturedHotkey=DEFAULT_SETTINGS.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey); });
 
+    /* --- Settings tabs (the options outgrew a single scroll) --- */
+    function settingsShowTab(name){
+      document.querySelectorAll('#setTabs .set-tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+      document.querySelectorAll('#settingsOverlay .set-panel').forEach(p=>p.classList.toggle('active', p.dataset.panel===name));
+    }
+    document.getElementById('setTabs').addEventListener('click', e=>{
+      const b=e.target.closest('.set-tab'); if(b) settingsShowTab(b.dataset.tab);
+    });
+
+    /* --- per-recipe global shortcuts (Shortcuts tab) --- */
+    let capturedRecipeHotkeys={};        // "key:x"/"id:y" -> accelerator (form state)
+    function allRecipeEntries(){
+      const t=TR, out=[];
+      recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{
+        const k=li.dataset.key;
+        out.push({ str:'key:'+k, name:(t.recipeNames&&t.recipeNames[k])||(li.querySelector('.rname')||{}).textContent||k });
+      });
+      customRecipes.forEach(r=>out.push({ str:'id:'+r.id, name:r.name }));
+      return out;
+    }
+    // duplicate combos (among themselves or vs the main hotkey) get a red border and are
+    // dropped on save (Rust would refuse the second registration anyway)
+    function rhMarkConflicts(){
+      const vals={};
+      if(capturedHotkey) vals[capturedHotkey]=(vals[capturedHotkey]||0)+1;
+      Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) vals[a]=(vals[a]||0)+1; });
+      document.querySelectorAll('#recipeHotkeys .rh-row input').forEach(inp=>{
+        const a=capturedRecipeHotkeys[inp.dataset.recipe]||'';
+        inp.classList.toggle('conflict', !!a && vals[a]>1);
+      });
+    }
+    function buildShortcutRows(){
+      const box=document.getElementById('recipeHotkeys'); if(!box) return;
+      box.innerHTML='';
+      allRecipeEntries().forEach(en=>{
+        const row=document.createElement('div'); row.className='rh-row';
+        const nm=document.createElement('div'); nm.className='rh-name'; nm.textContent=en.name;
+        const inp=document.createElement('input'); inp.type='text'; inp.className='field'; inp.readOnly=true;
+        inp.dataset.recipe=en.str;
+        inp.value=friendlyHotkey(capturedRecipeHotkeys[en.str]||'');
+        inp.addEventListener('focus', ()=>{ inp.classList.add('capturing'); inp.value=TR.pressCombo; });
+        inp.addEventListener('blur', ()=>{ inp.classList.remove('capturing'); inp.value=friendlyHotkey(capturedRecipeHotkeys[en.str]||''); rhMarkConflicts(); });
+        inp.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a){ capturedRecipeHotkeys[en.str]=a; inp.value=friendlyHotkey(a); inp.blur(); } });
+        const clr=document.createElement('button'); clr.className='rh-clear'; clr.textContent='✕'; clr.title=TR.reset||'';
+        clr.addEventListener('click', ()=>{ delete capturedRecipeHotkeys[en.str]; inp.value=friendlyHotkey(''); rhMarkConflicts(); });
+        row.appendChild(nm); row.appendChild(inp); row.appendChild(clr);
+        box.appendChild(row);
+      });
+      rhMarkConflicts();
+    }
+
+    /* --- per-provider temporary-chat toggles (System tab) --- */
+    function ktTempSupport(key){ const p=PROVIDERS[key]; return !!(p&&(p.temp||p.tempUrl)); }
+    function ktTempEnabled(key){ return ktTempSupport(key) && ((currentSettings.kt_temp_providers||{})[key]!==false); }
+    function buildKtTempRows(){
+      const box=document.getElementById('ktTempList'); if(!box) return;
+      box.innerHTML='';
+      ktRealKeys().forEach(key=>{
+        const p=PROVIDERS[key];
+        const row=document.createElement('div'); row.className='rh-row';
+        const nm=document.createElement('div'); nm.className='rh-name'; nm.textContent=p.name;
+        row.appendChild(nm);
+        const sup=ktTempSupport(key);
+        if(!sup){ const na=document.createElement('span'); na.className='sub'; na.textContent=TR.setKtTempNA; row.appendChild(na); }
+        const sw=document.createElement('label'); sw.className='switch';
+        sw.innerHTML='<input type="checkbox"><span class="slider"></span>';
+        const cb=sw.querySelector('input'); cb.dataset.prov=key;
+        cb.disabled=!sup;
+        cb.checked=sup && ((currentSettings.kt_temp_providers||{})[key]!==false);
+        row.appendChild(sw);
+        box.appendChild(row);
+      });
+    }
+
     function fillSettingsForm(){
       setTheme.value=validTheme(currentSettings.theme);
       setLang.value=currentSettings.language;
@@ -1525,17 +2259,28 @@
       populateRecipeSelect(); setRecipe.value=currentSettings.recipe;
       [setTheme,setLang,setProvider,setRecipe].forEach(s=>{ if(s.__cs) s.__cs.refresh(); }); // refresh the custom dropdowns
       capturedHotkey=currentSettings.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey);
+      capturedRecipeHotkeys={ ...(currentSettings.recipe_hotkeys||{}) };
+      buildShortcutRows();
       setMonitor.checked=!!currentSettings.monitor_enabled;
       setAutostart.checked=!!currentSettings.autostart;
       setAlwaysOnTop.checked=!!currentSettings.always_on_top;
+      buildKtTempRows();
     }
-    function openSettings(){ fillSettingsForm(); openModal(settingsOverlay); checkUpdate(true); }
+    function openSettings(){ fillSettingsForm(); settingsShowTab('general'); openModal(settingsOverlay); checkUpdate(true); }
     setTheme.addEventListener('change', ()=>applyTheme(setTheme.value)); // live preview
     setLang.addEventListener('change', ()=>{ applyLang(setLang.value); }); // live language preview (restored on Cancel)
 
     async function saveSettings(){
       // spread of currentSettings → does not reset provider/recipe/length/tone (managed by the tiles/controls)
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:setMonitor.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value };
+      // per-recipe shortcuts: keep only non-empty, non-conflicting combos (Rust drops dupes too)
+      const rh={};
+      {
+        const vals={};
+        if(capturedHotkey) vals[capturedHotkey]=(vals[capturedHotkey]||0)+1;
+        Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) vals[a]=(vals[a]||0)+1; });
+        Object.keys(capturedRecipeHotkeys).forEach(k=>{ const a=capturedRecipeHotkeys[k]; if(a && vals[a]===1) rh[k]=a; });
+      }
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:setMonitor.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('#ktTempList input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
       closeModal(settingsOverlay);
@@ -1565,10 +2310,12 @@
       else if(kind==='id') li=Array.from(recipesEl.querySelectorAll('.recipe-custom')).find(el=>el.dataset.id===val);
       if(li) selectRecipe(li);
     }
-    // Restores the Length/Tone indices (the options already exist from applyLang).
+    // Restores the Length/Tone/Response indices (the options already exist from applyLang).
     function restoreLengthTone(len,tone){
       if(typeof len==='number' && len>=0 && len<lengthSel.options.length){ lengthSel.selectedIndex=len; if(lengthSel.__cs) lengthSel.__cs.refresh(); }
       if(typeof tone==='number' && tone>=0 && tone<toneSel.options.length){ toneSel.selectedIndex=tone; if(toneSel.__cs) toneSel.__cs.refresh(); }
+      const rf=currentSettings.resp_fmt; respSel.selectedIndex=(rf===0||rf===1)?rf:1;   // default Solo testo
+      if(respSel.__cs) respSel.__cs.refresh();
     }
     // Saves ONLY the UI state (provider/recipe/length/tone) — lightweight, no hotkey re-register.
     function recipeToStr(){ return activeRecipe.kind==='key' ? 'key:'+activeRecipe.key : 'id:'+activeRecipe.id; }
@@ -1578,7 +2325,8 @@
       // si cambia solo via menu tasto-destro/Impostazioni (setDefaultRecipe), come il provider predefinito.
       currentSettings.length=lengthSel.selectedIndex<0?0:lengthSel.selectedIndex;
       currentSettings.tone=toneSel.selectedIndex<0?0:toneSel.selectedIndex;
-      if(TAURI){ invoke('save_ui_state',{ provider:currentSettings.default_provider, recipe:currentSettings.recipe, length:currentSettings.length, tone:currentSettings.tone }).catch(()=>{}); }
+      currentSettings.resp_fmt=respSel.selectedIndex<0?1:respSel.selectedIndex;
+      if(TAURI){ invoke('save_ui_state',{ provider:currentSettings.default_provider, recipe:currentSettings.recipe, length:currentSettings.length, tone:currentSettings.tone, respFmt:currentSettings.resp_fmt }).catch(()=>{}); }
       else { try{ localStorage.setItem('apb-settings', JSON.stringify(currentSettings)); }catch(e){} }
     }
     // Tile selection (for manual submit) — does NOT change the default.
@@ -1685,6 +2433,9 @@
       renderDefaultRecipeStar();   // ri-applica la ★ della predefinita anche sulle custom
     }
     // "Canonical" instruction of the active recipe (built-in from i18n, custom from customRecipes).
+    // Translate is a normal i18n instruction WRITTEN IN THE UI LANGUAGE and does NOT name a
+    // target: the model infers "translate into the language of this instruction" = the user's
+    // language (e.g. an Italian UI -> the instruction is Italian -> foreign text -> Italian).
     function canonicalInstruction(){
       const t=TR;
       if(activeRecipe.kind==='key') return t.instr[activeRecipe.key]||'';
@@ -1699,14 +2450,13 @@
       const t=TR;
       const isNeutral = activeRecipe.kind==='key' && activeRecipe.key==='neutral';
       document.body.classList.toggle('recipe-neutral', isNeutral);   // CSS nasconde istruzione+vincoli, mostra il toggle auto-invio
-      if(isNeutral){ instruction.value=''; if(neutralAutosend&&currentSettings) neutralAutosend.checked = currentSettings.neutral_autosend!==false; }
+      if(isNeutral){ instruction.value=''; }
       else if(activeRecipe.kind==='key'&&t.instr[activeRecipe.key]) instruction.value=t.instr[activeRecipe.key];
       else if(activeRecipe.kind==='id'){ const r=customRecipes.find(x=>x.id===activeRecipe.id); if(r) instruction.value=r.instruction; }
       updateSaveInstr();
     }
     instruction.addEventListener('input', updateSaveInstr);
     // Toggle "Auto-invio" Neutra: salva la preferenza (persistente).
-    if(neutralAutosend) neutralAutosend.addEventListener('change', ()=>{ currentSettings.neutral_autosend = neutralAutosend.checked; persistSettings(currentSettings); });
     // Save the modified instruction: custom → updates the recipe; built-in → creates a custom copy.
     saveInstrBtn.addEventListener('click', async ()=>{
       const text=instruction.value.trim(); if(!text) return;
@@ -1958,6 +2708,7 @@
     providers.addEventListener('click', e=>{
       const tile=e.target.closest('.prov'); if(!tile) return;
       selectProviderTile(tile.dataset.prov);   // selection only for manual submit (the default does not change)
+      if(tile.dataset.prov==='kotodama') openKotodama();   // Kotodama: single click goes straight to the meta-chat
     });
     // "double-click / right-click" hint visible only while the mouse is over the providers
     providers.addEventListener('mouseenter', ()=>{ if(hintEl) hintEl.classList.add('show'); });
@@ -1984,6 +2735,7 @@
     });
     lengthSel.addEventListener('change', saveUiState);
     toneSel.addEventListener('change', saveUiState);
+    respSel.addEventListener('change', saveUiState);
     document.getElementById('generate').addEventListener('click', openProvider);
     document.getElementById('copy').addEventListener('click', async()=>{
       const t=TR;
@@ -1996,31 +2748,24 @@
       if(dlOpen()){ closeDownloads(); return; }
       const open=[confirmOverlay,recipeOverlay,settingsOverlay,fieldsOverlay].find(o=>o.classList.contains('show'));
       if(open){ if(open===settingsOverlay) applyTheme(currentSettings.theme); applyLang(currentSettings.language); closeModal(open); return; }
+      if(body.classList.contains('kotodama-open')){ closeKotodama(); return; }
       if(body.classList.contains('provider-open')){ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); }
     });
 
     /* ===================== TAURI LISTENERS ===================== */
     function wireTauri(){
       if(!TAURI) return;
-      listen('app://insert-clipboard', e=>{
-        const txt=e.payload||'';
-        // If the clipboard contains the prompt WE just generated, do not re-process it (avoids nesting).
-        if(txt && txt===lastAutoPrompt) return;
-        content.value=txt; closeProviderBar(); content.focus();
-        // Open/hotkey = "process and go": if there is text, build the prompt and open the provider right away.
-        if(!txt.trim() || autoOpenBusy) return;
-        autoOpenBusy=true;
-        // toast/shortcut/clipboard → use the DEFAULT provider (the star), not the last one manually selected
-        if(currentSettings.default_provider in PROVIDERS) selectProviderTile(currentSettings.default_provider);
-        restoreRecipe(currentSettings.recipe);   // forza anche la RICETTA predefinita (★), non l'ultima selezionata
-        setTimeout(()=>{
-          lastAutoPrompt=buildPrompt();   // = what openProvider will write to the clipboard
-          openProvider();
-          setTimeout(()=>{ autoOpenBusy=false; }, 1200);   // delay: avoids the race with focus + anti-repetition
-        }, 150);
+      // Main hotkey / toast "Open" / tray: fill the description and stay on the builder.
+      // The user picks recipe/provider from the home; nothing auto-opens.
+      listen('app://fill-clipboard', e=>{ content.value=e.payload||''; closeProviderBar(); closeKotodama(); content.focus(); });
+      // Per-recipe hotkey -> INLINE transform: the text was copied from ANOTHER app; process
+      // it invisibly with the default provider and paste the answer back (inline_finish).
+      listen('app://inline-transform', e=>{
+        const d=e.payload||{}; const txt=(d.text||'').trim(); const recipe=d.recipe||'';
+        if(!txt){ invoke('inline_fail',{reason:'empty'}).catch(()=>{}); return; }
+        invoke('inline_toast',{mode:'processing', label:recipeNameFor(recipe)}).catch(()=>{});
+        ktInlineDispatch(recipe, txt);
       });
-      // Open from the tray: fill the description and stay on the builder (NO auto-open provider).
-      listen('app://fill-clipboard', e=>{ content.value=e.payload||''; closeProviderBar(); content.focus(); });
       listen('app://provider-opened', ()=>{ body.classList.add('provider-open'); });
       listen('app://provider-loaded', ()=>{
         body.classList.remove('provider-loading'); // page ready → remove overlay
@@ -2031,6 +2776,9 @@
       // "Cambia provider" chosen from the NATIVE menu (Rust emits key + whether to send).
       listen('app://switch-provider', e=>{ const d=e.payload||{}; if(!d.key) return; if(d.mode==='open') openProviderDirect(d.key); else switchProvider(d.key, d.mode==='send'); });
       listen('app://provider-closed', ()=>{ closeProviderBar(); });
+      // Kotodama meta-chat: per-provider answers and progress heartbeats.
+      listen('app://kotodama-answer', e=>{ ktOnAnswer(e.payload||{}); });
+      listen('app://kotodama-progress', e=>{ ktOnProgress(e.payload||{}); });
       // Download da un provider (es. .docx di ChatGPT): salvato in Download/Kotodama.
       listen('app://provider-download-start', e=>{ const d=e.payload||{}; startDownload(d); });
       listen('app://provider-download', e=>{ const d=e.payload||{}; if(d.ok){ finishDownload(d); const f=(d.path||'').split(/[\\/]/).pop(); toast((TR.downloadDone||'Saved to Downloads/Kotodama')+(f?(': '+f):'')); } else { toast(TR.downloadFail||'Download failed'); } });
@@ -2107,7 +2855,7 @@
       return sel.__cs;
     }
     function enhanceSelects(){
-      [lengthSel, toneSel, setTheme, setLang, setProvider, setRecipe].forEach(enhanceSelect);
+      [lengthSel, toneSel, respSel, setTheme, setLang, setProvider, setRecipe].forEach(enhanceSelect);
     }
 
     /* ===================== LANGUAGES: top bar + select + OS detection ===================== */
@@ -2160,6 +2908,8 @@
       populateProviderSelect();
       populateRecipeSelect();
       buildLangBar();
+      buildProviderStrip();       // header switcher: one chip per provider (icons + active name)
+      ktLoadAll();                // Kotodama sessions from disk (async, list renders on open)
       await applySettings(currentSettings); // async: loads and applies the language
       enhanceSelects();           // after applySettings: the length/tone options exist
       renderCustomRecipes();

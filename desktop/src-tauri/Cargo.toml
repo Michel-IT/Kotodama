@@ -40,6 +40,7 @@ windows = { version = "0.60", features = [
     "Win32_System_Com",
     "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Input_KeyboardAndMouse",   # SendInput: inline transform (simulated Ctrl+C / Ctrl+V)
 ] }
 
 [profile.release]
@@ -50,6 +51,9 @@ opt-level = "s"
 strip = true
 
 # Faster `tauri dev` iteration (does not affect the release profile).
+# debug="line-tables-only": drastically smaller debug binary -> much faster LINK (the debug-info/PDB
+# is what makes the Windows debug link slow, and less for the antivirus to scan); keeps panic line numbers.
 [profile.dev]
 opt-level = 1
 codegen-units = 16
+debug = "line-tables-only"

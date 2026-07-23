@@ -37,13 +37,24 @@ pub struct Settings {
     pub length: u32,
     /// Last UI state: Tone option index.
     pub tone: u32,
-    /// Ricetta "Neutra": invio automatico al provider (true) oppure solo incolla per editare (false).
-    pub neutral_autosend: bool,
+    /// "Risposta" field: 0 = Normale (nothing added), 1 = Solo testo (append answer-only
+    /// constraint). Default 1.
+    pub resp_fmt: u32,
     /// Finestra sempre in primo piano (galleggia sopra le altre finestre). Default: off.
     pub always_on_top: bool,
     /// La modale di benvenuto (primo avvio, privacy + confine provider) e' stata confermata
     /// con "non mostrare piu'": se true non ricompare all'avvio. Default: false.
     pub welcome_ack: bool,
+    /// Scorciatoie globali PER RICETTA: chiave = "key:<builtin>"/"id:<custom>", valore =
+    /// accelerator W3C. Premuta -> flusso clipboard con QUELLA ricetta (non la predefinita).
+    /// Le entry che non si registrano (conflitti/invalidi) vengono scartate al salvataggio.
+    pub recipe_hotkeys: std::collections::HashMap<String, String>,
+    /// Kotodama broadcast: usa la chat TEMPORANEA/anonima dei provider (dove supportata),
+    /// cosi' le richieste multi-provider non intasano le cronologie dei siti. Default: on.
+    pub kt_temp_chats: bool,
+    /// Chat temporanea PER PROVIDER (key -> abilitata). Assente = abilitata dove supportata.
+    /// Il frontend sa quali provider la supportano; i toggle degli altri sono disabilitati.
+    pub kt_temp_providers: std::collections::HashMap<String, bool>,
 }
 
 impl Default for Settings {
@@ -58,9 +69,18 @@ impl Default for Settings {
             recipe: "key:neutral".into(),
             length: 0,
             tone: 0,
-            neutral_autosend: true,
+            resp_fmt: 1, // default "Solo testo": clean, answer-only output
             always_on_top: false,
             welcome_ack: false,
+            // Default per-recipe shortcuts (fresh installs): Riformula = Ctrl+Alt+C,
+            // Traduci = Ctrl+Alt+T. Applied via serde container-default when the field is
+            // absent from settings.json; users who already set their own keep theirs.
+            recipe_hotkeys: std::collections::HashMap::from([
+                ("key:rephrase".to_string(), "Control+Alt+KeyC".to_string()),
+                ("key:translate".to_string(), "Control+Alt+KeyT".to_string()),
+            ]),
+            kt_temp_chats: true,
+            kt_temp_providers: std::collections::HashMap::new(),
         }
     }
 }
@@ -149,6 +169,30 @@ pub fn load_fields(app: &AppHandle) -> Vec<Field> {
 pub fn save_fields(app: &AppHandle, fields: &[Field]) -> Result<(), String> {
     let path = fields_path(app)?;
     let json = serde_json::to_string_pretty(fields).map_err(|e| e.to_string())?;
+    let _guard = io_lock().lock().unwrap();
+    fs::write(path, json).map_err(|e| e.to_string())
+}
+
+fn kt_sessions_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.join("kotodama-sessions.json"))
+}
+
+/// Load the Kotodama meta-chat sessions ('[]' if missing/error). The payload is opaque
+/// (owned and versioned by the frontend), so it stays a raw JSON value on this side.
+pub fn load_kt_sessions(app: &AppHandle) -> serde_json::Value {
+    kt_sessions_path(app)
+        .and_then(|p| fs::read_to_string(p).map_err(|e| e.to_string()))
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_else(|| serde_json::Value::Array(Vec::new()))
+}
+
+/// Save the Kotodama meta-chat sessions to disk.
+pub fn save_kt_sessions(app: &AppHandle, sessions: &serde_json::Value) -> Result<(), String> {
+    let path = kt_sessions_path(app)?;
+    let json = serde_json::to_string(sessions).map_err(|e| e.to_string())?; // compact: can be large
     let _guard = io_lock().lock().unwrap();
     fs::write(path, json).map_err(|e| e.to_string())
 }

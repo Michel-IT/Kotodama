@@ -37,14 +37,15 @@
     [data-theme="sumi"] .spark,[data-theme="sumi"] .head .x,[data-theme="sumi"] .preview,
     [data-theme="sumi"] .kbd,[data-theme="sumi"] .open { border-radius:2px; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { background: transparent; overflow: hidden; }
+    html, body { background: transparent; overflow: hidden; height: 100%; }
     body {
       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      height: 100vh;
       /* a filo SOTTO (taskbar, padding 0); 5px da DESTRA; 8px alone a sinistra/top per l'ombra */
       padding: 8px 5px 0 8px; -webkit-user-select: none; user-select: none; cursor: default;
     }
     .card {
-      height: calc(138px - 8px);
+      height: calc(100% - 8px);
       display: flex; flex-direction: column; gap: 9px; justify-content: flex-start;
       background: linear-gradient(180deg, var(--card-a), var(--card-b));
       border: 1px solid var(--border);
@@ -87,16 +88,55 @@
     .open:hover { filter: brightness(1.06); }
     .open:active { transform: scale(.96); }
     @keyframes slideup { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    /* inline transform states: spinner + label, no Open button */
+    .spin { width: 15px; height: 15px; border-radius: 50%; flex: none;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      animation: tspin .8s linear infinite; display: none; }
+    @keyframes tspin { to { transform: rotate(360deg); } }
+    body[data-mode="processing"] .spin { display: block; }
+    body[data-mode="processing"] .open, body[data-mode="done"] .open, body[data-mode="error"] .open { display: none; }
+    body[data-mode="processing"] .keys, body[data-mode="done"] .keys, body[data-mode="error"] .keys { visibility: hidden; }
+    body[data-mode="done"] .title { color: var(--accent); }
+    body[data-mode="error"] .title { color: #e08585; }
+    body[data-mode="done"] .preview, body[data-mode="error"] .preview { display: none; }
+    /* processing: provider chip (icon + name, provider color) highlighted, filling the body */
+    .proc { display: none; align-items: center; gap: 10px; flex: 1; }
+    body[data-mode="processing"] .proc { display: flex; }
+    body[data-mode="processing"] .preview { display: none; }
+    body[data-mode="processing"] .foot, body[data-mode="done"] .foot, body[data-mode="error"] .foot { display: none; }
+    /* done / error: compact — just the header, vertically centered, no empty body */
+    body[data-mode="done"] .card, body[data-mode="error"] .card { justify-content: center; gap: 0; }
+    body[data-mode="done"] .head, body[data-mode="error"] .head { align-items: center; }
+    .prov-chip { display: inline-flex; align-items: center; gap: 7px; flex: none;
+      padding: 5px 11px 5px 8px; border-radius: 999px;
+      background: color-mix(in srgb, var(--pc, var(--accent)) 16%, transparent);
+      border: 1px solid color-mix(in srgb, var(--pc, var(--accent)) 55%, transparent);
+      box-shadow: 0 0 14px -4px var(--pc, var(--accent)); }
+    .prov-chip .pic { width: 18px; height: 18px; display: grid; place-items: center; color: var(--pc, var(--accent)); flex: none; }
+    .prov-chip .pic svg { width: 18px; height: 18px; display: block; }
+    .prov-chip .pname { font-size: 12.5px; font-weight: 700; color: var(--text); letter-spacing: .2px; }
+    .proc-stat { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+    .proc-stage { font-size: 11.5px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .proc-bar { height: 4px; border-radius: 3px; overflow: hidden; background: rgba(255,255,255,.08); position: relative; }
+    .proc-bar::before { content: ""; position: absolute; inset: 0; width: 40%; border-radius: 3px;
+      background: linear-gradient(90deg, transparent, var(--pc, var(--accent)), transparent);
+      animation: procslide 1.15s ease-in-out infinite; }
+    @keyframes procslide { 0% { left: -40%; } 100% { left: 100%; } }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="head">
       <img class="spark" src="logo.png" alt="Kotodama">
+      <span class="spin"></span>
       <span class="title" id="title">Hai copiato del testo</span>
       <button class="x" id="close" title="Chiudi">✕</button>
     </div>
     <div class="preview"><span class="ptext" id="preview"></span></div>
+    <div class="proc">
+      <span class="prov-chip" id="provChip"><span class="pic" id="provIc"></span><span class="pname" id="provName"></span></span>
+      <span class="proc-stat"><span class="proc-stage" id="procStage"></span><span class="proc-bar"></span></span>
+    </div>
     <div class="foot">
       <div class="keys" id="keys"></div>
       <button class="open" id="open">Apri</button>
@@ -111,9 +151,11 @@
 
     // Localization: inline English (fallback); the actual language comes from the Settings / the payload,
     // loading the "toast" section of the i18n/<code>.json file (same schema as the app).
-    const STR_EN = { title: 'You copied some text', open: 'Open', press: 'press', or: 'or click', empty: '(empty text)' };
+    const STR_EN = { title: 'You copied some text', open: 'Open', press: 'press', or: 'or click', empty: '(empty text)',
+      processing: 'Working on it...', done: 'Pasted', errorEmpty: 'Nothing to copy', errorNoAnswer: 'No answer received',
+      stageConnect: 'Connecting...', stageWork: 'Receiving the answer' };
     let STR = STR_EN;
-    let curProvider = '';
+    let curMode = 'copy', curLabel = '', curProv = null;
     const RTL = new Set(['ar','ur','fa','he']);
     async function loadToastStrings(code) {
       if (!code || code === 'en') { STR = STR_EN; return; }
@@ -121,9 +163,30 @@
       STR = STR_EN;
     }
     function applyDir(code) { document.documentElement.dir = RTL.has(code) ? 'rtl' : 'ltr'; }
+    function fmtLen(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n); }
+    function renderProvChip() {
+      const chip = document.getElementById('provChip');
+      if (curProv) {
+        chip.style.setProperty('--pc', curProv.color || 'var(--accent)');
+        document.getElementById('provIc').innerHTML = curProv.svg || '';
+        document.getElementById('provName').textContent = curProv.name || '';
+        chip.style.display = '';
+      } else { chip.style.display = 'none'; }
+    }
+    function setStage(text) { document.getElementById('procStage').textContent = text; }
     function renderStrings() {
-      document.getElementById('title').textContent = STR.title;
-      document.getElementById('open').textContent = curProvider ? `${STR.open} ${curProvider}` : STR.open;
+      const t = document.getElementById('title');
+      document.body.dataset.mode = curMode;
+      if (curMode === 'processing') {
+        t.textContent = `${STR.processing} ${curLabel}`.trim();
+        renderProvChip();
+        setStage(STR.stageConnect);
+      }
+      else if (curMode === 'done') t.textContent = STR.done + ' ✓';
+      else if (curMode === 'error') t.textContent = curLabel === 'empty' ? STR.errorEmpty : STR.errorNoAnswer;
+      else t.textContent = STR.title;
+      // "Open" alone: it opens the HOME (builder), no provider name anymore
+      document.getElementById('open').textContent = STR.open;
     }
     renderStrings();
 
@@ -188,20 +251,35 @@
       listen('toast://content', async (e) => {
         const pl = e.payload || {};
         if (pl.language !== undefined) { await loadToastStrings(pl.language); applyDir(pl.language); }
-        curProvider = pl.provider || '';
-        document.getElementById('preview').textContent = pl.preview || STR.empty;
+        curMode = pl.mode || 'copy';
+        curLabel = pl.label || '';
+        if (curMode !== 'processing') curProv = null;   // reset chip when leaving processing
+        document.getElementById('preview').textContent = pl.preview || (curMode === 'copy' ? STR.empty : '');
         if (pl.hotkey) renderKeys(pl.hotkey);   // fix: always the current hotkey
         if (pl.theme) applyTheme(pl.theme);
-        renderStrings();   // title + "Apri {provider}" in the current language
+        renderStrings();
         scheduleAutoHide();
+      });
+      // live progress while an inline transform runs (emitted by the main webview):
+      // updates the provider chip + status line WITHOUT re-showing the toast
+      listen('toast://progress', (e) => {
+        const pl = e.payload || {};
+        // store the provider even if the processing content hasn't landed yet (race):
+        // renderStrings() will paint the chip when the processing toast renders.
+        if (pl.prov) { curProv = pl.prov; if (curMode === 'processing') renderProvChip(); }
+        if (curMode !== 'processing') return;
+        if (pl.stage === 'work') setStage(`${STR.stageWork} ${pl.len ? fmtLen(pl.len) : ''}`.trim());
+        else setStage(STR.stageConnect);
       });
     }
 
-    // auto-hide ~6s, cancelled if the mouse enters
+    // auto-hide, per-mode timing: copy 6s, done 2s, error 4s, processing = long safety (120s,
+    // normally replaced by the done/error toast well before)
     let hideTimer;
     function scheduleAutoHide() {
       clearTimeout(hideTimer);
-      hideTimer = setTimeout(() => { if (invoke) invoke('hide_toast').catch(() => {}); }, 6000);
+      const ms = curMode === 'processing' ? 120000 : (curMode === 'done' ? 2000 : (curMode === 'error' ? 4000 : 6000));
+      hideTimer = setTimeout(() => { if (invoke) invoke('hide_toast').catch(() => {}); }, ms);
     }
     document.body.addEventListener('mouseenter', () => clearTimeout(hideTimer));
     document.body.addEventListener('mouseleave', scheduleAutoHide);

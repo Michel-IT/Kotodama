@@ -21,30 +21,46 @@ use tauri_plugin_opener::OpenerExt;   // open external links in the system brows
 
 use crate::debug;
 
-/// The provider is "active" (on screen) or "parked" out of view. Used by
-/// `resize_provider` to NOT bring it back on screen on a resize when it is parked.
-static PROVIDER_ACTIVE: AtomicBool = AtomicBool::new(false);
+/// Persistent-tabs model: each provider gets its own child webview labelled `provider:<key>`, kept
+/// alive and parked off-screen when not in front, so switching keeps each page. Only a recipe
+/// request re-navigates a tab.
+///
+/// Key of the tab currently in the foreground, or `None` when the builder is shown.
+fn active_provider() -> &'static Mutex<Option<String>> {
+    static A: OnceLock<Mutex<Option<String>>> = OnceLock::new();
+    A.get_or_init(|| Mutex::new(None))
+}
 
-/// The provider is loading a new page while parked out of view: it must be
-/// brought back on screen ONLY once loading is finished (on_page_load) — or via
-/// the fallback. Avoids the "flash" of the previous provider's page during the switch.
-static PROVIDER_PENDING_SHOW: AtomicBool = AtomicBool::new(false);
+/// Which tab (by key) must be brought on screen once its page finishes loading (anti-flash on a
+/// navigate / first-open); consumed in `on_page_load` and the fallback thread.
+fn pending_show_key() -> &'static Mutex<Option<String>> {
+    static P: OnceLock<Mutex<Option<String>>> = OnceLock::new();
+    P.get_or_init(|| Mutex::new(None))
+}
 
-/// The provider is temporarily "suppressed" (parked out of view) because an app
-/// modal (e.g. the Download manager) is showing on top. Unlike close/park, this
-/// keeps PROVIDER_ACTIVE=true so we can restore the exact bounds afterwards;
-/// `resize_provider` also bails out while suppressed so a resize does not pop it back.
+/// The active provider is temporarily "suppressed" (parked out of view) because an app modal
+/// (the Download manager) is showing on top; stays "active" so its bounds restore afterwards.
 static PROVIDER_SUPPRESSED: AtomicBool = AtomicBool::new(false);
 
-/// Park Y: we move the provider webview well outside the window. It is a
-/// `set_position` (NON-blocking, unlike `close()`/`hide()` on Windows once the
-/// page has navigated), so the ✕ never freezes.
+/// Park Y: we move a provider webview well outside the window. It is a `set_position`
+/// (NON-blocking, unlike `close()`/`hide()` on Windows once the page has navigated).
 const PARK_Y: f64 = 100_000.0;
 
 /// (Logical) height of the in-app browser bar in the main webview.
 pub const TOPBAR_H: f64 = 46.0;
-/// Label of the provider's child webview.
-pub const PROVIDER_LABEL: &str = "provider";
+
+/// Per-provider child-webview label: `provider:<key>` (e.g. `provider:openai`).
+pub fn provider_label(key: &str) -> String {
+    format!("provider:{key}")
+}
+/// Key of the foreground tab, if any.
+fn active_key() -> Option<String> {
+    active_provider().lock().unwrap().clone()
+}
+/// The webview of the foreground tab, if any.
+pub(crate) fn active_webview<R: Runtime, M: Manager<R>>(manager: &M) -> Option<tauri::Webview<R>> {
+    active_key().and_then(|k| manager.get_webview(&provider_label(&k)))
+}
 
 /// WebView2 flags for the provider child-webview. `--disable-quic` must apply
 /// HERE too (not only on the main): it is the provider webview that loads the
@@ -85,6 +101,12 @@ pub const PROVIDER_UA: &str =
 ///   browser, via a sentinel URL that the Rust `on_navigation` handler intercepts.
 pub const NO_MENU_JS: &str = r#"
 (function(){
+  // Kill the "Leave site?" (beforeunload) dialog: our sentinel signalling assigns
+  // location.href (blocked by Rust, the page never actually leaves), but a page with
+  // composer text would pop its unload confirm on every sentinel. This runs BEFORE any
+  // page script, so stopImmediatePropagation() silences their later-registered handlers.
+  window.addEventListener('beforeunload', function(e){ e.stopImmediatePropagation(); }, true);
+  setInterval(function(){ try { window.onbeforeunload = null; } catch(e){} }, 2000);
   document.addEventListener('contextmenu', function(e){
     e.preventDefault(); e.stopPropagation();
     window.location.href = 'https://kotodama.menu/';
@@ -128,12 +150,35 @@ fn provider_dock_px() -> &'static Mutex<f64> {
 }
 
 /// Logical size available below the top bar (+ banner), minus the docked panel width.
-fn provider_bounds(window: &Window) -> Result<(f64, f64), String> {
+pub(crate) fn provider_bounds(window: &Window) -> Result<(f64, f64), String> {
     let size = window.inner_size().map_err(|e| e.to_string())?;
     let scale = window.scale_factor().map_err(|e| e.to_string())?;
     let logical = size.to_logical::<f64>(scale);
     let w = (logical.width - *provider_dock_px().lock().unwrap()).max(0.0);
     Ok((w, (logical.height - provider_top()).max(0.0)))
+}
+
+/// Parks the currently-foreground tab off-screen (does NOT clear `active_provider`). Used before
+/// bringing another tab in front, and when returning to the builder (the tab stays alive).
+fn park_active<R: Runtime, M: Manager<R>>(manager: &M) {
+    if let Some(wv) = active_webview(manager) {
+        let _ = wv.set_position(LogicalPosition::new(0.0, PARK_Y));
+    }
+}
+
+/// Brings the tab `key` on screen (below the topbar, at full bounds), marks it the active tab and
+/// notifies the frontend. The caller parks the previously-active tab first (`park_active`).
+fn show_tab(window: &Window, key: &str) {
+    if let Some(wv) = window.get_webview(&provider_label(key)) {
+        if let Ok((w, h)) = provider_bounds(window) {
+            let _ = wv.set_position(LogicalPosition::new(0.0, provider_top()));
+            let _ = wv.set_size(LogicalSize::new(w, h));
+        }
+        let _ = wv.show();
+    }
+    *active_provider().lock().unwrap() = Some(key.to_string());
+    *last_provider_bounds().lock().unwrap() = None; // force next reposition
+    let _ = window.emit("app://provider-loaded", ());
 }
 
 /// Localized labels for the native provider menu, pushed by the frontend in the active app language
@@ -418,200 +463,188 @@ pub fn on_menu_focus_lost<R: Runtime, M: Manager<R>>(manager: &M) {
     hide_menu_window(manager);
 }
 
-/// Opens (or re-navigates) the provider view to the given `url`.
-///
-/// Async: on Windows, creating a webview in a synchronous command causes a
-/// deadlock (WebView2). The async command runs off the UI thread.
+/// Builds + adds (PARKED off-screen) the persistent child webview for provider `key`, navigated to
+/// `url`. Its `on_page_load` brings it on screen once loading finishes IF it is still the pending
+/// tab (anti-flash). Shared by `open_provider_view` (recipe) and `show_provider_tab` (first switch).
+pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h: f64) -> Result<(), String> {
+    let win_for_nav = window.clone();
+    let key_load = key.to_string();
+    let builder = WebviewBuilder::new(provider_label(key), WebviewUrl::External(url))
+        .user_agent(PROVIDER_UA)
+        .initialization_script(NO_MENU_JS)
+        .on_navigation(move |u| {
+            debug::log(format!("on_navigation -> {u}"));
+            // Right-click sentinel -> our native EDITING menu (on the main thread). Nav is blocked.
+            if u.host_str() == Some("kotodama.menu") {
+                let w = win_for_nav.clone();
+                let _ = win_for_nav.app_handle().run_on_main_thread(move || show_context_menu(&w));
+                return false;
+            }
+            // External links funneled here open in the system browser; in-app nav blocked.
+            if u.host_str() == Some("kotodama.external") {
+                if let Some((_, ext)) = u.query_pairs().find(|(k, _)| k == "u") {
+                    let _ = win_for_nav.app_handle().opener().open_url(ext.into_owned(), None::<&str>);
+                }
+                return false;
+            }
+            // Kotodama broadcast: harvested answer chunks / progress heartbeats. Nav blocked.
+            if u.host_str() == Some("kotodama.result") {
+                crate::kotodama::on_result_url(&win_for_nav, &u);
+                return false;
+            }
+            let _ = win_for_nav.emit("app://provider-url", u.to_string());
+            true
+        })
+        .on_page_load(move |webview, payload| {
+            debug::log(format!("on_page_load {:?} url={}", payload.event(), payload.url()));
+            // When THIS tab is the pending one and finished loading, bring it on screen.
+            if payload.event() == PageLoadEvent::Finished {
+                let show = {
+                    let mut p = pending_show_key().lock().unwrap();
+                    if p.as_deref() == Some(key_load.as_str()) { *p = None; true } else { false }
+                };
+                if show {
+                    show_tab(&webview.window(), &key_load);
+                }
+                // Kotodama broadcast: run any fill+harvest injection queued for this tab.
+                crate::kotodama::on_page_finished(&webview, &key_load);
+            }
+        })
+        // Abilita i DOWNLOAD nella webview del provider (senza handler wry/WebView2 li scarta):
+        // salviamo in Download/Kotodama e notifichiamo il frontend.
+        .on_download(|webview, event| {
+            use tauri::webview::DownloadEvent;
+            match event {
+                DownloadEvent::Requested { url, destination } => {
+                    debug::log(format!("on_download REQUESTED url={url}"));
+                    if let Ok(dir) = webview.app_handle().path().download_dir() {
+                        let name = destination
+                            .file_name()
+                            .map(|n| n.to_os_string())
+                            .unwrap_or_else(|| std::ffi::OsString::from("download"));
+                        let kdir = dir.join("Kotodama");
+                        let _ = std::fs::create_dir_all(&kdir);
+                        *destination = kdir.join(name);
+                    }
+                    debug::log(format!("on_download DEST={}", destination.display()));
+                    let name = destination
+                        .file_name()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_else(|| "download".to_string());
+                    let _ = webview.app_handle().emit(
+                        "app://provider-download-start",
+                        serde_json::json!({ "name": name, "url": url.to_string() }),
+                    );
+                    true
+                }
+                DownloadEvent::Finished { url, path, success } => {
+                    let p = path.map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+                    debug::log(format!("on_download FINISHED ok={success} url={url} path={p}"));
+                    if success {
+                        use tauri_plugin_notification::NotificationExt;
+                        let name = std::path::Path::new(&p)
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_else(|| p.clone());
+                        let _ = webview
+                            .app_handle()
+                            .notification()
+                            .builder()
+                            .title("Kotodama")
+                            .body(format!("Download/Kotodama: {name}"))
+                            .show();
+                    }
+                    let size = std::fs::metadata(&p).map(|m| m.len()).unwrap_or(0);
+                    let _ = webview.app_handle().emit(
+                        "app://provider-download",
+                        serde_json::json!({ "ok": success, "path": p, "url": url.to_string(), "size": size }),
+                    );
+                    true
+                }
+                _ => true,
+            }
+        });
+    // WebView2 args are set process-wide in lib.rs::run() (WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS),
+    // so every webview shares identical arguments; setting them per-webview would blank it.
+    window
+        .add_child(builder, LogicalPosition::new(0.0, PARK_Y), LogicalSize::new(w, h))
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+/// Fallback: if `on_page_load Finished` never fires (cached page/redirect), show the pending tab
+/// anyway after a while so we don't stay stuck on the loading overlay.
+fn spawn_show_fallback(window: &Window, key: String) {
+    let app = window.app_handle().clone();
+    let win = window.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(3500));
+        let show = {
+            let mut p = pending_show_key().lock().unwrap();
+            if p.as_deref() == Some(key.as_str()) { *p = None; true } else { false }
+        };
+        if show {
+            debug::log("show_tab via FALLBACK (on_page_load Finished never fired)");
+            let _ = app.run_on_main_thread(move || show_tab(&win, &key));
+        }
+    });
+}
+
+/// RECIPE request: navigate provider `key`'s tab to `url` (a fresh chat) and bring it in front.
+/// Creates the tab if it doesn't exist. Async: creating a WebView2 webview in a sync command
+/// deadlocks on Windows.
 #[tauri::command]
-pub async fn open_provider_view(window: Window, url: String) -> Result<(), String> {
-    debug::log(format!("open_provider_view url={url}"));
-    #[cfg(windows)]
-    debug::log(format!(
-        "sys_locale={:?} provider_args={}",
-        sys_locale::get_locale(),
-        provider_browser_args()
-    ));
-    debug::log(format!(
-        "provider webview already exists = {}",
-        window.get_webview(PROVIDER_LABEL).is_some()
-    ));
+pub async fn open_provider_view(window: Window, key: String, url: String) -> Result<(), String> {
+    debug::log(format!("open_provider_view key={key} url={url}"));
+    let label = provider_label(&key);
     let parsed = url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
     let (w, h) = provider_bounds(&window)?;
-
-    // Anti-flash strategy: we load the new page with the webview PARKED out of
-    // view, so the previous provider's page is never visible; we bring it back
-    // on screen only once loading is finished (on_page_load) or via the fallback.
-    PROVIDER_PENDING_SHOW.store(true, Ordering::Relaxed);
-
-    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
-        // Already created: park (hide the old page) and re-navigate.
+    crate::kotodama::abort_key(&window, &key); // re-navigation kills any in-flight harvest on this tab
+    park_active(&window); // park whatever tab is currently in front
+    *pending_show_key().lock().unwrap() = Some(key.clone());
+    if let Some(webview) = window.get_webview(&label) {
+        // Existing tab: park (hide old page) and re-navigate (recipe = new chat).
         let _ = webview.set_position(LogicalPosition::new(0.0, PARK_Y));
         let _ = webview.set_size(LogicalSize::new(w, h));
         webview.navigate(parsed).map_err(|e| e.to_string())?;
-        // no show() here: show_provider() does it once the page is ready.
     } else {
-        let win_for_nav = window.clone();
-        let builder = WebviewBuilder::new(PROVIDER_LABEL, WebviewUrl::External(parsed))
-            .user_agent(PROVIDER_UA)
-            .initialization_script(NO_MENU_JS)
-            .on_navigation(move |u| {
-                debug::log(format!("on_navigation -> {u}"));
-                // Right-click sentinel: pop OUR native EDITING menu (Cut/Copy/Paste/Select all)
-                // over this child webview, on the main thread (popup_menu requires it). Provider
-                // switching now lives in the header ⇄ HTML menu, so it is NOT here. Nav is blocked.
-                if u.host_str() == Some("kotodama.menu") {
-                    let w = win_for_nav.clone();
-                    let _ = win_for_nav.app_handle().run_on_main_thread(move || show_context_menu(&w));
-                    return false;
-                }
-                // External links funneled here (sentinel host) open in the system
-                // default browser; the in-app navigation is then blocked.
-                if u.host_str() == Some("kotodama.external") {
-                    if let Some((_, ext)) = u.query_pairs().find(|(k, _)| k == "u") {
-                        let _ = win_for_nav.app_handle().opener().open_url(ext.into_owned(), None::<&str>);
-                    }
-                    return false;
-                }
-                // Keep the in-app URL bar in sync.
-                let _ = win_for_nav.emit("app://provider-url", u.to_string());
-                true
-            })
-            .on_page_load(|webview, payload| {
-                debug::log(format!(
-                    "on_page_load {:?} url={}",
-                    payload.event(),
-                    payload.url()
-                ));
-                // Once loading is finished, if we were waiting, bring the provider on screen.
-                if payload.event() == PageLoadEvent::Finished
-                    && PROVIDER_PENDING_SHOW.swap(false, Ordering::Relaxed)
-                {
-                    show_provider(&webview.window());
-                }
-            })
-            // Abilita i DOWNLOAD nella webview del provider: senza un handler, wry/WebView2 li scarta
-            // (es. il .docx generato da ChatGPT). Salviamo nella cartella Download e notifichiamo il frontend.
-            .on_download(|webview, event| {
-                use tauri::webview::DownloadEvent;
-                match event {
-                    DownloadEvent::Requested { url, destination } => {
-                        debug::log(format!("on_download REQUESTED url={url}"));
-                        if let Ok(dir) = webview.app_handle().path().download_dir() {
-                            let name = destination
-                                .file_name()
-                                .map(|n| n.to_os_string())
-                                .unwrap_or_else(|| std::ffi::OsString::from("download"));
-                            // Sottocartella dedicata: Download/Kotodama (ordinata + punto unico
-                            // per condividere i file tra i vari provider). Creata se manca.
-                            let kdir = dir.join("Kotodama");
-                            let _ = std::fs::create_dir_all(&kdir);
-                            *destination = kdir.join(name);
-                        }
-                        debug::log(format!("on_download DEST={}", destination.display()));
-                        // Avvisa il frontend all'INIZIO: apre la modale "Gestore download" e mostra
-                        // una riga "in corso" (poi finalizzata su Finished). Il download prosegue
-                        // anche con la webview provider parcheggiata fuori vista dalla modale.
-                        let name = destination
-                            .file_name()
-                            .map(|n| n.to_string_lossy().to_string())
-                            .unwrap_or_else(|| "download".to_string());
-                        let _ = webview.app_handle().emit(
-                            "app://provider-download-start",
-                            serde_json::json!({ "name": name, "url": url.to_string() }),
-                        );
-                        true // consenti il download
-                    }
-                    DownloadEvent::Finished { url, path, success } => {
-                        let p = path.map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
-                        debug::log(format!("on_download FINISHED ok={success} url={url} path={p}"));
-                        if success {
-                            // Notifica NATIVA (si vede anche sopra la webview provider, a differenza del toast HTML).
-                            use tauri_plugin_notification::NotificationExt;
-                            let name = std::path::Path::new(&p)
-                                .file_name()
-                                .map(|n| n.to_string_lossy().to_string())
-                                .unwrap_or_else(|| p.clone());
-                            let _ = webview
-                                .app_handle()
-                                .notification()
-                                .builder()
-                                .title("Kotodama")
-                                .body(format!("Download/Kotodama: {name}"))
-                                .show();
-                        }
-                        let size = std::fs::metadata(&p).map(|m| m.len()).unwrap_or(0);
-                        let _ = webview.app_handle().emit(
-                            "app://provider-download",
-                            serde_json::json!({ "ok": success, "path": p, "url": url.to_string(), "size": size }),
-                        );
-                        true
-                    }
-                    _ => true,
-                }
-            });
-        // NOTE: WebView2 browser arguments (incl. --disable-quic and the dynamic
-        // --accept-lang) are set ONCE process-wide in lib.rs::run() via the
-        // WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS env var, so EVERY webview (main,
-        // toast, provider) shares identical arguments. Setting them per-webview
-        // here would diverge from the main webview's environment and make this
-        // child webview fail to initialize (blank page, no navigation).
-        // Created PARKED (PARK_Y): the first page loads out of view.
-        window
-            .add_child(
-                builder,
-                LogicalPosition::new(0.0, PARK_Y),
-                LogicalSize::new(w, h),
-            )
-            .map_err(|e| e.to_string())?;
+        create_tab(&window, &key, parsed, w, h)?;
     }
-
-    // The in-app bar/overlay appear immediately (instant feedback); PROVIDER_ACTIVE
-    // is set by show_provider() only when the page is ready.
-    window
-        .emit("app://provider-opened", &url)
-        .map_err(|e| e.to_string())?;
-
-    // Fallback: if on_page_load does not fire (cached page/redirect, etc.), show
-    // the provider anyway after a while, so we don't stay stuck on the overlay.
-    let app = window.app_handle().clone();
-    let win_fallback = window.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(3500));
-        if PROVIDER_PENDING_SHOW.swap(false, Ordering::Relaxed) {
-            debug::log("show_provider via FALLBACK (on_page_load Finished never fired)");
-            let _ = app.run_on_main_thread(move || show_provider(&win_fallback));
-        }
-    });
+    window.emit("app://provider-opened", &url).map_err(|e| e.to_string())?;
+    spawn_show_fallback(&window, key);
     Ok(())
 }
 
-/// Brings the provider back on screen (page ready): positions it below the
-/// topbar, sizes it and shows it; marks ACTIVE and notifies the frontend
-/// (removes the loading overlay). Idempotent: calling it multiple times is harmless.
-fn show_provider(window: &Window) {
-    debug::log("show_provider");
-    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
-        if let Ok((w, h)) = provider_bounds(window) {
-            let _ = webview.set_position(LogicalPosition::new(0.0, provider_top()));
-            let _ = webview.set_size(LogicalSize::new(w, h));
-        }
-        let _ = webview.show();
+/// SWITCH to provider `key` (header icon strip / double-click tile / ⇄ "Open"): if its tab already
+/// exists, bring it on screen AS-IS (keeps its page, NO reload); otherwise create it navigated to
+/// `base_url` and show it once loaded. Async for the create path (WebView2 deadlock on Windows).
+#[tauri::command]
+pub async fn show_provider_tab(window: Window, key: String, base_url: String) -> Result<(), String> {
+    debug::log(format!("show_provider_tab key={key}"));
+    if window.get_webview(&provider_label(&key)).is_some() {
+        park_active(&window);
+        show_tab(&window, &key); // keep the existing page
+        Ok(())
+    } else {
+        let parsed = base_url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
+        let (w, h) = provider_bounds(&window)?;
+        park_active(&window);
+        *pending_show_key().lock().unwrap() = Some(key.clone());
+        create_tab(&window, &key, parsed, w, h)?;
+        window.emit("app://provider-opened", &base_url).map_err(|e| e.to_string())?;
+        spawn_show_fallback(&window, key);
+        Ok(())
     }
-    PROVIDER_ACTIVE.store(true, Ordering::Relaxed);
-    *last_provider_bounds().lock().unwrap() = None; // force the next reposition
-    let _ = window.emit("app://provider-loaded", ());
 }
 
-/// Returns to the builder by "parking" the provider out of view. (← Builder / Esc)
-/// NB: we use `set_position` (non-blocking) and NOT `hide()`/`close()`, which on
-/// Windows freeze once the page has navigated.
+/// Returns to the builder by "parking" the active tab out of view (all tabs stay ALIVE). (← Builder / Esc)
+/// NB: we use `set_position` (non-blocking), NOT `hide()`/`close()`, which on Windows freeze once the
+/// page has navigated.
 #[tauri::command]
 pub fn close_provider_view(window: Window) -> Result<(), String> {
-    PROVIDER_ACTIVE.store(false, Ordering::Relaxed);
-    PROVIDER_PENDING_SHOW.store(false, Ordering::Relaxed); // cancel any pending show
-    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
-        let _ = webview.set_position(LogicalPosition::new(0.0, PARK_Y));
-    }
+    *pending_show_key().lock().unwrap() = None; // cancel any pending show
+    park_active(&window); // park the front tab (kept alive, resumed on next switch)
+    *active_provider().lock().unwrap() = None;
     hide_menu_window(&window); // closing the provider also dismisses the floating ⇄ menu
     window
         .emit("app://provider-closed", ())
@@ -622,7 +655,7 @@ pub fn close_provider_view(window: Window) -> Result<(), String> {
 /// Reloads the embedded page.
 #[tauri::command]
 pub fn provider_reload(window: Window) -> Result<(), String> {
-    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
+    if let Some(webview) = active_webview(&window) {
         webview
             .eval("location.reload()")
             .map_err(|e| e.to_string())?;
@@ -633,7 +666,7 @@ pub fn provider_reload(window: Window) -> Result<(), String> {
 /// Navigates the embedded page back in its history (← button in the in-app bar).
 #[tauri::command]
 pub fn provider_back(window: Window) -> Result<(), String> {
-    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
+    if let Some(webview) = active_webview(&window) {
         webview
             .eval("history.back()")
             .map_err(|e| e.to_string())?;
@@ -641,20 +674,33 @@ pub fn provider_back(window: Window) -> Result<(), String> {
     Ok(())
 }
 
-/// Auto-fill: inserts the prompt into the provider page's input.
-/// Polls for ~20s for an input (textarea / contenteditable / role=textbox) and
-/// fills it ONLY if empty (so it doesn't disturb providers prefilled via ?q=).
-/// Uses the native setter for textareas and `execCommand('insertText')` for
-/// rich editors (ProseMirror/Quill), the most compatible. After filling it sends
-/// the message by simulating Enter — used for providers without ?q=.
-fn fill_impl(window: &Window, text: String, send: bool) -> Result<(), String> {
-    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
-        let json = serde_json::to_string(&text).map_err(|e| e.to_string())?;
-        let js = format!("var __apb_text = {json}; var __apb_send = {send};")
-            + r#"
+/// Auto-fill: inserts the prompt into the provider page's input and (optionally) submits.
+/// RESILIENT LOOP (~60s, 400ms ticks), designed for cold pages hydrating late:
+/// - re-picks the composer every tick (hydration may REPLACE the node);
+/// - re-fills whenever the field is empty again (hydration can WIPE a too-early fill);
+/// - retries submit (Enter + send-button click) throttled, and stops ONLY when the
+///   message actually APPEARS in the page thread (the one reliable success signal);
+/// - `?q=`-prefilled composers just get submitted.
+/// `fill_js` builds the script (also reused by the Kotodama broadcast gateway);
+/// `fill_impl` runs it on the ACTIVE tab.
+pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
+    let json = serde_json::to_string(text).map_err(|e| e.to_string())?;
+    Ok(format!("var __apb_text = {json}; var __apb_send = {send};")
+        + r#"
 (function(){
-  var text = __apb_text;
+  var text = __apb_text, send = __apb_send;
+  var HEAD = text.trim().replace(/\s+/g,' ').slice(0, 60);
   function getVal(el){ return (el.value !== undefined ? el.value : el.innerText) || ''; }
+  // Only VISIBLE inputs: ChatGPT keeps a hidden legacy <textarea> in the DOM that would
+  // otherwise be picked over the real (contenteditable) composer and swallow the fill.
+  function pickComposer(){
+    var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'];
+    for (var i=0;i<sels.length;i++){
+      var els = document.querySelectorAll(sels[i]);
+      for (var j=0;j<els.length;j++){ if (els[j].offsetParent !== null) return els[j]; }
+    }
+    return null;
+  }
   function findSendBtn(){
     var sels = [
       'button[data-testid="send-button"]',
@@ -670,64 +716,70 @@ fn fill_impl(window: &Window, text: String, send: bool) -> Result<(), String> {
     }
     return null;
   }
-  function submit(el){
-    // Ritenta finché il testo è ancora nel campo (si ferma appena inviato → niente
-    // doppio invio). Serve per la 1ª apertura "a freddo" (es. ChatGPT) dove il
-    // composer/idratazione non è pronto al primo colpo.
-    var attempts = 0;
-    function attempt(){
-      if (getVal(el).trim().length === 0) return;            // inviato: stop
-      try { el.focus(); } catch (e) {}                       // focus prima dell'Invio (Claude)
-      // 1) Enter (invia su ChatGPT/Gemini/DeepSeek/Z.ai)
-      ['keydown','keypress','keyup'].forEach(function(t){
-        el.dispatchEvent(new KeyboardEvent(t, {key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true, cancelable:true}));
-      });
-      // 2) poco dopo, se c'è ancora testo, clicca il pulsante d'invio (es. Qwen)
-      setTimeout(function(){
-        if (getVal(el).trim().length === 0) return;
-        var b = findSendBtn();
-        if (b) b.click();
-      }, 250);
-      attempts++;
-      if (attempts < 10) setTimeout(attempt, 900);
-    }
-    attempt();
+  // TRUE once the sent message is visible in the page OUTSIDE the composer: the only
+  // reliable "accepted" signal (composer emptying alone can also mean hydration wiped it).
+  function delivered(){
+    try {
+      var el = pickComposer();
+      if (el && getVal(el).replace(/\s+/g,' ').indexOf(HEAD) !== -1) return false; // still (only) in composer
+      return ((document.body && document.body.innerText) || '').replace(/\s+/g,' ').indexOf(HEAD) !== -1;
+    } catch(e){ return false; }
   }
-  var tries = 0;
-  var iv = setInterval(function(){
-    tries++;
-    var el = document.querySelector('textarea:not([readonly]):not([aria-hidden="true"])')
-          || document.querySelector('[contenteditable="true"]')
-          || document.querySelector('div[role="textbox"]');
-    if (el) {
-      el.focus();   // SEMPRE: Claude/ProseMirror ignora l'Invio se l'editor non e' a fuoco
-      var isText = (el.tagName === 'TEXTAREA' || el.value !== undefined);
-      if (getVal(el).trim().length === 0) {
-        // vuoto → riempi (provider clipboard, o ?q= che non ha precompilato)
-        if (isText) {
-          try {
-            var set = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
-            set.call(el, text);
-          } catch (e) { el.value = text; }
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-        } else {
-          try { document.execCommand('selectAll', false, null); document.execCommand('insertText', false, text); }
-          catch (e) { el.textContent = text; el.dispatchEvent(new InputEvent('input', { bubbles: true })); }
-        }
-      } else if (!isText) {
-        // gia' precompilato (?q=) in un editor rich (Claude): porta il caret in fondo
-        // e notifica un input, cosi' React abilita l'invio e accetta l'Enter.
-        try { var rng = document.createRange(); rng.selectNodeContents(el); rng.collapse(false); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rng); } catch (e) {}
-        el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-      }
-      // invia se l'input ha testo (riempito ora o precompilato da ?q=)
-      setTimeout(function(){ if (__apb_send && getVal(el).trim().length) submit(el); }, 500);
-      clearInterval(iv);
+  function fill(el){
+    var isText = (el.tagName === 'TEXTAREA' || el.value !== undefined);
+    try { el.focus(); } catch(e){}
+    if (isText) {
+      try {
+        var set = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+        set.call(el, text);
+      } catch (e) { el.value = text; }
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      try { document.execCommand('selectAll', false, null); document.execCommand('insertText', false, text); }
+      catch (e) { el.textContent = text; el.dispatchEvent(new InputEvent('input', { bubbles: true })); }
     }
-    if (tries > 66) clearInterval(iv);
-  }, 300);
+  }
+  function submitOnce(el){
+    try { el.focus(); } catch(e){}                          // Claude/ProseMirror ignora l'Invio senza focus
+    if (el.value === undefined) {
+      // rich editor precompilato: caret in fondo + input, così React abilita l'invio
+      try { var rng = document.createRange(); rng.selectNodeContents(el); rng.collapse(false); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rng); } catch (e) {}
+      el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    }
+    ['keydown','keypress','keyup'].forEach(function(t){
+      el.dispatchEvent(new KeyboardEvent(t, {key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true, cancelable:true}));
+    });
+    setTimeout(function(){
+      if (delivered()) return;
+      var el2 = pickComposer();
+      if (el2 && getVal(el2).trim().length) { var b = findSendBtn(); if (b) b.click(); }
+    }, 300);
+  }
+  var ticks = 0, lastSubmit = -10;
+  var iv = setInterval(function(){
+    if (window.__ktHoldFill) return;                         // temp-chat toggle in progress: wait
+    ticks++;
+    if (delivered()) { clearInterval(iv); return; }          // accepted and visible -> done
+    var el = pickComposer();
+    if (!el) { if (ticks > 150) clearInterval(iv); return; }
+    var val = getVal(el).trim();
+    if (val.length === 0) {
+      fill(el);                                              // (re)fill: heals hydration wipes
+    } else if (send && ticks - lastSubmit >= 3) {
+      lastSubmit = ticks;                                    // throttle submit attempts (~1.2s)
+      submitOnce(el);
+    } else if (!send) {
+      clearInterval(iv); return;                             // paste-only: text in place, stop
+    }
+    if (ticks > 150) clearInterval(iv);                      // ~60s budget
+  }, 400);
 })();
-"#;
+"#)
+}
+
+fn fill_impl(window: &Window, text: String, send: bool) -> Result<(), String> {
+    if let Some(webview) = active_webview(window) {
+        let js = fill_js(&text, send)?;
         webview.eval(&js).map_err(|e| e.to_string())?;
     }
     Ok(())
@@ -754,8 +806,8 @@ pub fn provider_paste(window: Window, text: String) -> Result<(), String> {
 pub fn set_provider_top_extra(window: Window, px: f64) -> Result<(), String> {
     *provider_top_extra().lock().unwrap() = px.max(0.0);
     *last_provider_bounds().lock().unwrap() = None; // invalidate cache → force reposition
-    if PROVIDER_ACTIVE.load(Ordering::Relaxed) {
-        if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
+    if active_key().is_some() {
+        if let Some(webview) = active_webview(&window) {
             let (w, h) = provider_bounds(&window)?;
             let _ = webview.set_position(LogicalPosition::new(0.0, provider_top()));
             let _ = webview.set_size(LogicalSize::new(w, h));
@@ -770,10 +822,10 @@ pub fn set_provider_top_extra(window: Window, px: f64) -> Result<(), String> {
 #[tauri::command]
 pub fn provider_suppress(window: Window, on: bool) -> Result<(), String> {
     PROVIDER_SUPPRESSED.store(on, Ordering::Relaxed);
-    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
+    if let Some(webview) = active_webview(&window) {
         if on {
             let _ = webview.set_position(LogicalPosition::new(0.0, PARK_Y));
-        } else if PROVIDER_ACTIVE.load(Ordering::Relaxed) {
+        } else if active_key().is_some() {
             *last_provider_bounds().lock().unwrap() = None; // force reposition
             let (w, h) = provider_bounds(&window)?;
             let _ = webview.set_position(LogicalPosition::new(0.0, provider_top()));
@@ -790,8 +842,8 @@ pub fn provider_suppress(window: Window, on: bool) -> Result<(), String> {
 pub fn provider_dock(window: Window, px: f64) -> Result<(), String> {
     *provider_dock_px().lock().unwrap() = px.max(0.0);
     *last_provider_bounds().lock().unwrap() = None; // force reposition
-    if PROVIDER_ACTIVE.load(Ordering::Relaxed) {
-        if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
+    if active_key().is_some() {
+        if let Some(webview) = active_webview(&window) {
             let (w, h) = provider_bounds(&window)?;
             let _ = webview.set_position(LogicalPosition::new(0.0, provider_top()));
             let _ = webview.set_size(LogicalSize::new(w, h));
@@ -811,10 +863,10 @@ fn last_provider_bounds() -> &'static Mutex<Option<(f64, f64)>> {
 pub fn resize_provider(window: &WebviewWindow) {
     // If the provider is parked (builder on screen) or suppressed (a modal is on
     // top), do NOT bring it back up on a resize: it would cover the builder/modal.
-    if !PROVIDER_ACTIVE.load(Ordering::Relaxed) || PROVIDER_SUPPRESSED.load(Ordering::Relaxed) {
+    if active_key().is_none() || PROVIDER_SUPPRESSED.load(Ordering::Relaxed) {
         return;
     }
-    if let Some(webview) = window.get_webview(PROVIDER_LABEL) {
+    if let Some(webview) = active_webview(window) {
         if let (Ok(size), Ok(scale)) = (window.inner_size(), window.scale_factor()) {
             let logical = size.to_logical::<f64>(scale);
             let w = (logical.width - *provider_dock_px().lock().unwrap()).max(0.0);
@@ -841,13 +893,12 @@ pub fn resize_provider(window: &WebviewWindow) {
 /// Uses `set_position` (NON-blocking) instead of `hide()`/`close()`, which on
 /// Windows freeze once the provider's page has navigated → the ✕/← Builder used
 /// to get stuck. The webview stays alive (fast resume), just moved outside the
-/// window; `resize_provider` does not bring it back up thanks to `PROVIDER_ACTIVE`.
+/// window; `resize_provider` does not bring it back up thanks to the `None` active key.
+/// All tabs stay ALIVE (only the front one is parked), so switching back is instant.
 pub fn park_provider<R: Runtime, M: Manager<R>>(manager: &M) {
-    PROVIDER_ACTIVE.store(false, Ordering::Relaxed);
-    PROVIDER_PENDING_SHOW.store(false, Ordering::Relaxed); // cancel any pending show
-    if let Some(webview) = manager.get_webview(PROVIDER_LABEL) {
-        let _ = webview.set_position(LogicalPosition::new(0.0, PARK_Y));
-    }
+    *pending_show_key().lock().unwrap() = None; // cancel any pending show
+    park_active(manager); // park the front tab out of view (kept alive)
+    *active_provider().lock().unwrap() = None;
     hide_menu_window(manager); // returning to the builder also dismisses the floating ⇄ menu
 }
 

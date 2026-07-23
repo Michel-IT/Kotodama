@@ -9,9 +9,11 @@
 mod browser;
 mod clipboard;
 mod debug;
+mod kotodama;
 mod settings;
 mod toast;
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use settings::Settings;
@@ -34,35 +36,34 @@ pub struct AppState {
     pub quit_item: Mutex<Option<MenuItem<Wry>>>,
     /// Localized labels for the native provider context menu (set_provider_menu_labels).
     pub menu_labels: Mutex<browser::MenuLabels>,
+    /// Inline transform in progress (one at a time).
+    pub inline_busy: AtomicBool,
+    /// While an inline transform runs, the clipboard monitor must NOT toast the
+    /// simulated Ctrl+C copy (it is not a user copy).
+    pub inline_suppress_toast: AtomicBool,
+    /// Original (x,y) of the main window when it was parked off-screen for an inline
+    /// transform (only set when the window was hidden); restored afterwards.
+    pub inline_saved_pos: Mutex<Option<(i32, i32)>>,
 }
 
 // ============================ COMMANDS ============================
 
 /// Brings the app to the front with the copied text already in the Instructions field.
 /// Shared by the hotkey, the toast click and the tray click.
+/// Main hotkey / toast "Open" / tray: open the HOME (builder) with the clipboard text
+/// in the description field. Nothing auto-opens or auto-sends: the user picks
+/// recipe/provider from there. (Per-recipe hotkeys do the inline transform instead.)
 #[tauri::command]
 fn accept_clipboard(app: AppHandle) -> Result<(), String> {
     let clipboard = app.state::<Clipboard>();
     let text = clipboard.read_text().unwrap_or_default();
 
-    // Neutra con "Auto-invio" OFF: apri SOLO Kotodama (builder) per editare il testo;
-    // niente apertura provider ne' invio. Le altre ricette / Neutra ON: processa e apri il provider.
-    let edit_in_builder = {
-        let st = app.state::<AppState>();
-        let g = st.settings.lock().unwrap();
-        g.recipe == "key:neutral" && !g.neutral_autosend
-    };
-
     if let Some(main) = app.get_window("main") {
         browser::park_provider(&main);
         bring_to_front(&main);
         let _ = main.emit("app://provider-closed", ());
-        if edit_in_builder {
-            if !text.trim().is_empty() {
-                let _ = main.emit("app://fill-clipboard", text); // solo builder, nessun provider
-            }
-        } else {
-            let _ = main.emit("app://insert-clipboard", text);
+        if !text.trim().is_empty() {
+            let _ = main.emit("app://fill-clipboard", text);
         }
     }
     toast::hide(&app);
@@ -131,6 +132,72 @@ fn win_show(hwnd_raw: isize, show: bool) {
     unsafe {
         let hwnd = HWND(hwnd_raw as *mut core::ffi::c_void);
         let _ = ShowWindow(hwnd, if show { SW_SHOW } else { SW_HIDE });
+    }
+}
+
+/// Inline transform: WebView2 won't load a webview added to a hidden (SW_HIDE) window.
+/// So we show the host window FAR OFF-SCREEN and NOT ACTIVATED (focus stays on the app
+/// the user is typing in) just long enough to run the hidden provider call, then hide it
+/// back. Returns the original (x,y) so we can restore it (the tray-reopen relies on it).
+#[cfg(windows)]
+fn win_park_offscreen(hwnd_raw: isize) -> (i32, i32) {
+    use windows::Win32::Foundation::{HWND, RECT};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetWindowRect, SetWindowPos, HWND_BOTTOM, SWP_NOACTIVATE, SWP_NOSIZE, SWP_SHOWWINDOW,
+    };
+    unsafe {
+        let hwnd = HWND(hwnd_raw as *mut core::ffi::c_void);
+        let mut r = RECT::default();
+        let _ = GetWindowRect(hwnd, &mut r);
+        // move to (32000,32000): beyond any monitor, shown without stealing focus
+        let _ = SetWindowPos(hwnd, Some(HWND_BOTTOM), 32000, 32000, 0, 0,
+            SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        (r.left, r.top)
+    }
+}
+
+/// Hide the off-screen host window again and restore its real position (while hidden), so a
+/// later tray-reopen shows it where it was.
+#[cfg(windows)]
+fn win_unpark_hide(hwnd_raw: isize, x: i32, y: i32) {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SetWindowPos, ShowWindow, HWND_BOTTOM, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER, SW_HIDE,
+    };
+    unsafe {
+        let hwnd = HWND(hwnd_raw as *mut core::ffi::c_void);
+        let _ = ShowWindow(hwnd, SW_HIDE);
+        let _ = SetWindowPos(hwnd, Some(HWND_BOTTOM), x, y, 0, 0,
+            SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+    }
+}
+
+/// If the main window was hidden, park it off-screen so the inline provider webview loads,
+/// remembering the position to restore on `inline_restore_window`.
+fn inline_park_window(app: &AppHandle) {
+    #[cfg(windows)]
+    if let Some(main) = app.get_window("main") {
+        let visible = main.is_visible().unwrap_or(true);
+        debug::log(format!("inline_park_window: main visible={visible}"));
+        if !visible {
+            if let Ok(h) = main.hwnd() {
+                let pos = win_park_offscreen(h.0 as isize);
+                *app.state::<AppState>().inline_saved_pos.lock().unwrap() = Some(pos);
+            }
+        }
+    }
+}
+
+/// Undo `inline_park_window` (hide + restore position). No-op if the window was visible.
+fn inline_restore_window(app: &AppHandle) {
+    #[cfg(windows)]
+    {
+        let pos = app.state::<AppState>().inline_saved_pos.lock().unwrap().take();
+        if let (Some((x, y)), Some(main)) = (pos, app.get_window("main")) {
+            if let Ok(h) = main.hwnd() {
+                win_unpark_hide(h.0 as isize, x, y);
+            }
+        }
     }
 }
 
@@ -236,12 +303,11 @@ fn set_settings(app: AppHandle, settings: Settings) -> Result<Settings, String> 
         let _ = w.set_always_on_top(settings.always_on_top);
     }
 
-    // Register the requested hotkey; if it is not registrable on this platform,
-    // use the fallback that is actually active, so disk and UI stay faithful.
+    // Register the whole shortcut set (main hotkey with fallback + per-recipe ones);
+    // the effective state (fallback applied, conflicting entries dropped) is what
+    // gets stored and returned, so disk and UI stay faithful.
     let mut final_settings = settings;
-    if let Some(active) = register_hotkey(&app, &final_settings.hotkey) {
-        final_settings.hotkey = active;
-    }
+    register_hotkeys(&app, &mut final_settings);
 
     // In-memory state = source of truth; a SINGLE save to disk, in the
     // background, so the UI thread doesn't block on I/O.
@@ -256,7 +322,7 @@ fn set_settings(app: AppHandle, settings: Settings) -> Result<Settings, String> 
 /// the hotkey or touching autostart: called often (tile click, recipe change…),
 /// it must be lightweight. The in-memory state remains the source of truth.
 #[tauri::command]
-fn save_ui_state(app: AppHandle, provider: String, recipe: String, length: u32, tone: u32) {
+fn save_ui_state(app: AppHandle, provider: String, recipe: String, length: u32, tone: u32, resp_fmt: u32) {
     let snapshot = {
         let state = app.state::<AppState>();
         let mut g = state.settings.lock().unwrap();
@@ -264,6 +330,7 @@ fn save_ui_state(app: AppHandle, provider: String, recipe: String, length: u32, 
         g.recipe = recipe;
         g.length = length;
         g.tone = tone;
+        g.resp_fmt = resp_fmt;
         g.clone()
     };
     save_settings_bg(&app, snapshot);
@@ -294,6 +361,18 @@ fn get_recipes(app: AppHandle) -> Vec<settings::Recipe> {
 #[tauri::command]
 fn save_recipes(app: AppHandle, recipes: Vec<settings::Recipe>) -> Result<(), String> {
     settings::save_recipes(&app, &recipes)
+}
+
+/// Returns the saved Kotodama meta-chat sessions (opaque JSON, owned by the frontend).
+#[tauri::command]
+fn get_kotodama_sessions(app: AppHandle) -> serde_json::Value {
+    settings::load_kt_sessions(&app)
+}
+
+/// Saves the Kotodama meta-chat sessions.
+#[tauri::command]
+fn save_kotodama_sessions(app: AppHandle, sessions: serde_json::Value) -> Result<(), String> {
+    settings::save_kt_sessions(&app, &sessions)
 }
 
 /// Returns the custom fields.
@@ -338,8 +417,151 @@ fn apply_autostart(app: &AppHandle, enabled: bool) {
 /// the requested hotkey (e.g. Ctrl+<) works and these are not used.
 const HOTKEY_FALLBACKS: &[&str] = &["Control+Backslash", "Control+Backquote", "Control+Shift+Space"];
 
+/// Simulated Ctrl+C / Ctrl+V for the INLINE transform. Before injecting the combo we
+/// RELEASE the physical modifiers still held from the user's hotkey (Alt/Shift/Win),
+/// or the target app would see e.g. Ctrl+Alt+C instead of Ctrl+C.
+#[cfg(windows)]
+fn send_combo(vk_letter: u16) {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS,
+        KEYEVENTF_KEYUP, VIRTUAL_KEY, VK_CONTROL, VK_LWIN, VK_MENU, VK_SHIFT,
+    };
+    fn key(vk: VIRTUAL_KEY, up: bool) -> INPUT {
+        INPUT {
+            r#type: INPUT_KEYBOARD,
+            Anonymous: INPUT_0 {
+                ki: KEYBDINPUT {
+                    wVk: vk,
+                    wScan: 0,
+                    dwFlags: if up { KEYEVENTF_KEYUP } else { KEYBD_EVENT_FLAGS(0) },
+                    time: 0,
+                    dwExtraInfo: 0,
+                },
+            },
+        }
+    }
+    let vk = VIRTUAL_KEY(vk_letter);
+    let inputs = [
+        // release any held modifiers from the user's shortcut
+        key(VK_MENU, true),
+        key(VK_SHIFT, true),
+        key(VK_LWIN, true),
+        // Ctrl+<letter>
+        key(VK_CONTROL, false),
+        key(vk, false),
+        key(vk, true),
+        key(VK_CONTROL, true),
+    ];
+    unsafe {
+        SendInput(&inputs, std::mem::size_of::<windows::Win32::UI::Input::KeyboardAndMouse::INPUT>() as i32);
+    }
+}
+#[cfg(not(windows))]
+fn send_combo(_vk_letter: u16) {}
+
+const VK_C: u16 = 0x43;
+const VK_V: u16 = 0x56;
+
+/// Per-recipe hotkey -> INLINE transform: copy the selection from the focused app,
+/// show the "processing" toast, and hand text+recipe to the frontend (hidden webview
+/// gateway). The answer comes back via `inline_finish`/`inline_fail`, which paste it
+/// where the user was typing. Nothing is brought to the foreground.
+fn inline_transform(app: AppHandle, recipe: String) {
+    let state = app.state::<AppState>();
+    if state.inline_busy.swap(true, Ordering::SeqCst) {
+        return; // one transform at a time
+    }
+    state.inline_suppress_toast.store(true, Ordering::SeqCst);
+    std::thread::spawn(move || {
+        // let the user release the hotkey keys before we inject Ctrl+C
+        std::thread::sleep(std::time::Duration::from_millis(220));
+        let before = app.state::<Clipboard>().read_text().unwrap_or_default();
+        send_combo(VK_C);
+        // wait for the OS copy to land (retry: some apps are slow)
+        let mut text = String::new();
+        for _ in 0..8 {
+            std::thread::sleep(std::time::Duration::from_millis(150));
+            let now = app.state::<Clipboard>().read_text().unwrap_or_default();
+            if !now.trim().is_empty() && now != before {
+                text = now;
+                break;
+            }
+        }
+        if text.trim().is_empty() {
+            // nothing NEW copied: fall back to the existing clipboard text if any
+            text = before;
+        }
+        if text.trim().is_empty() {
+            toast::show_state(&app, "error", "empty");
+            let st = app.state::<AppState>();
+            st.inline_busy.store(false, Ordering::SeqCst);
+            st.inline_suppress_toast.store(false, Ordering::SeqCst);
+            return;
+        }
+        debug::log(format!("inline_transform recipe={recipe} len={}", text.len()));
+        // WebView2 won't load a webview on a hidden window: park the host off-screen first.
+        inline_park_window(&app);
+        // the frontend shows the localized "processing <recipe>" toast and dispatches
+        if let Some(main) = app.get_window("main") {
+            let _ = main.emit(
+                "app://inline-transform",
+                serde_json::json!({ "text": text, "recipe": recipe }),
+            );
+        }
+        // safety: if no answer ever comes back, release the flags after 240s
+        let app2 = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(240));
+            let st = app2.state::<AppState>();
+            if st.inline_busy.load(Ordering::SeqCst) {
+                st.inline_busy.store(false, Ordering::SeqCst);
+                st.inline_suppress_toast.store(false, Ordering::SeqCst);
+                inline_restore_window(&app2);
+                toast::hide(&app2);
+            }
+        });
+    });
+}
+
+/// Frontend -> show a localized inline-transform toast state.
+#[tauri::command]
+fn inline_toast(app: AppHandle, mode: String, label: String) {
+    toast::show_state(&app, &mode, &label);
+}
+
+/// Inline transform answer arrived: put it in the clipboard (self-marked) and paste it
+/// into the input the user copied from.
+#[tauri::command]
+fn inline_finish(app: AppHandle, text: String) -> Result<(), String> {
+    *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(text.clone());
+    app.state::<Clipboard>()
+        .write_text(text)
+        .map_err(|e| e.to_string())?;
+    std::thread::spawn(move || {
+        inline_restore_window(&app); // hide the off-screen host again before pasting
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        send_combo(VK_V);
+        toast::show_state(&app, "done", "");
+        let st = app.state::<AppState>();
+        st.inline_busy.store(false, Ordering::SeqCst);
+        st.inline_suppress_toast.store(false, Ordering::SeqCst);
+    });
+    Ok(())
+}
+
+/// Inline transform failed: error toast + release the flags.
+#[tauri::command]
+fn inline_fail(app: AppHandle, reason: String) {
+    toast::show_state(&app, "error", &reason);
+    inline_restore_window(&app);
+    let st = app.state::<AppState>();
+    st.inline_busy.store(false, Ordering::SeqCst);
+    st.inline_suppress_toast.store(false, Ordering::SeqCst);
+}
+
 /// Tries to register a single accelerator. `true` on success.
-fn try_register_hotkey(app: &AppHandle, accel: &str) -> bool {
+/// `recipe = None` -> main hotkey (default-recipe flow); `Some(r)` -> forces recipe `r`.
+fn try_register_hotkey(app: &AppHandle, accel: &str, recipe: Option<String>) -> bool {
     use std::str::FromStr;
     use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -350,24 +572,27 @@ fn try_register_hotkey(app: &AppHandle, accel: &str) -> bool {
     app.global_shortcut()
         .on_shortcut(shortcut, move |_app, _sc, event| {
             if event.state() == ShortcutState::Pressed {
-                let _ = accept_clipboard(handle.clone());
+                match &recipe {
+                    // per-recipe hotkey: INLINE transform (copy -> process -> paste back)
+                    Some(r) => inline_transform(handle.clone(), r.clone()),
+                    None => {
+                        let _ = accept_clipboard(handle.clone());
+                    }
+                }
             }
         })
         .is_ok()
 }
 
-/// (Re)registers the global hotkey with per-platform fallbacks.
-/// Returns the accelerator ACTUALLY registered (so UI/toast stay faithful),
-/// or `None` if none is registrable (the toast/tray fallback remains).
+/// Registers the MAIN hotkey with per-platform fallbacks (no unregister here: the caller
+/// `register_hotkeys` clears everything first). Returns the accelerator ACTUALLY
+/// registered, or `None` if none is registrable (the toast/tray fallback remains).
 fn register_hotkey(app: &AppHandle, accel: &str) -> Option<String> {
-    use tauri_plugin_global_shortcut::GlobalShortcutExt;
-    let _ = app.global_shortcut().unregister_all();
-
     let mut candidates: Vec<&str> = vec![accel];
     candidates.extend(HOTKEY_FALLBACKS.iter().copied().filter(|f| *f != accel));
 
     for cand in candidates {
-        if try_register_hotkey(app, cand) {
+        if try_register_hotkey(app, cand, None) {
             if cand != accel {
                 eprintln!("[hotkey] '{accel}' non registrabile su questa piattaforma; uso '{cand}'");
             }
@@ -378,18 +603,37 @@ fn register_hotkey(app: &AppHandle, accel: &str) -> Option<String> {
     None
 }
 
-/// Registers the hotkey and, if a fallback was used, persists the real one.
-fn register_and_persist_hotkey(app: &AppHandle, requested: &str) {
-    if let Some(active) = register_hotkey(app, requested) {
-        if active != requested {
-            let state = app.state::<AppState>();
-            let snapshot = {
-                let mut g = state.settings.lock().unwrap();
-                g.hotkey = active;
-                g.clone()
-            };
-            let _ = settings::save(app, &snapshot);
+/// (Re)registers ALL global shortcuts: one `unregister_all`, then the main hotkey
+/// (fallback chain) and one shortcut per recipe entry. Mutates `s` to the EFFECTIVE
+/// state: main hotkey possibly replaced by a fallback, unregistrable/conflicting
+/// recipe entries DROPPED (duplicate accelerators fail to register -> discarded).
+fn register_hotkeys(app: &AppHandle, s: &mut Settings) {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+    let _ = app.global_shortcut().unregister_all();
+    if let Some(active) = register_hotkey(app, &s.hotkey) {
+        s.hotkey = active;
+    }
+    s.recipe_hotkeys.retain(|recipe, accel| {
+        let ok = !accel.is_empty() && try_register_hotkey(app, accel, Some(recipe.clone()));
+        if !ok {
+            eprintln!("[hotkey] scorciatoia ricetta scartata: {recipe} = '{accel}'");
         }
+        ok
+    });
+}
+
+/// Startup registration: applies the whole shortcut set and, if the effective state
+/// differs from what was on disk (fallback main hotkey / dropped recipe entries),
+/// persists the real one.
+fn register_and_persist_hotkeys(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    let mut snapshot = state.settings.lock().unwrap().clone();
+    let before = (snapshot.hotkey.clone(), snapshot.recipe_hotkeys.clone());
+    register_hotkeys(app, &mut snapshot);
+    let changed = before != (snapshot.hotkey.clone(), snapshot.recipe_hotkeys.clone());
+    *state.settings.lock().unwrap() = snapshot.clone();
+    if changed {
+        let _ = settings::save(app, &snapshot);
     }
 }
 
@@ -566,6 +810,9 @@ pub fn run() {
             open_item: Mutex::new(None),
             quit_item: Mutex::new(None),
             menu_labels: Mutex::new(browser::MenuLabels::default()),
+            inline_busy: AtomicBool::new(false),
+            inline_suppress_toast: AtomicBool::new(false),
+            inline_saved_pos: Mutex::new(None),
         })
         // App-level menu events: the provider's native context menu (browser.rs) puts
         // "Switch provider" items with ids "sw:<key>:<send|paste>". Copy/Cut/Paste/Select-all
@@ -583,7 +830,7 @@ pub fn run() {
             if id == "copy_url" {
                 // Right-click "Copy URL": copy the provider webview's current URL to the clipboard
                 // (ignore-self marker set so the clipboard monitor doesn't pop a toast for it).
-                if let Some(pv) = app.get_webview(browser::PROVIDER_LABEL) {
+                if let Some(pv) = browser::active_webview(app) {
                     if let Ok(url) = pv.url() {
                         let s = url.to_string();
                         *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(s.clone());
@@ -677,9 +924,9 @@ pub fn run() {
                 save_settings_bg(&handle, snapshot);
             }
 
-            // Clipboard monitor + hotkey (with per-platform fallback).
+            // Clipboard monitor + hotkeys (main with per-platform fallback + per-recipe set).
             clipboard::start(&handle);
-            register_and_persist_hotkey(&handle, &loaded.hotkey);
+            register_and_persist_hotkeys(&handle);
 
             // DEBUG-only: auto-open a provider a few seconds after start, via the
             // real JS path (like a double-click), so the debug tool can reproduce
@@ -702,6 +949,14 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             browser::open_provider_view,
+            browser::show_provider_tab,
+            kotodama::kotodama_broadcast,
+            kotodama::kotodama_cancel,
+            get_kotodama_sessions,
+            save_kotodama_sessions,
+            inline_toast,
+            inline_finish,
+            inline_fail,
             browser::close_provider_view,
             browser::set_provider_top_extra,
             browser::provider_reload,

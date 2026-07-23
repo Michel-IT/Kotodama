@@ -27,6 +27,14 @@ pub fn start(app: &AppHandle) {
 fn on_update(app: &AppHandle) {
     let state = app.state::<AppState>();
 
+    // Inline transform in progress: the simulated Ctrl+C is not a user copy -> no toast.
+    if state
+        .inline_suppress_toast
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        return;
+    }
+
     // Monitor disabled in the settings?
     if !state.settings.lock().unwrap().monitor_enabled {
         return;
