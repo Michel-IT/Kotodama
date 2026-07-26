@@ -172,6 +172,52 @@ fn win_unpark_hide(hwnd_raw: isize, x: i32, y: i32) {
     }
 }
 
+/// macOS: move the window FAR off-screen and order it front WITHOUT activating. WKWebView throttles
+/// (pauses timers / streaming) when its window is miniaturized or occluded, so the provider answer
+/// never appears while the window is hidden. Kept off-screen it stays invisible and never steals
+/// focus (the paste still lands in the user's app), but the webview runs at full speed. Main-thread
+/// only (AppKit). Returns the old origin.
+#[cfg(target_os = "macos")]
+unsafe fn mac_park(ns_window: *mut core::ffi::c_void) -> (f64, f64) {
+    use objc2_app_kit::NSWindow;
+    use objc2_foundation::NSPoint;
+    let win: &NSWindow = &*(ns_window as *const NSWindow);
+    let f = win.frame();
+    let orig = (f.origin.x, f.origin.y);
+    if win.isMiniaturized() {
+        win.deminiaturize(None);
+    }
+    win.setFrameOrigin(NSPoint { x: -30000.0, y: -30000.0 });
+    win.orderFrontRegardless();
+    orig
+}
+
+/// macOS: stop a WKWebView from throttling/pausing when its window is occluded or off-screen.
+/// The provider webviews are parked off-screen and the host window is often minimized during the
+/// inline transform, so WebKit's occlusion detection would freeze their JS timers AND the streaming
+/// render of the provider's answer (it never reaches `done`). `_setWindowOcclusionDetectionEnabled:`
+/// is a long-standing private WKWebView selector; best-effort (ignored if it ever goes away).
+#[cfg(target_os = "macos")]
+pub(crate) fn mac_disable_occlusion<R: tauri::Runtime>(webview: &tauri::Webview<R>) {
+    let _ = webview.with_webview(|pw| unsafe {
+        use objc2::msg_send;
+        let wk: *mut objc2::runtime::AnyObject = pw.inner().cast();
+        if !wk.is_null() {
+            let _: () = msg_send![wk, _setWindowOcclusionDetectionEnabled: false];
+        }
+    });
+}
+
+/// macOS: restore the window origin and hide it again (order out).
+#[cfg(target_os = "macos")]
+unsafe fn mac_unpark(ns_window: *mut core::ffi::c_void, x: f64, y: f64) {
+    use objc2_app_kit::NSWindow;
+    use objc2_foundation::NSPoint;
+    let win: &NSWindow = &*(ns_window as *const NSWindow);
+    win.setFrameOrigin(NSPoint { x, y });
+    win.orderOut(None);
+}
+
 /// If the main window was hidden, park it off-screen so the inline provider webview loads,
 /// remembering the position to restore on `inline_restore_window`.
 fn inline_park_window(app: &AppHandle) {
@@ -186,6 +232,29 @@ fn inline_park_window(app: &AppHandle) {
             }
         }
     }
+    #[cfg(target_os = "macos")]
+    if let Some(main) = app.get_window("main") {
+        let visible = main.is_visible().unwrap_or(true);
+        let minimized = main.is_minimized().unwrap_or(false);
+        debug::log(format!("inline_park_window(mac): visible={visible} minimized={minimized}"));
+        if !visible || minimized {
+            // AppKit must run on the main thread; block briefly so the webview is un-throttled
+            // BEFORE we dispatch the provider request.
+            let app2 = app.clone();
+            let (tx, rx) = std::sync::mpsc::channel();
+            let _ = app.run_on_main_thread(move || {
+                if let Some(w) = app2.get_window("main") {
+                    if let Ok(ptr) = w.ns_window() {
+                        let (x, y) = unsafe { mac_park(ptr) };
+                        *app2.state::<AppState>().inline_saved_pos.lock().unwrap() =
+                            Some((x as i32, y as i32));
+                    }
+                }
+                let _ = tx.send(());
+            });
+            let _ = rx.recv_timeout(std::time::Duration::from_millis(600));
+        }
+    }
 }
 
 /// Undo `inline_park_window` (hide + restore position). No-op if the window was visible.
@@ -197,6 +266,20 @@ fn inline_restore_window(app: &AppHandle) {
             if let Ok(h) = main.hwnd() {
                 win_unpark_hide(h.0 as isize, x, y);
             }
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let pos = app.state::<AppState>().inline_saved_pos.lock().unwrap().take();
+        if let Some((x, y)) = pos {
+            let app2 = app.clone();
+            let _ = app.run_on_main_thread(move || {
+                if let Some(w) = app2.get_window("main") {
+                    if let Ok(ptr) = w.ns_window() {
+                        unsafe { mac_unpark(ptr, x as f64, y as f64) };
+                    }
+                }
+            });
         }
     }
 }
@@ -456,8 +539,70 @@ fn send_combo(vk_letter: u16) {
         SendInput(&inputs, std::mem::size_of::<windows::Win32::UI::Input::KeyboardAndMouse::INPUT>() as i32);
     }
 }
-#[cfg(not(windows))]
+/// macOS: synthesize Cmd+C / Cmd+V via CGEvent. macOS uses the COMMAND modifier (not Control) for
+/// copy/paste. Requires the app to hold Accessibility permission (see `ax_is_trusted`), else the
+/// posted events are silently dropped by the OS. We also release any stray Control/Option/Shift
+/// still held from the user's hotkey so the target app sees a clean Cmd+<letter>.
+#[cfg(target_os = "macos")]
+fn send_combo(vk_letter: u16) {
+    use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGKeyCode};
+    use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
+    // Windows VK -> macOS virtual keycode (kVK_ANSI_C = 8, kVK_ANSI_V = 9, kVK_Command = 0x37).
+    let keycode: CGKeyCode = match vk_letter {
+        VK_C => 8,
+        VK_V => 9,
+        _ => return,
+    };
+    const K_CMD: CGKeyCode = 0x37;
+    let src = match CGEventSource::new(CGEventSourceStateID::CombinedSessionState) {
+        Ok(s) => s,
+        Err(_) => return,
+    };
+    let post = |kc: CGKeyCode, down: bool, cmd: bool| {
+        if let Ok(ev) = CGEvent::new_keyboard_event(src.clone(), kc, down) {
+            if cmd {
+                ev.set_flags(CGEventFlags::CGEventFlagCommand);
+            }
+            ev.post(CGEventTapLocation::HID);
+        }
+    };
+    // 1) release the hotkey's own modifiers (control=0x3B, option=0x3A, shift=0x38) still held, so
+    //    the app doesn't see e.g. Ctrl+Opt+Cmd+C instead of a clean Cmd+C.
+    post(0x3B, false, false);
+    post(0x3A, false, false);
+    post(0x38, false, false);
+    // 2) an EXPLICIT Command key press around the letter (real modifier events, not just the flag)
+    //    — more robust than the flag alone across apps.
+    post(K_CMD, true, true);
+    post(keycode, true, true);
+    post(keycode, false, true);
+    post(K_CMD, false, false);
+}
+#[cfg(all(not(windows), not(target_os = "macos")))]
 fn send_combo(_vk_letter: u16) {}
+
+/// macOS Accessibility trust check. With `prompt=true` the system shows the "allow Accessibility"
+/// dialog and adds the app to the list the FIRST time; once granted it just returns true. Synthetic
+/// key events (send_combo) do nothing until this is granted — that was a hidden cause of the inline
+/// transform failing on macOS.
+#[cfg(target_os = "macos")]
+fn ax_is_trusted(prompt: bool) -> bool {
+    use core_foundation::base::TCFType;
+    use core_foundation::boolean::CFBoolean;
+    use core_foundation::dictionary::{CFDictionary, CFDictionaryRef};
+    use core_foundation::string::{CFString, CFStringRef};
+    #[link(name = "ApplicationServices", kind = "framework")]
+    extern "C" {
+        fn AXIsProcessTrustedWithOptions(options: CFDictionaryRef) -> bool;
+        static kAXTrustedCheckOptionPrompt: CFStringRef;
+    }
+    unsafe {
+        let key = CFString::wrap_under_get_rule(kAXTrustedCheckOptionPrompt);
+        let val = CFBoolean::from(prompt);
+        let dict = CFDictionary::from_CFType_pairs(&[(key.as_CFType(), val.as_CFType())]);
+        AXIsProcessTrustedWithOptions(dict.as_concrete_TypeRef())
+    }
+}
 
 const VK_C: u16 = 0x43;
 const VK_V: u16 = 0x56;
@@ -473,25 +618,46 @@ fn inline_transform(app: AppHandle, recipe: String) {
     }
     state.inline_suppress_toast.store(true, Ordering::SeqCst);
     std::thread::spawn(move || {
-        // let the user release the hotkey keys before we inject Ctrl+C
-        std::thread::sleep(std::time::Duration::from_millis(220));
+        // let the user release the hotkey keys before we inject the copy combo (on macOS a still-held
+        // Ctrl/Opt would pollute the synthetic Cmd+C), then copy.
+        std::thread::sleep(std::time::Duration::from_millis(350));
+        // macOS: synthetic key events do nothing without Accessibility permission -> the copy would
+        // silently yield an empty clipboard ("Niente da copiare"). Gate on it and give a clear
+        // message (prompting the system dialog the first time) instead of the misleading error.
+        #[cfg(target_os = "macos")]
+        {
+            if !ax_is_trusted(true) {
+                debug::log("inline_transform: macOS Accessibility not granted");
+                toast::show_state(&app, "error", "accessibility");
+                let st = app.state::<AppState>();
+                st.inline_busy.store(false, Ordering::SeqCst);
+                st.inline_suppress_toast.store(false, Ordering::SeqCst);
+                return;
+            }
+        }
         let before = app.state::<Clipboard>().read_text().unwrap_or_default();
         send_combo(VK_C);
-        // wait for the OS copy to land (retry: some apps are slow)
+        // wait for the OS copy to land (retry: some apps are slow). A FRESH copy = the clipboard
+        // changed to a non-empty value; if it never changes, the selection wasn't captured.
         let mut text = String::new();
+        let mut fresh = false;
         for _ in 0..8 {
             std::thread::sleep(std::time::Duration::from_millis(150));
             let now = app.state::<Clipboard>().read_text().unwrap_or_default();
             if !now.trim().is_empty() && now != before {
                 text = now;
+                fresh = true;
                 break;
             }
         }
-        if text.trim().is_empty() {
-            // nothing NEW copied: fall back to the existing clipboard text if any
-            text = before;
-        }
-        if text.trim().is_empty() {
+        debug::log(format!(
+            "inline copy: before_len={} fresh={} text_len={}",
+            before.chars().count(), fresh, text.chars().count()
+        ));
+        // INLINE must transform the CURRENT selection, never a stale clipboard: if the copy produced
+        // nothing new, tell the user to select text (immediate, clear) instead of silently reusing
+        // the old clipboard or hanging on a processing spinner.
+        if !fresh {
             toast::show_state(&app, "error", "empty");
             let st = app.state::<AppState>();
             st.inline_busy.store(false, Ordering::SeqCst);
@@ -941,6 +1107,38 @@ pub fn run() {
                         let _ = main.eval(format!(
                             "window.openProviderDirect && openProviderDirect('{which}')"
                         ));
+                    });
+                }
+            }
+
+            // DEBUG-only: auto-open each KOTO_AUTOPROBE=<key[,key...]> provider's compose page in
+            // turn (spaced out) so on_page_finished can inject the INCOG discovery probe on each.
+            if let Ok(list) = std::env::var("KOTO_AUTOPROBE") {
+                if let Some(main) = handle.get_webview_window("main") {
+                    let keys: Vec<String> = list.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+                    std::thread::spawn(move || {
+                        for (i, k) in keys.iter().enumerate() {
+                            std::thread::sleep(std::time::Duration::from_millis(7000 + (i as u64) * 14000));
+                            debug::log(format!("auto-probe open: {k}"));
+                            let _ = main.eval(format!("window.openProviderDirect && openProviderDirect('{k}')"));
+                        }
+                    });
+                }
+            }
+
+            // DEBUG-only: auto-fire a Kotodama broadcast to one provider with the incognito path
+            // engaged, so the dev loop can validate the temp toggle from logs without UI. Set
+            // KOTO_AUTOKOTO=<provider key> (e.g. anthropic). Fires once ~8s after start.
+            if let Ok(list) = std::env::var("KOTO_AUTOKOTO") {
+                if let Some(main) = handle.get_webview_window("main") {
+                    let keys: Vec<String> = if list.is_empty() { vec!["anthropic".to_string()] }
+                        else { list.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect() };
+                    std::thread::spawn(move || {
+                        for (i, k) in keys.iter().enumerate() {
+                            std::thread::sleep(std::time::Duration::from_millis(if i == 0 { 8000 } else { 24000 }));
+                            debug::log(format!("auto-kotodama broadcast: {k}"));
+                            let _ = main.eval(format!("window.__ktAutoTest && __ktAutoTest('{k}')"));
+                        }
                     });
                 }
             }

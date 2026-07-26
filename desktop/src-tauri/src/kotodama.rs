@@ -153,8 +153,11 @@ const HARVEST_JS: &str = r##"
     }
     return t;
   }
+  // "Still generating?" - LANGUAGE-INDEPENDENT (no localized aria-label text). Uses the
+  // per-provider BUSY_SEL (data-* attrs) + neutral streaming markers. NB: this only speeds
+  // up completion; the reliable, language-independent signal is text STABILITY (below).
   function isBusy(){
-    var sels = [BUSY_SEL, 'button[aria-label*="stop" i]', '[data-testid*="stop" i]'];
+    var sels = [BUSY_SEL, '[data-testid*="stop" i]', '[data-is-streaming="true"]', '[class*="result-streaming" i]', '[class*="is-streaming" i]'];
     for (var i=0;i<sels.length;i++){
       if (!sels[i]) continue;
       try {
@@ -264,39 +267,73 @@ const HARVEST_JS: &str = r##"
 })();
 "##;
 
-/// Providers whose temporary/anonymous chat is activated by CLICKING a control in page
-/// (found via TEMP_PROBE logs): key -> case-insensitive regex matched against the visible
-/// buttons' aria-label/title/text. ChatGPT uses the URL param instead (frontend).
-/// NB: Claude ("anthropic", "incognito") DISABILITATO per ora: il click fa ricaricare la
-/// pagina (e al primo uso mostra una conferma), uccidendo il flusso di invio -> sendfail.
-/// Va reimplementato come sequenza: click -> attesa reload -> conferma -> poi fill.
-const TEMP_TOGGLES: &[(&str, &str)] = &[];
+/// Two language-INDEPENDENT strategies for a provider's incognito/temporary chat:
+///  - URL: incognito is addressable via a query param (Claude `/new?incognito=`) -> handled in the
+///    frontend (`ktBaseUrlFor` sets it as the base when temp is enabled). PREFERRED: no DOM, no
+///    click, no reload race, works in every UI language. Discover a provider's param from the URL
+///    its own toggle produces (visible in the `page_finished` debug log).
+///  - Click: only for providers with NO incognito URL -> a purpose-built in-page trigger returned
+///    here, holding the fill (`__ktHoldFill`) until it activates.
+/// Distinctive signature of a provider's incognito/private toggle ICON, captured via the INCOG-DUMP
+/// probe. Matched language-INDEPENDENTLY by `temp_click_js`: either a substring of an inline
+/// `<path d>` (Grok) or a substring of a sprite `<use href="#icon-id">` (Perplexity/Qwen) — both
+/// are code constants, identical in every UI language.
+const GROK_PRIVATE_SVG: &str = "5.562148571014404,-0.8140220046"; // ghost <path d>
+const PERPLEXITY_INCOG_SVG: &str = "pplx-icon-spy";               // <use href="#pplx-icon-spy">
+const QWEN_TEMP_SVG: &str = "icon-line-private-chat-01";          // <use href="#icon-line-private-chat-01">
+const GEMINI_TEMP_SVG: &str = "gemini_chat_temp";                // <mat-icon data-mat-icon-name="gemini_chat_temp">
 
-/// Clicks the provider's temporary-chat toggle BEFORE the fill runs: sets `__ktHoldFill`
-/// (the fill loop waits on it) until the toggle is clicked or ~6s pass. One click only.
-const TEMP_CLICK_JS: &str = r##"
-(function(){
-  var RX;
-  try { RX = new RegExp(__kt_temp_rx, 'i'); } catch(e){ return; }
-  window.__ktHoldFill = true;
-  var t0 = Date.now();
-  var iv = setInterval(function(){
-    var done = false;
-    try {
-      var els = document.querySelectorAll('button,[role="menuitem"],[role="switch"],[role="menuitemcheckbox"]');
-      for (var i=0;i<els.length;i++){
-        var e = els[i]; if (e.offsetParent === null) continue;
-        var s = ((e.getAttribute('aria-label')||'')+' '+(e.getAttribute('title')||'')+' '+(e.textContent||'')).toLowerCase();
-        if (RX.test(s)) { try { e.click(); } catch(err){} done = true; break; }
-      }
-    } catch(err){}
-    if (done || Date.now()-t0 > 6000) {
-      clearInterval(iv);
-      setTimeout(function(){ window.__ktHoldFill = false; }, 600);  // let the UI settle, then fill
+fn temp_trigger_js(key: &str) -> Option<String> {
+    match key {
+        // anthropic (Claude): URL-based, see ktBaseUrlFor. The others have NO incognito URL, so we
+        // click their toggle by its ICON. The frontend loads the compose page (drops ?q= where
+        // present) when temp is on so the toggle can be clicked before fill+send.
+        "grok" => Some(temp_click_js(GROK_PRIVATE_SVG)),         // "Passa alla chat privata" ghost
+        "perplexity" => Some(temp_click_js(PERPLEXITY_INCOG_SVG)), // "Usa in incognito" spy icon
+        "qwen" => Some(temp_click_js(QWEN_TEMP_SVG)),           // "Temporary Chat" toggle
+        "gemini" => Some(temp_click_js(GEMINI_TEMP_SVG)),       // "Chat temporanea" mat-icon
+        _ => None,
     }
-  }, 400);
-})();
-"##;
+}
+
+/// Clicks a provider's incognito/temporary toggle, found by its ICON (`<path d>` prefix) —
+/// language-INDEPENDENT: the icon is identical in every UI language, so we never touch the
+/// localized aria-label. `.closest()` walks up to the clickable ancestor. Holds the fill until the
+/// click lands (+ a safety release); if the click reloads the page, the resume script fills+sends
+/// in the new (incognito) document. `svg` = a distinctive prefix of the toggle icon's path `d`,
+/// captured via the INCOG-DUMP probe.
+fn temp_click_js(svg: &str) -> String {
+    format!(
+        r##"(function(){{
+  var SVG={svg};
+  window.__ktHoldFill=true;
+  var CLICKABLE='button,a,[role="button"],[role="menuitem"],[role="switch"],[role="menuitemcheckbox"]';
+  function composer(){{ var s=['textarea:not([readonly]):not([aria-hidden="true"])','[contenteditable="true"]','div[role="textbox"]']; for(var i=0;i<s.length;i++){{var e=document.querySelectorAll(s[i]);for(var j=0;j<e.length;j++){{if(e[j].offsetParent!==null)return e[j];}}}} return null; }}
+  function findCtl(){{
+    // (a) inline icon: a <path d> that CONTAINS the signature (Grok's ghost).
+    try{{ var ps=document.querySelectorAll('svg path[d*="'+SVG+'"]'); for(var k=0;k<ps.length;k++){{ var b=ps[k].closest(CLICKABLE); if(b&&b.offsetParent!==null) return b; }} }}catch(e){{}}
+    // (b) sprite icon: a <use href="#icon-id"> whose id CONTAINS the signature (Perplexity/Qwen) —
+    //     the sprite id is a code constant, identical in every UI language.
+    var us=document.querySelectorAll('use');
+    for(var i=0;i<us.length;i++){{ var h=(us[i].getAttribute('href')||us[i].getAttribute('xlink:href')||''); if(h.indexOf(SVG)>-1){{ var bb=us[i].closest(CLICKABLE); if(bb&&bb.offsetParent!==null) return bb; }} }}
+    // (c) Material icon: a [data-mat-icon-name]/[fonticon]/[svgicon] CONTAINING the signature
+    //     (Gemini's Angular <mat-icon>) — also a code constant, language-independent.
+    var mis=document.querySelectorAll('[data-mat-icon-name],[fonticon],[svgicon]');
+    for(var m=0;m<mis.length;m++){{ var nm=(mis[m].getAttribute('data-mat-icon-name')||mis[m].getAttribute('fonticon')||mis[m].getAttribute('svgicon')||''); if(nm.indexOf(SVG)>-1){{ var cc=mis[m].closest(CLICKABLE); if(cc&&cc.offsetParent!==null) return cc; }} }}
+    return null;
+  }}
+  function diag(m){{ try{{ if(window.__ktDiag) window.location.href='https://kotodama.result/?b='+encodeURIComponent(__kt_bid)+'&k='+encodeURIComponent(__kt_key)+'&st=diag&d='+encodeURIComponent(m); }}catch(e){{}} }}
+  var t0=Date.now();
+  var iv=setInterval(function(){{
+    if(!composer()){{ if(Date.now()-t0>12000){{ clearInterval(iv); window.__ktHoldFill=false; diag('TEMPCLICK-NOCOMPOSER'); }} return; }}   // wait hydration
+    var ctl=findCtl();
+    if(ctl){{ clearInterval(iv); try{{ ctl.click(); }}catch(e){{}} diag('TEMPCLICK-OK'); setTimeout(function(){{ window.__ktHoldFill=false; }},1500); return; }}
+    if(Date.now()-t0>9000){{ clearInterval(iv); window.__ktHoldFill=false; diag('TEMPCLICK-NOTFOUND'); }}       // give up: fill anyway
+  }},400);
+}})();"##,
+        svg = serde_json::to_string(svg).unwrap_or_else(|_| "\"\"".into()),
+    )
+}
 
 /// LOG-ONLY probe for the providers' temporary/anonymous-chat toggles: inventories the
 /// visible controls whose label/text mentions temporary/incognito/private and reports them
@@ -304,26 +341,49 @@ const TEMP_CLICK_JS: &str = r##"
 /// these logs (explore live, then codify). Runs only on FRESH injections.
 const TEMP_PROBE_JS: &str = r##"
 (function(){
-  try {
-    setTimeout(function(){
-      var els = document.querySelectorAll('button,[role="menuitem"],[role="switch"],[role="menuitemcheckbox"],a');
-      var hits = [], inv = [];
-      for (var i=0;i<els.length;i++){
-        var e = els[i];
-        var lbl = ((e.getAttribute('aria-label')||'')+'|'+(e.getAttribute('title')||'')+'|'+(e.getAttribute('data-testid')||'')+'|'+((e.textContent||'').trim().slice(0,22))).replace(/\s+/g,' ');
-        var s = lbl.toLowerCase();
-        if (hits.length<6 && /temporan|temporar|incognito|privat|ghost/.test(s)){
-          hits.push(e.tagName+(e.offsetParent===null?'(hid)':'')+':'+lbl.slice(0,50));
+  var RX = /incognito|incógnito|privat|priv[eéèo]|tempora|ephemeral|secret|segret|anonym|ghost|инкогнито|приват|временн|секрет|シークレット|秘密|一時|匿名|隐身|無痕|无痕|临时|臨時|私密|비공개|시크릿|익명|임시|خاص|مؤقت|سري|गुप्त|अस्थायी/i;
+  function labelOf(e){ return (e.getAttribute&&(e.getAttribute('aria-label')||'')+' '+(e.getAttribute('title')||'')||'')+' '+((e.textContent||'').slice(0,40)); }
+  function dump(tag){
+    try {
+      // 1) candidate incognito CONTROLS: full outerHTML (incl. SVG path -> language-neutral icon
+      //    signal) + pressed/checked state, so we can codify an icon/attribute selector.
+      var ctls = document.querySelectorAll('button,a,[role="button"],[role="menuitem"],[role="switch"],[role="menuitemcheckbox"]');
+      var hits = [];
+      for (var i=0;i<ctls.length && hits.length<3;i++){
+        var e = ctls[i];
+        if (!RX.test(labelOf(e))) continue;
+        var st = (e.getAttribute('aria-pressed')||e.getAttribute('aria-checked')||'')+ (e.offsetParent===null?'/HID':'/vis');
+        var svg=e.querySelector('svg'); var pth=svg?svg.querySelector('path'):null;
+        var dsig;
+        if(pth){ dsig='path:'+(pth.getAttribute('d')||'').slice(0,80); }
+        else if(svg){ dsig='svg:'+String(svg.outerHTML||'').replace(/\s+/g,' ').slice(0,170); }
+        else {
+          var mi=e.querySelector('mat-icon,[data-mat-icon-name],[fonticon]');
+          if(mi){ dsig='mat name="'+(mi.getAttribute('data-mat-icon-name')||mi.getAttribute('fonticon')||mi.getAttribute('svgicon')||'')+'" text="'+(mi.textContent||'').trim().slice(0,24)+'"'; }
+          else { dsig='html:'+String(e.innerHTML||'').replace(/\s+/g,' ').slice(0,220); }
         }
-        // full inventory of VISIBLE labelled controls (first 14): selector-tuning data
-        if (inv.length<14 && e.offsetParent!==null && lbl.replace(/\|/g,'').trim()){
-          inv.push(lbl.slice(0,42));
-        }
+        var tid = e.getAttribute('data-testid')||'-';
+        hits.push('['+st+'] testid='+tid+' aria="'+(e.getAttribute('aria-label')||'').slice(0,28)+'" '+dsig);
       }
-      var msg = 'TEMP-PROBE: '+(hits.length?hits.join(' || '):'-')+' §INV§ '+inv.join(' § ');
-      try { window.location.href = 'https://kotodama.result/?b='+encodeURIComponent(__kt_bid)+'&k='+encodeURIComponent(__kt_key)+'&st=diag&d='+encodeURIComponent(msg.slice(0,1300)); } catch(err){}
-    }, 4000);
-  } catch(e){}
+      // 2) incognito STATE indicator (language-neutral): any element flagged pressed/checked AND
+      //    matching the stems, or the count of visible matches (drops to ~0 once toggled in-place).
+      var vis=0, pressed=0;
+      for (var j=0;j<ctls.length;j++){ var c=ctls[j]; if(!RX.test(labelOf(c))) continue; if(c.offsetParent!==null) vis++; if((c.getAttribute('aria-pressed')==='true')||(c.getAttribute('aria-checked')==='true')) pressed++; }
+      // 3) TOP-BAR icon buttons (candidate ghost/private toggles WITHOUT an aria-label): dump each
+      //    small header icon's left-x + label + svg-path prefix, to spot the toggle by its icon.
+      var icons=[];
+      for (var t=0;t<ctls.length && icons.length<12;t++){
+        var b=ctls[t]; if(b.offsetParent===null) continue;
+        var r=b.getBoundingClientRect(); if(r.top>150 || r.width>76 || r.width<14) continue;
+        var sp=b.querySelector('svg path'); if(!sp) continue;
+        icons.push((r.left|0)+':'+(b.getAttribute('aria-label')||'').slice(0,16)+':'+(sp.getAttribute('d')||'').slice(0,40));
+      }
+      var msg = 'INCOG['+tag+'] url='+location.pathname+' visMatches='+vis+' pressed='+pressed+' :: '+(hits.length?hits.join('  ||  '):'(no control matched)')+' :: TOPICONS '+icons.join(' | ');
+      window.location.href = 'https://kotodama.result/?b='+encodeURIComponent(__kt_bid)+'&k='+encodeURIComponent(__kt_key)+'&st=diag&d='+encodeURIComponent(msg.slice(0,1400));
+    } catch(err){}
+  }
+  try { setTimeout(function(){ dump('pre'); }, 2500); } catch(e){}
+  try { setTimeout(function(){ dump('post'); }, 9000); } catch(e){}
 })();
 "##;
 
@@ -333,28 +393,19 @@ const TEMP_PROBE_JS: &str = r##"
 fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp: bool) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     let prelude = format!(
-        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh};",
+        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; window.__ktDiag = {diag};",
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
         serde_json::to_string(key).map_err(|e| e.to_string())?,
         serde_json::to_string(ans).map_err(|e| e.to_string())?,
         serde_json::to_string(busy).map_err(|e| e.to_string())?,
+        diag = crate::debug::enabled(),
     );
-    // temp toggle click (holds the fill until done) only on fresh turns of providers that have one
-    let temp_part = if fresh && temp {
-        TEMP_TOGGLES
-            .iter()
-            .find(|(k, _)| *k == key)
-            .map(|(_, rx)| {
-                format!(
-                    "var __kt_temp_rx = {};",
-                    serde_json::to_string(rx).unwrap_or_else(|_| "\"\"".into())
-                ) + TEMP_CLICK_JS
-            })
-            .unwrap_or_default()
-    } else {
-        String::new()
-    };
-    let probe = if fresh { TEMP_PROBE_JS } else { "" };
+    // incognito/temporary trigger (holds the fill until done), only on fresh turns of providers
+    // that have an in-page trigger AND the user enabled it for this provider.
+    let temp_part = if fresh && temp { temp_trigger_js(key).unwrap_or_default() } else { String::new() };
+    // The INCOG diagnostic probe only runs under KOTODAMA_DEBUG (used to discover a provider's
+    // incognito URL/selector); never in production.
+    let probe = if fresh && crate::debug::enabled() { TEMP_PROBE_JS } else { "" };
     Ok(prelude + &temp_part + &browser::fill_js(text, true)? + HARVEST_JS + probe)
 }
 
@@ -494,6 +545,18 @@ pub fn on_result_url(window: &Window, u: &Url) {
 /// The fill script itself polls ~20s for the composer, so SPA hydration after
 /// `Finished` is already tolerated — no extra retry needed here.
 pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
+    if crate::debug::enabled() {
+        let u = webview.url().map(|u| u.to_string()).unwrap_or_default();
+        debug::log(format!("kotodama page_finished key={key} url={u}"));
+        // DISCOVERY: KOTO_AUTOPROBE=<key[,key...]> injects ONLY the INCOG probe on each listed
+        // provider's compose page (no fill/send) so we can read its incognito toggle icon/URL.
+        if std::env::var("KOTO_AUTOPROBE").ok().map(|v| v.split(',').any(|k| k.trim() == key)).unwrap_or(false) {
+            let prelude = format!("var __kt_bid={}; var __kt_key={};",
+                serde_json::to_string("probe").unwrap(), serde_json::to_string(key).unwrap());
+            let _ = webview.eval(&(prelude + TEMP_PROBE_JS));
+            return;
+        }
+    }
     let inj = pending_injections().lock().unwrap().remove(key);
     if let Some(inj) = inj {
         debug::log(format!("kotodama inject (on load) key={key} bid={}", inj.broadcast_id));
@@ -562,8 +625,15 @@ pub async fn kotodama_broadcast(
     bases: HashMap<String, String>,
 ) -> Result<(), String> {
     debug::log(format!("kotodama_broadcast bid={broadcast_id} keys={keys:?} new_chat={new_chat}"));
-    // temporary provider chats: user preference at broadcast time (drives toggle clicks)
-    let temp_on = window.state::<crate::AppState>().settings.lock().unwrap().kt_temp_chats;
+    // temporary provider chats: global switch + per-provider map (kt_temp_providers). A provider
+    // gets the incognito trigger only if the global switch is on AND its per-provider entry is
+    // not explicitly false. Snapshot the map so we can gate each key below.
+    let temp_state = window.state::<crate::AppState>();
+    let (temp_global, temp_map) = {
+        let g = temp_state.settings.lock().unwrap();
+        (g.kt_temp_chats, g.kt_temp_providers.clone())
+    };
+    let temp_for = |k: &str| temp_global && temp_map.get(k).copied().unwrap_or(true);
     // Register/merge the broadcast BEFORE any answer can arrive.
     {
         let mut b = broadcasts().lock().unwrap();
@@ -624,7 +694,7 @@ pub async fn kotodama_broadcast(
         // Fresh conversation: navigate (or create parked) and inject once loaded.
         pending_injections().lock().unwrap().insert(
             key.clone(),
-            PendingInjection { broadcast_id: broadcast_id.clone(), text: text.clone(), fresh: true, temp: temp_on },
+            PendingInjection { broadcast_id: broadcast_id.clone(), text: text.clone(), fresh: true, temp: temp_for(key) },
         );
         debug::log(format!("fresh key={key} existing={} url={}", existing.is_some(), &base[..base.len().min(180)]));
         let parsed = match base.parse::<Url>() {

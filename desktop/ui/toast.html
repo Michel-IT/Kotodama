@@ -153,6 +153,7 @@
     // loading the "toast" section of the i18n/<code>.json file (same schema as the app).
     const STR_EN = { title: 'You copied some text', open: 'Open', press: 'press', or: 'or click', empty: '(empty text)',
       processing: 'Working on it...', done: 'Pasted', errorEmpty: 'Nothing to copy', errorNoAnswer: 'No answer received',
+      errorAccessibility: 'Allow Accessibility for Kotodama',
       stageConnect: 'Connecting...', stageWork: 'Receiving the answer' };
     let STR = STR_EN;
     let curMode = 'copy', curLabel = '', curProv = null;
@@ -183,7 +184,7 @@
         setStage(STR.stageConnect);
       }
       else if (curMode === 'done') t.textContent = STR.done + ' ✓';
-      else if (curMode === 'error') t.textContent = curLabel === 'empty' ? STR.errorEmpty : STR.errorNoAnswer;
+      else if (curMode === 'error') t.textContent = curLabel === 'empty' ? STR.errorEmpty : (curLabel === 'accessibility' ? STR.errorAccessibility : STR.errorNoAnswer);
       else t.textContent = STR.title;
       // "Open" alone: it opens the HOME (builder), no provider name anymore
       document.getElementById('open').textContent = STR.open;

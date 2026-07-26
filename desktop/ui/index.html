@@ -1147,11 +1147,11 @@
     // Claude (?q=) prefills but does NOT auto-submit → it needs autosend (focus+Enter).
     const PROVIDERS = {
       openai:     { name:'ChatGPT',    base:'https://chatgpt.com/',             q:'?q=', mode:'query',     autosend:true, temp:'temporary-chat=true' },
-      anthropic:  { name:'Claude',     base:'https://claude.ai/new',            q:'',    mode:'clipboard', autosend:true },
-      grok:       { name:'Grok',       base:'https://grok.com/',                q:'?q=', mode:'query' },
-      gemini:     { name:'Gemini',     base:'https://gemini.google.com/app',    q:'',    mode:'clipboard', autosend:true },
-      perplexity: { name:'Perplexity', base:'https://www.perplexity.ai/search', q:'?q=', mode:'query' },
-      qwen:       { name:'Qwen',       base:'https://chat.qwen.ai/',            q:'',    mode:'clipboard', autosend:true },
+      anthropic:  { name:'Claude',     base:'https://claude.ai/new',            q:'',    mode:'clipboard', autosend:true, tempUrl:'https://claude.ai/new?incognito=' },
+      grok:       { name:'Grok',       base:'https://grok.com/',                q:'?q=', mode:'query', tempClick:true },
+      gemini:     { name:'Gemini',     base:'https://gemini.google.com/app',    q:'',    mode:'clipboard', autosend:true, tempClick:true },
+      perplexity: { name:'Perplexity', base:'https://www.perplexity.ai/search', q:'?q=', mode:'query', tempClick:true },
+      qwen:       { name:'Qwen',       base:'https://chat.qwen.ai/',            q:'',    mode:'clipboard', autosend:true, tempClick:true },
       deepseek:   { name:'DeepSeek',   base:'https://chat.deepseek.com/',       q:'',    mode:'clipboard', autosend:true },
       zai:        { name:'Z.ai',       base:'https://chat.z.ai/',               q:'',    mode:'clipboard', autosend:true },
       kotodama:   { name:'Kotodama',   base:'',                                 q:'',    mode:'meta' }
@@ -1721,7 +1721,10 @@
       const tempOn=ktTempEnabled(key);
       if(tempOn && p.tempUrl) u=p.tempUrl;
       if(tempOn && p.temp) u+=sep()+p.temp;
-      if(p.mode==='query'&&p.q){ const enc=encodeURIComponent(ptext); if(enc.length<=MAX_URL) u+=sep()+p.q.replace(/^\?/,'')+enc; }
+      // A click-toggle temp provider (e.g. Grok) must land on the COMPOSE page so the backend can
+      // click its private toggle, then fill+send -> drop the ?q= auto-send URL when temp is on.
+      const skipQuery = tempOn && p.tempClick;
+      if(p.mode==='query'&&p.q&&!skipQuery){ const enc=encodeURIComponent(ptext); if(enc.length<=MAX_URL) u+=sep()+p.q.replace(/^\?/,'')+enc; }
       return u;
     }
     async function ktDispatchKey(bid, key, text, ctxTurn, freshFlag){
@@ -1735,6 +1738,16 @@
       const bk={}; bk[key]=ktBaseUrlFor(key, ptext);
       await invoke('kotodama_broadcast',{broadcastId:bid, text:ptext, keys:[key], newChat:true, bases:bk});
     }
+    // DEBUG-only autonomous test (KOTO_AUTOKOTO=<key>): fire a fresh single-provider broadcast
+    // with the incognito path engaged, so the dev loop can validate the temp toggle from logs
+    // without driving the UI. Answer routing is a no-op (no session/card).
+    window.__ktAutoTest = function(key){
+      try {
+        const bid='auto-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
+        inlinePending[bid]=true;   // swallow the answer (no card)
+        ktDispatchKey(bid, key, 'Rispondi solo con: OK', null, true);
+      } catch(e){ console.error('autotest', e); }
+    };
     /* --- INLINE transform (per-recipe hotkey pressed in another app) --- */
     // Pure helpers: recipe data WITHOUT touching the visible builder state.
     function instructionFor(recipeStr){
@@ -1988,7 +2001,8 @@
     document.getElementById('ktSend').addEventListener('click', ktDoSend);
     document.getElementById('ktNew').addEventListener('click', ktNewConversation);
     document.getElementById('ktBackBar').addEventListener('click', closeKotodama);
-    ktInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.ctrlKey||e.metaKey)){ e.preventDefault(); ktDoSend(); } });
+    // Enter sends; Shift+Enter (or Ctrl/Cmd+Enter) inserts a newline. IME composition is left alone.
+    ktInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.isComposing){ e.preventDefault(); ktDoSend(); } });
     if(ktSearch) ktSearch.addEventListener('input', renderKtSessions);
 
     /* ===================== CLAUDE LOGIN WARNING BANNER ===================== */
@@ -2230,7 +2244,7 @@
     }
 
     /* --- per-provider temporary-chat toggles (System tab) --- */
-    function ktTempSupport(key){ const p=PROVIDERS[key]; return !!(p&&(p.temp||p.tempUrl)); }
+    function ktTempSupport(key){ const p=PROVIDERS[key]; return !!(p&&(p.temp||p.tempUrl||p.tempClick)); }
     function ktTempEnabled(key){ return ktTempSupport(key) && ((currentSettings.kt_temp_providers||{})[key]!==false); }
     function buildKtTempRows(){
       const box=document.getElementById('ktTempList'); if(!box) return;

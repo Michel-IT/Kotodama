@@ -173,6 +173,7 @@
     "done": "Pasted",
     "errorEmpty": "Nothing to copy",
     "errorNoAnswer": "No answer received",
+    "errorAccessibility": "Allow Accessibility for Kotodama",
     "stageConnect": "Connecting...",
     "stageWork": "Receiving the answer"
   },

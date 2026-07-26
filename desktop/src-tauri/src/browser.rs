@@ -566,10 +566,14 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
         });
     // WebView2 args are set process-wide in lib.rs::run() (WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS),
     // so every webview shares identical arguments; setting them per-webview would blank it.
-    window
+    let _child = window
         .add_child(builder, LogicalPosition::new(0.0, PARK_Y), LogicalSize::new(w, h))
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    // macOS: keep this provider webview running at full speed even while parked off-screen / with
+    // the host window minimized (the inline transform relies on it scraping in the background).
+    #[cfg(target_os = "macos")]
+    crate::mac_disable_occlusion(&_child);
+    Ok(())
 }
 
 /// Fallback: if `on_page_load Finished` never fires (cached page/redirect), show the pending tab
@@ -701,20 +705,27 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
     }
     return null;
   }
+  function vis(b){ return b && !b.disabled && b.getAttribute('aria-disabled')!=='true' && b.offsetParent !== null; }
+  // Send button, fully LANGUAGE-INDEPENDENT (no per-language strings). Primary send is Enter
+  // (universal); this is only the fallback. Uses stable non-linguistic signals:
+  //   1) data-testid / type=submit  (language-neutral attributes)
+  //   2) GEOMETRY: the rightmost small icon button on the composer's bottom row = the send
+  //      button in EVERY language (bottom-right is where every chat UI puts it).
   function findSendBtn(){
-    var sels = [
-      'button[data-testid="send-button"]',
-      'button[data-testid*="send" i]',
-      'button[aria-label*="send" i]',
-      'button[aria-label*="invia" i]',
-      'button[aria-label*="invio" i]',
-      'button[type="submit"]:not([disabled])'
-    ];
-    for (var i=0;i<sels.length;i++){
-      var b = document.querySelector(sels[i]);
-      if (b && !b.disabled && b.offsetParent !== null) return b;
+    var sels = ['button[data-testid="send-button"]','button[data-testid*="send" i]','button[type="submit"]:not([disabled])'];
+    for (var i=0;i<sels.length;i++){ var b=document.querySelector(sels[i]); if (vis(b)) return b; }
+    var el = pickComposer(); if (!el || !getVal(el).length) return null;
+    var cr = el.getBoundingClientRect();
+    var all = document.querySelectorAll('button'), best=null, bestX=-1e9;
+    for (var k=0;k<all.length;k++){
+      var c=all[k]; if (!vis(c) || !c.querySelector('svg')) continue;
+      var r=c.getBoundingClientRect();
+      if (r.width<14 || r.width>90) continue;                 // send buttons are small square icons
+      if (r.top >= cr.top-10 && r.top <= cr.bottom+72 && r.left >= cr.right-140){
+        if (r.left > bestX){ bestX=r.left; best=c; }          // rightmost wins
+      }
     }
-    return null;
+    return best;
   }
   // TRUE once the sent message is visible in the page OUTSIDE the composer: the only
   // reliable "accepted" signal (composer emptying alone can also mean hydration wiped it).
@@ -735,8 +746,21 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
       } catch (e) { el.value = text; }
       el.dispatchEvent(new Event('input', { bubbles: true }));
     } else {
-      try { document.execCommand('selectAll', false, null); document.execCommand('insertText', false, text); }
-      catch (e) { el.textContent = text; el.dispatchEvent(new InputEvent('input', { bubbles: true })); }
+      // contenteditable (ProseMirror/Quill, e.g. Claude): a synthetic PASTE is the most
+      // reliable insertion - the editor's OWN paste handler updates its internal state, so
+      // the send button ENABLES and Enter sends. execCommand no longer registers on some
+      // React editors. Fall back to execCommand if the paste didn't take.
+      try { document.execCommand('selectAll', false, null); } catch(e){}
+      try {
+        var dt = new DataTransfer(); dt.setData('text/plain', text);
+        el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+      } catch (e) {}
+      // verify + fallback
+      if ((el.innerText||'').replace(/\s+/g,' ').indexOf(text.trim().replace(/\s+/g,' ').slice(0,20)) === -1) {
+        try { document.execCommand('selectAll', false, null); document.execCommand('insertText', false, text); }
+        catch (e) { el.textContent = text; }
+        try { el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType:'insertText', data: text })); } catch(e){}
+      }
     }
   }
   function submitOnce(el){

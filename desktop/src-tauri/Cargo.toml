@@ -43,6 +43,19 @@ windows = { version = "0.60", features = [
     "Win32_UI_Input_KeyboardAndMouse",   # SendInput: inline transform (simulated Ctrl+C / Ctrl+V)
 ] }
 
+# macOS only: synthesize Cmd+C / Cmd+V for the inline transform via CGEvent (requires the app to
+# have Accessibility permission), and the AXIsProcessTrusted prompt. Versions pinned to what the
+# tauri/tao dependency tree already resolves, to avoid duplicate crate versions.
+[target.'cfg(target_os = "macos")'.dependencies]
+core-graphics = "0.25"
+core-foundation = "0.10"
+# NSWindow: park the host window off-screen but VISIBLE (orderFrontRegardless) during the inline
+# transform, so WKWebView is not throttled while the window is minimized (else the provider answer
+# never streams). Versions match the tauri/objc2 tree.
+objc2 = "0.6"
+objc2-app-kit = "0.3"
+objc2-foundation = "0.3"
+
 [profile.release]
 panic = "abort"
 codegen-units = 1
