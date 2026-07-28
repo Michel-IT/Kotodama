@@ -224,6 +224,9 @@
     body.provider-open .pc-tabs { display:flex; }
     /* in provider mode the spacer is not needed (the strip fills it) */
     body.provider-open .ab-spacer { display:none; }
+    /* Always keep a grab area right before the window controls, so the window can be dragged
+       even when the tab strip is full/scrolling (the strip itself is a drag region too). */
+    .ab-grip { flex:none; width:28px; align-self:stretch; }
     .pc-tab {
       flex:none; height:30px; display:flex; align-items:center; gap:6px;
       padding:0 6px; border-radius:8px; border:1px solid transparent;
@@ -713,17 +716,20 @@
         <h1 data-tauri-drag-region>Kotodama</h1>
       </div>
 
-      <div class="ab-provnav">
+      <!-- The nav wrappers and the tab strip carry the drag region too: in the provider view they
+           replace .ab-spacer, so without it the whole centre/right of the bar could not move the
+           window (the buttons inside stay clickable). -->
+      <div class="ab-provnav" data-tauri-drag-region>
         <button class="pc-close" id="pcClose">← <span data-i18n="builder">Ai Prompt Builder</span></button>
         <button class="pc-btn" id="pcBack" data-i18n-title="back" title="Indietro">‹</button>
         <button class="pc-btn" id="pcSwitch" data-i18n-title="switchProvider" title="Cambia provider">⇄</button>
         <button class="pc-btn" id="pcReload" data-i18n-title="reload" title="Ricarica">⟳</button>
       </div>
       <!-- Kotodama meta-chat: same back-to-builder control as the provider view (uniform app bar) -->
-      <div class="ab-ktnav">
+      <div class="ab-ktnav" data-tauri-drag-region>
         <button class="pc-close" id="ktBackBar">← <span data-i18n="builder">Ai Prompt Builder</span></button>
       </div>
-      <div class="pc-tabs" id="pcTabs"></div>
+      <div class="pc-tabs" id="pcTabs" data-tauri-drag-region></div>
 
       <div class="ab-spacer" data-tauri-drag-region></div>
 
@@ -732,6 +738,8 @@
         <div class="lang" id="lang"></div>
         <button class="icon-btn" id="btnSettings" data-i18n-title="settings" title="Impostazioni">⚙</button>
       </div>
+
+      <div class="ab-grip" data-tauri-drag-region></div>
 
       <div class="win-controls">
         <button class="win-btn" id="winMin" data-i18n-title="winMin" title="Minimizza">—</button>
@@ -1422,9 +1430,9 @@
             pendingSend = promptText;
             setTimeout(()=>{ if(pendingSend!==null){ const t=pendingSend; pendingSend=null; invoke('provider_fill',{text:t}).catch(()=>{}); } }, 8000);
           }
+          openedTabs.add(selectedProvider);
         }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
-        setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000); // overlay safety net
-        return;
+        return;                       // overlay clears on app://provider-loaded
       }
       const win=window.open(url,'_blank'); await writeClipboard(promptText);
       if(!win){ toast(t.popupBlocked); return; }
@@ -1441,13 +1449,13 @@
       pendingSend = null;   // apertura senza prompt: nessun auto-invio in sospeso
       selectProviderTile(key); lastProviderUrl=p.base;   // selection (does not change the default)
       if(TAURI){
-        startProviderLoading(p.name);                // bar + overlay immediately (page off-screen)
+        startProviderLoading(p.name, key);           // instant if the tab is already open
         try{
           await setClaudeHint(key==='anthropic');
           await invoke('show_provider_tab',{key, baseUrl:p.base});   // switch: keep the tab's page (no reload)
+          openedTabs.add(key);
         }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
-        setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000); // overlay safety net
-        return;
+        return;                       // overlay clears on app://provider-loaded
       }
       const win=window.open(p.base,'_blank');
       if(!win){ toast(t.popupBlocked); return; }
@@ -1468,8 +1476,8 @@
         await setClaudeHint(key==='anthropic');
         pendingFill = text ? { text, send } : null;   // filled on app://provider-loaded
         await invoke('open_provider_view',{key, url:p.base});   // ⇄ paste/send = new chat with the prompt
+        openedTabs.add(key);
       }catch(e){ toast(`${t.openError}: ${e}`); closeProviderBar(); }
-      setTimeout(()=>{ body.classList.remove('provider-loading'); }, 4000);
     }
     // Provider switching lives in TWO places now: the header ⇄ button opens an HTML menu with icons
     // (showProviderMenu, below), and right-click inside the provider opens the native EDITING menu
@@ -1528,10 +1536,25 @@
     }
     // Show the bar + loading overlay immediately (instant feedback; the provider page
     // loads off-screen and will appear once loaded → no flash of the old page).
-    function startProviderLoading(name){
+    // Tabs stay ALIVE in the backend once created (returning to the builder only parks them), so a
+    // switch back to an already-open provider is INSTANT: no overlay at all. The overlay is only for
+    // the first open of a tab (blank webview) and for recipe re-navigations.
+    const openedTabs = new Set();
+    function startProviderLoading(name, key){
       openProviderBar(name);
+      if(key && openedTabs.has(key)) return;         // already open -> instant switch, no spinner
       body.classList.add('provider-loading');
       if(plText) plText.textContent=`${TR.opening} ${name||''}…`;
+      armProviderLoadingSafety();
+    }
+    // The overlay hides the builder until the provider webview is REALLY on screen
+    // (app://provider-loaded). Never dismiss it on a short fixed timer: on a slower machine the
+    // webview can take longer than that and the builder would show through under the provider bar.
+    // This is only a last-resort net so it can never stay stuck.
+    let provLoadingSafety=null;
+    function armProviderLoadingSafety(){
+      clearTimeout(provLoadingSafety);
+      provLoadingSafety=setTimeout(()=>{ body.classList.remove('provider-loading'); }, 25000);
     }
     function closeProviderBar(){ body.classList.remove('provider-open','provider-loading'); setClaudeHint(false); closeDownloads(); }
     document.getElementById('pcClose').addEventListener('click', async()=>{ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); });
@@ -2782,7 +2805,8 @@
       });
       listen('app://provider-opened', ()=>{ body.classList.add('provider-open'); });
       listen('app://provider-loaded', ()=>{
-        body.classList.remove('provider-loading'); // page ready → remove overlay
+        clearTimeout(provLoadingSafety);
+        body.classList.remove('provider-loading'); // webview really on screen → remove overlay
         // pagina del provider pronta → ora (con un piccolo assestamento) invia
         if(pendingSend!==null){ const t=pendingSend; pendingSend=null; setTimeout(()=>{ if(TAURI) invoke('provider_fill',{text:t}).catch(()=>{}); }, 700); }
         else if(pendingFill){ const f=pendingFill; pendingFill=null; setTimeout(()=>{ if(TAURI) invoke(f.send?'provider_fill':'provider_paste',{text:f.text}).catch(()=>{}); }, 700); }

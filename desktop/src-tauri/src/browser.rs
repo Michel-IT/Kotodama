@@ -169,6 +169,10 @@ fn park_active<R: Runtime, M: Manager<R>>(manager: &M) {
 /// Brings the tab `key` on screen (below the topbar, at full bounds), marks it the active tab and
 /// notifies the frontend. The caller parks the previously-active tab first (`park_active`).
 fn show_tab(window: &Window, key: &str) {
+    // Showing a tab SUPERSEDES any queued show: while another tab was still loading the user may
+    // have switched away, and letting that older pending show land later would put the wrong
+    // provider in front of the one now selected (fast provider switching).
+    *pending_show_key().lock().unwrap() = None;
     if let Some(wv) = window.get_webview(&provider_label(key)) {
         if let Ok((w, h)) = provider_bounds(window) {
             let _ = wv.set_position(LogicalPosition::new(0.0, provider_top()));
@@ -578,11 +582,14 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
 
 /// Fallback: if `on_page_load Finished` never fires (cached page/redirect), show the pending tab
 /// anyway after a while so we don't stay stuck on the loading overlay.
+/// ARM IT BEFORE the (possibly slow) `create_tab`: on a slower machine creating a WebView2 child can
+/// take seconds, and arming afterwards would push the deadline that much further while the user
+/// stares at the loading overlay.
 fn spawn_show_fallback(window: &Window, key: String) {
     let app = window.app_handle().clone();
     let win = window.clone();
     std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(3500));
+        std::thread::sleep(std::time::Duration::from_millis(2200));
         let show = {
             let mut p = pending_show_key().lock().unwrap();
             if p.as_deref() == Some(key.as_str()) { *p = None; true } else { false }
@@ -605,17 +612,20 @@ pub async fn open_provider_view(window: Window, key: String, url: String) -> Res
     let (w, h) = provider_bounds(&window)?;
     crate::kotodama::abort_key(&window, &key); // re-navigation kills any in-flight harvest on this tab
     park_active(&window); // park whatever tab is currently in front
-    *pending_show_key().lock().unwrap() = Some(key.clone());
     if let Some(webview) = window.get_webview(&label) {
-        // Existing tab: park (hide old page) and re-navigate (recipe = new chat).
+        // Existing tab: park (hide the old chat) and re-navigate; only show it once the NEW chat has
+        // loaded, otherwise the previous conversation would flash.
+        *pending_show_key().lock().unwrap() = Some(key.clone());
+        spawn_show_fallback(&window, key.clone()); // armed BEFORE the (slow) navigate
         let _ = webview.set_position(LogicalPosition::new(0.0, PARK_Y));
         let _ = webview.set_size(LogicalSize::new(w, h));
         webview.navigate(parsed).map_err(|e| e.to_string())?;
     } else {
+        // Brand-new tab: no old page to hide -> show it right away (instant, page loads on screen).
         create_tab(&window, &key, parsed, w, h)?;
+        show_tab(&window, &key);
     }
     window.emit("app://provider-opened", &url).map_err(|e| e.to_string())?;
-    spawn_show_fallback(&window, key);
     Ok(())
 }
 
@@ -633,10 +643,12 @@ pub async fn show_provider_tab(window: Window, key: String, base_url: String) ->
         let parsed = base_url.parse::<tauri::Url>().map_err(|e| e.to_string())?;
         let (w, h) = provider_bounds(&window)?;
         park_active(&window);
-        *pending_show_key().lock().unwrap() = Some(key.clone());
         create_tab(&window, &key, parsed, w, h)?;
+        // Brand-new tab: nothing to flash (no old page), so bring it on screen IMMEDIATELY and let
+        // the user watch the provider's own page load, instead of staring at our spinner. Waiting
+        // for PageLoadEvent::Finished here is what made a first open feel slow.
+        show_tab(&window, &key);
         window.emit("app://provider-opened", &base_url).map_err(|e| e.to_string())?;
-        spawn_show_fallback(&window, key);
         Ok(())
     }
 }
