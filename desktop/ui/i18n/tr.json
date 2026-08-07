@@ -86,7 +86,7 @@
   "setSecSystem": "Sistem",
   "setLanguage": "Dil",
   "setProvider": "Varsayılan sağlayıcı",
-  "setProviderHint": "Varsayılan olarak kullanılan sağlayıcı, metin kopyalarken de kullanılır.",
+  "setProviderHint": "metin kopyalarken kullanılır.",
   "setHotkey": "Genel kısayol",
   "setHotkeyHint": "Tıklayın ve kombinasyona basın (örn. Ctrl + \\).",
   "setMonitor": "Pano izleyici",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Kopyalanan metin olduğu gibi varsayılan sağlayıcıya gönderilir.",
   "setRecipe": "Varsayılan tarif",
-  "setRecipeHint": "Metin kopyaladığınızda kullanılan tarif.",
+  "setRecipeHint": "metin kopyalarken kullanılır.",
   "neutralAutosend": "Otomatik gönder",
   "neutralAutosendHint": "Otomatik gönder: açıkken metin sağlayıcıya hemen gönderilir; kapalıyken yalnızca yapıştırılır, böylece göndermeden önce düzenleyebilirsiniz.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Bu kısayol için bildirimler",
+  "rhColNotify": "Bildirim",
+  "rhColHotkey": "Tuş kombinasyonu",
+  "ktTempColHeader": "Özel sohbet",
+  "linkIssues": "Sorun bildirin",
+  "oopsTitle": "Bir şeyler ters gitti",
+  "oopsMessage": "Kotodama bu sayfayı yükleyemedi.\nYeniden başlatmayı deneyin.",
+  "oopsRestart": "Yeniden başlat"
 }

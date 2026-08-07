@@ -16,6 +16,7 @@ fn main() {
         "get_settings", "get_system_locale", "open_url", "set_settings", "save_ui_state",
         "set_tray_labels", "get_recipes", "save_recipes", "get_fields", "save_fields",
         "check_for_update", "install_update",
+        "quit_app", "restart_app",
     ];
     let attrs = tauri_build::Attributes::new()
         .app_manifest(tauri_build::AppManifest::new().commands(commands));

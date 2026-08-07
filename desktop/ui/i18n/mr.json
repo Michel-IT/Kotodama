@@ -78,7 +78,7 @@
   "setSecSystem": "सिस्टम",
   "setLanguage": "भाषा",
   "setProvider": "डीफॉल्ट प्रदाता",
-  "setProviderHint": "डीफॉल्टनुसार वापरला जाणारा प्रदाता, मजकूर कॉपी करतानाही.",
+  "setProviderHint": "मजकूर कॉपी करताना वापरली जाते.",
   "setHotkey": "ग्लोबल शॉर्टकट",
   "setHotkeyHint": "क्लिक करा आणि संयोजन दाबा (उदा. Ctrl + \\).",
   "setMonitor": "क्लिपबोर्ड मॉनिटर",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "कॉपी केलेला मजकूर जसाच्या तसा डीफॉल्ट प्रोव्हायडरला पाठवला जातो.",
   "setRecipe": "डीफॉल्ट रेसिपी",
-  "setRecipeHint": "मजकूर कॉपी करताना वापरली जाणारी रेसिपी.",
+  "setRecipeHint": "मजकूर कॉपी करताना वापरली जाते.",
   "neutralAutosend": "स्वयं-पाठवा",
   "neutralAutosendHint": "स्वयं-पाठवा: चालू असल्यास, मजकूर लगेच प्रदात्याला पाठवला जातो; बंद असल्यास, तो फक्त पेस्ट केला जातो जेणेकरून पाठवण्यापूर्वी तुम्ही तो संपादित करू शकता.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "या शॉर्टकटसाठी सूचना",
+  "rhColNotify": "सूचना",
+  "rhColHotkey": "की संयोजन",
+  "ktTempColHeader": "खाजगी चॅट",
+  "linkIssues": "समस्या नोंदवा",
+  "oopsTitle": "काहीतरी चुकले",
+  "oopsMessage": "Kotodama हे पान लोड करू शकले नाही.\nपुन्हा सुरू करण्याचा प्रयत्न करा.",
+  "oopsRestart": "पुन्हा सुरू करा"
 }

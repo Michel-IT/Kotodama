@@ -86,7 +86,7 @@
   "setSecSystem": "கணினி",
   "setLanguage": "மொழி",
   "setProvider": "இயல்பு வழங்குநர்",
-  "setProviderHint": "இயல்பாகப் பயன்படுத்தப்படும் வழங்குநர், உரையை நகலெடுக்கும்போதும்.",
+  "setProviderHint": "உரையை நகலெடுக்கும்போது பயன்படுத்தப்படுகிறது.",
   "setHotkey": "உலகளாவிய குறுக்குவழி",
   "setHotkeyHint": "கிளிக் செய்து கலவையை அழுத்தவும் (எ.கா. Ctrl + \\).",
   "setMonitor": "கிளிப்போர்டு கண்காணிப்பு",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "நகலெடுத்த உரை அப்படியே இயல்புநிலை வழங்குநருக்கு அனுப்பப்படும்.",
   "setRecipe": "இயல்புநிலை செய்முறை",
-  "setRecipeHint": "உரையை நகலெடுக்கும்போது பயன்படுத்தப்படும் செய்முறை.",
+  "setRecipeHint": "உரையை நகலெடுக்கும்போது பயன்படுத்தப்படுகிறது.",
   "neutralAutosend": "தானாக அனுப்பு",
   "neutralAutosendHint": "தானாக அனுப்பு: இயக்கப்பட்டால், உரை உடனடியாக வழங்குநருக்கு அனுப்பப்படும்; அணைக்கப்பட்டால், அனுப்புவதற்கு முன் திருத்த ஒட்டப்படும் மட்டுமே.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "இந்த ஷார்ட்கட்டிற்கான அறிவிப்புகள்",
+  "rhColNotify": "அறிவி",
+  "rhColHotkey": "விசை சேர்க்கை",
+  "ktTempColHeader": "தனிப்பட்ட அரட்டை",
+  "linkIssues": "சிக்கலைப் புகாரளி",
+  "oopsTitle": "ஏதோ தவறு நடந்தது",
+  "oopsMessage": "Kotodama இந்தப் பக்கத்தை ஏற்ற முடியவில்லை.\nமீண்டும் தொடங்க முயற்சிக்கவும்.",
+  "oopsRestart": "மீண்டும் தொடங்கு"
 }

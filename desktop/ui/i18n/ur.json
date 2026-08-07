@@ -78,7 +78,7 @@
   "setSecSystem": "سسٹم",
   "setLanguage": "زبان",
   "setProvider": "طے شدہ فراہم کنندہ",
-  "setProviderHint": "طے شدہ فراہم کنندہ، متن کاپی کرتے وقت بھی۔",
+  "setProviderHint": "متن کاپی کرتے وقت استعمال ہوتی ہے۔",
   "setHotkey": "عالمی شارٹ کٹ",
   "setHotkeyHint": "کلک کریں اور مجموعہ دبائیں (مثلاً Ctrl + \\)۔",
   "setMonitor": "کلپ بورڈ مانیٹر",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "کاپی کیا گیا متن ویسے ہی ڈیفالٹ پرووائیڈر کو بھیجا جاتا ہے۔",
   "setRecipe": "ڈیفالٹ ریسیپی",
-  "setRecipeHint": "متن کاپی کرنے پر استعمال ہونے والی ریسیپی۔",
+  "setRecipeHint": "متن کاپی کرتے وقت استعمال ہوتی ہے۔",
   "neutralAutosend": "خودکار بھیجیں",
   "neutralAutosendHint": "خودکار بھیجیں: آن ہونے پر متن فوراً فراہم کنندہ کو بھیج دیا جاتا ہے؛ آف ہونے پر صرف چسپاں کیا جاتا ہے تاکہ آپ بھیجنے سے پہلے اسے ترمیم کر سکیں۔",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "اس شارٹ کٹ کے لیے اطلاعات",
+  "rhColNotify": "مطلع کریں",
+  "rhColHotkey": "کی کومبو",
+  "ktTempColHeader": "نجی چیٹ",
+  "linkIssues": "مسئلہ رپورٹ کریں",
+  "oopsTitle": "کچھ غلط ہو گیا",
+  "oopsMessage": "Kotodama یہ صفحہ لوڈ نہیں کر سکا۔\nدوبارہ شروع کرنے کی کوشش کریں۔",
+  "oopsRestart": "دوبارہ شروع کریں"
 }

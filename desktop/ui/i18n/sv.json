@@ -86,7 +86,7 @@
   "setSecSystem": "System",
   "setLanguage": "Språk",
   "setProvider": "Standardleverantör",
-  "setProviderHint": "Leverantör som används som standard, även när du kopierar text.",
+  "setProviderHint": "används när du kopierar text.",
   "setHotkey": "Globalt kortkommando",
   "setHotkeyHint": "Klicka och tryck kombinationen (t.ex. Ctrl + \\).",
   "setMonitor": "Urklippsövervakning",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Den kopierade texten skickas som den är till standardleverantören.",
   "setRecipe": "Standardrecept",
-  "setRecipeHint": "Recept som används när du kopierar text.",
+  "setRecipeHint": "används när du kopierar text.",
   "neutralAutosend": "Skicka automatiskt",
   "neutralAutosendHint": "Skicka automatiskt: när det är på skickas texten direkt till leverantören; när det är av klistras den bara in så att du kan redigera den innan du skickar.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Aviseringar för denna genväg",
+  "rhColNotify": "Meddela",
+  "rhColHotkey": "Tangentkombination",
+  "ktTempColHeader": "Privat chatt",
+  "linkIssues": "Rapportera ett problem",
+  "oopsTitle": "Något gick fel",
+  "oopsMessage": "Kotodama kunde inte läsa in den här sidan.\nFörsök starta om.",
+  "oopsRestart": "Starta om"
 }

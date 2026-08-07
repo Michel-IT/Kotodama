@@ -86,7 +86,7 @@
   "setSecSystem": "Sistema",
   "setLanguage": "Idioma",
   "setProvider": "Provedor padrão",
-  "setProviderHint": "Provedor usado por padrão, também ao copiar texto.",
+  "setProviderHint": "usada ao copiar texto.",
   "setHotkey": "Atalho global",
   "setHotkeyHint": "Clique e pressione a combinação (ex. Ctrl + \\).",
   "setMonitor": "Monitor da área de transferência",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "O texto copiado é enviado como está para o provedor padrão.",
   "setRecipe": "Receita padrão",
-  "setRecipeHint": "Receita usada ao copiar texto.",
+  "setRecipeHint": "usada ao copiar texto.",
   "neutralAutosend": "Envio automático",
   "neutralAutosendHint": "Envio automático: quando ativado, o texto é enviado imediatamente ao provedor; quando desativado, ele é apenas colado para que você possa editá-lo antes de enviar.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Notificações para este atalho",
+  "rhColNotify": "Notificação",
+  "rhColHotkey": "Combinação",
+  "ktTempColHeader": "Chat privado",
+  "linkIssues": "Reportar um problema",
+  "oopsTitle": "Algo deu errado",
+  "oopsMessage": "O Kotodama não conseguiu carregar esta página.\nTente reiniciar.",
+  "oopsRestart": "Reiniciar"
 }

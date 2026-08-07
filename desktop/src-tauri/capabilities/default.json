@@ -50,6 +50,8 @@
     "allow-get-fields",
     "allow-save-fields",
     "allow-check-for-update",
-    "allow-install-update"
+    "allow-install-update",
+    "allow-quit-app",
+    "allow-restart-app"
   ]
 }

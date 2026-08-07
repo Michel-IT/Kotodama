@@ -22,7 +22,7 @@ pub struct Settings {
     pub language: String,
     /// Provider selected at startup (PROVIDERS key on the frontend side).
     pub default_provider: String,
-    /// Global accelerator, Tauri/W3C code format (e.g. "Control+Shift+Space" = Ctrl+Shift+Space).
+    /// Global accelerator, Tauri/W3C code format (e.g. "Control+Alt+Space" = Ctrl+Alt+Space).
     pub hotkey: String,
     /// Global clipboard monitor enabled.
     pub monitor_enabled: bool,
@@ -49,6 +49,10 @@ pub struct Settings {
     /// accelerator W3C. Premuta -> flusso clipboard con QUELLA ricetta (non la predefinita).
     /// Le entry che non si registrano (conflitti/invalidi) vengono scartate al salvataggio.
     pub recipe_hotkeys: std::collections::HashMap<String, String>,
+    /// Notifiche toast per scorciatoia-ricetta: chiave = stessa di `recipe_hotkeys`, valore =
+    /// mostra i toast "elaborazione/fatto/errore" per QUELLA scorciatoia. Assente = abilitata
+    /// (default): solo chi disattiva esplicitamente una ricetta molto usata sparisce dalla mappa.
+    pub recipe_notify: std::collections::HashMap<String, bool>,
     /// Kotodama broadcast: usa la chat TEMPORANEA/anonima dei provider (dove supportata),
     /// cosi' le richieste multi-provider non intasano le cronologie dei siti. Default: on.
     pub kt_temp_chats: bool,
@@ -69,7 +73,7 @@ impl Default for Settings {
         Settings {
             language: "".into(), // auto: the frontend detects the OS language on first launch
             default_provider: "openai".into(),
-            hotkey: "Control+Shift+Space".into(),
+            hotkey: "Control+Alt+Space".into(),
             monitor_enabled: true,
             autostart: true,
             theme: "sumi".into(),
@@ -86,6 +90,7 @@ impl Default for Settings {
                 ("key:rephrase".to_string(), "Control+Alt+KeyC".to_string()),
                 ("key:translate".to_string(), "Control+Alt+KeyT".to_string()),
             ]),
+            recipe_notify: std::collections::HashMap::new(),
             kt_temp_chats: true,
             kt_temp_providers: std::collections::HashMap::new(),
             known_providers: std::collections::HashSet::new(),

@@ -86,7 +86,7 @@
   "setSecSystem": "Rendszer",
   "setLanguage": "Nyelv",
   "setProvider": "Alapértelmezett szolgáltató",
-  "setProviderHint": "Alapértelmezetten használt szolgáltató, szöveg másolásakor is.",
+  "setProviderHint": "szöveg másolásakor használatos.",
   "setHotkey": "Globális gyorsbillentyű",
   "setHotkeyHint": "Kattints, és nyomd le a kombinációt (pl. Ctrl + \\).",
   "setMonitor": "Vágólap-figyelő",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "A másolt szöveg változtatás nélkül megy az alapértelmezett szolgáltatónak.",
   "setRecipe": "Alapértelmezett recept",
-  "setRecipeHint": "Szövegmásoláskor használt recept.",
+  "setRecipeHint": "szöveg másolásakor használatos.",
   "neutralAutosend": "Automatikus küldés",
   "neutralAutosendHint": "Automatikus küldés: bekapcsolva a szöveg azonnal a szolgáltatóhoz kerül; kikapcsolva csak beillesztődik, hogy küldés előtt szerkeszthesd.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Értesítések ehhez a gyorsbillentyűhöz",
+  "rhColNotify": "Értesítés",
+  "rhColHotkey": "Billentyűkombináció",
+  "ktTempColHeader": "Privát csevegés",
+  "linkIssues": "Probléma jelentése",
+  "oopsTitle": "Hiba történt",
+  "oopsMessage": "A Kotodama nem tudta betölteni ezt az oldalt.\nPróbáld meg újraindítani.",
+  "oopsRestart": "Újraindítás"
 }

@@ -86,7 +86,7 @@
   "setSecSystem": "ਸਿਸਟਮ",
   "setLanguage": "ਭਾਸ਼ਾ",
   "setProvider": "ਮੂਲ ਪ੍ਰਦਾਤਾ",
-  "setProviderHint": "ਮੂਲ ਰੂਪ ਵਿੱਚ ਵਰਤਿਆ ਜਾਂਦਾ ਪ੍ਰਦਾਤਾ, ਪਾਠ ਕਾਪੀ ਕਰਨ ਵੇਲੇ ਵੀ।",
+  "setProviderHint": "ਟੈਕਸਟ ਕਾਪੀ ਕਰਨ ਵੇਲੇ ਵਰਤੀ ਜਾਂਦੀ ਹੈ।",
   "setHotkey": "ਗਲੋਬਲ ਸ਼ਾਰਟਕੱਟ",
   "setHotkeyHint": "ਕਲਿੱਕ ਕਰੋ ਅਤੇ ਸੰਯੋਜਨ ਦਬਾਓ (ਜਿਵੇਂ Ctrl + \\)।",
   "setMonitor": "ਕਲਿੱਪਬੋਰਡ ਮਾਨੀਟਰ",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "ਕਾਪੀ ਕੀਤਾ ਟੈਕਸਟ ਉਵੇਂ ਹੀ ਡਿਫਾਲਟ ਪ੍ਰੋਵਾਈਡਰ ਨੂੰ ਭੇਜਿਆ ਜਾਂਦਾ ਹੈ।",
   "setRecipe": "ਡਿਫਾਲਟ ਰੈਸਿਪੀ",
-  "setRecipeHint": "ਟੈਕਸਟ ਕਾਪੀ ਕਰਨ ਵੇਲੇ ਵਰਤੀ ਜਾਂਦੀ ਰੈਸਿਪੀ।",
+  "setRecipeHint": "ਟੈਕਸਟ ਕਾਪੀ ਕਰਨ ਵੇਲੇ ਵਰਤੀ ਜਾਂਦੀ ਹੈ।",
   "neutralAutosend": "ਆਟੋ-ਭੇਜੋ",
   "neutralAutosendHint": "ਆਟੋ-ਭੇਜੋ: ਚਾਲੂ ਹੋਣ 'ਤੇ, ਟੈਕਸਟ ਤੁਰੰਤ ਪ੍ਰਦਾਤਾ ਨੂੰ ਭੇਜਿਆ ਜਾਂਦਾ ਹੈ; ਬੰਦ ਹੋਣ 'ਤੇ, ਇਹ ਸਿਰਫ਼ ਪੇਸਟ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਤਾਂ ਜੋ ਤੁਸੀਂ ਭੇਜਣ ਤੋਂ ਪਹਿਲਾਂ ਇਸ ਨੂੰ ਸੋਧ ਸਕੋ।",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "ਇਸ ਸ਼ਾਰਟਕੱਟ ਲਈ ਸੂਚਨਾਵਾਂ",
+  "rhColNotify": "ਸੂਚਿਤ ਕਰੋ",
+  "rhColHotkey": "ਕੀ ਕੰਬੋ",
+  "ktTempColHeader": "ਨਿੱਜੀ ਚੈਟ",
+  "linkIssues": "ਸਮੱਸਿਆ ਦੀ ਰਿਪੋਰਟ ਕਰੋ",
+  "oopsTitle": "ਕੁਝ ਗਲਤ ਹੋ ਗਿਆ",
+  "oopsMessage": "Kotodama ਇਹ ਪੰਨਾ ਲੋਡ ਨਹੀਂ ਕਰ ਸਕਿਆ।\nਮੁੜ ਚਾਲੂ ਕਰਨ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+  "oopsRestart": "ਮੁੜ ਚਾਲੂ ਕਰੋ"
 }

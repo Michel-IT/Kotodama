@@ -78,7 +78,7 @@
   "setSecSystem": "Система",
   "setLanguage": "Мова",
   "setProvider": "Провайдер за замовчуванням",
-  "setProviderHint": "Провайдер за замовчуванням, також під час копіювання тексту.",
+  "setProviderHint": "використовується при копіюванні тексту.",
   "setHotkey": "Глобальне сполучення",
   "setHotkeyHint": "Клацніть і натисніть комбінацію (напр. Ctrl + \\).",
   "setMonitor": "Монітор буфера обміну",
@@ -149,7 +149,7 @@
   "selectAll": "Вибрати все",
   "neutralHint": "Скопійований текст надсилається без змін до типового провайдера.",
   "setRecipe": "Типовий рецепт",
-  "setRecipeHint": "Рецепт, що використовується під час копіювання тексту.",
+  "setRecipeHint": "використовується при копіюванні тексту.",
   "neutralAutosend": "Автонадсилання",
   "neutralAutosendHint": "Автонадсилання: коли ввімкнено, текст одразу надсилається провайдеру; коли вимкнено, він лише вставляється, щоб ви могли відредагувати його перед надсиланням.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Сповіщення для цього сполучення",
+  "rhColNotify": "Сповіщення",
+  "rhColHotkey": "Комбінація клавіш",
+  "ktTempColHeader": "Приватний чат",
+  "linkIssues": "Повідомити про проблему",
+  "oopsTitle": "Щось пішло не так",
+  "oopsMessage": "Kotodama не вдалося завантажити цю сторінку.\nСпробуйте перезапустити.",
+  "oopsRestart": "Перезапустити"
 }

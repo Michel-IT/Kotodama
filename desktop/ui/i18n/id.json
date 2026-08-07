@@ -78,7 +78,7 @@
   "setSecSystem": "Sistem",
   "setLanguage": "Bahasa",
   "setProvider": "Penyedia default",
-  "setProviderHint": "Penyedia yang digunakan secara default, juga saat menyalin teks.",
+  "setProviderHint": "digunakan saat menyalin teks.",
   "setHotkey": "Pintasan global",
   "setHotkeyHint": "Klik lalu tekan kombinasinya (mis. Ctrl + \\).",
   "setMonitor": "Pemantau clipboard",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Teks yang disalin dikirim apa adanya ke penyedia default.",
   "setRecipe": "Resep default",
-  "setRecipeHint": "Resep yang dipakai saat Anda menyalin teks.",
+  "setRecipeHint": "digunakan saat menyalin teks.",
   "neutralAutosend": "Kirim otomatis",
   "neutralAutosendHint": "Kirim otomatis: saat aktif, teks langsung dikirim ke penyedia; saat nonaktif, teks hanya ditempel agar bisa kamu edit sebelum dikirim.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Notifikasi untuk pintasan ini",
+  "rhColNotify": "Beri tahu",
+  "rhColHotkey": "Kombinasi tombol",
+  "ktTempColHeader": "Obrolan pribadi",
+  "linkIssues": "Laporkan masalah",
+  "oopsTitle": "Terjadi kesalahan",
+  "oopsMessage": "Kotodama gagal memuat halaman ini.\nCoba mulai ulang.",
+  "oopsRestart": "Mulai ulang"
 }

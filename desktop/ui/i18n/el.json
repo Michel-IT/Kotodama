@@ -86,7 +86,7 @@
   "setSecSystem": "Σύστημα",
   "setLanguage": "Γλώσσα",
   "setProvider": "Προεπιλεγμένος πάροχος",
-  "setProviderHint": "Προεπιλεγμένος πάροχος, και κατά την αντιγραφή κειμένου.",
+  "setProviderHint": "χρησιμοποιείται κατά την αντιγραφή κειμένου.",
   "setHotkey": "Καθολική συντόμευση",
   "setHotkeyHint": "Κάνε κλικ και πάτησε τον συνδυασμό (π.χ. Ctrl + \\).",
   "setMonitor": "Παρακολούθηση προχείρου",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Το αντιγραμμένο κείμενο στέλνεται ως έχει στον προεπιλεγμένο πάροχο.",
   "setRecipe": "Προεπιλεγμένη συνταγή",
-  "setRecipeHint": "Συνταγή που χρησιμοποιείται όταν αντιγράφετε κείμενο.",
+  "setRecipeHint": "χρησιμοποιείται κατά την αντιγραφή κειμένου.",
   "neutralAutosend": "Αυτόματη αποστολή",
   "neutralAutosendHint": "Αυτόματη αποστολή: όταν είναι ενεργή, το κείμενο αποστέλλεται αμέσως στον πάροχο· όταν είναι ανενεργή, απλώς επικολλάται ώστε να μπορείτε να το επεξεργαστείτε πριν την αποστολή.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Ειδοποιήσεις για αυτή τη συντόμευση",
+  "rhColNotify": "Ειδοποίηση",
+  "rhColHotkey": "Συνδυασμός πλήκτρων",
+  "ktTempColHeader": "Ιδιωτική συνομιλία",
+  "linkIssues": "Αναφορά προβλήματος",
+  "oopsTitle": "Κάτι πήγε στραβά",
+  "oopsMessage": "Το Kotodama δεν κατάφερε να φορτώσει αυτή τη σελίδα.\nΔοκιμάστε επανεκκίνηση.",
+  "oopsRestart": "Επανεκκίνηση"
 }

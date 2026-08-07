@@ -86,7 +86,7 @@
   "setSecSystem": "시스템",
   "setLanguage": "언어",
   "setProvider": "기본 제공자",
-  "setProviderHint": "기본으로 사용되는 제공자이며 텍스트를 복사할 때도 사용됩니다.",
+  "setProviderHint": "텍스트를 복사할 때 사용됩니다.",
   "setHotkey": "전역 단축키",
   "setHotkeyHint": "클릭한 후 조합을 누르세요 (예: Ctrl + \\).",
   "setMonitor": "클립보드 모니터",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "복사한 텍스트가 그대로 기본 제공자에게 전송됩니다.",
   "setRecipe": "기본 레시피",
-  "setRecipeHint": "텍스트를 복사할 때 사용되는 레시피.",
+  "setRecipeHint": "텍스트를 복사할 때 사용됩니다.",
   "neutralAutosend": "자동 전송",
   "neutralAutosendHint": "자동 전송: 켜면 텍스트가 곧바로 제공자로 전송됩니다. 끄면 붙여넣기만 되어 전송 전에 편집할 수 있습니다.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "이 단축키에 대한 알림",
+  "rhColNotify": "알림",
+  "rhColHotkey": "키 조합",
+  "ktTempColHeader": "비공개 채팅",
+  "linkIssues": "문제 보고",
+  "oopsTitle": "문제가 발생했습니다",
+  "oopsMessage": "Kotodama가 이 페이지를 불러오지 못했습니다.\n다시 시작해 보세요.",
+  "oopsRestart": "다시 시작"
 }

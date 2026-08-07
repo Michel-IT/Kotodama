@@ -86,7 +86,7 @@
   "setSecSystem": "System",
   "setLanguage": "Språk",
   "setProvider": "Standardleverandør",
-  "setProviderHint": "Leverandør som brukes som standard, også når du kopierer tekst.",
+  "setProviderHint": "brukes når du kopierer tekst.",
   "setHotkey": "Global snarvei",
   "setHotkeyHint": "Klikk og trykk kombinasjonen (f.eks. Ctrl + \\).",
   "setMonitor": "Utklippstavle-overvåking",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Den kopierte teksten sendes som den er til standardleverandøren.",
   "setRecipe": "Standardoppskrift",
-  "setRecipeHint": "Oppskrift som brukes når du kopierer tekst.",
+  "setRecipeHint": "brukes når du kopierer tekst.",
   "neutralAutosend": "Automatisk sending",
   "neutralAutosendHint": "Automatisk sending: når på sendes teksten til leverandøren med en gang; når av limes den bare inn slik at du kan redigere den før du sender.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Varslinger for denne snarveien",
+  "rhColNotify": "Varsle",
+  "rhColHotkey": "Tastekombinasjon",
+  "ktTempColHeader": "Privat chat",
+  "linkIssues": "Rapporter et problem",
+  "oopsTitle": "Noe gikk galt",
+  "oopsMessage": "Kotodama klarte ikke å laste denne siden.\nPrøv å starte på nytt.",
+  "oopsRestart": "Start på nytt"
 }

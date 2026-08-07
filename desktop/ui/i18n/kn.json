@@ -78,7 +78,7 @@
   "setSecSystem": "ಸಿಸ್ಟಮ್",
   "setLanguage": "ಭಾಷೆ",
   "setProvider": "ಡಿಫಾಲ್ಟ್ ಒದಗಿಸುವವರು",
-  "setProviderHint": "ಡಿಫಾಲ್ಟ್ ಆಗಿ ಬಳಸುವ ಒದಗಿಸುವವರು, ಪಠ್ಯವನ್ನು ನಕಲಿಸುವಾಗಲೂ.",
+  "setProviderHint": "ಪಠ್ಯ ನಕಲಿಸುವಾಗ ಬಳಸಲಾಗುತ್ತದೆ.",
   "setHotkey": "ಜಾಗತಿಕ ಶಾರ್ಟ್‌ಕಟ್",
   "setHotkeyHint": "ಕ್ಲಿಕ್ ಮಾಡಿ ಮತ್ತು ಸಂಯೋಜನೆ ಒತ್ತಿರಿ (ಉದಾ. Ctrl + \\).",
   "setMonitor": "ಕ್ಲಿಪ್‌ಬೋರ್ಡ್ ಮಾನಿಟರ್",
@@ -149,7 +149,7 @@
   "selectAll": "ಎಲ್ಲವನ್ನೂ ಆಯ್ಕೆಮಾಡಿ",
   "neutralHint": "ನಕಲಿಸಿದ ಪಠ್ಯವನ್ನು ಇದ್ದಂತೆಯೇ ಡೀಫಾಲ್ಟ್ ಪ್ರೊವೈಡರ್‌ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ.",
   "setRecipe": "ಡೀಫಾಲ್ಟ್ ರೆಸಿಪಿ",
-  "setRecipeHint": "ಪಠ್ಯ ನಕಲಿಸಿದಾಗ ಬಳಸುವ ರೆಸಿಪಿ.",
+  "setRecipeHint": "ಪಠ್ಯ ನಕಲಿಸುವಾಗ ಬಳಸಲಾಗುತ್ತದೆ.",
   "neutralAutosend": "ಸ್ವಯಂ ಕಳುಹಿಸಿ",
   "neutralAutosendHint": "ಸ್ವಯಂ ಕಳುಹಿಸಿ: ಆನ್ ಆಗಿದ್ದರೆ ಪಠ್ಯವನ್ನು ತಕ್ಷಣ ಪ್ರೊವೈಡರ್‌ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತದೆ; ಆಫ್ ಆಗಿದ್ದರೆ ಅದನ್ನು ಕೇವಲ ಅಂಟಿಸಲಾಗುತ್ತದೆ, ಇದರಿಂದ ಕಳುಹಿಸುವ ಮೊದಲು ನೀವು ಸಂಪಾದಿಸಬಹುದು.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "ಈ ಶಾರ್ಟ್‌ಕಟ್‌ಗಾಗಿ ಅಧಿಸೂಚನೆಗಳು",
+  "rhColNotify": "ಸೂಚಿಸಿ",
+  "rhColHotkey": "ಕೀ ಸಂಯೋಜನೆ",
+  "ktTempColHeader": "ಖಾಸಗಿ ಚಾಟ್",
+  "linkIssues": "ಸಮಸ್ಯೆಯನ್ನು ವರದಿ ಮಾಡಿ",
+  "oopsTitle": "ಏನೋ ತಪ್ಪಾಗಿದೆ",
+  "oopsMessage": "Kotodama ಈ ಪುಟವನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.\nಮರುಪ್ರಾರಂಭಿಸಲು ಪ್ರಯತ್ನಿಸಿ.",
+  "oopsRestart": "ಮರುಪ್ರಾರಂಭಿಸಿ"
 }

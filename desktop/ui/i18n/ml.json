@@ -78,7 +78,7 @@
   "setSecSystem": "സിസ്റ്റം",
   "setLanguage": "ഭാഷ",
   "setProvider": "സ്ഥിരസ്ഥിതി ദാതാവ്",
-  "setProviderHint": "സ്ഥിരസ്ഥിതിയായി ഉപയോഗിക്കുന്ന ദാതാവ്, വാചകം പകർത്തുമ്പോഴും.",
+  "setProviderHint": "ടെക്സ്റ്റ് പകർത്തുമ്പോൾ ഉപയോഗിക്കുന്നു.",
   "setHotkey": "ആഗോള കുറുക്കുവഴി",
   "setHotkeyHint": "ക്ലിക്ക് ചെയ്ത് കോമ്പിനേഷൻ അമർത്തുക (ഉദാ. Ctrl + \\).",
   "setMonitor": "ക്ലിപ്പ്ബോർഡ് മോണിറ്റർ",
@@ -149,7 +149,7 @@
   "selectAll": "എല്ലാം തിരഞ്ഞെടുക്കുക",
   "neutralHint": "പകർത്തിയ ടെക്സ്റ്റ് അതേപടി സ്ഥിരം പ്രൊവൈഡറിലേക്ക് അയയ്ക്കുന്നു.",
   "setRecipe": "സ്ഥിരം റെസിപ്പി",
-  "setRecipeHint": "ടെക്സ്റ്റ് പകർത്തുമ്പോൾ ഉപയോഗിക്കുന്ന റെസിപ്പി.",
+  "setRecipeHint": "ടെക്സ്റ്റ് പകർത്തുമ്പോൾ ഉപയോഗിക്കുന്നു.",
   "neutralAutosend": "സ്വയം അയയ്ക്കൽ",
   "neutralAutosendHint": "സ്വയം അയയ്ക്കൽ: ഓണാണെങ്കിൽ, ടെക്സ്റ്റ് ഉടൻ ദാതാവിന് അയയ്ക്കും; ഓഫാണെങ്കിൽ, അയയ്ക്കുന്നതിന് മുമ്പ് എഡിറ്റ് ചെയ്യാൻ കഴിയുന്ന വിധം ഇത് ഒട്ടിക്കുക മാത്രമേ ചെയ്യൂ.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "ഈ ഷോർട്ട്കട്ടിനുള്ള അറിയിപ്പുകൾ",
+  "rhColNotify": "അറിയിക്കുക",
+  "rhColHotkey": "കീ കോമ്പോ",
+  "ktTempColHeader": "സ്വകാര്യ ചാറ്റ്",
+  "linkIssues": "പ്രശ്നം റിപ്പോർട്ട് ചെയ്യുക",
+  "oopsTitle": "എന്തോ കുഴപ്പം സംഭവിച്ചു",
+  "oopsMessage": "Kotodama-ക്ക് ഈ പേജ് ലോഡ് ചെയ്യാൻ കഴിഞ്ഞില്ല.\nപുനരാരംഭിക്കാൻ ശ്രമിക്കുക.",
+  "oopsRestart": "പുനരാരംഭിക്കുക"
 }

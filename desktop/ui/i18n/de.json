@@ -86,7 +86,7 @@
   "setSecSystem": "System",
   "setLanguage": "Sprache",
   "setProvider": "Standardanbieter",
-  "setProviderHint": "Standardanbieter, auch beim Kopieren von Text verwendet.",
+  "setProviderHint": "wird beim Kopieren von Text verwendet.",
   "setHotkey": "Globales Tastenkürzel",
   "setHotkeyHint": "Klicken und die Kombination drücken (z. B. Strg + \\).",
   "setMonitor": "Zwischenablage-Überwachung",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Der kopierte Text wird unverändert an den Standardanbieter gesendet.",
   "setRecipe": "Standardrezept",
-  "setRecipeHint": "Rezept, das beim Kopieren von Text verwendet wird.",
+  "setRecipeHint": "wird beim Kopieren von Text verwendet.",
   "neutralAutosend": "Auto-Senden",
   "neutralAutosendHint": "Auto-Senden: wenn aktiviert, wird der Text sofort an den Provider gesendet; wenn deaktiviert, wird er nur eingefügt, damit du ihn vor dem Senden bearbeiten kannst.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Benachrichtigungen für diesen Hotkey",
+  "rhColNotify": "Benachrichtigungen",
+  "rhColHotkey": "Tastenkombi",
+  "ktTempColHeader": "Privater Chat",
+  "linkIssues": "Problem melden",
+  "oopsTitle": "Etwas ist schiefgelaufen",
+  "oopsMessage": "Kotodama konnte diese Seite nicht laden.\nVersuchen Sie einen Neustart.",
+  "oopsRestart": "Neu starten"
 }

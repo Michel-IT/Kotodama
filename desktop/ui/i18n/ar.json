@@ -86,7 +86,7 @@
   "setSecSystem": "النظام",
   "setLanguage": "اللغة",
   "setProvider": "المزوّد الافتراضي",
-  "setProviderHint": "المزوّد المستخدم افتراضيًا، أيضًا عند نسخ نص.",
+  "setProviderHint": "تُستخدم عند نسخ النص.",
   "setHotkey": "اختصار عام",
   "setHotkeyHint": "انقر واضغط التركيبة (مثل Ctrl + \\).",
   "setMonitor": "مراقبة الحافظة",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "يُرسَل النص المنسوخ كما هو إلى المزوّد الافتراضي.",
   "setRecipe": "الوصفة الافتراضية",
-  "setRecipeHint": "الوصفة المستخدَمة عند نسخ نص.",
+  "setRecipeHint": "تُستخدم عند نسخ النص.",
   "neutralAutosend": "إرسال تلقائي",
   "neutralAutosendHint": "إرسال تلقائي: عند التفعيل، يُرسَل النص إلى المزوّد فورًا؛ وعند الإيقاف، يُلصَق فقط لتتمكّن من تعديله قبل الإرسال.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "إشعارات لهذا الاختصار",
+  "rhColNotify": "إشعارات",
+  "rhColHotkey": "مفاتيح",
+  "ktTempColHeader": "محادثة خاصة",
+  "linkIssues": "الإبلاغ عن مشكلة",
+  "oopsTitle": "حدث خطأ ما",
+  "oopsMessage": "تعذّر على Kotodama تحميل هذه الصفحة.\nحاول إعادة التشغيل.",
+  "oopsRestart": "إعادة التشغيل"
 }

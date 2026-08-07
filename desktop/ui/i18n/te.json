@@ -86,7 +86,7 @@
   "setSecSystem": "సిస్టమ్",
   "setLanguage": "భాష",
   "setProvider": "డిఫాల్ట్ ప్రొవైడర్",
-  "setProviderHint": "డిఫాల్ట్‌గా ఉపయోగించే ప్రొవైడర్, వచనాన్ని కాపీ చేసేటప్పుడు కూడా.",
+  "setProviderHint": "టెక్స్ట్ కాపీ చేసేటప్పుడు ఉపయోగించబడుతుంది.",
   "setHotkey": "గ్లోబల్ షార్ట్‌కట్",
   "setHotkeyHint": "క్లిక్ చేసి కలయికను నొక్కండి (ఉదా. Ctrl + \\).",
   "setMonitor": "క్లిప్‌బోర్డ్ మానిటర్",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "కాపీ చేసిన టెక్స్ట్ ఉన్నదున్నట్లుగా డిఫాల్ట్ ప్రొవైడర్‌కు పంపబడుతుంది.",
   "setRecipe": "డిఫాల్ట్ రెసిపీ",
-  "setRecipeHint": "మీరు టెక్స్ట్ కాపీ చేసినప్పుడు ఉపయోగించే రెసిపీ.",
+  "setRecipeHint": "టెక్స్ట్ కాపీ చేసేటప్పుడు ఉపయోగించబడుతుంది.",
   "neutralAutosend": "స్వయంచాలకంగా పంపు",
   "neutralAutosendHint": "స్వయంచాలకంగా పంపు: ఆన్‌లో ఉంటే, వచనం వెంటనే ప్రొవైడర్‌కు పంపబడుతుంది; ఆఫ్‌లో ఉంటే, పంపే ముందు సవరించగలిగేలా అతికించబడుతుంది మాత్రమే.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "ఈ షార్ట్‌కట్ కోసం నోటిఫికేషన్‌లు",
+  "rhColNotify": "తెలియజేయి",
+  "rhColHotkey": "కీ కాంబో",
+  "ktTempColHeader": "ప్రైవేట్ చాట్",
+  "linkIssues": "సమస్యను నివేదించండి",
+  "oopsTitle": "ఏదో తప్పు జరిగింది",
+  "oopsMessage": "Kotodama ఈ పేజీని లోడ్ చేయలేకపోయింది.\nపునఃప్రారంభించడానికి ప్రయత్నించండి.",
+  "oopsRestart": "పునఃప్రారంభించు"
 }

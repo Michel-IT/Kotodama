@@ -86,7 +86,7 @@
   "setSecSystem": "Sistem",
   "setLanguage": "Limbă",
   "setProvider": "Furnizor implicit",
-  "setProviderHint": "Furnizorul folosit implicit, inclusiv la copierea textului.",
+  "setProviderHint": "folosită la copierea textului.",
   "setHotkey": "Scurtătură globală",
   "setHotkeyHint": "Dă clic și apasă combinația (ex. Ctrl + \\).",
   "setMonitor": "Monitor clipboard",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Textul copiat este trimis ca atare către furnizorul implicit.",
   "setRecipe": "Rețetă implicită",
-  "setRecipeHint": "Rețeta folosită când copiezi un text.",
+  "setRecipeHint": "folosită la copierea textului.",
   "neutralAutosend": "Trimitere automată",
   "neutralAutosendHint": "Trimitere automată: când este activată, textul este trimis imediat către furnizor; când este dezactivată, este doar lipit ca să îl poți edita înainte de a-l trimite.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Notificări pentru această comandă rapidă",
+  "rhColNotify": "Notifică",
+  "rhColHotkey": "Combinație de taste",
+  "ktTempColHeader": "Chat privat",
+  "linkIssues": "Raportează o problemă",
+  "oopsTitle": "Ceva n-a mers bine",
+  "oopsMessage": "Kotodama nu a putut încărca această pagină.\nÎncearcă să repornești.",
+  "oopsRestart": "Repornește"
 }

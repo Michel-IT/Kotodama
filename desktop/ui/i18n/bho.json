@@ -78,7 +78,7 @@
   "setSecSystem": "सिस्टम",
   "setLanguage": "भाषा",
   "setProvider": "डिफॉल्ट प्रदाता",
-  "setProviderHint": "डिफॉल्ट रूप से इस्तेमाल होखे वाला प्रदाता, पाठ कॉपी करत घरी भी।",
+  "setProviderHint": "टेक्स्ट कॉपी करत घरी इस्तेमाल होला।",
   "setHotkey": "ग्लोबल शॉर्टकट",
   "setHotkeyHint": "क्लिक करीं आ कॉम्बिनेशन दबाईं (जइसे Ctrl + \\)।",
   "setMonitor": "क्लिपबोर्ड मॉनिटर",
@@ -149,7 +149,7 @@
   "selectAll": "सब चुनीं",
   "neutralHint": "कॉपी कइल टेक्स्ट जइसन बा ओइसने डिफॉल्ट प्रोवाइडर के भेजल जाला।",
   "setRecipe": "डिफॉल्ट रेसिपी",
-  "setRecipeHint": "जब रउआ टेक्स्ट कॉपी करीं त इस्तेमाल होखे वाली रेसिपी।",
+  "setRecipeHint": "टेक्स्ट कॉपी करत घरी इस्तेमाल होला।",
   "neutralAutosend": "ऑटो-भेजल",
   "neutralAutosendHint": "ऑटो-भेजल: चालू रहे त टेक्स्ट तुरंते प्रोवाइडर के भेज दिहल जाला; बंद रहे त खाली पेस्ट होखेला, ताकि भेजे से पहिले रउआ ओकरा के बदल सकीं।",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "एह शॉर्टकट खातिर सूचना",
+  "rhColNotify": "सूचना",
+  "rhColHotkey": "की कॉम्बो",
+  "ktTempColHeader": "निजी चैट",
+  "linkIssues": "समस्या के रिपोर्ट करीं",
+  "oopsTitle": "कुछ गलत हो गइल",
+  "oopsMessage": "Kotodama ई पेज लोड ना कर पाइल।\nफेरु से चालू करे के कोशिश करीं।",
+  "oopsRestart": "फेरु से चालू करीं"
 }

@@ -86,7 +86,7 @@
   "setSecSystem": "Sistem",
   "setLanguage": "Jezik",
   "setProvider": "Privzeti ponudnik",
-  "setProviderHint": "Privzeto uporabljeni ponudnik, tudi pri kopiranju besedila.",
+  "setProviderHint": "uporablja se pri kopiranju besedila.",
   "setHotkey": "Globalna bližnjica",
   "setHotkeyHint": "Kliknite in pritisnite kombinacijo (npr. Ctrl + \\).",
   "setMonitor": "Nadzor odložišča",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Kopirano besedilo se nespremenjeno pošlje privzetemu ponudniku.",
   "setRecipe": "Privzeti recept",
-  "setRecipeHint": "Recept, uporabljen ob kopiranju besedila.",
+  "setRecipeHint": "uporablja se pri kopiranju besedila.",
   "neutralAutosend": "Samodejno pošiljanje",
   "neutralAutosendHint": "Samodejno pošiljanje: ko je vklopljeno, se besedilo takoj pošlje ponudniku; ko je izklopljeno, se samo prilepi, da ga lahko pred pošiljanjem uredite.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Obvestila za to bližnjico",
+  "rhColNotify": "Obvesti",
+  "rhColHotkey": "Kombinacija tipk",
+  "ktTempColHeader": "Zasebni klepet",
+  "linkIssues": "Prijavi težavo",
+  "oopsTitle": "Nekaj je šlo narobe",
+  "oopsMessage": "Kotodama ni mogla naložiti te strani.\nPoskusite znova zagnati.",
+  "oopsRestart": "Znova zaženi"
 }

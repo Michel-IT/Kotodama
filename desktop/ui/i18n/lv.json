@@ -86,7 +86,7 @@
   "setSecSystem": "Sistēma",
   "setLanguage": "Valoda",
   "setProvider": "Noklusējuma sniedzējs",
-  "setProviderHint": "Pēc noklusējuma izmantotais sniedzējs, arī kopējot tekstu.",
+  "setProviderHint": "izmanto, kopējot tekstu.",
   "setHotkey": "Globālais īsinājumtaustiņš",
   "setHotkeyHint": "Noklikšķiniet un nospiediet kombināciju (piem., Ctrl + \\).",
   "setMonitor": "Starpliktuves pārraudzība",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Kopētais teksts tiek nosūtīts tāds, kāds ir, uz noklusējuma nodrošinātāju.",
   "setRecipe": "Noklusējuma recepte",
-  "setRecipeHint": "Recepte, ko izmanto, kopējot tekstu.",
+  "setRecipeHint": "izmanto, kopējot tekstu.",
   "neutralAutosend": "Automātiska sūtīšana",
   "neutralAutosendHint": "Automātiska sūtīšana: kad ieslēgta, teksts tiek uzreiz nosūtīts pakalpojumu sniedzējam; kad izslēgta, tas tiek tikai ielīmēts, lai jūs to varētu rediģēt pirms sūtīšanas.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Paziņojumi šai saīsnei",
+  "rhColNotify": "Paziņot",
+  "rhColHotkey": "Taustiņu kombinācija",
+  "ktTempColHeader": "Privāta tērzēšana",
+  "linkIssues": "Ziņot par problēmu",
+  "oopsTitle": "Kaut kas nogāja greizi",
+  "oopsMessage": "Kotodama neizdevās ielādēt šo lapu.\nMēģiniet restartēt.",
+  "oopsRestart": "Restartēt"
 }

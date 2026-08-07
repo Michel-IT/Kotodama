@@ -86,7 +86,7 @@
   "setSecSystem": "ระบบ",
   "setLanguage": "ภาษา",
   "setProvider": "ผู้ให้บริการเริ่มต้น",
-  "setProviderHint": "ผู้ให้บริการที่ใช้เป็นค่าเริ่มต้น รวมถึงเมื่อคัดลอกข้อความ",
+  "setProviderHint": "ใช้เมื่อคุณคัดลอกข้อความ",
   "setHotkey": "ทางลัดส่วนกลาง",
   "setHotkeyHint": "คลิกแล้วกดคีย์ผสม (เช่น Ctrl + \\)",
   "setMonitor": "การตรวจสอบคลิปบอร์ด",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "ข้อความที่คัดลอกจะถูกส่งไปยังผู้ให้บริการเริ่มต้นตามเดิม",
   "setRecipe": "สูตรเริ่มต้น",
-  "setRecipeHint": "สูตรที่ใช้เมื่อคุณคัดลอกข้อความ",
+  "setRecipeHint": "ใช้เมื่อคุณคัดลอกข้อความ",
   "neutralAutosend": "ส่งอัตโนมัติ",
   "neutralAutosendHint": "ส่งอัตโนมัติ: เมื่อเปิด ข้อความจะถูกส่งไปยังผู้ให้บริการทันที; เมื่อปิด จะวางไว้เท่านั้นเพื่อให้คุณแก้ไขก่อนส่ง",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "การแจ้งเตือนสำหรับทางลัดนี้",
+  "rhColNotify": "แจ้งเตือน",
+  "rhColHotkey": "ปุ่มลัด",
+  "ktTempColHeader": "แชทส่วนตัว",
+  "linkIssues": "รายงานปัญหา",
+  "oopsTitle": "เกิดข้อผิดพลาด",
+  "oopsMessage": "Kotodama โหลดหน้านี้ไม่สำเร็จ\nลองรีสตาร์ทดูอีกครั้ง",
+  "oopsRestart": "รีสตาร์ท"
 }

@@ -86,7 +86,7 @@
   "setSecSystem": "Systém",
   "setLanguage": "Jazyk",
   "setProvider": "Výchozí poskytovatel",
-  "setProviderHint": "Výchozí poskytovatel, také při kopírování textu.",
+  "setProviderHint": "používá se při kopírování textu.",
   "setHotkey": "Globální zkratka",
   "setHotkeyHint": "Klikněte a stiskněte kombinaci (např. Ctrl + \\).",
   "setMonitor": "Sledování schránky",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Zkopírovaný text se odešle tak, jak je, výchozímu poskytovateli.",
   "setRecipe": "Výchozí recept",
-  "setRecipeHint": "Recept použitý při zkopírování textu.",
+  "setRecipeHint": "používá se při kopírování textu.",
   "neutralAutosend": "Auto-odeslání",
   "neutralAutosendHint": "Auto-odeslání: když je zapnuté, text se ihned odešle poskytovateli; když je vypnuté, jen se vloží, abyste jej před odesláním mohli upravit.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Oznámení pro tuto zkratku",
+  "rhColNotify": "Upozornit",
+  "rhColHotkey": "Kombinace kláves",
+  "ktTempColHeader": "Soukromý chat",
+  "linkIssues": "Nahlásit problém",
+  "oopsTitle": "Něco se pokazilo",
+  "oopsMessage": "Kotodama se nepodařilo načíst tuto stránku.\nZkuste restartovat.",
+  "oopsRestart": "Restartovat"
 }

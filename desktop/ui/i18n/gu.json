@@ -86,7 +86,7 @@
   "setSecSystem": "સિસ્ટમ",
   "setLanguage": "ભાષા",
   "setProvider": "ડિફૉલ્ટ પ્રદાતા",
-  "setProviderHint": "ડિફૉલ્ટ રૂપે વપરાતો પ્રદાતા, લખાણ કૉપિ કરતી વખતે પણ.",
+  "setProviderHint": "ટેક્સ્ટ કૉપિ કરતી વખતે વપરાય છે.",
   "setHotkey": "ગ્લોબલ શૉર્ટકટ",
   "setHotkeyHint": "ક્લિક કરો અને સંયોજન દબાવો (દા.ત. Ctrl + \\).",
   "setMonitor": "ક્લિપબોર્ડ મૉનિટર",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "કૉપિ કરેલો ટેક્સ્ટ જેમ છે તેમ ડિફૉલ્ટ પ્રોવાઇડરને મોકલાય છે.",
   "setRecipe": "ડિફૉલ્ટ રેસિપી",
-  "setRecipeHint": "તમે ટેક્સ્ટ કૉપિ કરો ત્યારે વપરાતી રેસિપી.",
+  "setRecipeHint": "ટેક્સ્ટ કૉપિ કરતી વખતે વપરાય છે.",
   "neutralAutosend": "સ્વતઃ-મોકલો",
   "neutralAutosendHint": "સ્વતઃ-મોકલો: ચાલુ હોય ત્યારે ટેક્સ્ટ તરત જ પ્રોવાઇડરને મોકલાય છે; બંધ હોય ત્યારે તે ફક્ત પેસ્ટ થાય છે જેથી મોકલતા પહેલાં તમે તેને સંપાદિત કરી શકો.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "આ શોર્ટકટ માટે સૂચનાઓ",
+  "rhColNotify": "સૂચિત કરો",
+  "rhColHotkey": "કી કોમ્બો",
+  "ktTempColHeader": "ખાનગી ચેટ",
+  "linkIssues": "સમસ્યાની જાણ કરો",
+  "oopsTitle": "કંઈક ખોટું થયું",
+  "oopsMessage": "Kotodama આ પેજ લોડ કરી શક્યું નહીં.\nફરીથી શરૂ કરવાનો પ્રયાસ કરો.",
+  "oopsRestart": "ફરીથી શરૂ કરો"
 }

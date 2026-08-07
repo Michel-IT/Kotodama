@@ -86,7 +86,7 @@
   "setSecSystem": "Système",
   "setLanguage": "Langue",
   "setProvider": "Fournisseur par défaut",
-  "setProviderHint": "Fournisseur utilisé par défaut, y compris lors d'une copie de texte.",
+  "setProviderHint": "utilisée lors de la copie de texte.",
   "setHotkey": "Raccourci global",
   "setHotkeyHint": "Cliquez et appuyez sur la combinaison (ex. Ctrl + \\).",
   "setMonitor": "Surveillance du presse-papiers",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Le texte copié est envoyé tel quel au fournisseur par défaut.",
   "setRecipe": "Recette par défaut",
-  "setRecipeHint": "Recette utilisée lorsque vous copiez du texte.",
+  "setRecipeHint": "utilisée lors de la copie de texte.",
   "neutralAutosend": "Envoi auto",
   "neutralAutosendHint": "Envoi automatique : activé, le texte est envoyé directement au fournisseur ; désactivé, il est seulement collé pour que vous puissiez le modifier avant l'envoi.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Notifications pour ce raccourci",
+  "rhColNotify": "Notifier",
+  "rhColHotkey": "Combinaison",
+  "ktTempColHeader": "Chat privé",
+  "linkIssues": "Signaler un problème",
+  "oopsTitle": "Une erreur s'est produite",
+  "oopsMessage": "Kotodama n'a pas pu charger cette page.\nEssayez de redémarrer.",
+  "oopsRestart": "Redémarrer"
 }

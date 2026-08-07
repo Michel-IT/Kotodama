@@ -86,7 +86,7 @@
   "setSecSystem": "Systeem",
   "setLanguage": "Taal",
   "setProvider": "Standaardprovider",
-  "setProviderHint": "Standaard gebruikte provider, ook bij het kopiëren van tekst.",
+  "setProviderHint": "wordt gebruikt bij het kopiëren van tekst.",
   "setHotkey": "Globale sneltoets",
   "setHotkeyHint": "Klik en druk de combinatie in (bijv. Ctrl + \\).",
   "setMonitor": "Klembordmonitor",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "De gekopieerde tekst wordt ongewijzigd naar de standaardprovider gestuurd.",
   "setRecipe": "Standaardrecept",
-  "setRecipeHint": "Recept dat wordt gebruikt wanneer je tekst kopieert.",
+  "setRecipeHint": "wordt gebruikt bij het kopiëren van tekst.",
   "neutralAutosend": "Automatisch verzenden",
   "neutralAutosendHint": "Automatisch verzenden: indien aan wordt de tekst meteen naar de provider gestuurd; indien uit wordt deze alleen geplakt zodat je hem kunt bewerken voordat je verzendt.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Meldingen voor deze sneltoets",
+  "rhColNotify": "Meldingen",
+  "rhColHotkey": "Toetscombinatie",
+  "ktTempColHeader": "Prive-chat",
+  "linkIssues": "Een probleem melden",
+  "oopsTitle": "Er is iets misgegaan",
+  "oopsMessage": "Kotodama kon deze pagina niet laden.\nProbeer opnieuw te starten.",
+  "oopsRestart": "Herstarten"
 }

@@ -86,7 +86,7 @@
   "setSecSystem": "सिस्टम",
   "setLanguage": "भाषा",
   "setProvider": "डिफ़ॉल्ट प्रदाता",
-  "setProviderHint": "डिफ़ॉल्ट रूप से उपयोग होने वाला प्रदाता, पाठ कॉपी करते समय भी।",
+  "setProviderHint": "टेक्स्ट कॉपी करते समय उपयोग होता है।",
   "setHotkey": "वैश्विक शॉर्टकट",
   "setHotkeyHint": "क्लिक करें और संयोजन दबाएँ (उदा. Ctrl + \\)।",
   "setMonitor": "क्लिपबोर्ड मॉनिटर",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "कॉपी किया गया टेक्स्ट ज्यों का त्यों डिफ़ॉल्ट प्रोवाइडर को भेजा जाता है।",
   "setRecipe": "डिफ़ॉल्ट रेसिपी",
-  "setRecipeHint": "टेक्स्ट कॉपी करने पर उपयोग की जाने वाली रेसिपी।",
+  "setRecipeHint": "टेक्स्ट कॉपी करते समय उपयोग होता है।",
   "neutralAutosend": "स्वतः भेजें",
   "neutralAutosendHint": "स्वतः भेजें: चालू होने पर टेक्स्ट तुरंत प्रोवाइडर को भेजा जाता है; बंद होने पर इसे केवल पेस्ट किया जाता है ताकि आप भेजने से पहले इसे संपादित कर सकें.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "इस शॉर्टकट के लिए सूचनाएं",
+  "rhColNotify": "अधिसूचना",
+  "rhColHotkey": "कुंजी संयोजन",
+  "ktTempColHeader": "निजी चैट",
+  "linkIssues": "समस्या की रिपोर्ट करें",
+  "oopsTitle": "कुछ गलत हो गया",
+  "oopsMessage": "Kotodama यह पेज लोड नहीं कर सका।\nपुनः आरंभ करने का प्रयास करें।",
+  "oopsRestart": "पुनः आरंभ करें"
 }

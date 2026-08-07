@@ -31,6 +31,10 @@ struct ChunkBuf {
     parts: Vec<Option<String>>,
     status: String,
     trunc: bool,
+    /// Markdown rendering of the answer (tables/code/bold/lists), extracted client-side from the
+    /// provider's own rendered HTML -- only ever sent whole, over the direct-IPC path (see
+    /// `deliver()` in HARVEST_JS), so this is just set once, not chunked/reassembled like `parts`.
+    md: String,
 }
 
 /// Fill+harvest JS waiting for a provider page to finish loading (set before
@@ -186,6 +190,72 @@ const HARVEST_JS: &str = r##"
   // "Still generating?" - LANGUAGE-INDEPENDENT (no localized aria-label text). Uses the
   // per-provider BUSY_SEL (data-* attrs) + neutral streaming markers. NB: this only speeds
   // up completion; the reliable, language-independent signal is text STABILITY (below).
+  // HTML -> lightweight Markdown, run INSIDE the untrusted provider page. Markdown-syntax text
+  // can carry no executable content, so this is safe to ship over IPC and render as-is in the
+  // trusted main window (after escaping) -- unlike transporting raw HTML, which would need a
+  // sanitizer. Covers what actually shows up in provider answers: tables, fenced code, bold/
+  // italic, inline code, headings, ordered/unordered lists, blockquotes, links.
+  function elToMd(el){
+    if (!el) return '';
+    function esc(s){ return (s||'').replace(/[*_`]/g, '\\$&'); }
+    function inlineMd(node){
+      var out = '';
+      node.childNodes.forEach(function(n){
+        if (n.nodeType === 3) { out += esc(n.textContent); return; }
+        if (n.nodeType !== 1) return;
+        var tag = n.tagName.toLowerCase();
+        if (tag === 'br') { out += '\n'; return; }
+        if (tag === 'code') { out += '`' + n.textContent + '`'; return; }
+        if (tag === 'strong' || tag === 'b') { out += '**' + inlineMd(n) + '**'; return; }
+        if (tag === 'em' || tag === 'i') { out += '*' + inlineMd(n) + '*'; return; }
+        if (tag === 'a') { var href = n.getAttribute('href') || ''; out += '[' + inlineMd(n) + '](' + href + ')'; return; }
+        out += inlineMd(n);
+      });
+      return out;
+    }
+    function blockMd(node, depth){
+      var out = [];
+      node.childNodes.forEach(function(n){
+        if (n.nodeType === 3) { var t = n.textContent.trim(); if (t) out.push(esc(t)); return; }
+        if (n.nodeType !== 1) return;
+        var tag = n.tagName.toLowerCase();
+        if (/^h[1-6]$/.test(tag)) { out.push('#'.repeat(+tag[1]) + ' ' + inlineMd(n).trim()); return; }
+        if (tag === 'pre') {
+          var codeEl = n.querySelector('code');
+          var lang = '';
+          if (codeEl) { var m = (codeEl.className||'').match(/language-(\S+)/); if (m) lang = m[1]; }
+          out.push('```' + lang + '\n' + (codeEl || n).textContent.replace(/\n+$/, '') + '\n```');
+          return;
+        }
+        if (tag === 'blockquote') { out.push(blockMd(n, depth).split('\n').map(function(l){ return '> ' + l; }).join('\n')); return; }
+        if (tag === 'ul' || tag === 'ol') {
+          var i = 0;
+          n.querySelectorAll(':scope > li').forEach(function(li){
+            i++;
+            var marker = tag === 'ol' ? (i + '. ') : '- ';
+            out.push('  '.repeat(depth) + marker + inlineMd(li).trim());
+          });
+          return;
+        }
+        if (tag === 'table') {
+          var rows = n.querySelectorAll('tr'), lines = [];
+          rows.forEach(function(tr, ri){
+            var cells = tr.querySelectorAll('th,td');
+            var cellTxt = Array.prototype.map.call(cells, function(c){ return inlineMd(c).trim().replace(/\|/g, '\\|'); });
+            lines.push('| ' + cellTxt.join(' | ') + ' |');
+            if (ri === 0) lines.push('| ' + cellTxt.map(function(){ return '---'; }).join(' | ') + ' |');
+          });
+          out.push(lines.join('\n'));
+          return;
+        }
+        if (tag === 'p' || tag === 'div') { var s = blockMd(n, depth); if (s.trim()) out.push(s); return; }
+        var txt = inlineMd(n).trim();
+        if (txt) out.push(txt);
+      });
+      return out.join('\n\n');
+    }
+    try { return blockMd(el, 0).trim(); } catch(e){ return ''; }
+  }
   function isBusy(){
     var sels = [BUSY_SEL, '[data-testid*="stop" i]', '[data-is-streaming="true"]', '[class*="result-streaming" i]', '[class*="is-streaming" i]'];
     for (var i=0;i<sels.length;i++){
@@ -222,7 +292,7 @@ const HARVEST_JS: &str = r##"
     } catch(e){}
     return false;
   }
-  function deliver(st, txt){
+  function deliver(st, txt, md){
     if (window.__ktBid !== BID) return;
     window.__ktBid = null;
     txt = txt || '';
@@ -231,8 +301,9 @@ const HARVEST_JS: &str = r##"
     var hasIpc = !!(window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function');
     if (hasIpc) {
       // Direct IPC: no URL-length or navigation-coalescing constraints -> the whole answer goes
-      // in ONE call, no artificial delay.
-      window.__ktPush({ b: BID, k: KEY, st: st, s: 0, n: 1, tr: !!trunc, d: txt });
+      // in ONE call, no artificial delay. `md` (elToMd() output) travels ONLY on this path -- the
+      // chunked nav fallback below never carries it, degrading gracefully to plain text.
+      window.__ktPush({ b: BID, k: KEY, st: st, s: 0, n: 1, tr: !!trunc, d: txt, md: md || '' });
       return;
     }
     // Fallback (no Tauri bridge in this page): chunk + space sends 200ms apart — rapid successive
@@ -310,8 +381,8 @@ const HARVEST_JS: &str = r##"
       last = txt;
       // done = text stable 3 polls with no busy marker; OR stable 10 polls regardless
       // (some pages keep a false-positive "stop"-like control on screen forever, e.g. Qwen).
-      if (stable >= 3 && !busy || stable >= 10) { clearInterval(iv); deliver('done', txt); return; }
-      if (Date.now() - t0 > 180000) { clearInterval(iv); deliver(txt ? 'timeout' : 'error', txt); return; }
+      if (stable >= 3 && !busy || stable >= 10) { clearInterval(iv); deliver('done', txt, elToMd(getAnswerEl())); return; }
+      if (Date.now() - t0 > 180000) { clearInterval(iv); deliver(txt ? 'timeout' : 'error', txt, txt ? elToMd(getAnswerEl()) : ''); return; }
       if (!sentCensus && polls === 15 && !txt) { sentCensus = true; census(); }
       if (polls % 3 === 0) { window.__ktPush({ b: BID, k: KEY, st: 'progress', len: txt.length }); }
     }, 1000);
@@ -491,7 +562,7 @@ fn build_resume_js(broadcast_id: &str, key: &str, text: &str) -> Result<String, 
 
 /// Marks (bid, key) answered: removes it from the broadcast, emits `app://kotodama-answer`
 /// and, when the broadcast empties, `app://kotodama-finished`. Duplicate calls are no-ops.
-fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, truncated: bool) {
+fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, truncated: bool, md: &str) {
     let (emit_it, all_done) = {
         let mut b = broadcasts().lock().unwrap();
         match b.get_mut(bid) {
@@ -530,7 +601,7 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     }
     let _ = window.emit(
         "app://kotodama-answer",
-        serde_json::json!({ "broadcastId": bid, "key": key, "status": status, "text": text, "truncated": truncated }),
+        serde_json::json!({ "broadcastId": bid, "key": key, "status": status, "text": text, "truncated": truncated, "md": md }),
     );
     if all_done {
         let _ = window.emit("app://kotodama-finished", serde_json::json!({ "broadcastId": bid }));
@@ -563,7 +634,9 @@ pub fn on_result_url(window: &Window, u: &Url) {
         }
     }
     let (Some(bid), Some(key), Some(st)) = (bid, key, st) else { return };
-    handle_push(window, bid, key, st, seq, total, data, len, trunc);
+    // Fallback path only: no `md` (see ChunkBuf doc comment) -- graceful degradation to plain
+    // text on the rare pages where the direct-IPC path isn't available.
+    handle_push(window, bid, key, st, seq, total, data, len, trunc, None);
 }
 
 /// Direct-IPC delivery from the provider webview (`window.__TAURI__.core.invoke('kotodama_push',
@@ -582,6 +655,7 @@ pub fn kotodama_push(
     d: Option<String>,
     len: Option<usize>,
     tr: Option<bool>,
+    md: Option<String>,
 ) {
     if crate::debug::enabled() && (st == "diag" || s == Some(0)) {
         // Log-once-per-delivery confirmation that the direct-IPC path is actually being used (vs.
@@ -589,7 +663,7 @@ pub fn kotodama_push(
         // diagnosing (e.g. a provider whose CSP blocks the Tauri bridge would silently fall back).
         debug::log(format!("kotodama_push (IPC) key={k} st={st}"));
     }
-    handle_push(&window, b, k, st, s, n, d, len, tr.unwrap_or(false));
+    handle_push(&window, b, k, st, s, n, d, len, tr.unwrap_or(false), md);
 }
 
 /// Shared core for both delivery paths: diag/progress heartbeats emit straight away; chunked
@@ -604,6 +678,7 @@ fn handle_push(
     data: Option<String>,
     len: Option<usize>,
     trunc: bool,
+    md: Option<String>,
 ) {
     if st == "diag" {
         // DOM census from a stuck harvest: log-only, this is how provider selectors get tuned.
@@ -623,9 +698,12 @@ fn handle_push(
     }
     let done = {
         let mut bufs = chunk_bufs().lock().unwrap();
-        let buf = bufs
-            .entry((bid.clone(), key.clone()))
-            .or_insert_with(|| ChunkBuf { parts: vec![None; total], status: st.clone(), trunc });
+        let buf = bufs.entry((bid.clone(), key.clone())).or_insert_with(|| ChunkBuf {
+            parts: vec![None; total],
+            status: st.clone(),
+            trunc,
+            md: String::new(),
+        });
         if buf.parts.len() != total {
             buf.parts = vec![None; total]; // total changed: superseded delivery, restart buffer
             buf.status = st.clone();
@@ -634,18 +712,22 @@ fn handle_push(
         if trunc {
             buf.trunc = true;
         }
+        if let Some(md) = md {
+            buf.md = md; // only ever sent whole (direct-IPC path), see ChunkBuf doc comment
+        }
         if buf.parts.iter().all(|p| p.is_some()) {
             let text: String = buf.parts.iter().map(|p| p.as_deref().unwrap_or("")).collect();
             let status = buf.status.clone();
             let tr = buf.trunc;
+            let md = buf.md.clone();
             bufs.remove(&(bid.clone(), key.clone()));
-            Some((text, status, tr))
+            Some((text, status, tr, md))
         } else {
             None
         }
     };
-    if let Some((text, status, tr)) = done {
-        finish_key(window, &bid, &key, &status, &text, tr);
+    if let Some((text, status, tr, md)) = done {
+        finish_key(window, &bid, &key, &status, &text, tr, &md);
     }
 }
 
@@ -832,7 +914,7 @@ pub async fn kotodama_broadcast(
                 pending_injections().lock().unwrap().remove(key);
                 chunk_bufs().lock().unwrap().retain(|(_, k), _| k != key);
                 for bid in other_bids {
-                    finish_key(&window, &bid, key, "error", "", false);
+                    finish_key(&window, &bid, key, "error", "", false, "");
                 }
             }
         }
@@ -842,7 +924,7 @@ pub async fn kotodama_broadcast(
             serde_json::json!({ "broadcastId": broadcast_id, "key": key, "status": "pending", "text": "" }),
         );
         let Some(base) = bases.get(key) else {
-            finish_key(&window, &broadcast_id, key, "error", "", false);
+            finish_key(&window, &broadcast_id, key, "error", "", false, "");
             continue;
         };
         let label = browser::provider_label(key);
@@ -853,7 +935,7 @@ pub async fn kotodama_broadcast(
                 Ok(js) => {
                     debug::log(format!("kotodama inject (warm) key={key}"));
                     if webview.eval(&js).is_err() {
-                        finish_key(&window, &broadcast_id, key, "error", "", false);
+                        finish_key(&window, &broadcast_id, key, "error", "", false, "");
                     } else {
                         active_harvests()
                             .lock()
@@ -861,7 +943,7 @@ pub async fn kotodama_broadcast(
                             .insert(key.clone(), (broadcast_id.clone(), text.clone()));
                     }
                 }
-                Err(_) => finish_key(&window, &broadcast_id, key, "error", "", false),
+                Err(_) => finish_key(&window, &broadcast_id, key, "error", "", false, ""),
             }
             continue;
         }
@@ -876,7 +958,7 @@ pub async fn kotodama_broadcast(
             Err(e) => {
                 debug::log(format!("fresh key={key} URL PARSE ERROR: {e}"));
                 pending_injections().lock().unwrap().remove(key);
-                finish_key(&window, &broadcast_id, key, "error", "", false);
+                finish_key(&window, &broadcast_id, key, "error", "", false, "");
                 continue;
             }
         };
@@ -891,7 +973,7 @@ pub async fn kotodama_broadcast(
         debug::log(format!("fresh key={key} created_ok={created_ok}"));
         if !created_ok {
             pending_injections().lock().unwrap().remove(key);
-            finish_key(&window, &broadcast_id, key, "error", "", false);
+            finish_key(&window, &broadcast_id, key, "error", "", false, "");
             continue;
         }
         // Fallback: if `Finished` never fires (cached page/redirect), inject anyway after 8s.
@@ -920,7 +1002,7 @@ pub async fn kotodama_broadcast(
                             .unwrap()
                             .insert(key.clone(), (inj.broadcast_id.clone(), inj.text.clone()));
                     } else {
-                        finish_key(&win, &inj.broadcast_id, &key, "error", "", false);
+                        finish_key(&win, &inj.broadcast_id, &key, "error", "", false, "");
                     }
                 }
             });
@@ -943,7 +1025,7 @@ pub async fn kotodama_broadcast(
                 debug::log(format!("kotodama watchdog: bid={bid} key={key} silent"));
                 pending_injections().lock().unwrap().remove(&key);
                 chunk_bufs().lock().unwrap().remove(&(bid.clone(), key.clone()));
-                finish_key(&win, &bid, &key, "error", "", false);
+                finish_key(&win, &bid, &key, "error", "", false, "");
             }
         });
     }
@@ -963,7 +1045,7 @@ pub fn kotodama_cancel(window: Window, broadcast_id: String) -> Result<(), Strin
     for key in stuck {
         pending_injections().lock().unwrap().remove(&key);
         chunk_bufs().lock().unwrap().remove(&(broadcast_id.clone(), key.clone()));
-        finish_key(&window, &broadcast_id, &key, "cancelled", "", false);
+        finish_key(&window, &broadcast_id, &key, "cancelled", "", false, "");
     }
     Ok(())
 }

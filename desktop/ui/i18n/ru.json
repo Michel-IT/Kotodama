@@ -78,7 +78,7 @@
   "setSecSystem": "Система",
   "setLanguage": "Язык",
   "setProvider": "Провайдер по умолчанию",
-  "setProviderHint": "Провайдер по умолчанию, также при копировании текста.",
+  "setProviderHint": "используется при копировании текста.",
   "setHotkey": "Глобальное сочетание",
   "setHotkeyHint": "Нажмите и введите комбинацию (напр. Ctrl + \\).",
   "setMonitor": "Монитор буфера обмена",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Скопированный текст отправляется как есть провайдеру по умолчанию.",
   "setRecipe": "Рецепт по умолчанию",
-  "setRecipeHint": "Рецепт, используемый при копировании текста.",
+  "setRecipeHint": "используется при копировании текста.",
   "neutralAutosend": "Автоотправка",
   "neutralAutosendHint": "Автоотправка: когда включена, текст сразу отправляется провайдеру; когда выключена, он только вставляется, чтобы вы могли отредактировать его перед отправкой.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Уведомления для этого сочетания",
+  "rhColNotify": "Уведомления",
+  "rhColHotkey": "Комбинация клавиш",
+  "ktTempColHeader": "Приватный чат",
+  "linkIssues": "Сообщить об ошибке",
+  "oopsTitle": "Что-то пошло не так",
+  "oopsMessage": "Kotodama не удалось загрузить эту страницу.\nПопробуйте перезапустить.",
+  "oopsRestart": "Перезапустить"
 }

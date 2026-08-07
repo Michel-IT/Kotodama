@@ -86,7 +86,7 @@
   "setSecSystem": "System",
   "setLanguage": "Sprog",
   "setProvider": "Standardudbyder",
-  "setProviderHint": "Udbyder, der bruges som standard, også når du kopierer tekst.",
+  "setProviderHint": "bruges, når du kopierer tekst.",
   "setHotkey": "Global genvej",
   "setHotkeyHint": "Klik og tryk kombinationen (f.eks. Ctrl + \\).",
   "setMonitor": "Udklipsholder-overvågning",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Den kopierede tekst sendes som den er til standardudbyderen.",
   "setRecipe": "Standardopskrift",
-  "setRecipeHint": "Opskrift, der bruges, når du kopierer tekst.",
+  "setRecipeHint": "bruges, når du kopierer tekst.",
   "neutralAutosend": "Auto-send",
   "neutralAutosendHint": "Auto-send: når det er slået til, sendes teksten straks til udbyderen; når det er slået fra, indsættes den blot, så du kan redigere den før afsendelse.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Underretninger for denne genvej",
+  "rhColNotify": "Underret",
+  "rhColHotkey": "Tastekombination",
+  "ktTempColHeader": "Privat chat",
+  "linkIssues": "Rapporter et problem",
+  "oopsTitle": "Noget gik galt",
+  "oopsMessage": "Kotodama kunne ikke indlæse denne side.\nPrøv at genstarte.",
+  "oopsRestart": "Genstart"
 }

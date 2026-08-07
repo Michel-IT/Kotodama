@@ -78,7 +78,7 @@
   "setSecSystem": "সিস্টেম",
   "setLanguage": "ভাষা",
   "setProvider": "ডিফল্ট প্রদানকারী",
-  "setProviderHint": "ডিফল্টভাবে ব্যবহৃত প্রদানকারী, লেখা কপি করার সময়ও।",
+  "setProviderHint": "টেক্সট কপি করার সময় ব্যবহৃত হয়।",
   "setHotkey": "গ্লোবাল শর্টকাট",
   "setHotkeyHint": "ক্লিক করুন এবং সংমিশ্রণ চাপুন (যেমন Ctrl + \\)।",
   "setMonitor": "ক্লিপবোর্ড মনিটর",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "কপি করা টেক্সট যেমন আছে তেমনই ডিফল্ট প্রোভাইডারে পাঠানো হয়।",
   "setRecipe": "ডিফল্ট রেসিপি",
-  "setRecipeHint": "টেক্সট কপি করলে যে রেসিপি ব্যবহৃত হয়।",
+  "setRecipeHint": "টেক্সট কপি করার সময় ব্যবহৃত হয়।",
   "neutralAutosend": "স্বয়ংক্রিয় পাঠান",
   "neutralAutosendHint": "স্বয়ংক্রিয় পাঠান: চালু থাকলে লেখাটি সঙ্গে সঙ্গে প্রোভাইডারে পাঠানো হয়; বন্ধ থাকলে শুধু পেস্ট করা হয়, যাতে পাঠানোর আগে আপনি এটি সম্পাদনা করতে পারেন।",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "এই শর্টকাটের জন্য বিজ্ঞপ্তি",
+  "rhColNotify": "বিজ্ঞপ্তি",
+  "rhColHotkey": "কী কম্বো",
+  "ktTempColHeader": "ব্যক্তিগত চ্যাট",
+  "linkIssues": "সমস্যা রিপোর্ট করুন",
+  "oopsTitle": "কিছু ভুল হয়েছে",
+  "oopsMessage": "Kotodama এই পৃষ্ঠাটি লোড করতে পারেনি।\nপুনরায় চালু করার চেষ্টা করুন।",
+  "oopsRestart": "পুনরায় চালু করুন"
 }

@@ -78,7 +78,7 @@
   "setSecSystem": "Mfumo",
   "setLanguage": "Lugha",
   "setProvider": "Mtoa huduma chaguomsingi",
-  "setProviderHint": "Mtoa huduma anayetumika kwa chaguomsingi, pia unaponakili maandishi.",
+  "setProviderHint": "hutumika unaponakili maandishi.",
   "setHotkey": "Njia ya mkato ya kimataifa",
   "setHotkeyHint": "Bofya na ubonyeze mchanganyiko (k.m. Ctrl + \\).",
   "setMonitor": "Mfuatiliaji wa ubao wa kunakili",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Maandishi yaliyonakiliwa hutumwa kama yalivyo kwa mtoa huduma chaguo-msingi.",
   "setRecipe": "Kichocheo chaguo-msingi",
-  "setRecipeHint": "Kichocheo kinachotumika unaponakili maandishi.",
+  "setRecipeHint": "hutumika unaponakili maandishi.",
   "neutralAutosend": "Tuma kiotomatiki",
   "neutralAutosendHint": "Tuma kiotomatiki: ikiwashwa, maandishi hutumwa mara moja kwa mtoa huduma; ikizimwa, hubandikwa tu ili uweze kuyahariri kabla ya kutuma.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Arifa za njia hii ya mkato",
+  "rhColNotify": "Arifu",
+  "rhColHotkey": "Mchanganyiko wa vitufe",
+  "ktTempColHeader": "Gumzo la faragha",
+  "linkIssues": "Ripoti tatizo",
+  "oopsTitle": "Kuna hitilafu",
+  "oopsMessage": "Kotodama haikuweza kupakia ukurasa huu.\nJaribu kuanzisha upya.",
+  "oopsRestart": "Anzisha upya"
 }

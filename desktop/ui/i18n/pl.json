@@ -78,7 +78,7 @@
   "setSecSystem": "System",
   "setLanguage": "Język",
   "setProvider": "Domyślny dostawca",
-  "setProviderHint": "Dostawca używany domyślnie, także podczas kopiowania tekstu.",
+  "setProviderHint": "używana przy kopiowaniu tekstu.",
   "setHotkey": "Skrót globalny",
   "setHotkeyHint": "Kliknij i naciśnij kombinację (np. Ctrl + \\).",
   "setMonitor": "Monitor schowka",
@@ -149,7 +149,7 @@
   "selectAll": "Zaznacz wszystko",
   "neutralHint": "Skopiowany tekst jest wysyłany bez zmian do domyślnego dostawcy.",
   "setRecipe": "Domyślny przepis",
-  "setRecipeHint": "Przepis używany podczas kopiowania tekstu.",
+  "setRecipeHint": "używana przy kopiowaniu tekstu.",
   "neutralAutosend": "Automatyczne wysyłanie",
   "neutralAutosendHint": "Automatyczne wysyłanie: gdy włączone, tekst jest od razu wysyłany do dostawcy; gdy wyłączone, jest tylko wklejany, aby można było go edytować przed wysłaniem.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Powiadomienia dla tego skrótu",
+  "rhColNotify": "Powiadomienia",
+  "rhColHotkey": "Kombinacja klawiszy",
+  "ktTempColHeader": "Czat prywatny",
+  "linkIssues": "Zgłoś problem",
+  "oopsTitle": "Coś poszło nie tak",
+  "oopsMessage": "Kotodama nie mogła załadować tej strony.\nSpróbuj ponownie uruchomić.",
+  "oopsRestart": "Uruchom ponownie"
 }

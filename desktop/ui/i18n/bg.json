@@ -86,7 +86,7 @@
   "setSecSystem": "Система",
   "setLanguage": "Език",
   "setProvider": "Доставчик по подразбиране",
-  "setProviderHint": "Доставчик, използван по подразбиране, също при копиране на текст.",
+  "setProviderHint": "използва се при копиране на текст.",
   "setHotkey": "Глобален пряк път",
   "setHotkeyHint": "Щракнете и натиснете комбинацията (напр. Ctrl + \\).",
   "setMonitor": "Наблюдение на клипборда",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Копираният текст се изпраща както е до доставчика по подразбиране.",
   "setRecipe": "Рецепта по подразбиране",
-  "setRecipeHint": "Рецепта, използвана при копиране на текст.",
+  "setRecipeHint": "използва се при копиране на текст.",
   "neutralAutosend": "Авт. изпращане",
   "neutralAutosendHint": "Авт. изпращане: когато е включено, текстът се изпраща веднага към доставчика; когато е изключено, само се поставя, за да можете да го редактирате преди изпращане.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Известия за този пряк път",
+  "rhColNotify": "Известяване",
+  "rhColHotkey": "Комбинация от клавиши",
+  "ktTempColHeader": "Личен чат",
+  "linkIssues": "Докладвай проблем",
+  "oopsTitle": "Нещо се обърка",
+  "oopsMessage": "Kotodama не успя да зареди тази страница.\nОпитайте да рестартирате.",
+  "oopsRestart": "Рестартиране"
 }

@@ -86,7 +86,7 @@
   "setSecSystem": "系统",
   "setLanguage": "语言",
   "setProvider": "默认提供商",
-  "setProviderHint": "默认使用的提供商，复制文本时也会使用。",
+  "setProviderHint": "复制文本时使用。",
   "setHotkey": "全局快捷键",
   "setHotkeyHint": "点击并按下组合键（例如 Ctrl + \\）。",
   "setMonitor": "剪贴板监视",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "复制的文本将原样发送至默认提供商。",
   "setRecipe": "默认配方",
-  "setRecipeHint": "复制文本时使用的配方。",
+  "setRecipeHint": "复制文本时使用。",
   "neutralAutosend": "自动发送",
   "neutralAutosendHint": "自动发送：开启时，文本会立即发送给提供商；关闭时，仅粘贴文本，方便你在发送前进行编辑。",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "此快捷键的通知",
+  "rhColNotify": "通知",
+  "rhColHotkey": "键盘组合",
+  "ktTempColHeader": "私密聊天",
+  "linkIssues": "报告问题",
+  "oopsTitle": "出了点问题",
+  "oopsMessage": "Kotodama 无法加载此页面。\n请尝试重启。",
+  "oopsRestart": "重启"
 }

@@ -78,7 +78,7 @@
   "setSecSystem": "システム",
   "setLanguage": "言語",
   "setProvider": "既定のプロバイダー",
-  "setProviderHint": "既定で使用するプロバイダー。テキストをコピーしたときにも使われます。",
+  "setProviderHint": "テキストをコピーする際に使用されます。",
   "setHotkey": "グローバルショートカット",
   "setHotkeyHint": "クリックして組み合わせを押してください（例: Ctrl + \\）。",
   "setMonitor": "クリップボード監視",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "コピーしたテキストがそのままデフォルトのプロバイダーに送信されます。",
   "setRecipe": "デフォルトのレシピ",
-  "setRecipeHint": "テキストをコピーしたときに使うレシピ。",
+  "setRecipeHint": "テキストをコピーする際に使用されます。",
   "neutralAutosend": "自動送信",
   "neutralAutosendHint": "自動送信: オンの場合、テキストはすぐにプロバイダーへ送信されます。オフの場合は貼り付けられるだけなので、送信前に編集できます。",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "このショートカットの通知",
+  "rhColNotify": "通知",
+  "rhColHotkey": "キーコンボ",
+  "ktTempColHeader": "プライベートチャット",
+  "linkIssues": "問題を報告する",
+  "oopsTitle": "問題が発生しました",
+  "oopsMessage": "Kotodamaはこのページを読み込めませんでした。\n再起動をお試しください。",
+  "oopsRestart": "再起動"
 }

@@ -86,7 +86,7 @@
   "setSecSystem": "Järjestelmä",
   "setLanguage": "Kieli",
   "setProvider": "Oletuspalvelu",
-  "setProviderHint": "Oletuksena käytettävä palvelu, myös tekstiä kopioitaessa.",
+  "setProviderHint": "käytetään tekstiä kopioitaessa.",
   "setHotkey": "Yleinen pikanäppäin",
   "setHotkeyHint": "Napsauta ja paina yhdistelmää (esim. Ctrl + \\).",
   "setMonitor": "Leikepöydän valvonta",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Kopioitu teksti lähetetään sellaisenaan oletuspalveluun.",
   "setRecipe": "Oletusresepti",
-  "setRecipeHint": "Resepti, jota käytetään, kun kopioit tekstiä.",
+  "setRecipeHint": "käytetään tekstiä kopioitaessa.",
   "neutralAutosend": "Lähetä automaattisesti",
   "neutralAutosendHint": "Automaattinen lähetys: kun päällä, teksti lähetetään palveluntarjoajalle heti; kun pois, se vain liitetään, jotta voit muokata sitä ennen lähettämistä.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Ilmoitukset tälle pikanäppäimelle",
+  "rhColNotify": "Ilmoita",
+  "rhColHotkey": "Näppäinyhdistelmä",
+  "ktTempColHeader": "Yksityinen keskustelu",
+  "linkIssues": "Ilmoita ongelmasta",
+  "oopsTitle": "Jokin meni pieleen",
+  "oopsMessage": "Kotodama ei pystynyt lataamaan tätä sivua.\nYritä käynnistää uudelleen.",
+  "oopsRestart": "Käynnistä uudelleen"
 }

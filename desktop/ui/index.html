@@ -100,7 +100,7 @@
       user-select:none; -webkit-user-select:none;   /* no text selection on the UI (e.g. double-click on the providers) */
     }
     /* re-enable selection where it is actually needed */
-    textarea, input, #result, .content, [contenteditable] { user-select:text; -webkit-user-select:text; }
+    textarea, input, #result, .content, [contenteditable], .kt-card-body { user-select:text; -webkit-user-select:text; }
     /* Themed scrollbar: uses the variables → automatically follows every theme (WebView2/Chromium + Firefox) */
     * { scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
     ::-webkit-scrollbar { width:10px; height:10px; }
@@ -635,6 +635,34 @@
     .kt-card-body { flex:1; padding:10px 12px; font-size:13px; line-height:1.5;
       white-space:pre-wrap; word-break:break-word; }
     .kt-card-body.empty { color:var(--text-faint); font-style:italic; }
+    /* Rendered Markdown (mdToHtml output, see ktRenderCardBody): the container drops pre-wrap --
+       spacing/line-breaks now come from the real block elements, not from preserved whitespace. */
+    .kt-card-body.kt-md { white-space:normal; }
+    .kt-card-body.kt-md > *:first-child { margin-top:0; }
+    .kt-card-body.kt-md > *:last-child { margin-bottom:0; }
+    .kt-card-body.kt-md p, .kt-card-body.kt-md ul, .kt-card-body.kt-md ol,
+    .kt-card-body.kt-md table, .kt-card-body.kt-md blockquote, .kt-card-body.kt-md pre,
+    .kt-card-body.kt-md h1, .kt-card-body.kt-md h2, .kt-card-body.kt-md h3,
+    .kt-card-body.kt-md h4, .kt-card-body.kt-md h5, .kt-card-body.kt-md h6 { margin:0 0 10px; }
+    .kt-card-body.kt-md h1, .kt-card-body.kt-md h2, .kt-card-body.kt-md h3,
+    .kt-card-body.kt-md h4, .kt-card-body.kt-md h5, .kt-card-body.kt-md h6 { font-weight:600; line-height:1.3; }
+    .kt-card-body.kt-md h1 { font-size:1.35em; } .kt-card-body.kt-md h2 { font-size:1.2em; }
+    .kt-card-body.kt-md h3 { font-size:1.1em; } .kt-card-body.kt-md h4,
+    .kt-card-body.kt-md h5, .kt-card-body.kt-md h6 { font-size:1em; }
+    .kt-card-body.kt-md ul, .kt-card-body.kt-md ol { padding-left:1.4em; }
+    .kt-card-body.kt-md li { margin:2px 0; }
+    .kt-card-body.kt-md code { font-family:var(--mono, ui-monospace, monospace); font-size:.92em;
+      background:var(--bg-soft, rgba(127,127,127,.15)); padding:1px 5px; border-radius:4px; }
+    .kt-card-body.kt-md pre { background:var(--bg-soft, rgba(127,127,127,.12)); padding:10px 12px;
+      border-radius:8px; overflow-x:auto; white-space:pre; }
+    .kt-card-body.kt-md pre code { background:none; padding:0; border-radius:0; }
+    .kt-card-body.kt-md blockquote { border-left:3px solid var(--border-soft); padding-left:10px;
+      color:var(--text-faint); }
+    .kt-card-body.kt-md table { border-collapse:collapse; width:100%; font-size:.95em; }
+    .kt-card-body.kt-md th, .kt-card-body.kt-md td { border:1px solid var(--border-soft);
+      padding:5px 8px; text-align:left; }
+    .kt-card-body.kt-md th { font-weight:600; background:var(--bg-soft, rgba(127,127,127,.1)); }
+    .kt-card-body.kt-md a { color:var(--accent); }
     .kt-card-foot { flex:none; display:flex; justify-content:flex-end; gap:6px; padding:6px 10px;
       border-top:1px solid var(--border-soft); }
     .kt-card-foot .btn { font-size:11.5px; padding:4px 10px; }
@@ -693,7 +721,20 @@
     .set-tab.active { color:var(--text); border-bottom-color:var(--accent); }
     .set-panel { display:none; border-bottom:none !important; }
     .set-panel.active { display:block; }
-    /* per-recipe shortcut rows */
+    /* per-recipe shortcut rows -- header + rows share the SAME flex layout (name flex:1, then
+       fixed-width columns in the same order) so the columns line up exactly, row after row. */
+    .rh-header { display:flex; align-items:center; gap:8px; }
+    /* Hint sits in the header's NAME column (one line, avoids a whole extra row -- reclaims
+       vertical space so the shortcut list needs less scrolling). */
+    .rh-header .rh-hint { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rh-h-notify, .rh-h-key { flex:none; font-size:10.5px; font-weight:700; letter-spacing:.05em;
+      text-transform:uppercase; color:var(--text-faint); text-align:center; }
+    .rh-h-notify { width:64px; }
+    .rh-h-key { width:210px; }
+    .rh-h-spacer { flex:none; width:28px; }
+    /* wraps the .switch so the NOTIFICA column has breathing room without stretching the switch
+       itself -- width matches .rh-h-notify above so the header label stays centered over it. */
+    .rh-notify-col { flex:none; width:64px; display:flex; justify-content:center; }
     .rh-row { display:flex; align-items:center; gap:8px; margin-top:7px; }
     .rh-name { flex:1; min-width:0; font-size:13px; color:var(--text);
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -702,6 +743,7 @@
     .rh-clear { flex:none; width:28px; height:28px; border:none; border-radius:8px;
       background:none; color:var(--text-faint); cursor:pointer; font-size:13px; }
     .rh-clear:hover { background:var(--panel-glow); color:#e08585; }
+    .rh-divider { border:none; border-top:1px solid var(--border-soft); margin:14px 0 3px; }
     .set-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px 14px; align-items:start; }
     /* each setting = box (card): label and control inside the same box → clear association */
     .set-section .setting { border-bottom:none; background:var(--field); border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:9px 12px; gap:6px; }
@@ -712,9 +754,10 @@
     .set-section > .set-grid + .set-grid { margin-top:12px; }
     @media (max-width:560px){ .set-grid { grid-template-columns:1fr; } }
     /* Settings > Provider: dual list (Disponibili/Selezionati) + transfer buttons in the middle. */
-    .prov-xfer { display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:stretch; margin-top:12px; }
+    .prov-xfer { display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:stretch; margin-top:12px; margin-bottom:12px; }
     .prov-xfer-col { display:flex; flex-direction:column; min-width:0; }
     .prov-xfer-head { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-faint); font-weight:700; margin-bottom:6px; }
+    .prov-xfer-head-sel { display:flex; align-items:center; justify-content:space-between; }
     .prov-xfer-list { flex:1; min-height:220px; max-height:320px; overflow-y:auto;
       border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:6px; background:var(--field); }
     .prov-xfer-row { display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text); }
@@ -722,6 +765,14 @@
     .prov-xfer-row.picked { background:var(--panel-2); outline:1px solid var(--accent); outline-offset:-1px; }
     .prov-xfer-row .ic { width:16px; height:16px; display:grid; place-items:center; color:var(--pc,var(--accent)); flex:none; }
     .prov-xfer-row .ic svg { width:16px; height:16px; display:block; }
+    .prov-xfer-row .nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* label + hint on one line, hint pinned to the card's right edge (Provider/Ricetta predefinita) */
+    .row-inline { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+    .row-inline .sub { text-align:right; }
+    /* Temp-chat toggle merged into each "Selezionati" row (see renderProviderXfer) -- pinned to
+       the row's right edge by .nm's flex:1 above. */
+    .prov-xfer-temp { flex:none; display:flex; align-items:center; gap:6px; cursor:default; }
+    .prov-xfer-temp .sub { font-size:10.5px; }
     .prov-xfer-mid { display:flex; flex-direction:column; justify-content:center; gap:8px; }
     .prov-xfer-btn { width:38px; height:34px; font-size:15px; padding:0; }
 
@@ -774,9 +825,10 @@
     .field:focus { outline:none; border-color:var(--accent); }
     textarea.field { resize:vertical; min-height:84px; line-height:1.5; }
     .row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .hotkey-field { display:flex; align-items:center; gap:10px; }
-    .hotkey-field input { flex:1; cursor:pointer; text-align:center; font-weight:600; letter-spacing:.5px; }
-    .hotkey-field input.capturing { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); color:var(--accent); }
+    /* Shared by the global-hotkey row AND every per-recipe row (both use class="field" on the
+       readonly input, both toggle .capturing on focus) -- one rule instead of two, always in sync. */
+    #setHotkey, .rh-row input { cursor:pointer; text-align:center; font-weight:600; letter-spacing:.5px; }
+    .field.capturing { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); color:var(--accent); }
     .switch { position:relative; width:44px; height:24px; flex:none; }
     .switch input { opacity:0; width:0; height:0; }
     .switch .slider { position:absolute; inset:0; cursor:pointer; border-radius:24px; background:var(--field-2); border:1px solid var(--border); transition:.2s; }
@@ -999,29 +1051,12 @@
       </div>
       <!-- tab bar: the options grew too much for a single scroll -->
       <div class="set-tabs" id="setTabs">
-        <button class="set-tab active" data-tab="general" data-i18n="setTabGeneral">Generale</button>
+        <button class="set-tab active" data-tab="system" data-i18n="setTabSystem">Sistema</button>
         <button class="set-tab" data-tab="providers" data-i18n="setTabProviders">Provider</button>
         <button class="set-tab" data-tab="shortcuts" data-i18n="setTabShortcuts">Scorciatoie</button>
-        <button class="set-tab" data-tab="appearance" data-i18n="setTabAppearance">Aspetto</button>
-        <button class="set-tab" data-tab="system" data-i18n="setTabSystem">Sistema</button>
         <button class="set-tab" data-tab="about" data-i18n="setTabAbout">Info</button>
       </div>
       <div class="modal-body">
-        <!-- General -->
-        <div class="set-section set-panel active" data-panel="general">
-          <div class="set-grid">
-            <div class="setting">
-              <label data-i18n="setProvider">Provider predefinito</label>
-              <span class="sub" data-i18n="setProviderHint">Provider predefinito, usato anche quando copi del testo.</span>
-              <select class="field" id="setProvider"></select>
-            </div>
-            <div class="setting">
-              <label data-i18n="setRecipe">Ricetta predefinita</label>
-              <span class="sub" data-i18n="setRecipeHint">Ricetta usata quando copi del testo.</span>
-              <select class="field" id="setRecipe"></select>
-            </div>
-          </div>
-        </div>
         <!-- Providers: the ENABLED POOL (ktEnabled), the universe the "+" menu picks from to
              decide what's currently in the "Provider selezionati" bar (ktSel) -- moves here apply
              immediately, no Salva needed. See renderProviderXfer() for the ktEnabled/ktSel split. -->
@@ -1042,58 +1077,57 @@
               <button class="btn prov-xfer-btn" type="button" id="provXferAllLeft" data-i18n-title="provXferAllLeftTitle" title="Rimuovi tutti">«</button>
             </div>
             <div class="prov-xfer-col">
-              <div class="prov-xfer-head" data-i18n="provXferSelected">Selezionati</div>
+              <div class="prov-xfer-head prov-xfer-head-sel">
+                <span data-i18n="provXferSelected">Selezionati</span>
+                <span class="prov-xfer-head-temp" data-i18n="ktTempColHeader">Chat privata</span>
+              </div>
               <div class="prov-xfer-list" id="provXferSel"></div>
             </div>
           </div>
         </div>
-        <!-- Shortcuts: main hotkey + one per recipe -->
+        <!-- Shortcuts: main hotkey as the first row, then a divider, then one row per recipe --
+             ALL in the same list so the NOTIFICA/COMBINAZIONE TASTI columns line up across every row. -->
         <div class="set-section set-panel" data-panel="shortcuts">
           <div class="setting">
-            <label data-i18n="setHotkey">Scorciatoia globale</label>
-            <span class="sub" data-i18n="setHotkeyHint">Clicca e premi la combinazione.</span>
-            <div class="hotkey-field">
-              <input type="text" class="field" id="setHotkey" readonly>
-              <button class="btn" id="hotkeyClear" data-i18n="reset">Reset</button>
+            <div class="rh-header">
+              <span class="sub rh-hint" data-i18n="setRecipeHotkeysHint">Clicca il campo e premi la combinazione; ✕ la rimuove.</span>
+              <span class="rh-h-key" data-i18n="rhColHotkey">Combinazione tasti</span>
+              <span class="rh-h-spacer"></span>
+              <span class="rh-h-notify" data-i18n="rhColNotify">Notifica</span>
             </div>
-          </div>
-          <div class="setting">
-            <label data-i18n="setRecipeHotkeys">Scorciatoie per ricetta</label>
-            <span class="sub" data-i18n="setRecipeHotkeysHint">Clicca il campo e premi la combinazione; ✕ la rimuove.</span>
+            <div class="rh-row">
+              <div class="rh-name" data-i18n="setHotkey">Scorciatoia globale</div>
+              <input type="text" class="field" id="setHotkey" readonly>
+              <button class="rh-clear" id="hotkeyClear" data-i18n-title="reset" title="Reset">↺</button>
+              <span class="rh-notify-col">
+                <label class="switch sm" id="rhGlobalNotifySwitch" data-i18n-title="rhNotifyTitle" title="Notifiche per questa scorciatoia">
+                  <input type="checkbox" id="rhGlobalNotify"><span class="slider"></span>
+                </label>
+              </span>
+            </div>
+            <hr class="rh-divider">
             <div id="recipeHotkeys"></div>
           </div>
         </div>
-        <!-- Appearance -->
-        <div class="set-section set-panel" data-panel="appearance">
+        <!-- System (default/first tab: appearance -- Tema/Lingua -- merged in on top) -->
+        <div class="set-section set-panel active" data-panel="system">
           <div class="set-grid">
             <div class="setting">
-              <label data-i18n="setTheme">Tema</label>
-              <select class="field" id="setTheme">
-                <option value="ginga" data-i18n="themeGinga">Ginga</option>
-                <option value="hisui" data-i18n="themeHisui">Hisui</option>
-                <option value="kohaku" data-i18n="themeKohaku">Kohaku</option>
-                <option value="murasaki" data-i18n="themeMurasaki">Murasaki</option>
-                <option value="sumi" data-i18n="themeSumi">Sumi</option>
-              </select>
+              <div class="row-inline">
+                <label data-i18n="setProvider">Provider predefinito</label>
+                <span class="sub" data-i18n="setProviderHint">usata quando copi un testo.</span>
+              </div>
+              <select class="field" id="setProvider"></select>
             </div>
             <div class="setting">
-              <label data-i18n="setLanguage">Lingua</label>
-              <select class="field" id="setLang"></select>
+              <div class="row-inline">
+                <label data-i18n="setRecipe">Ricetta predefinita</label>
+                <span class="sub" data-i18n="setRecipeHint">usata quando copi un testo.</span>
+              </div>
+              <select class="field" id="setRecipe"></select>
             </div>
           </div>
-        </div>
-        <!-- System -->
-        <div class="set-section set-panel" data-panel="system">
           <div class="set-grid">
-            <div class="setting">
-              <div class="row">
-                <div>
-                  <label data-i18n="setMonitor">Monitor appunti</label>
-                  <div class="sub" data-i18n="setMonitorHint">Mostra il toast quando copi del testo.</div>
-                </div>
-                <label class="switch"><input type="checkbox" id="setMonitor"><span class="slider"></span></label>
-              </div>
-            </div>
             <div class="setting">
               <div class="row">
                 <div>
@@ -1113,22 +1147,20 @@
               </div>
             </div>
           </div>
-          <div class="setting">
-            <label data-i18n="setKtTemp">Chat temporanee nei provider</label>
-            <span class="sub" data-i18n="setKtTempHint">Dove supportato: le richieste Kotodama non restano nella cronologia del provider.</span>
-            <div id="ktTempList"></div>
-          </div>
-          <div class="setting">
-            <div class="row">
-              <div>
-                <label data-i18n="setUpdates">Aggiornamenti</label>
-                <div class="sub" data-i18n="setUpdatesHint">Controlla se è disponibile una nuova versione.</div>
-              </div>
-              <button class="btn" id="btnCheckUpdate" data-i18n="checkUpdates">Cerca aggiornamenti</button>
+          <div class="set-grid">
+            <div class="setting">
+              <label data-i18n="setTheme">Tema</label>
+              <select class="field" id="setTheme">
+                <option value="ginga" data-i18n="themeGinga">Ginga</option>
+                <option value="hisui" data-i18n="themeHisui">Hisui</option>
+                <option value="kohaku" data-i18n="themeKohaku">Kohaku</option>
+                <option value="murasaki" data-i18n="themeMurasaki">Murasaki</option>
+                <option value="sumi" data-i18n="themeSumi">Sumi</option>
+              </select>
             </div>
-            <div class="upd-status" id="updateStatus" hidden>
-              <span id="updateMsg"></span>
-              <button class="btn primary" id="btnInstallUpdate" hidden data-i18n="install">Installa</button>
+            <div class="setting">
+              <label data-i18n="setLanguage">Lingua</label>
+              <select class="field" id="setLang"></select>
             </div>
           </div>
         </div>
@@ -1141,7 +1173,21 @@
               <div class="about-links">
                 <button type="button" class="lnk" data-url="https://kotodama.kuramalab.net" data-i18n="linkWebsite">Sito web</button>
                 <button type="button" class="lnk" data-url="https://github.com/Michel-IT/Kotodama" data-i18n="linkSource">Codice sorgente</button>
+                <button type="button" class="lnk" data-url="https://github.com/Michel-IT/Kotodama/issues" data-i18n="linkIssues">Segnala un problema</button>
               </div>
+            </div>
+          </div>
+          <div class="setting">
+            <div class="row">
+              <div>
+                <label data-i18n="setUpdates">Aggiornamenti</label>
+                <div class="sub" data-i18n="setUpdatesHint">Controlla se è disponibile una nuova versione.</div>
+              </div>
+              <button class="btn" id="btnCheckUpdate" data-i18n="checkUpdates">Cerca aggiornamenti</button>
+            </div>
+            <div class="upd-status" id="updateStatus" hidden>
+              <span id="updateMsg"></span>
+              <button class="btn primary" id="btnInstallUpdate" hidden data-i18n="install">Installa</button>
             </div>
           </div>
         </div>
@@ -1368,7 +1414,7 @@
       ktSelectAllProviders:'Select all', ktAddSelectedBtn:'Add', ktAddMoreProviders:'Add more providers',
       setTabProviders:'Providers', setProvidersBar:'Providers in the bar',
       setProvidersBarHint:'The ones on the right are the ones available in the "+" menu, where you pick which to use in the "Selected providers" bar.',
-      provXferAvailable:'Available', provXferSelected:'Selected',
+      provXferAvailable:'Available', provXferSelected:'Selected', ktTempColHeader:'Private chat',
       provXferAllRightTitle:'Add all', provXferToRightTitle:'Add', provXferToLeftTitle:'Remove', provXferAllLeftTitle:'Remove all',
       ktTabHistory:'History', ktTabRecipes:'Recipes', ktRecipeNeutral:'Back to Neutral',
       ktNeutralHint:'Text is sent as-is, with no extra instructions.',
@@ -1376,9 +1422,10 @@
       ktCtxUser:'User:', ktCtxYou:'You answered:', ktCtxNew:'New message:',
       ktRetry:'Retry',
       setTabGeneral:'General', setTabShortcuts:'Shortcuts', setTabAppearance:'Appearance',
-      setTabSystem:'System', setTabAbout:'About',
-      setRecipeHotkeys:'Per-recipe shortcuts',
+      setTabSystem:'System', setTabAbout:'Updates',
+      setRecipeHotkeys:'Shortcuts',
       setRecipeHotkeysHint:'Click a field and press the combo; ✕ removes it.',
+      rhNotifyTitle:'Notifications for this shortcut', rhColNotify:'Notify', rhColHotkey:'Key combo',
       setKtTemp:'Temporary chats in providers',
       setKtTempHint:'Where supported: Kotodama requests do not stay in the provider chat history.',
       setKtTempNA:'Not available',
@@ -1389,7 +1436,7 @@
       winMin:'Minimize', winMax:'Maximize', winClose:'Close', version:'Version',
       settingsTitle:'Settings', setTheme:'Theme', themeGinga:'Ginga', themeHisui:'Hisui', themeKohaku:'Kohaku', themeMurasaki:'Murasaki', themeSumi:'Sumi',
       setSecAppearance:'Appearance', setSecGeneral:'General', setSecSystem:'System',
-      setLanguage:'Language', setProvider:'Default provider', setProviderHint:'Default provider, also used when you copy text.',
+      setLanguage:'Language', setProvider:'Default provider', setProviderHint:'used when you copy text.', setRecipe:'Default recipe', setRecipeHint:'used when you copy text.',
       setHotkey:'Global shortcut', setHotkeyHint:'Click and press the combo (e.g. Ctrl + \\).',
       setMonitor:'Clipboard monitor', setMonitorHint:'Show the toast when you copy text.',
       setAutostart:'Start on login', setAutostartHint:'Starts minimized in the tray at login.',
@@ -1406,7 +1453,7 @@
       save:'Save', cancel:'Cancel', reset:'Reset', pressCombo:'Press a combo…', settingsSaved:'Settings saved ✓',
       hotkeyFallback:'Shortcut unavailable on Windows: using {k}',
       setUpdates:'Updates', setUpdatesHint:'Check whether a new version is available.', checkUpdates:'Check for updates',
-      about:'About', aboutLine:'Open source · GPL-3.0 · A KuramaLab project', linkWebsite:'Website', linkSource:'Source code',
+      about:'About', aboutLine:'Open source · GPL-3.0 · A KuramaLab project', linkWebsite:'Website', linkSource:'Source code', linkIssues:'Report an issue',
       updateAvailable:'Update {v} available. <br>Install now? The app will restart.', noUpdate:'You are on the latest version ✓', updating:'Downloading update…', updateError:'Update error',
       updChecking:'Checking for updates…', updNewVersion:'New version {v} available', install:'Install',
       newRecipeTitle:'New recipe', recipeName:'Name', recipeInstr:'Instruction',
@@ -1471,7 +1518,7 @@
     }
 
     const THEMES = ['ginga','hisui','kohaku','murasaki','sumi'];
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Shift+Space', monitor_enabled:true, autostart:true, always_on_top:true, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Alt+Space', monitor_enabled:true, autostart:true, always_on_top:true, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -1540,7 +1587,7 @@
       setActiveInstruction();
       recomputeHintFit();   // the hint length changes with the language → recompute whether it fits
       // Localizza le voci della tray (Apri / Avvia col sistema / Esci) nella lingua corrente.
-      if(TAURI){ try{ invoke('set_tray_labels', { open:t.open, autostart:t.setAutostart, quit:t.quit }); }catch(e){} }
+      if(TAURI){ try{ invoke('set_tray_labels', { open:t.open, autostart:t.setAutostart, alwaysOnTop:t.setAlwaysOnTop, quit:t.quit }); }catch(e){} }
       // Localize the NATIVE provider editing context menu (muda's predefined items are English-only otherwise).
       if(TAURI){ try{ invoke('set_provider_menu_labels', { labels:{ copy:t.copy, cut:t.cut, paste:t.paste, selectAll:t.selectAll, copyUrl:t.copyUrl } }); }catch(e){} }
     }
@@ -1783,6 +1830,84 @@
       });
       input.addEventListener('blur', ()=>commit(true));
     }
+    // Minimal Markdown -> HTML renderer for provider answers. Input is a lightweight Markdown
+    // string built by elToMd() INSIDE the untrusted provider webview (kotodama.rs), never raw
+    // HTML -- markdown-syntax text carries no executable content, so the only thing this renderer
+    // itself must guarantee is that plain text segments are HTML-escaped before insertion (a
+    // provider answer can legitimately contain literal "<script>" as explanatory text). Covers
+    // exactly what elToMd() produces: headings, fenced code, tables, blockquotes, lists,
+    // bold/italic/inline-code/links. Not a full CommonMark implementation by design.
+    function mdEscHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function mdInline(raw){
+      const codes=[];
+      let s=(raw||'').replace(/`([^`]*)`/g,(m,c)=>{ codes.push(c); return ' C'+(codes.length-1)+' '; });
+      s=mdEscHtml(s);
+      s=s.replace(/\[([^\]]*)\]\(([^)\s]*)[^)]*\)/g,(m,txt,href)=>{
+        href=(href||'').trim();
+        const safe=/^(https?:|mailto:)/i.test(href) ? href : '#';
+        return '<a href="'+mdEscHtml(safe)+'" target="_blank" rel="noopener noreferrer">'+txt+'</a>';
+      });
+      s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+      s=s.replace(/\*([^*]+)\*/g,'<em>$1</em>');
+      s=s.replace(/ C(\d+) /g,(m,idx)=>'<code>'+mdEscHtml(codes[+idx])+'</code>');
+      s=s.replace(/\\([*_`\[\]])/g,'$1');
+      return s;
+    }
+    function mdToHtml(md){
+      if(!md) return '';
+      const lines=md.replace(/\r\n?/g,'\n').split('\n');
+      const out=[]; let i=0;
+      while(i<lines.length){
+        const line=lines[i];
+        if(!line.trim()){ i++; continue; }
+        const fence=line.match(/^```(\S*)\s*$/);
+        if(fence){
+          const lang=fence[1]||''; const buf=[]; i++;
+          while(i<lines.length && !/^```\s*$/.test(lines[i])){ buf.push(lines[i]); i++; }
+          i++;
+          out.push('<pre><code'+(lang?' class="language-'+mdEscHtml(lang)+'"':'')+'>'+mdEscHtml(buf.join('\n'))+'</code></pre>');
+          continue;
+        }
+        const h=line.match(/^(#{1,6})\s+(.*)$/);
+        if(h){ const n=h[1].length; out.push('<h'+n+'>'+mdInline(h[2])+'</h'+n+'>'); i++; continue; }
+        if(/^\s*\|.*\|\s*$/.test(line) && lines[i+1] && /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i+1])){
+          const rows=[line]; i+=2;
+          while(i<lines.length && /^\s*\|.*\|\s*$/.test(lines[i])){ rows.push(lines[i]); i++; }
+          const cellsOf=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+          const head=cellsOf(rows[0]);
+          let t='<table><thead><tr>'+head.map(c=>'<th>'+mdInline(c)+'</th>').join('')+'</tr></thead><tbody>';
+          for(let r=1;r<rows.length;r++){ t+='<tr>'+cellsOf(rows[r]).map(c=>'<td>'+mdInline(c)+'</td>').join('')+'</tr>'; }
+          t+='</tbody></table>';
+          out.push(t);
+          continue;
+        }
+        if(/^\s*>/.test(line)){
+          const buf=[]; while(i<lines.length && /^\s*>/.test(lines[i])){ buf.push(lines[i].replace(/^\s*>\s?/,'')); i++; }
+          out.push('<blockquote>'+mdToHtml(buf.join('\n'))+'</blockquote>');
+          continue;
+        }
+        if(/^\s*[-*]\s+/.test(line)){
+          const items=[]; while(i<lines.length && /^\s*[-*]\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*[-*]\s+/,'')); i++; }
+          out.push('<ul>'+items.map(it=>'<li>'+mdInline(it)+'</li>').join('')+'</ul>');
+          continue;
+        }
+        if(/^\s*\d+\.\s+/.test(line)){
+          const items=[]; while(i<lines.length && /^\s*\d+\.\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*\d+\.\s+/,'')); i++; }
+          out.push('<ol>'+items.map(it=>'<li>'+mdInline(it)+'</li>').join('')+'</ol>');
+          continue;
+        }
+        const buf=[line]; i++;
+        while(i<lines.length && lines[i].trim() && !/^(```|#{1,6}\s|\s*[-*]\s|\s*\d+\.\s|\s*>|\s*\|.*\|\s*$)/.test(lines[i])){ buf.push(lines[i]); i++; }
+        out.push('<p>'+mdInline(buf.join(' '))+'</p>');
+      }
+      return out.join('\n');
+    }
+    // Populates a card body from a saved/live answer: renders `md` (Markdown) when present,
+    // falling back to plain text for the legacy nav-sentinel delivery path (never carries `md`).
+    function ktRenderCardBody(body, text, md){
+      if(md && md.trim()){ body.classList.add('kt-md'); body.innerHTML=mdToHtml(md); }
+      else { body.classList.remove('kt-md'); body.textContent=text; }
+    }
     // Rebuilds one SAVED turn in the thread (final cards, no spinners). Failed cards get
     // the ⟳ retry too: they are registered under a synthetic bid so ktRetryKey can reuse them.
     function ktRenderSavedTurn(turn){
@@ -1809,7 +1934,7 @@
         const body=card.querySelector('.kt-card-body');
         const text=((a.text)||'').trim();
         if(text){
-          body.textContent=text;
+          ktRenderCardBody(body, text, a.md);
           const foot=card.querySelector('.kt-card-foot'); foot.hidden=false;
           const cp=foot.querySelector('.kt-copy'); cp.textContent=TR.copy;
           cp.addEventListener('click', async()=>{ await writeClipboard(text); cp.textContent=TR.copied; setTimeout(()=>{ cp.textContent=TR.copy; },1500); });
@@ -1941,6 +2066,7 @@
     }
     let inlineSeq=0;
     const inlinePending={};     // bid -> true (answers routed to inline_finish, not to cards)
+    const inlineSessions={};    // bid -> in-flight Cronologia session for a recipe-shortcut transform
     // live status line in the processing toast (cross-window Tauri event, no re-show).
     // On 'connect' we also pass the provider (name + tile glyph/color) so the toast can
     // show WHICH provider is working, highlighted.
@@ -1956,9 +2082,17 @@
       const bid='inl-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
       inlinePending[bid]=true;
       const ptext=buildInlinePrompt(recipeStr, text);
+      // Recipe-shortcut transforms now ALSO get a Cronologia entry (own session, one turn, the
+      // one provider used) -- same {id,title,created,updated,turns} shape ktDoSend() builds, so
+      // ktRenderSavedTurn() renders it identically. Kept in inlineSessions (not persisted yet)
+      // until the answer actually lands in inlineOnAnswer, so a failed dispatch never leaves a
+      // stray empty entry.
+      inlineSessions[bid]={ id:'s'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
+        title:text.replace(/\s+/g,' ').slice(0,48), created:Date.now(), updated:Date.now(),
+        turns:[{ text, answers:{ [key]:{status:'pending', text:''} } }] };
       const bk={}; bk[key]=ktBaseUrlFor(key, ptext);
       invoke('kotodama_broadcast',{broadcastId:bid, text:ptext, keys:[key], newChat:true, bases:bk})
-        .catch(()=>{ delete inlinePending[bid]; invoke('inline_fail',{reason:'dispatch'}).catch(()=>{}); });
+        .catch(()=>{ delete inlinePending[bid]; delete inlineSessions[bid]; invoke('inline_fail',{reason:'dispatch'}).catch(()=>{}); });
     }
     function inlineOnAnswer(d){
       if(!inlinePending[d.broadcastId]) return false;
@@ -1971,6 +2105,14 @@
         if(st==='done' && d.key) invoke('mark_provider_known',{key:d.key}).catch(()=>{}); // same signal as ktOnAnswer
       }
       else invoke('inline_fail',{reason:st}).catch(()=>{});
+      const sess=inlineSessions[d.broadcastId];
+      delete inlineSessions[d.broadcastId];
+      if(sess && d.key){
+        sess.turns[0].answers[d.key]={status:st, text, md:d.md||''};
+        sess.updated=Date.now();
+        ktAllSessions.unshift(sess);
+        ktPersist(); renderKtSessions();
+      }
       return true;
     }
 
@@ -2089,7 +2231,7 @@
         // from the bar with a chip click without going back into Settings.
         const add=document.createElement('button');
         add.className='kt-chip-add'; add.type='button'; add.textContent='+';
-        add.title=TR.ktAddProvider||'Aggiungi provider';
+        add.title=TR.ktAddProvider||'Add provider';
         add.addEventListener('click', e=>{ e.stopPropagation(); openKtAddMenu(add, enabled); });
         ktChipsEl.appendChild(add);
       }
@@ -2125,6 +2267,22 @@
           renderProviderXfer();
         });
         row.addEventListener('dblclick', ()=> inSel ? provXferMoveOut(key) : provXferMoveIn(key));
+        // Temp-chat toggle: only meaningful for a provider actually in use (Selezionati) --
+        // merged in here instead of a separate "Chat temporanee nei provider" list so the same
+        // provider isn't shown twice in the tab.
+        if(inSel){
+          const sup=ktTempSupport(key);
+          const wrap=document.createElement('span'); wrap.className='prov-xfer-temp';
+          wrap.addEventListener('click', e=>e.stopPropagation());   // don't trigger the row's own pick/move
+          if(!sup){ const na=document.createElement('span'); na.className='sub'; na.textContent=TR.setKtTempNA; wrap.appendChild(na); }
+          const sw=document.createElement('label'); sw.className='switch sm'; sw.title=TR.setKtTempHint||TR.setKtTemp||'';
+          sw.innerHTML='<input type="checkbox"><span class="slider"></span>';
+          const cb=sw.querySelector('input'); cb.dataset.prov=key;
+          cb.disabled=!sup;
+          cb.checked=sup && ((currentSettings.kt_temp_providers||{})[key]!==false);
+          wrap.appendChild(sw);
+          row.appendChild(wrap);
+        }
         (inSel?selEl:availEl).appendChild(row);
       });
     }
@@ -2194,7 +2352,7 @@
         right.appendChild(dot);
         const login=document.createElement('button');
         login.type='button'; login.className='kt-add-login';
-        login.textContent=t.open||'Apri';
+        login.textContent=t.open||'Open';
         login.addEventListener('click', e=>{
           e.preventDefault(); e.stopPropagation();
           closeKtAddMenu();
@@ -2216,7 +2374,7 @@
       allCb.addEventListener('change', ()=>{ checks.forEach(cb=>{ cb.checked=allCb.checked; }); });
       checks.forEach(cb=>cb.addEventListener('change', ()=>{ allCb.checked=checks.every(c=>c.checked); }));
       const addBtn=document.createElement('button'); addBtn.className='btn'; addBtn.type='button';
-      addBtn.textContent=t.ktAddSelectedBtn||'Aggiungi';
+      addBtn.textContent=t.ktAddSelectedBtn||'Add';
       addBtn.addEventListener('click', ()=>{
         // Full checklist now -- checked adds, unchecked (incl. ones that WERE in the bar) removes.
         checks.forEach(cb=>{ const key=cb.dataset.prov; if(cb.checked) ktSel.add(key); else ktSel.delete(key); });
@@ -2321,7 +2479,7 @@
       // session bookkeeping: store the final answer and persist
       const turn=ktTurnByBid[d.broadcastId];
       if(turn && turn.answers && turn.answers[d.key]){
-        turn.answers[d.key]={ status:st, text:(d.text||'').trim() };
+        turn.answers[d.key]={ status:st, text:(d.text||'').trim(), md:d.md||'' };
         if(ktSession){ ktSession.updated=Date.now(); }
         ktPersist(); renderKtSessions();
       }
@@ -2346,7 +2504,7 @@
       const text=(d.text||'').trim();
       ref.text=text;
       if(text){
-        ref.body.classList.remove('empty'); ref.body.textContent=text;
+        ref.body.classList.remove('empty'); ktRenderCardBody(ref.body, text, d.md);
         ref.foot.hidden=false;
       } else {
         ref.body.classList.add('empty');
@@ -2376,7 +2534,14 @@
       const t=TR, text=ktInput.value.trim();
       const keys=[...ktLoadSel()];
       if(!text) return;
-      if(!keys.length){ toast(t.ktSelectOne); return; }
+      if(!keys.length){
+        // Inexperienced user typed something with zero providers selected -- Invio would
+        // otherwise silently do nothing (just a toast). Open the "+" menu directly so they
+        // land on the fix instead of getting stuck wondering why nothing happens.
+        const addBtn=ktChipsEl.querySelector('.kt-chip-add');
+        if(addBtn) addBtn.click(); else toast(t.ktSelectOne);
+        return;
+      }
       if(!TAURI){ toast(t.openError); return; }
       if(!ktSession) ktNewConversation();
       const bid='b'+(ktSeq++)+'-'+Math.random().toString(36).slice(2,8);
@@ -2697,7 +2862,10 @@
     const setProvider=document.getElementById('setProvider');
     const setRecipe=document.getElementById('setRecipe');
     const setHotkey=document.getElementById('setHotkey');
-    const setMonitor=document.getElementById('setMonitor');
+    // monitor_enabled's only control: the "Notifica" switch on the "Scorciatoia globale" row
+    // in Scorciatoie (was also a standalone "Monitor appunti" toggle in Sistema -- removed as
+    // a duplicate control for the same setting).
+    const rhGlobalNotify=document.getElementById('rhGlobalNotify');
     const setAutostart=document.getElementById('setAutostart');
     const setAlwaysOnTop=document.getElementById('setAlwaysOnTop');
     let capturedHotkey=DEFAULT_SETTINGS.hotkey;
@@ -2744,6 +2912,7 @@
 
     /* --- per-recipe global shortcuts (Shortcuts tab) --- */
     let capturedRecipeHotkeys={};        // "key:x"/"id:y" -> accelerator (form state)
+    let capturedRecipeNotify={};         // "key:x"/"id:y" -> false (only non-default entries; absent = notify on)
     function allRecipeEntries(){
       const t=TR, out=[];
       recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{
@@ -2778,34 +2947,25 @@
         inp.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a){ capturedRecipeHotkeys[en.str]=a; inp.value=friendlyHotkey(a); inp.blur(); } });
         const clr=document.createElement('button'); clr.className='rh-clear'; clr.textContent='✕'; clr.title=TR.reset||'';
         clr.addEventListener('click', ()=>{ delete capturedRecipeHotkeys[en.str]; inp.value=friendlyHotkey(''); rhMarkConflicts(); });
-        row.appendChild(nm); row.appendChild(inp); row.appendChild(clr);
+        const swCol=document.createElement('span'); swCol.className='rh-notify-col';
+        const sw=document.createElement('label'); sw.className='switch sm'; sw.title=TR.rhNotifyTitle||'Notifiche';
+        sw.innerHTML='<input type="checkbox"><span class="slider"></span>';
+        const ncb=sw.querySelector('input');
+        ncb.checked=capturedRecipeNotify[en.str]!==false;
+        ncb.addEventListener('change', ()=>{
+          if(ncb.checked) delete capturedRecipeNotify[en.str]; else capturedRecipeNotify[en.str]=false;
+        });
+        swCol.appendChild(sw);
+        row.appendChild(nm); row.appendChild(inp); row.appendChild(clr); row.appendChild(swCol);
         box.appendChild(row);
       });
       rhMarkConflicts();
     }
 
-    /* --- per-provider temporary-chat toggles (System tab) --- */
+    /* --- per-provider temporary-chat support (merged into the "Selezionati" column of the
+       provider transfer list -- see renderProviderXfer) --- */
     function ktTempSupport(key){ const p=PROVIDERS[key]; return !!(p&&(p.temp||p.tempUrl||p.tempClick)); }
     function ktTempEnabled(key){ return ktTempSupport(key) && ((currentSettings.kt_temp_providers||{})[key]!==false); }
-    function buildKtTempRows(){
-      const box=document.getElementById('ktTempList'); if(!box) return;
-      box.innerHTML='';
-      ktRealKeys().forEach(key=>{
-        const p=PROVIDERS[key];
-        const row=document.createElement('div'); row.className='rh-row';
-        const nm=document.createElement('div'); nm.className='rh-name'; nm.textContent=p.name;
-        row.appendChild(nm);
-        const sup=ktTempSupport(key);
-        if(!sup){ const na=document.createElement('span'); na.className='sub'; na.textContent=TR.setKtTempNA; row.appendChild(na); }
-        const sw=document.createElement('label'); sw.className='switch';
-        sw.innerHTML='<input type="checkbox"><span class="slider"></span>';
-        const cb=sw.querySelector('input'); cb.dataset.prov=key;
-        cb.disabled=!sup;
-        cb.checked=sup && ((currentSettings.kt_temp_providers||{})[key]!==false);
-        row.appendChild(sw);
-        box.appendChild(row);
-      });
-    }
 
     function fillSettingsForm(){
       setTheme.value=validTheme(currentSettings.theme);
@@ -2816,14 +2976,14 @@
       [setTheme,setLang,setProvider,setRecipe].forEach(s=>{ if(s.__cs) s.__cs.refresh(); }); // refresh the custom dropdowns
       capturedHotkey=currentSettings.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey);
       capturedRecipeHotkeys={ ...(currentSettings.recipe_hotkeys||{}) };
+      capturedRecipeNotify={ ...(currentSettings.recipe_notify||{}) };
+      rhGlobalNotify.checked=!!currentSettings.monitor_enabled;
       buildShortcutRows();
-      setMonitor.checked=!!currentSettings.monitor_enabled;
       setAutostart.checked=!!currentSettings.autostart;
       setAlwaysOnTop.checked=!!currentSettings.always_on_top;
-      buildKtTempRows();
       renderProviderXfer();
     }
-    function openSettings(){ fillSettingsForm(); settingsShowTab('general'); openModal(settingsOverlay); checkUpdate(true); }
+    function openSettings(){ fillSettingsForm(); settingsShowTab('system'); openModal(settingsOverlay); checkUpdate(true); }
     setTheme.addEventListener('change', ()=>applyTheme(setTheme.value)); // live preview
     setLang.addEventListener('change', ()=>{ applyLang(setLang.value); }); // live language preview (restored on Cancel)
 
@@ -2837,7 +2997,8 @@
         Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) vals[a]=(vals[a]||0)+1; });
         Object.keys(capturedRecipeHotkeys).forEach(k=>{ const a=capturedRecipeHotkeys[k]; if(a && vals[a]===1) rh[k]=a; });
       }
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:setMonitor.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('#ktTempList input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
+      const rn={}; Object.keys(capturedRecipeNotify).forEach(k=>{ if(capturedRecipeNotify[k]===false) rn[k]=false; });
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
       closeModal(settingsOverlay);
@@ -3369,6 +3530,11 @@
       listen('app://autostart-changed', e=>{
         currentSettings.autostart = !!e.payload;
         if(setAutostart) setAutostart.checked = currentSettings.autostart;
+      });
+      // Same sync, for "Sempre in primo piano" toggled from the tray.
+      listen('app://always-on-top-changed', e=>{
+        currentSettings.always_on_top = !!e.payload;
+        if(setAlwaysOnTop) setAlwaysOnTop.checked = currentSettings.always_on_top;
       });
     }
 

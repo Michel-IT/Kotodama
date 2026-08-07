@@ -78,7 +78,7 @@
   "setSecSystem": "سیستم",
   "setLanguage": "زبان",
   "setProvider": "ارائه‌دهنده پیش‌فرض",
-  "setProviderHint": "ارائه‌دهنده پیش‌فرض، همچنین هنگام کپی متن.",
+  "setProviderHint": "هنگام کپی متن استفاده می‌شود.",
   "setHotkey": "میان‌بر سراسری",
   "setHotkeyHint": "کلیک کنید و ترکیب را بزنید (مثلاً Ctrl + \\).",
   "setMonitor": "نظارت بر کلیپ‌بورد",
@@ -149,7 +149,7 @@
   "selectAll": "انتخاب همه",
   "neutralHint": "متن کپی‌شده بدون تغییر به ارائه‌دهنده پیش‌فرض ارسال می‌شود.",
   "setRecipe": "دستور پیش‌فرض",
-  "setRecipeHint": "دستوری که هنگام کپی متن استفاده می‌شود.",
+  "setRecipeHint": "هنگام کپی متن استفاده می‌شود.",
   "neutralAutosend": "ارسال خودکار",
   "neutralAutosendHint": "ارسال خودکار: وقتی روشن است، متن بلافاصله به ارائه‌دهنده ارسال می‌شود؛ وقتی خاموش است، فقط جای‌گذاری می‌شود تا پیش از ارسال بتوانید آن را ویرایش کنید.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "اعلان‌ها برای این میان‌بر",
+  "rhColNotify": "اطلاع",
+  "rhColHotkey": "ترکیب کلید",
+  "ktTempColHeader": "گفتگوی خصوصی",
+  "linkIssues": "گزارش مشکل",
+  "oopsTitle": "مشکلی پیش آمد",
+  "oopsMessage": "Kotodama نتوانست این صفحه را بارگذاری کند.\nراه‌اندازی مجدد را امتحان کنید.",
+  "oopsRestart": "راه‌اندازی مجدد"
 }

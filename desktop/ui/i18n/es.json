@@ -86,7 +86,7 @@
   "setSecSystem": "Sistema",
   "setLanguage": "Idioma",
   "setProvider": "Proveedor predeterminado",
-  "setProviderHint": "Proveedor usado por defecto, también al copiar texto.",
+  "setProviderHint": "se usa al copiar texto.",
   "setHotkey": "Atajo global",
   "setHotkeyHint": "Haz clic y pulsa la combinación (p. ej. Ctrl + \\).",
   "setMonitor": "Monitor del portapapeles",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "El texto copiado se envía tal cual al proveedor predeterminado.",
   "setRecipe": "Receta predeterminada",
-  "setRecipeHint": "Receta usada cuando copias texto.",
+  "setRecipeHint": "se usa al copiar texto.",
   "neutralAutosend": "Envío automático",
   "neutralAutosendHint": "Envío automático: si está activado, el texto se envía de inmediato al proveedor; si está desactivado, solo se pega para que puedas editarlo antes de enviarlo.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Notificaciones para este atajo",
+  "rhColNotify": "Notificación",
+  "rhColHotkey": "Combinación",
+  "ktTempColHeader": "Chat privado",
+  "linkIssues": "Reportar un problema",
+  "oopsTitle": "Algo salió mal",
+  "oopsMessage": "Kotodama no pudo cargar esta página.\nIntenta reiniciar.",
+  "oopsRestart": "Reiniciar"
 }

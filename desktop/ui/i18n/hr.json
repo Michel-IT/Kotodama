@@ -86,7 +86,7 @@
   "setSecSystem": "Sustav",
   "setLanguage": "Jezik",
   "setProvider": "Zadani pružatelj",
-  "setProviderHint": "Zadani pružatelj, i pri kopiranju teksta.",
+  "setProviderHint": "koristi se pri kopiranju teksta.",
   "setHotkey": "Globalni prečac",
   "setHotkeyHint": "Klikni i pritisni kombinaciju (npr. Ctrl + \\).",
   "setMonitor": "Nadzor međuspremnika",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Kopirani tekst šalje se kakav jest zadanom pružatelju.",
   "setRecipe": "Zadani recept",
-  "setRecipeHint": "Recept koji se koristi kada kopirate tekst.",
+  "setRecipeHint": "koristi se pri kopiranju teksta.",
   "neutralAutosend": "Automatsko slanje",
   "neutralAutosendHint": "Automatsko slanje: kad je uključeno, tekst se odmah šalje pružatelju; kad je isključeno, samo se zalijepi kako biste ga mogli urediti prije slanja.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Obavijesti za ovaj prečac",
+  "rhColNotify": "Obavijesti",
+  "rhColHotkey": "Kombinacija tipki",
+  "ktTempColHeader": "Privatni razgovor",
+  "linkIssues": "Prijavi problem",
+  "oopsTitle": "Nešto je pošlo po zlu",
+  "oopsMessage": "Kotodama nije uspjela učitati ovu stranicu.\nPokušajte ponovno pokrenuti.",
+  "oopsRestart": "Ponovno pokreni"
 }

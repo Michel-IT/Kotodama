@@ -78,7 +78,7 @@
   "setSecSystem": "ସିଷ୍ଟମ୍",
   "setLanguage": "ଭାଷା",
   "setProvider": "ଡିଫଲ୍ଟ ପ୍ରଦାନକାରୀ",
-  "setProviderHint": "ଡିଫଲ୍ଟ ଭାବେ ବ୍ୟବହୃତ ପ୍ରଦାନକାରୀ, ଲେଖା କପି କଲାବେଳେ ବି।",
+  "setProviderHint": "ଟେକ୍ସଟ୍ କପି କରିବା ସମୟରେ ବ୍ୟବହୃତ ହୁଏ।",
   "setHotkey": "ଗ୍ଲୋବାଲ୍ ସର୍ଟକଟ୍",
   "setHotkeyHint": "କ୍ଲିକ୍ କରି ସଂଯୋଗ ଦବାନ୍ତୁ (ଯଥା Ctrl + \\)।",
   "setMonitor": "କ୍ଲିପବୋର୍ଡ ମନିଟର୍",
@@ -149,7 +149,7 @@
   "selectAll": "ସବୁ ବାଛନ୍ତୁ",
   "neutralHint": "କପି କରାଯାଇଥିବା ଟେକ୍ସ୍ଟ ଯେପରି ଅଛି ସେପରି ଡିଫଲ୍ଟ ପ୍ରୋଭାଇଡରକୁ ପଠାଯାଏ।",
   "setRecipe": "ଡିଫଲ୍ଟ ରେସିପି",
-  "setRecipeHint": "ଟେକ୍ସ୍ଟ କପି କଲାବେଳେ ବ୍ୟବହୃତ ରେସିପି।",
+  "setRecipeHint": "ଟେକ୍ସଟ୍ କପି କରିବା ସମୟରେ ବ୍ୟବହୃତ ହୁଏ।",
   "neutralAutosend": "ସ୍ୱୟଂ-ପଠାନ୍ତୁ",
   "neutralAutosendHint": "ସ୍ୱୟଂ-ପଠାନ୍ତୁ: ଚାଲୁ ଥିଲେ, ଟେକ୍ସଟ୍ ତୁରନ୍ତ ପ୍ରଦାତାଙ୍କୁ ପଠାଯାଏ; ବନ୍ଦ ଥିଲେ, ପଠାଇବା ପୂର୍ବରୁ ଆପଣ ଏହାକୁ ସମ୍ପାଦନ କରିପାରିବେ ବୋଲି ଏହା କେବଳ ପେଷ୍ଟ ହୁଏ।",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "ଏହି ସର୍ଟକଟ୍ ପାଇଁ ବିଜ୍ଞପ୍ତି",
+  "rhColNotify": "ସୂଚିତ କରନ୍ତୁ",
+  "rhColHotkey": "କି କମ୍ବୋ",
+  "ktTempColHeader": "ବ୍ୟକ୍ତିଗତ ଚାଟ୍",
+  "linkIssues": "ସମସ୍ୟା ରିପୋର୍ଟ କରନ୍ତୁ",
+  "oopsTitle": "କିଛି ଭୁଲ ହୋଇଗଲା",
+  "oopsMessage": "Kotodama ଏହି ପୃଷ୍ଠାକୁ ଲୋଡ୍ କରିପାରିଲା ନାହିଁ।\nପୁନଃଚାଳନା କରିବାକୁ ଚେଷ୍ଟା କରନ୍ତୁ।",
+  "oopsRestart": "ପୁନଃଚାଳନା କରନ୍ତୁ"
 }

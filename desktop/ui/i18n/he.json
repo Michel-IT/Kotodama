@@ -86,7 +86,7 @@
   "setSecSystem": "מערכת",
   "setLanguage": "שפה",
   "setProvider": "ספק ברירת מחדל",
-  "setProviderHint": "הספק המשמש כברירת מחדל, גם בעת העתקת טקסט.",
+  "setProviderHint": "משמשת בעת העתקת טקסט.",
   "setHotkey": "קיצור דרך גלובלי",
   "setHotkeyHint": "לחץ והקש על הצירוף (למשל Ctrl + \\).",
   "setMonitor": "ניטור לוח",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "הטקסט שהועתק נשלח כפי שהוא לספק ברירת המחדל.",
   "setRecipe": "מתכון ברירת מחדל",
-  "setRecipeHint": "המתכון שבו משתמשים כשמעתיקים טקסט.",
+  "setRecipeHint": "משמשת בעת העתקת טקסט.",
   "neutralAutosend": "שליחה אוטומטית",
   "neutralAutosendHint": "שליחה אוטומטית: כשמופעל, הטקסט נשלח מיד לספק; כשכבוי, הוא רק מודבק כדי שתוכל לערוך אותו לפני השליחה.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "התראות עבור קיצור דרך זה",
+  "rhColNotify": "התראה",
+  "rhColHotkey": "צירוף מקשים",
+  "ktTempColHeader": "צ'אט פרטי",
+  "linkIssues": "דווח על בעיה",
+  "oopsTitle": "משהו השתבש",
+  "oopsMessage": "ל-Kotodama לא הצליחה לטעון את הדף הזה.\nנסה להפעיל מחדש.",
+  "oopsRestart": "הפעל מחדש"
 }

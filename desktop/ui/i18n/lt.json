@@ -86,7 +86,7 @@
   "setSecSystem": "Sistema",
   "setLanguage": "Kalba",
   "setProvider": "Numatytasis teikėjas",
-  "setProviderHint": "Pagal numatytuosius nustatymus naudojamas teikėjas, taip pat kopijuojant tekstą.",
+  "setProviderHint": "naudojama kopijuojant tekstą.",
   "setHotkey": "Visuotinis spartusis klavišas",
   "setHotkeyHint": "Spustelėkite ir paspauskite derinį (pvz., Ctrl + \\).",
   "setMonitor": "Iškarpinės stebėjimas",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Nukopijuotas tekstas siunčiamas toks, koks yra, į numatytąjį provaiderį.",
   "setRecipe": "Numatytasis receptas",
-  "setRecipeHint": "Receptas, naudojamas kopijuojant tekstą.",
+  "setRecipeHint": "naudojama kopijuojant tekstą.",
   "neutralAutosend": "Automatinis siuntimas",
   "neutralAutosendHint": "Automatinis siuntimas: kai įjungta, tekstas iškart siunčiamas tiekėjui; kai išjungta, jis tik įklijuojamas, kad galėtumėte jį redaguoti prieš siųsdami.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Šio spartaus klavišo pranešimai",
+  "rhColNotify": "Pranešti",
+  "rhColHotkey": "Klavišų derinys",
+  "ktTempColHeader": "Privatus pokalbis",
+  "linkIssues": "Pranešti apie problemą",
+  "oopsTitle": "Kažkas nutiko negerai",
+  "oopsMessage": "Kotodama nepavyko įkelti šio puslapio.\nBandykite paleisti iš naujo.",
+  "oopsRestart": "Paleisti iš naujo"
 }

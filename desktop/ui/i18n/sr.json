@@ -86,7 +86,7 @@
   "setSecSystem": "Систем",
   "setLanguage": "Језик",
   "setProvider": "Подразумевани добављач",
-  "setProviderHint": "Подразумевани добављач, и при копирању текста.",
+  "setProviderHint": "користи се при копирању текста.",
   "setHotkey": "Глобална пречица",
   "setHotkeyHint": "Кликни и притисни комбинацију (нпр. Ctrl + \\).",
   "setMonitor": "Надзор привремене меморије",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Копирани текст се шаље непромењен подразумеваном провајдеру.",
   "setRecipe": "Подразумевани рецепт",
-  "setRecipeHint": "Рецепт који се користи када копирате текст.",
+  "setRecipeHint": "користи се при копирању текста.",
   "neutralAutosend": "Аутоматско слање",
   "neutralAutosendHint": "Аутоматско слање: када је укључено, текст се одмах шаље провајдеру; када је искључено, само се налепи да бисте могли да га уредите пре слања.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Обавештења за ову пречицу",
+  "rhColNotify": "Обавести",
+  "rhColHotkey": "Комбинација тастера",
+  "ktTempColHeader": "Приватни разговор",
+  "linkIssues": "Пријави проблем",
+  "oopsTitle": "Нешто није у реду",
+  "oopsMessage": "Kotodama није успела да учита ову страницу.\nПокушајте да рестартујете.",
+  "oopsRestart": "Рестартуј"
 }

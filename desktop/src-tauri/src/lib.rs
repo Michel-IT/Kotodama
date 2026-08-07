@@ -31,6 +31,8 @@ pub struct AppState {
     pub settings: Mutex<Settings>,
     /// Reference to the "Start on login" menu item (to sync its check).
     pub autostart_item: Mutex<Option<CheckMenuItem<Wry>>>,
+    /// Reference to the "Always on top" menu item (to sync its check).
+    pub always_on_top_item: Mutex<Option<CheckMenuItem<Wry>>>,
     /// Tray "Open" / "Quit" items, to localize their text at runtime (set_tray_labels).
     pub open_item: Mutex<Option<MenuItem<Wry>>>,
     pub quit_item: Mutex<Option<MenuItem<Wry>>>,
@@ -41,6 +43,10 @@ pub struct AppState {
     /// While an inline transform runs, the clipboard monitor must NOT toast the
     /// simulated Ctrl+C copy (it is not a user copy).
     pub inline_suppress_toast: AtomicBool,
+    /// Whether the CURRENT in-flight inline transform's recipe has toasts enabled
+    /// (`Settings.recipe_notify`, resolved once at dispatch in `inline_transform`) --
+    /// `inline_toast`/`inline_finish`/`inline_fail` check this before showing anything.
+    pub inline_notify: AtomicBool,
     /// Original (x,y) of the main window when it was parked off-screen for an inline
     /// transform (only set when the window was hidden); restored afterwards.
     pub inline_saved_pos: Mutex<Option<(i32, i32)>>,
@@ -68,6 +74,23 @@ fn accept_clipboard(app: AppHandle) -> Result<(), String> {
     }
     toast::hide(&app);
     Ok(())
+}
+
+/// Closes the app entirely (used by the "Oops" fallback page's Chiudi button, same effect as
+/// tray "Esci"). Also registered as an invokable command (OOPS_PAGE_JS tries invoke() AND the
+/// title-sentinel poller -- belt and suspenders, since which one actually reaches Rust from a
+/// `chrome-error://` document hasn't been confirmed empirically yet).
+#[tauri::command]
+fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
+/// Relaunches the app (used by the "Oops" fallback page's Riavvia button: a page reload can't fix
+/// a broken webview environment, but a fresh process launch has been observed to clear it). Same
+/// dual-path reasoning as `quit_app`.
+#[tauri::command]
+fn restart_app(app: AppHandle) {
+    app.restart();
 }
 
 /// Hides the toast (✕ button / frontend-side auto-hide).
@@ -451,15 +474,18 @@ fn mark_provider_known(app: AppHandle, key: String) {
     set_provider_known(&app, &key, true);
 }
 
-/// Localizes the tray labels (Open / Start-on-login / Quit) in the app language.
+/// Localizes the tray labels (Open / Start-on-login / Always-on-top / Quit) in the app language.
 /// Called by the frontend at startup and on every language change.
 #[tauri::command]
-fn set_tray_labels(app: AppHandle, open: String, autostart: String, quit: String) {
+fn set_tray_labels(app: AppHandle, open: String, autostart: String, always_on_top: String, quit: String) {
     if let Some(i) = app.state::<AppState>().open_item.lock().unwrap().as_ref() {
         let _ = i.set_text(open);
     }
     if let Some(i) = app.state::<AppState>().autostart_item.lock().unwrap().as_ref() {
         let _ = i.set_text(autostart);
+    }
+    if let Some(i) = app.state::<AppState>().always_on_top_item.lock().unwrap().as_ref() {
+        let _ = i.set_text(always_on_top);
     }
     if let Some(i) = app.state::<AppState>().quit_item.lock().unwrap().as_ref() {
         let _ = i.set_text(quit);
@@ -656,6 +682,15 @@ fn inline_transform(app: AppHandle, recipe: String) {
         return; // one transform at a time
     }
     state.inline_suppress_toast.store(true, Ordering::SeqCst);
+    let notify = state
+        .settings
+        .lock()
+        .unwrap()
+        .recipe_notify
+        .get(&recipe)
+        .copied()
+        .unwrap_or(true);
+    state.inline_notify.store(notify, Ordering::SeqCst);
     std::thread::spawn(move || {
         // let the user release the hotkey keys before we inject the copy combo (on macOS a still-held
         // Ctrl/Opt would pollute the synthetic Cmd+C), then copy.
@@ -667,8 +702,8 @@ fn inline_transform(app: AppHandle, recipe: String) {
         {
             if !ax_is_trusted(true) {
                 debug::log("inline_transform: macOS Accessibility not granted");
-                toast::show_state(&app, "error", "accessibility");
                 let st = app.state::<AppState>();
+                if st.inline_notify.load(Ordering::SeqCst) { toast::show_state(&app, "error", "accessibility"); }
                 st.inline_busy.store(false, Ordering::SeqCst);
                 st.inline_suppress_toast.store(false, Ordering::SeqCst);
                 return;
@@ -736,8 +771,8 @@ fn inline_transform(app: AppHandle, recipe: String) {
         // nothing new, tell the user to select text (immediate, clear) instead of silently reusing
         // the old clipboard or hanging on a processing spinner.
         if !fresh {
-            toast::show_state(&app, "error", "empty");
             let st = app.state::<AppState>();
+            if st.inline_notify.load(Ordering::SeqCst) { toast::show_state(&app, "error", "empty"); }
             st.inline_busy.store(false, Ordering::SeqCst);
             st.inline_suppress_toast.store(false, Ordering::SeqCst);
             return;
@@ -763,9 +798,9 @@ fn inline_transform(app: AppHandle, recipe: String) {
                 // whole window would then silently no-op on the busy check at the top. Fail fast
                 // and visibly instead.
                 debug::log("inline_transform: main window not found, aborting");
-                toast::show_state(&app, "error", "sendfail");
-                inline_restore_window(&app);
                 let st = app.state::<AppState>();
+                if st.inline_notify.load(Ordering::SeqCst) { toast::show_state(&app, "error", "sendfail"); }
+                inline_restore_window(&app);
                 st.inline_busy.store(false, Ordering::SeqCst);
                 st.inline_suppress_toast.store(false, Ordering::SeqCst);
                 return;
@@ -786,10 +821,13 @@ fn inline_transform(app: AppHandle, recipe: String) {
     });
 }
 
-/// Frontend -> show a localized inline-transform toast state.
+/// Frontend -> show a localized inline-transform toast state (gated by the current recipe's
+/// `recipe_notify`, resolved in `inline_transform`).
 #[tauri::command]
 fn inline_toast(app: AppHandle, mode: String, label: String) {
-    toast::show_state(&app, &mode, &label);
+    if app.state::<AppState>().inline_notify.load(Ordering::SeqCst) {
+        toast::show_state(&app, &mode, &label);
+    }
 }
 
 /// Inline transform answer arrived: put it in the clipboard (self-marked) and paste it
@@ -804,8 +842,8 @@ fn inline_finish(app: AppHandle, text: String) -> Result<(), String> {
         inline_restore_window(&app); // hide the off-screen host again before pasting
         std::thread::sleep(std::time::Duration::from_millis(150));
         send_combo(VK_V);
-        toast::show_state(&app, "done", "");
         let st = app.state::<AppState>();
+        if st.inline_notify.load(Ordering::SeqCst) { toast::show_state(&app, "done", ""); }
         st.inline_busy.store(false, Ordering::SeqCst);
         st.inline_suppress_toast.store(false, Ordering::SeqCst);
     });
@@ -815,9 +853,9 @@ fn inline_finish(app: AppHandle, text: String) -> Result<(), String> {
 /// Inline transform failed: error toast + release the flags.
 #[tauri::command]
 fn inline_fail(app: AppHandle, reason: String) {
-    toast::show_state(&app, "error", &reason);
-    inline_restore_window(&app);
     let st = app.state::<AppState>();
+    if st.inline_notify.load(Ordering::SeqCst) { toast::show_state(&app, "error", &reason); }
+    inline_restore_window(&app);
     st.inline_busy.store(false, Ordering::SeqCst);
     st.inline_suppress_toast.store(false, Ordering::SeqCst);
 }
@@ -913,26 +951,28 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
     // Etichette MONOLINGUA nella lingua dell'app (it/en hardcoded; en di default). Le bilingue
     // ("Apri / Open"...) erano troppo lunghe. Il frontend poi le localizza per TUTTE le lingue
     // via set_tray_labels (all'avvio e ad ogni cambio lingua).
-    let it = {
+    let (it, always_on_top_on) = {
         let st = app.state::<AppState>();
         let g = st.settings.lock().unwrap();
-        g.language == "it"
+        (g.language == "it", g.always_on_top)
     };
-    let (open_lbl, auto_lbl, quit_lbl) = if it {
-        ("Apri", "Apri al login", "Esci")
+    let (open_lbl, auto_lbl, aot_lbl, quit_lbl) = if it {
+        ("Apri", "Apri al login", "Sempre in primo piano", "Esci")
     } else {
-        ("Open", "Start on login", "Quit")
+        ("Open", "Start on login", "Always on top", "Quit")
     };
     let open_i = MenuItem::with_id(app, "open", open_lbl, true, None::<&str>)?;
     let login_i = CheckMenuItem::with_id(app, "autostart", auto_lbl, true, autostart_on, None::<&str>)?;
+    let aot_i = CheckMenuItem::with_id(app, "alwaysontop", aot_lbl, true, always_on_top_on, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let quit_i = MenuItem::with_id(app, "quit", quit_lbl, true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open_i, &login_i, &sep, &quit_i])?;
+    let menu = Menu::with_items(app, &[&open_i, &login_i, &aot_i, &sep, &quit_i])?;
 
     // Store items: sync check + localize text at runtime.
     {
         let st = app.state::<AppState>();
         st.autostart_item.lock().unwrap().replace(login_i.clone());
+        st.always_on_top_item.lock().unwrap().replace(aot_i.clone());
         st.open_item.lock().unwrap().replace(open_i.clone());
         st.quit_item.lock().unwrap().replace(quit_i.clone());
     }
@@ -966,6 +1006,27 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
                 // un successivo set_settings lo sovrascriverebbe (ri-disabilitando l'autostart).
                 if let Some(main) = app.get_window("main") {
                     let _ = main.emit("app://autostart-changed", want);
+                }
+            }
+            "alwaysontop" => {
+                let state = app.state::<AppState>();
+                let want = {
+                    let mut g = state.settings.lock().unwrap();
+                    g.always_on_top = !g.always_on_top;
+                    g.always_on_top
+                };
+                if let Some(main) = app.get_window("main") {
+                    let _ = main.set_always_on_top(want);
+                }
+                if let Some(item) = state.always_on_top_item.lock().unwrap().as_ref() {
+                    let _ = item.set_checked(want);
+                }
+                let snapshot = state.settings.lock().unwrap().clone();
+                save_settings_bg(app, snapshot);
+                // Same sync need as autostart: keep the Settings modal's own toggle from going
+                // stale (a later Save from there would otherwise silently revert this).
+                if let Some(main) = app.get_window("main") {
+                    let _ = main.emit("app://always-on-top-changed", want);
                 }
             }
             "quit" => app.exit(0),
@@ -1076,11 +1137,13 @@ pub fn run() {
             last_seen: Mutex::new(None),
             settings: Mutex::new(Settings::default()),
             autostart_item: Mutex::new(None),
+            always_on_top_item: Mutex::new(None),
             open_item: Mutex::new(None),
             quit_item: Mutex::new(None),
             menu_labels: Mutex::new(browser::MenuLabels::default()),
             inline_busy: AtomicBool::new(false),
             inline_suppress_toast: AtomicBool::new(false),
+            inline_notify: AtomicBool::new(true),
             inline_saved_pos: Mutex::new(None),
         })
         // App-level menu events: the provider's native EDITING context menu (browser.rs,
@@ -1137,6 +1200,86 @@ pub fn run() {
                 if !silent {
                     let _ = main.show();
                     let _ = main.set_focus();
+                }
+                // Debug-only, gated on KOTODAMA_TEST_OOPS: forces a real chrome-error on the main
+                // window shortly after startup, so the Oops-page watchdog/buttons can be exercised
+                // on demand instead of waiting for the real (intermittent, environment-specific)
+                // asset-load race this was built to catch.
+                if debug::enabled() && std::env::var("KOTODAMA_TEST_OOPS").is_ok() {
+                    let main_test = main.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(2500));
+                        debug::log("KOTODAMA_TEST_OOPS: forcing a real navigation failure on main");
+                        // Port 1 is Chromium-restricted (ERR_UNSAFE_PORT, blocked before any real
+                        // navigation/document even starts -- doesn't reproduce the target failure).
+                        // A closed high port gives a genuine ERR_CONNECTION_REFUSED, matching what
+                        // this watchdog actually needs to catch.
+                        let _ = main_test.eval("location.href = 'http://127.0.0.1:58193/';");
+                    });
+                }
+                // Watchdog for a transient asset-load failure at cold start (WebView2 shows its own
+                // `chrome-error://chromewebdata/` page if the very first navigation loses a race with
+                // Tauri's own local asset server -- seen intermittently on this machine). One silent
+                // reload attempt first; if that still didn't clear it, fall back to the branded page
+                // (same OOPS_PAGE_JS the provider tabs use) instead of leaving Chromium's raw error up.
+                {
+                    let main_watch = main.clone();
+                    let app_handle = handle.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(1200));
+                        let _ = main_watch
+                            .eval("if (location.protocol === 'chrome-error:') { location.reload(); }");
+                        std::thread::sleep(std::time::Duration::from_millis(1500));
+                        let _ = main_watch.eval(&browser::oops_page_js(&app_handle, true));
+                        // Poll the window title for the Oops page's button sentinels -- see
+                        // OOPS_PAGE_JS's doc comment for why title (not invoke): a chrome-error://
+                        // document isn't the app's own origin, so a direct invoke() from it may be
+                        // silently denied by the capability ACL, while title get/set has none.
+                        // 100ms (not 300ms): a user clicking Riavvia/Segnala/Chiudi in quick
+                        // succession can overwrite the title faster than a slower poll would ever
+                        // observe an intermediate value (only the LAST click before a poll tick
+                        // survives) -- seen for real: three fast clicks and only "close" landed.
+                        for i in 0..5400 {
+                            std::thread::sleep(std::time::Duration::from_millis(100));
+                            // Self-healing: re-inject every ~2s. Both scripts are idempotent no-ops
+                            // on a normal page (protocol check) or an already-shown Oops page (id
+                            // check) -- this only matters when the page navigated to a NEW failure
+                            // after the one-shot injection above already ran (confirmed real: the
+                            // Oops page's own "Segnala" fallback once navigated to a fake domain,
+                            // landing on a fresh chrome-error the original one-shot never re-saw).
+                            if i % 20 == 0 {
+                                let _ = main_watch.eval(
+                                    "if (location.protocol === 'chrome-error:') { location.reload(); }",
+                                );
+                                let _ = main_watch.eval(&browser::oops_page_js(&app_handle, true));
+                            }
+                            let Ok(title) = main_watch.title() else { continue };
+                            if title.starts_with("__kt_oops") {
+                                debug::log(format!("oops watchdog: title={title:?}"));
+                            }
+                            match title.strip_prefix("__kt_oops:") {
+                                Some("restart") => {
+                                    debug::log("oops watchdog: restart");
+                                    restart_app(app_handle.clone());
+                                }
+                                Some("close") => {
+                                    debug::log("oops watchdog: close");
+                                    quit_app(app_handle.clone());
+                                }
+                                Some("issue") => {
+                                    debug::log("oops watchdog: issue");
+                                    use tauri_plugin_opener::OpenerExt;
+                                    let _ = app_handle.opener().open_url(
+                                        "https://github.com/Michel-IT/Kotodama/issues/new",
+                                        None::<&str>,
+                                    );
+                                    let _ = main_watch
+                                        .set_title("Kotodama • Ai Prompt Builder");
+                                }
+                                _ => {}
+                            }
+                        }
+                    });
                 }
                 let _ = main.set_always_on_top(loaded.always_on_top);
                 // macOS/Linux: join ALL Spaces/virtual desktops from creation (NSWindow
@@ -1257,6 +1400,8 @@ pub fn run() {
             reveal_download_path,
             accept_clipboard,
             hide_toast,
+            quit_app,
+            restart_app,
             app_write_clipboard,
             show_main,
             hide_main,

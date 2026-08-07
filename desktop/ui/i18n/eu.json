@@ -86,7 +86,7 @@
   "setSecSystem": "Sistema",
   "setLanguage": "Hizkuntza",
   "setProvider": "Hornitzaile lehenetsia",
-  "setProviderHint": "Lehenetsitako hornitzailea, baita testua kopiatzean ere.",
+  "setProviderHint": "testua kopiatzean erabiltzen da.",
   "setHotkey": "Lasterbide globala",
   "setHotkeyHint": "Egin klik eta sakatu konbinazioa (adib. Ctrl + \\).",
   "setMonitor": "Arbelaren monitorea",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Kopiatutako testua dagoen bezala bidaltzen da hornitzaile lehenetsira.",
   "setRecipe": "Errezeta lehenetsia",
-  "setRecipeHint": "Testua kopiatzean erabiltzen den errezeta.",
+  "setRecipeHint": "testua kopiatzean erabiltzen da.",
   "neutralAutosend": "Bidalketa automatikoa",
   "neutralAutosendHint": "Bidalketa automatikoa: aktibatuta dagoenean, testua berehala bidaltzen zaio hornitzaileari; desaktibatuta dagoenean, itsatsi besterik ez da egiten, bidali aurretik edita dezazun.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Lasterbide honetarako jakinarazpenak",
+  "rhColNotify": "Jakinarazi",
+  "rhColHotkey": "Tekla-konbinazioa",
+  "ktTempColHeader": "Txat pribatua",
+  "linkIssues": "Arazo bat jakinarazi",
+  "oopsTitle": "Zerbait gaizki joan da",
+  "oopsMessage": "Kotodama-k ezin izan du orri hau kargatu.\nSaiatu berrabiarazten.",
+  "oopsRestart": "Berrabiarazi"
 }

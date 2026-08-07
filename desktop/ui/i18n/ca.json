@@ -86,7 +86,7 @@
   "setSecSystem": "Sistema",
   "setLanguage": "Idioma",
   "setProvider": "Proveïdor per defecte",
-  "setProviderHint": "Proveïdor utilitzat per defecte, també en copiar text.",
+  "setProviderHint": "s'utilitza en copiar text.",
   "setHotkey": "Drecera global",
   "setHotkeyHint": "Fes clic i prem la combinació (p. ex. Ctrl + \\).",
   "setMonitor": "Monitor del porta-retalls",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "El text copiat s'envia tal qual al proveïdor predeterminat.",
   "setRecipe": "Recepta predeterminada",
-  "setRecipeHint": "Recepta utilitzada quan copies text.",
+  "setRecipeHint": "s'utilitza en copiar text.",
   "neutralAutosend": "Enviament automàtic",
   "neutralAutosendHint": "Enviament automàtic: si està actiu, el text s'envia immediatament al proveïdor; si està desactivat, només s'enganxa perquè el puguis editar abans d'enviar-lo.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Notificacions per a aquesta drecera",
+  "rhColNotify": "Notifica",
+  "rhColHotkey": "Combinació de tecles",
+  "ktTempColHeader": "Xat privat",
+  "linkIssues": "Informa d'un problema",
+  "oopsTitle": "Alguna cosa ha fallat",
+  "oopsMessage": "Kotodama no ha pogut carregar aquesta pàgina.\nProva de reiniciar.",
+  "oopsRestart": "Reinicia"
 }

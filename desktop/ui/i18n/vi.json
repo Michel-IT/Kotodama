@@ -86,7 +86,7 @@
   "setSecSystem": "Hệ thống",
   "setLanguage": "Ngôn ngữ",
   "setProvider": "Nhà cung cấp mặc định",
-  "setProviderHint": "Nhà cung cấp dùng mặc định, kể cả khi sao chép văn bản.",
+  "setProviderHint": "được dùng khi bạn sao chép văn bản.",
   "setHotkey": "Phím tắt toàn cục",
   "setHotkeyHint": "Nhấp và nhấn tổ hợp phím (vd. Ctrl + \\).",
   "setMonitor": "Giám sát bộ nhớ tạm",
@@ -149,7 +149,7 @@
   },
   "neutralHint": "Văn bản đã sao chép được gửi nguyên trạng đến nhà cung cấp mặc định.",
   "setRecipe": "Công thức mặc định",
-  "setRecipeHint": "Công thức dùng khi bạn sao chép văn bản.",
+  "setRecipeHint": "được dùng khi bạn sao chép văn bản.",
   "neutralAutosend": "Gửi tự động",
   "neutralAutosendHint": "Gửi tự động: khi bật, văn bản được gửi ngay đến nhà cung cấp; khi tắt, văn bản chỉ được dán để bạn có thể chỉnh sửa trước khi gửi.",
   "switchProvider": "Switch provider",
@@ -237,5 +237,13 @@
   "provXferToLeftTitle": "Remove",
   "provXferAllLeftTitle": "Remove all",
   "ktAddMoreProviders": "Add more providers",
-  "version": "Version"
+  "version": "Version",
+  "rhNotifyTitle": "Thông báo cho phím tắt này",
+  "rhColNotify": "Thông báo",
+  "rhColHotkey": "Tổ hợp phím",
+  "ktTempColHeader": "Trò chuyện riêng tư",
+  "linkIssues": "Báo cáo sự cố",
+  "oopsTitle": "Đã xảy ra sự cố",
+  "oopsMessage": "Kotodama không thể tải trang này.\nHãy thử khởi động lại.",
+  "oopsRestart": "Khởi động lại"
 }

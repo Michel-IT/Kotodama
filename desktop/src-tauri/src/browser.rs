@@ -134,6 +134,115 @@ pub const NO_MENU_JS: &str = r#"
 })();
 "#;
 
+/// Injected on every page-load finish (provider tabs) and by the main-window cold-start watchdog
+/// (`lib.rs::run`'s `.setup()`): if the load actually failed, WebView2/Chromium replaces the
+/// document with its own internal error page at `chrome-error://chromewebdata/` (detectable by
+/// protocol, language-independent -- never the localized error TEXT, which would break in other
+/// UI languages). Swaps it for a branded page with Riavvia/Segnala/Chiudi.
+///
+/// Button wiring is intentionally two-layered, because a `chrome-error://` document is NOT the
+/// app's own origin: Tauri's capability ACL only grants `default.json`'s commands (open_url,
+/// quit_app, restart_app) to the app's real local origin, so a direct `invoke()` from THIS page
+/// may be silently denied. Every click therefore ALSO stamps `document.title` with a sentinel --
+/// reading/writing a window title is a bare OS-level API with no ACL involved at all, so it is
+/// the one channel guaranteed to reach Rust regardless of origin. The MAIN window's watchdog
+/// polls for these sentinels and acts on them directly (see `lib.rs`). Provider webviews have no
+/// such poller, so their "Segnala" button ALSO tries `invoke()` first, falling back to the
+/// existing `kotodama.external` navigation sentinel (`NO_MENU_JS` uses the same trick for links,
+/// and navigation interception happens before any ACL check, so it works regardless of origin).
+const OOPS_PAGE_JS_TEMPLATE: &str = r#"
+(function(){
+  if (location.protocol !== 'chrome-error:') return;
+  if (document.getElementById('__ktOops')) return;   // already shown
+  var css = 'html,body{height:100%}body{margin:0;background:#14171f;color:#eaeefb;'
+    + 'font-family:-apple-system,Segoe UI,sans-serif;display:flex;flex-direction:column;'
+    + 'align-items:center;justify-content:center;text-align:center;gap:14px}'
+    + 'h1{font-size:19px;margin:0}p{color:#9aa4c4;font-size:13px;max-width:340px;margin:0}'
+    + '.btns{display:flex;gap:10px;margin-top:6px}'
+    + 'button{font:inherit;font-size:13px;font-weight:600;padding:8px 18px;border-radius:8px;'
+    + 'border:1px solid #2c3554;background:#1c2440;color:#eaeefb;cursor:pointer}'
+    + 'button.pri{background:#f4a52a;color:#1a1a1a;border-color:#f4a52a}';
+  var div = document.createElement('div');
+  div.id = '__ktOops';
+  div.innerHTML = '<style>' + css + '</style>'
+    + '<h1>__OOPS_TITLE__</h1>'
+    + '<p>__OOPS_MESSAGE__</p>'
+    + '<div class="btns"><button id="__ktOopsRestart">__OOPS_RESTART__</button>'
+    + '<button id="__ktOopsIssue" class="pri">__OOPS_ISSUE__</button>'
+    + '<button id="__ktOopsClose">__OOPS_CLOSE__</button></div>';
+  document.body.innerHTML = '';
+  document.body.appendChild(div);
+  // Dual mechanism: title-sentinel (the main window's watchdog polls for it, no ACL involved) AND
+  // a direct invoke() try (works if this window's ACL turns out to accept it after all -- not
+  // confirmed either way, so both fire rather than betting on one). The invoke()-failure fallback
+  // (navigate to the kotodama.external sentinel) is ONLY safe on provider tabs, whose on_navigation
+  // handler intercepts it (see NO_MENU_JS) -- the MAIN window has no such handler, so that same
+  // navigation would actually try to resolve a fake domain for real and show ANOTHER, worse error
+  // page (confirmed: this happened). __OOPS_IS_MAIN__ is substituted by oops_page_js() below.
+  var IS_MAIN = __OOPS_IS_MAIN__;
+  function signal(kind, cmd, args){
+    document.title = '__kt_oops:' + kind;
+    try {
+      if (window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function') {
+        window.__TAURI__.core.invoke(cmd, args).catch(function(){
+          if (kind === 'issue' && !IS_MAIN) {
+            var url = 'https://github.com/Michel-IT/Kotodama/issues/new';
+            location.href = 'https://kotodama.external/open?u=' + encodeURIComponent(url);
+          }
+        });
+      }
+    } catch(e){}
+  }
+  document.getElementById('__ktOopsRestart').addEventListener('click', function(){ signal('restart', 'restart_app'); });
+  document.getElementById('__ktOopsClose').addEventListener('click', function(){ signal('close', 'quit_app'); });
+  document.getElementById('__ktOopsIssue').addEventListener('click', function(){
+    signal('issue', 'open_url', { url: 'https://github.com/Michel-IT/Kotodama/issues/new' });
+  });
+})();
+"#;
+
+/// Builds `OOPS_PAGE_JS_TEMPLATE` with the strings for `app`'s current UI language (falls back to
+/// English for anything missing). Reads `desktop/ui/i18n/<lang>.json` via Tauri's own asset
+/// resolver -- the exact same bundled bytes the frontend itself loads, so this works identically
+/// in dev and in a packaged release build (a plain `std::fs::read` would not: frontendDist assets
+/// are embedded into the binary, not left as loose files on disk).
+pub fn oops_page_js(app: &tauri::AppHandle, is_main: bool) -> String {
+    let lang = {
+        let state = app.state::<crate::AppState>();
+        let g = state.settings.lock().unwrap();
+        g.language.clone()
+    };
+    let load = |code: &str| -> Option<serde_json::Value> {
+        let asset = app.asset_resolver().get(format!("i18n/{code}.json"))?;
+        serde_json::from_slice(&asset.bytes).ok()
+    };
+    let primary = if lang.is_empty() { None } else { load(&lang) };
+    let en = load("en").unwrap_or(serde_json::Value::Null);
+    let pick = |key: &str| -> String {
+        primary
+            .as_ref()
+            .and_then(|v| v.get(key))
+            .and_then(|v| v.as_str())
+            .or_else(|| en.get(key).and_then(|v| v.as_str()))
+            .unwrap_or("")
+            .to_string()
+    };
+    // JSON-string-escape each value for safe embedding as a JS string literal (handles quotes/
+    // backslashes/unicode correctly), trimming the surrounding quotes json produces.
+    let esc = |s: &str| -> String {
+        let quoted = serde_json::to_string(s).unwrap_or_default();
+        quoted[1..quoted.len().saturating_sub(1)].to_string()
+    };
+    let message = pick("oopsMessage").replace('\n', "<br>");
+    OOPS_PAGE_JS_TEMPLATE
+        .replace("__OOPS_IS_MAIN__", if is_main { "true" } else { "false" })
+        .replace("__OOPS_TITLE__", &esc(&pick("oopsTitle")))
+        .replace("__OOPS_MESSAGE__", &esc(&message))
+        .replace("__OOPS_RESTART__", &esc(&pick("oopsRestart")))
+        .replace("__OOPS_ISSUE__", &esc(&pick("linkIssues")))
+        .replace("__OOPS_CLOSE__", &esc(&pick("winClose")))
+}
+
 /// EXTRA vertical offset (logical px) below the topbar, to make room for a
 /// native banner of the main webview (e.g. Claude login notice). 0 = no
 /// banner. The banner lives in the main UI, so the provider must be pushed down.
@@ -299,6 +408,7 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
                 // provider tab never runs the Kotodama harvest injection (which used to be the only
                 // place this ran), so a manual copy on it could pick up that hidden label text.
                 let _ = webview.eval(crate::kotodama::SR_HIDE_JS);
+                let _ = webview.eval(&oops_page_js(&webview.app_handle(), false));
                 let show = {
                     let mut p = pending_show_key().lock().unwrap();
                     if p.as_deref() == Some(key_load.as_str()) { *p = None; true } else { false }
