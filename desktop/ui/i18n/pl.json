@@ -21,14 +21,16 @@
     "reply": "Odpowiedz",
     "email": "Utwórz e-mail",
     "neutral": "Neutralny",
-    "translate": "Przetłumacz"
+    "translate": "Przetłumacz",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Przeredaguj poniższy tekst:",
     "summarise": "Streść poniższy tekst:",
     "reply": "Napisz odpowiedź na poniższą wiadomość:",
     "email": "Napisz e-mail na podstawie:",
-    "translate": "Przetłumacz poniższy tekst:"
+    "translate": "Przetłumacz poniższy tekst:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Krótko i zwięźle",
@@ -134,7 +136,8 @@
     "errorEmpty": "Nie ma czego skopiować",
     "errorNoAnswer": "Nie otrzymano odpowiedzi",
     "stageConnect": "Łączenie...",
-    "stageWork": "Odbieranie odpowiedzi"
+    "stageWork": "Odbieranie odpowiedzi",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "rename": "Zmień nazwę",
   "edit": "Edytuj",
@@ -214,5 +217,25 @@
   "respLabel": "Odpowiedź",
   "respNormal": "Normalna",
   "respTextOnly": "Tylko tekst",
-  "answerOnlyText": "Odpowiedz tylko tekstem, bez wstępu ani komentarzy."
+  "answerOnlyText": "Odpowiedz tylko tekstem, bez wstępu ani komentarzy.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

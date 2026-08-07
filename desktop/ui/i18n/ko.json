@@ -29,14 +29,16 @@
     "reply": "답장",
     "email": "이메일 작성",
     "neutral": "중립",
-    "translate": "번역"
+    "translate": "번역",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "다음 텍스트를 다시 작성하세요:",
     "summarise": "다음 텍스트를 요약하세요:",
     "reply": "다음 메시지에 대한 답장을 작성하세요:",
     "email": "다음 내용을 바탕으로 이메일을 작성하세요:",
-    "translate": "다음 텍스트를 번역하세요:"
+    "translate": "다음 텍스트를 번역하세요:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "짧고 간결하게",
@@ -142,7 +144,8 @@
     "errorEmpty": "복사할 내용이 없습니다",
     "errorNoAnswer": "응답을 받지 못했습니다",
     "stageConnect": "연결 중...",
-    "stageWork": "응답 수신 중"
+    "stageWork": "응답 수신 중",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "복사한 텍스트가 그대로 기본 제공자에게 전송됩니다.",
   "setRecipe": "기본 레시피",
@@ -214,5 +217,25 @@
   "respLabel": "응답",
   "respNormal": "일반",
   "respTextOnly": "텍스트만",
-  "answerOnlyText": "서두나 설명 없이 텍스트로만 답하세요."
+  "answerOnlyText": "서두나 설명 없이 텍스트로만 답하세요.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

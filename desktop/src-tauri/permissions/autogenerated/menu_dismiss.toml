@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-menu-dismiss"
+description = "Enables the menu_dismiss command without any pre-configured scope."
+commands.allow = ["menu_dismiss"]
+
+[[permission]]
+identifier = "deny-menu-dismiss"
+description = "Denies the menu_dismiss command without any pre-configured scope."
+commands.deny = ["menu_dismiss"]

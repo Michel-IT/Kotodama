@@ -29,14 +29,16 @@
     "reply": "பதில்",
     "email": "மின்னஞ்சல் உருவாக்கு",
     "neutral": "நடுநிலை",
-    "translate": "மொழிபெயர்"
+    "translate": "மொழிபெயர்",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "பின்வரும் உரையை மறுபதம் செய்:",
     "summarise": "பின்வரும் உரையைச் சுருக்கு:",
     "reply": "பின்வரும் செய்திக்கு ஒரு பதிலை எழுது:",
     "email": "இதன் அடிப்படையில் ஒரு மின்னஞ்சல் எழுது:",
-    "translate": "பின்வரும் உரையை மொழிபெயர்க்கவும்:"
+    "translate": "பின்வரும் உரையை மொழிபெயர்க்கவும்:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "சுருக்கமும் தெளிவும்",
@@ -142,7 +144,8 @@
     "errorEmpty": "நகலெடுக்க எதுவும் இல்லை",
     "errorNoAnswer": "பதில் எதுவும் வரவில்லை",
     "stageConnect": "இணைக்கிறது...",
-    "stageWork": "பதில் வந்துகொண்டிருக்கிறது"
+    "stageWork": "பதில் வந்துகொண்டிருக்கிறது",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "நகலெடுத்த உரை அப்படியே இயல்புநிலை வழங்குநருக்கு அனுப்பப்படும்.",
   "setRecipe": "இயல்புநிலை செய்முறை",
@@ -214,5 +217,25 @@
   "respLabel": "பதில்",
   "respNormal": "இயல்பு",
   "respTextOnly": "உரை மட்டும்",
-  "answerOnlyText": "முன்னுரை அல்லது கருத்துகள் இன்றி, உரையுடன் மட்டும் பதிலளிக்கவும்."
+  "answerOnlyText": "முன்னுரை அல்லது கருத்துகள் இன்றி, உரையுடன் மட்டும் பதிலளிக்கவும்.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

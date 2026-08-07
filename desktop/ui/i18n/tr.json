@@ -29,14 +29,16 @@
     "reply": "Yanıtla",
     "email": "E-posta oluştur",
     "neutral": "Nötr",
-    "translate": "Çevir"
+    "translate": "Çevir",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Aşağıdaki metni yeniden ifade et:",
     "summarise": "Aşağıdaki metni özetle:",
     "reply": "Aşağıdaki mesaja bir yanıt yaz:",
     "email": "Şuna dayanarak bir e-posta yaz:",
-    "translate": "Aşağıdaki metni çevir:"
+    "translate": "Aşağıdaki metni çevir:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Kısa ve öz",
@@ -142,7 +144,8 @@
     "errorEmpty": "Kopyalanacak bir şey yok",
     "errorNoAnswer": "Yanıt alınamadı",
     "stageConnect": "Bağlanıyor...",
-    "stageWork": "Yanıt alınıyor"
+    "stageWork": "Yanıt alınıyor",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Kopyalanan metin olduğu gibi varsayılan sağlayıcıya gönderilir.",
   "setRecipe": "Varsayılan tarif",
@@ -214,5 +217,25 @@
   "respLabel": "Yanıt",
   "respNormal": "Normal",
   "respTextOnly": "Yalnızca metin",
-  "answerOnlyText": "Yalnızca metinle yanıt ver, ön söz veya yorum ekleme."
+  "answerOnlyText": "Yalnızca metinle yanıt ver, ön söz veya yorum ekleme.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

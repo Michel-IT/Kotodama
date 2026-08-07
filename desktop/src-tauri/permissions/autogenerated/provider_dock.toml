@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-provider-dock"
+description = "Enables the provider_dock command without any pre-configured scope."
+commands.allow = ["provider_dock"]
+
+[[permission]]
+identifier = "deny-provider-dock"
+description = "Denies the provider_dock command without any pre-configured scope."
+commands.deny = ["provider_dock"]

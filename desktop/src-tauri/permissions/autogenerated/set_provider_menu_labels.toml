@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-provider-menu-labels"
+description = "Enables the set_provider_menu_labels command without any pre-configured scope."
+commands.allow = ["set_provider_menu_labels"]
+
+[[permission]]
+identifier = "deny-set-provider-menu-labels"
+description = "Denies the set_provider_menu_labels command without any pre-configured scope."
+commands.deny = ["set_provider_menu_labels"]

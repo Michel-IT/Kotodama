@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-inline-finish"
+description = "Enables the inline_finish command without any pre-configured scope."
+commands.allow = ["inline_finish"]
+
+[[permission]]
+identifier = "deny-inline-finish"
+description = "Denies the inline_finish command without any pre-configured scope."
+commands.deny = ["inline_finish"]

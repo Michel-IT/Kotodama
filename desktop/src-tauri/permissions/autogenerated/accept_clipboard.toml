@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-accept-clipboard"
+description = "Enables the accept_clipboard command without any pre-configured scope."
+commands.allow = ["accept_clipboard"]
+
+[[permission]]
+identifier = "deny-accept-clipboard"
+description = "Denies the accept_clipboard command without any pre-configured scope."
+commands.deny = ["accept_clipboard"]

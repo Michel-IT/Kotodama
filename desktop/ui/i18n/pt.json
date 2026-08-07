@@ -21,14 +21,16 @@
     "reply": "Responder",
     "email": "Criar e-mail",
     "neutral": "Neutro",
-    "translate": "Traduzir"
+    "translate": "Traduzir",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Reformule o seguinte texto:",
     "summarise": "Resuma o seguinte texto:",
     "reply": "Escreva uma resposta para a seguinte mensagem:",
     "email": "Escreva um e-mail a partir de:",
-    "translate": "Traduza o seguinte texto:"
+    "translate": "Traduza o seguinte texto:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Curto e conciso",
@@ -142,7 +144,8 @@
     "errorEmpty": "Nada para copiar",
     "errorNoAnswer": "Nenhuma resposta recebida",
     "stageConnect": "Conectando...",
-    "stageWork": "Recebendo a resposta"
+    "stageWork": "Recebendo a resposta",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "O texto copiado é enviado como está para o provedor padrão.",
   "setRecipe": "Receita padrão",
@@ -214,5 +217,25 @@
   "respLabel": "Resposta",
   "respNormal": "Normal",
   "respTextOnly": "Apenas texto",
-  "answerOnlyText": "Responda apenas com o texto, sem preâmbulos nem comentários."
+  "answerOnlyText": "Responda apenas com o texto, sem preâmbulos nem comentários.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

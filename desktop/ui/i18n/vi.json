@@ -29,14 +29,16 @@
     "reply": "Trả lời",
     "email": "Tạo email",
     "neutral": "Trung lập",
-    "translate": "Dịch"
+    "translate": "Dịch",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Diễn đạt lại đoạn văn sau:",
     "summarise": "Tóm tắt đoạn văn sau:",
     "reply": "Viết câu trả lời cho tin nhắn sau:",
     "email": "Viết email dựa trên:",
-    "translate": "Dịch văn bản sau:"
+    "translate": "Dịch văn bản sau:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Ngắn gọn",
@@ -142,7 +144,8 @@
     "errorEmpty": "Không có gì để sao chép",
     "errorNoAnswer": "Không nhận được câu trả lời",
     "stageConnect": "Đang kết nối...",
-    "stageWork": "Đang nhận câu trả lời"
+    "stageWork": "Đang nhận câu trả lời",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Văn bản đã sao chép được gửi nguyên trạng đến nhà cung cấp mặc định.",
   "setRecipe": "Công thức mặc định",
@@ -214,5 +217,25 @@
   "respLabel": "Phản hồi",
   "respNormal": "Bình thường",
   "respTextOnly": "Chỉ văn bản",
-  "answerOnlyText": "Chỉ trả lời bằng văn bản, không lời mở đầu hay bình luận."
+  "answerOnlyText": "Chỉ trả lời bằng văn bản, không lời mở đầu hay bình luận.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

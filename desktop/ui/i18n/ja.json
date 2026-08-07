@@ -21,14 +21,16 @@
     "reply": "返信",
     "email": "メール作成",
     "neutral": "ニュートラル",
-    "translate": "翻訳"
+    "translate": "翻訳",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "次のテキストを言い換えてください:",
     "summarise": "次のテキストを要約してください:",
     "reply": "次のメッセージへの返信を書いてください:",
     "email": "次の内容をもとにメールを書いてください:",
-    "translate": "次のテキストを翻訳してください："
+    "translate": "次のテキストを翻訳してください：",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "短く簡潔に",
@@ -142,7 +144,8 @@
     "errorEmpty": "コピーする内容がありません",
     "errorNoAnswer": "回答がありません",
     "stageConnect": "接続中...",
-    "stageWork": "回答を受信中"
+    "stageWork": "回答を受信中",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "コピーしたテキストがそのままデフォルトのプロバイダーに送信されます。",
   "setRecipe": "デフォルトのレシピ",
@@ -214,5 +217,25 @@
   "respLabel": "応答",
   "respNormal": "通常",
   "respTextOnly": "テキストのみ",
-  "answerOnlyText": "前置きやコメントなしで、テキストだけで返答してください。"
+  "answerOnlyText": "前置きやコメントなしで、テキストだけで返答してください。",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

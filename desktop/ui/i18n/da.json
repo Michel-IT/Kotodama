@@ -29,14 +29,16 @@
     "reply": "Svar",
     "email": "Opret e-mail",
     "neutral": "Neutral",
-    "translate": "Oversæt"
+    "translate": "Oversæt",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Omformulér følgende tekst:",
     "summarise": "Opsummér følgende tekst:",
     "reply": "Skriv et svar på følgende besked:",
     "email": "Skriv en e-mail ud fra:",
-    "translate": "Oversæt følgende tekst:"
+    "translate": "Oversæt følgende tekst:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Kort og præcist",
@@ -142,7 +144,8 @@
     "errorEmpty": "Intet at kopiere",
     "errorNoAnswer": "Intet svar modtaget",
     "stageConnect": "Forbinder...",
-    "stageWork": "Modtager svaret"
+    "stageWork": "Modtager svaret",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Den kopierede tekst sendes som den er til standardudbyderen.",
   "setRecipe": "Standardopskrift",
@@ -214,5 +217,25 @@
   "respLabel": "Svar",
   "respNormal": "Normal",
   "respTextOnly": "Kun tekst",
-  "answerOnlyText": "Svar kun med teksten, uden indledning eller kommentarer."
+  "answerOnlyText": "Svar kun med teksten, uden indledning eller kommentarer.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

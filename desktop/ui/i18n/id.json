@@ -21,14 +21,16 @@
     "reply": "Balas",
     "email": "Buat email",
     "neutral": "Netral",
-    "translate": "Terjemahkan"
+    "translate": "Terjemahkan",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Tulis ulang teks berikut:",
     "summarise": "Ringkas teks berikut:",
     "reply": "Tulis balasan untuk pesan berikut:",
     "email": "Tulis email berdasarkan:",
-    "translate": "Terjemahkan teks berikut:"
+    "translate": "Terjemahkan teks berikut:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Singkat dan padat",
@@ -142,7 +144,8 @@
     "errorEmpty": "Tidak ada yang bisa disalin",
     "errorNoAnswer": "Tidak ada jawaban diterima",
     "stageConnect": "Menghubungkan...",
-    "stageWork": "Menerima jawaban"
+    "stageWork": "Menerima jawaban",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Teks yang disalin dikirim apa adanya ke penyedia default.",
   "setRecipe": "Resep default",
@@ -214,5 +217,25 @@
   "respLabel": "Respons",
   "respNormal": "Normal",
   "respTextOnly": "Hanya teks",
-  "answerOnlyText": "Balas hanya dengan teksnya, tanpa pembuka atau komentar."
+  "answerOnlyText": "Balas hanya dengan teksnya, tanpa pembuka atau komentar.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

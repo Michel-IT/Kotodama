@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-inline-fail"
+description = "Enables the inline_fail command without any pre-configured scope."
+commands.allow = ["inline_fail"]
+
+[[permission]]
+identifier = "deny-inline-fail"
+description = "Denies the inline_fail command without any pre-configured scope."
+commands.deny = ["inline_fail"]

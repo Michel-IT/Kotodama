@@ -21,14 +21,16 @@
     "reply": "ಉತ್ತರಿಸಿ",
     "email": "ಇಮೇಲ್ ರಚಿಸಿ",
     "neutral": "ತಟಸ್ಥ",
-    "translate": "ಅನುವಾದಿಸಿ"
+    "translate": "ಅನುವಾದಿಸಿ",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "ಕೆಳಗಿನ ಪಠ್ಯವನ್ನು ಪುನಃ ಬರೆಯಿರಿ:",
     "summarise": "ಕೆಳಗಿನ ಪಠ್ಯವನ್ನು ಸಾರಾಂಶಗೊಳಿಸಿ:",
     "reply": "ಕೆಳಗಿನ ಸಂದೇಶಕ್ಕೆ ಉತ್ತರ ಬರೆಯಿರಿ:",
     "email": "ಇದರ ಆಧಾರದ ಮೇಲೆ ಇಮೇಲ್ ಬರೆಯಿರಿ:",
-    "translate": "ಈ ಕೆಳಗಿನ ಪಠ್ಯವನ್ನು ಅನುವಾದಿಸಿ:"
+    "translate": "ಈ ಕೆಳಗಿನ ಪಠ್ಯವನ್ನು ಅನುವಾದಿಸಿ:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "ಸಂಕ್ಷಿಪ್ತ ಮತ್ತು ಸ್ಪಷ್ಟ",
@@ -134,7 +136,8 @@
     "errorEmpty": "ನಕಲಿಸಲು ಏನೂ ಇಲ್ಲ",
     "errorNoAnswer": "ಯಾವುದೇ ಉತ್ತರ ಸಿಗಲಿಲ್ಲ",
     "stageConnect": "ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ...",
-    "stageWork": "ಉತ್ತರ ಬರುತ್ತಿದೆ"
+    "stageWork": "ಉತ್ತರ ಬರುತ್ತಿದೆ",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "rename": "ಮರುಹೆಸರಿಸಿ",
   "edit": "ಸಂಪಾದಿಸಿ",
@@ -214,5 +217,25 @@
   "respLabel": "ಪ್ರತಿಕ್ರಿಯೆ",
   "respNormal": "ಸಾಮಾನ್ಯ",
   "respTextOnly": "ಪಠ್ಯ ಮಾತ್ರ",
-  "answerOnlyText": "ಮುನ್ನುಡಿ ಅಥವಾ ಟಿಪ್ಪಣಿಗಳಿಲ್ಲದೆ, ಪಠ್ಯದೊಂದಿಗೆ ಮಾತ್ರ ಉತ್ತರಿಸಿ."
+  "answerOnlyText": "ಮುನ್ನುಡಿ ಅಥವಾ ಟಿಪ್ಪಣಿಗಳಿಲ್ಲದೆ, ಪಠ್ಯದೊಂದಿಗೆ ಮಾತ್ರ ಉತ್ತರಿಸಿ.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

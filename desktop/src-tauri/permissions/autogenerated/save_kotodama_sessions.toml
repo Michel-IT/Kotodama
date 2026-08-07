@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-kotodama-sessions"
+description = "Enables the save_kotodama_sessions command without any pre-configured scope."
+commands.allow = ["save_kotodama_sessions"]
+
+[[permission]]
+identifier = "deny-save-kotodama-sessions"
+description = "Denies the save_kotodama_sessions command without any pre-configured scope."
+commands.deny = ["save_kotodama_sessions"]

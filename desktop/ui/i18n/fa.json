@@ -21,14 +21,16 @@
     "reply": "پاسخ",
     "email": "ساخت ایمیل",
     "neutral": "خنثی",
-    "translate": "ترجمه"
+    "translate": "ترجمه",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "متن زیر را بازنویسی کن:",
     "summarise": "متن زیر را خلاصه کن:",
     "reply": "به پیام زیر پاسخ بنویس:",
     "email": "بر اساس موارد زیر یک ایمیل بنویس:",
-    "translate": "متن زیر را ترجمه کنید:"
+    "translate": "متن زیر را ترجمه کنید:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "کوتاه و مختصر",
@@ -134,7 +136,8 @@
     "errorEmpty": "چیزی برای کپی نیست",
     "errorNoAnswer": "پاسخی دریافت نشد",
     "stageConnect": "در حال اتصال...",
-    "stageWork": "پاسخ در حال دریافت"
+    "stageWork": "پاسخ در حال دریافت",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "rename": "تغییر نام",
   "edit": "ویرایش",
@@ -214,5 +217,25 @@
   "respLabel": "پاسخ",
   "respNormal": "معمولی",
   "respTextOnly": "فقط متن",
-  "answerOnlyText": "فقط با متن پاسخ بده، بدون مقدمه یا توضیح."
+  "answerOnlyText": "فقط با متن پاسخ بده، بدون مقدمه یا توضیح.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

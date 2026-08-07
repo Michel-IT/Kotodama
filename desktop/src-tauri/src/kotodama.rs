@@ -95,19 +95,40 @@ fn selectors_for(key: &str) -> (&'static str, &'static str) {
 ///      answer container visibly changes from its injection-time snapshot.
 /// HARVEST: 1s poll (Chromium clamps hidden-page timers to 1s) until the answer text is
 ///      stable for 3 polls with no "stop" button; 180s budget; heartbeat every 3 polls.
-/// DELIVER: chunked sentinel navigations, serialized 200ms apart (rapid successive
-///      location.href assignments coalesce — only the last would fire).
-const HARVEST_JS: &str = r##"
+/// DELIVER: via `window.__ktPush` (PUSH_HELPER_JS) — direct Tauri IPC when available (whole
+///      answer in one call, no delay), else the navigation-sentinel fallback (chunked, spaced
+///      200ms apart: rapid successive location.href assignments coalesce — only the last fires).
+const PUSH_HELPER_JS: &str = r#"
+if (!window.__ktPush) {
+  window.__ktPushNav = function(obj){
+    var q = [];
+    for (var k in obj) { if (obj[k] === undefined || obj[k] === null) continue; q.push(encodeURIComponent(k)+'='+encodeURIComponent(String(obj[k]))); }
+    try { window.location.href = 'https://kotodama.result/?' + q.join('&'); } catch(e){}
+  };
+  window.__ktPush = function(obj){
+    try {
+      if (window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function') {
+        window.__TAURI__.core.invoke('kotodama_push', obj).catch(function(err){
+          try { window.__ktPushNav({ b: obj.b, k: obj.k, st: 'diag', d: '__IPCERR__: ' + (err && (err.message||JSON.stringify(err))) }); } catch(e){}
+          window.__ktPushNav(obj);
+        });
+        return;
+      }
+    } catch(e){}
+    window.__ktPushNav(obj); // no Tauri IPC bridge in this page -> sentinel navigation fallback
+  };
+}
+"#;
+/// Hides screen-reader-only labels (e.g. "Claude ha risposto:", ChatGPT's hidden "Modifica"/"Edit"
+/// label next to the pencil icon) that are visually clipped, not `display:none`, so they are still
+/// PART OF A NATIVE SELECTION -- a manual (or inline-transform) Ctrl+A/Ctrl+C on the page copies
+/// them right along with the real message text. `display:none` removes them from layout entirely,
+/// which excludes them from both `innerText` (harvesting) AND any native text selection (copying).
+/// Matches by CSS class/attribute pattern only (developer-set, never translated) so this holds in
+/// EVERY UI language without per-language text matching -- same principle as the rest of the
+/// language-independent selectors in this codebase.
+pub(crate) const SR_HIDE_JS: &str = r##"
 (function(){
-  var BID = __kt_bid, KEY = __kt_key, ANS_SEL = __kt_ans, BUSY_SEL = __kt_busy, FRESH = __kt_fresh;
-  // The prompt we just sent (from the fill script): never harvest our own message back
-  // (the generic selector chain can match the USER bubble on providers without a
-  // dedicated assistant selector).
-  var SENT = (typeof __apb_text === 'string') ? __apb_text.trim() : '';
-  window.__ktBid = BID;               // a newer injection overwrites; older loops self-terminate
-  var t0 = Date.now();
-  // Screen-reader-only labels (e.g. Claude's "Claude ha risposto:") are clipped, not
-  // display:none, so innerText INCLUDES them -> hide them for real before harvesting.
   try {
     if (!document.getElementById('__ktSrHide')) {
       var st = document.createElement('style');
@@ -121,8 +142,17 @@ const HARVEST_JS: &str = r##"
       document.head.appendChild(st);
     }
   } catch(e){}
-  function nav(q){ try { window.location.href = 'https://kotodama.result/?' + q; } catch(e){} }
-  function esc(s){ return encodeURIComponent(s); }
+})();
+"##;
+const HARVEST_JS: &str = r##"
+(function(){
+  var BID = __kt_bid, KEY = __kt_key, ANS_SEL = __kt_ans, BUSY_SEL = __kt_busy, FRESH = __kt_fresh;
+  // The prompt we just sent (from the fill script): never harvest our own message back
+  // (the generic selector chain can match the USER bubble on providers without a
+  // dedicated assistant selector).
+  var SENT = (typeof __apb_text === 'string') ? __apb_text.trim() : '';
+  window.__ktBid = BID;               // a newer injection overwrites; older loops self-terminate
+  var t0 = Date.now();
   function lastMatch(sel){
     if (!sel) return null;
     try { var els = document.querySelectorAll(sel); return els.length ? els[els.length-1] : null; }
@@ -178,17 +208,39 @@ const HARVEST_JS: &str = r##"
     if (!el) return null;
     return (el.value !== undefined ? el.value : el.innerText) || '';
   }
+  // Blocked/needs-manual-intervention wall: a password field (classic login form) OR a captcha
+  // challenge (some providers gate SENDING behind one when not authenticated instead of showing a
+  // login form -- e.g. Z.ai's own "chat-captcha-trigger" button). Matched by code-level
+  // class/id/data-testid/iframe-src substrings, never translated text, so this holds in every UI
+  // language. A captcha can in principle appear for anti-bot reasons even while logged in; treated
+  // the same as a login wall here because either way the send is stuck and needs the user to open
+  // the real page and resolve it by hand.
+  function authWallPresent(){
+    try {
+      if (document.querySelector('input[type="password"]')) return true;
+      if (document.querySelector('[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]')) return true;
+    } catch(e){}
+    return false;
+  }
   function deliver(st, txt){
     if (window.__ktBid !== BID) return;
     window.__ktBid = null;
     txt = txt || '';
     var MAXC = 150000, trunc = 0;
     if (txt.length > MAXC) { txt = txt.slice(0, MAXC); trunc = 1; }
+    var hasIpc = !!(window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function');
+    if (hasIpc) {
+      // Direct IPC: no URL-length or navigation-coalescing constraints -> the whole answer goes
+      // in ONE call, no artificial delay.
+      window.__ktPush({ b: BID, k: KEY, st: st, s: 0, n: 1, tr: !!trunc, d: txt });
+      return;
+    }
+    // Fallback (no Tauri bridge in this page): chunk + space sends 200ms apart — rapid successive
+    // location.href assignments coalesce, only the last would fire.
     var CH = 1500, n = Math.max(1, Math.ceil(txt.length / CH)), i = 0;
     function sendNext(){
       if (i >= n) return;
-      var chunk = txt.slice(i*CH, (i+1)*CH);
-      nav('b='+esc(BID)+'&k='+esc(KEY)+'&st='+st+'&s='+i+'&n='+n+(trunc?'&tr=1':'')+'&d='+esc(chunk));
+      window.__ktPush({ b: BID, k: KEY, st: st, s: i, n: n, tr: !!trunc, d: txt.slice(i*CH, (i+1)*CH) });
       i++;
       if (i < n) setTimeout(sendNext, 200);
     }
@@ -204,7 +256,7 @@ const HARVEST_JS: &str = r##"
   var armIv = setInterval(function(){
     if (window.__ktBid !== BID) { clearInterval(armIv); return; }
     armTries++;
-    if (document.querySelector('input[type="password"]')) { clearInterval(armIv); deliver('login',''); return; }
+    if (authWallPresent()) { clearInterval(armIv); deliver('login',''); return; }
     var cur = answerTxt();
     if (cur && cur !== initialAnswer) { clearInterval(armIv); harvest(); return; }  // answer streaming
     var v = composerVal();
@@ -244,7 +296,7 @@ const HARVEST_JS: &str = r##"
       }
       out.push('btns=' + bl.join(','));
     } catch(e){}
-    nav('b='+esc(BID)+'&k='+esc(KEY)+'&st=diag&d='+esc(out.join(' || ').slice(0,1400)));
+    window.__ktPush({ b: BID, k: KEY, st: 'diag', d: out.join(' || ').slice(0,1400) });
   }
   function harvest(){
     var last = '', stable = 0, polls = 0, sentCensus = false;
@@ -261,7 +313,7 @@ const HARVEST_JS: &str = r##"
       if (stable >= 3 && !busy || stable >= 10) { clearInterval(iv); deliver('done', txt); return; }
       if (Date.now() - t0 > 180000) { clearInterval(iv); deliver(txt ? 'timeout' : 'error', txt); return; }
       if (!sentCensus && polls === 15 && !txt) { sentCensus = true; census(); }
-      if (polls % 3 === 0) { nav('b='+esc(BID)+'&k='+esc(KEY)+'&st=progress&len='+txt.length); }
+      if (polls % 3 === 0) { window.__ktPush({ b: BID, k: KEY, st: 'progress', len: txt.length }); }
     }, 1000);
   }
 })();
@@ -322,7 +374,7 @@ fn temp_click_js(svg: &str) -> String {
     for(var m=0;m<mis.length;m++){{ var nm=(mis[m].getAttribute('data-mat-icon-name')||mis[m].getAttribute('fonticon')||mis[m].getAttribute('svgicon')||''); if(nm.indexOf(SVG)>-1){{ var cc=mis[m].closest(CLICKABLE); if(cc&&cc.offsetParent!==null) return cc; }} }}
     return null;
   }}
-  function diag(m){{ try{{ if(window.__ktDiag) window.location.href='https://kotodama.result/?b='+encodeURIComponent(__kt_bid)+'&k='+encodeURIComponent(__kt_key)+'&st=diag&d='+encodeURIComponent(m); }}catch(e){{}} }}
+  function diag(m){{ try{{ if(window.__ktDiag && window.__ktPush) window.__ktPush({{b:__kt_bid,k:__kt_key,st:'diag',d:m}}); }}catch(e){{}} }}
   var t0=Date.now();
   var iv=setInterval(function(){{
     if(!composer()){{ if(Date.now()-t0>12000){{ clearInterval(iv); window.__ktHoldFill=false; diag('TEMPCLICK-NOCOMPOSER'); }} return; }}   // wait hydration
@@ -406,7 +458,7 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
     // The INCOG diagnostic probe only runs under KOTODAMA_DEBUG (used to discover a provider's
     // incognito URL/selector); never in production.
     let probe = if fresh && crate::debug::enabled() { TEMP_PROBE_JS } else { "" };
-    Ok(prelude + &temp_part + &browser::fill_js(text, true)? + HARVEST_JS + probe)
+    Ok(prelude + PUSH_HELPER_JS + SR_HIDE_JS + &temp_part + &browser::fill_js(text, true)? + HARVEST_JS + probe)
 }
 
 /// Resume script for a page that navigated mid-broadcast. Two cases, decided IN PAGE:
@@ -429,6 +481,8 @@ fn build_resume_js(broadcast_id: &str, key: &str, text: &str) -> Result<String, 
     );
     let fill = browser::fill_js(text, true)?;
     Ok(prelude
+        + PUSH_HELPER_JS
+        + SR_HIDE_JS
         + &format!(
             "if (!(document.body && document.body.innerText.replace(/\\s+/g,' ').indexOf(__kt_head) !== -1)) {{ {fill} }}"
         )
@@ -463,7 +517,17 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
             ah.remove(key);
         }
     }
-    debug::log(format!("kotodama answer bid={bid} key={key} status={status} len={}", text.len()));
+    debug::log(format!(
+        "kotodama answer bid={bid} key={key} status={status} len={} preview={:?}",
+        text.len(), text.chars().take(160).collect::<String>()
+    ));
+    if status == "login" {
+        // A real send hit a login wall: this is the strongest, most direct signal that the
+        // provider is no longer authenticated (much more common in practice than the passive
+        // probe catching it) -- demote it out of known_providers so "chiedi a tutti" stops
+        // offering/pre-selecting it until a real login (and a successful answer) restores it.
+        crate::set_provider_known(&window.app_handle(), key, false);
+    }
     let _ = window.emit(
         "app://kotodama-answer",
         serde_json::json!({ "broadcastId": bid, "key": key, "status": status, "text": text, "truncated": truncated }),
@@ -473,7 +537,9 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     }
 }
 
-/// Sentinel handler, called from `create_tab`'s `on_navigation` for `kotodama.result` URLs.
+/// Sentinel handler, called from `create_tab`'s `on_navigation` for `kotodama.result` URLs. This
+/// is the FALLBACK delivery path (see `kotodama_push` for the primary, direct-IPC one): parses the
+/// query string into the same structured message and hands off to `handle_push`.
 pub fn on_result_url(window: &Window, u: &Url) {
     let mut bid = None;
     let mut key = None;
@@ -497,6 +563,48 @@ pub fn on_result_url(window: &Window, u: &Url) {
         }
     }
     let (Some(bid), Some(key), Some(st)) = (bid, key, st) else { return };
+    handle_push(window, bid, key, st, seq, total, data, len, trunc);
+}
+
+/// Direct-IPC delivery from the provider webview (`window.__TAURI__.core.invoke('kotodama_push',
+/// ...)`), preferred by the injected script's `__ktPush` helper whenever the Tauri bridge is
+/// available in that page. Same wire shape as the navigation-sentinel fallback, just as real
+/// command args instead of URL query params — no chunking/coalescing constraints, so the injected
+/// script sends the WHOLE answer in one call instead of spaced-out 1500-char pieces.
+#[tauri::command]
+pub fn kotodama_push(
+    window: Window,
+    b: String,
+    k: String,
+    st: String,
+    s: Option<usize>,
+    n: Option<usize>,
+    d: Option<String>,
+    len: Option<usize>,
+    tr: Option<bool>,
+) {
+    if crate::debug::enabled() && (st == "diag" || s == Some(0)) {
+        // Log-once-per-delivery confirmation that the direct-IPC path is actually being used (vs.
+        // the navigation-sentinel fallback) — useful to know per-provider if this ever needs
+        // diagnosing (e.g. a provider whose CSP blocks the Tauri bridge would silently fall back).
+        debug::log(format!("kotodama_push (IPC) key={k} st={st}"));
+    }
+    handle_push(&window, b, k, st, s, n, d, len, tr.unwrap_or(false));
+}
+
+/// Shared core for both delivery paths: diag/progress heartbeats emit straight away; chunked
+/// payloads (`seq`/`total`) accumulate in `chunk_bufs()` until complete, then finish the turn.
+fn handle_push(
+    window: &Window,
+    bid: String,
+    key: String,
+    st: String,
+    seq: Option<usize>,
+    total: Option<usize>,
+    data: Option<String>,
+    len: Option<usize>,
+    trunc: bool,
+) {
     if st == "diag" {
         // DOM census from a stuck harvest: log-only, this is how provider selectors get tuned.
         debug::log(format!("kotodama DIAG key={key}: {}", data.unwrap_or_default()));
@@ -538,6 +646,84 @@ pub fn on_result_url(window: &Window, u: &Url) {
     };
     if let Some((text, status, tr)) = done {
         finish_key(window, &bid, &key, &status, &text, tr);
+    }
+}
+
+/// Passive, on-demand login-wall probe for a provider page that is NOT part of any active
+/// Kotodama send (a manually opened tab, or an idle tab between broadcast turns). Reports via
+/// `provider_login_probe` ONLY on an unambiguous read: a password field or captcha wall found =
+/// needs login; a chat composer found = does not -- neither found (still loading) stays silent
+/// rather than risk a false auto-show/auto-park. After a first "needs login" report it keeps
+/// polling (budget ~10 min) so an in-page login (no navigation, e.g. a modal) is still caught --
+/// most providers DO navigate/reload after login, which fires a fresh `Finished` event and a
+/// fresh probe anyway, but this covers the ones that don't. Retreats immediately if a real
+/// send/harvest (`window.__ktBid`) starts on this same page: the reactive auth-wall check inside
+/// `HARVEST_JS` (see `deliver`) already owns login detection for that case.
+fn login_probe_js(key: &str) -> String {
+    format!(
+        r##"(function(){{
+  var KEY = {key};
+  var BUDGET_MS = 600000, STEP_MS = 4000, t0 = Date.now(), reportedLogin = false;
+  // Password field OR captcha challenge (see HARVEST_JS's authWallPresent for why both count).
+  function authWallPresent(){{
+    try {{
+      if (document.querySelector('input[type="password"]')) return true;
+      if (document.querySelector('[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]')) return true;
+    }} catch(e){{}}
+    return false;
+  }}
+  function composerPresent(){{
+    var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'];
+    for (var i=0;i<sels.length;i++){{
+      var els = document.querySelectorAll(sels[i]);
+      for (var j=0;j<els.length;j++){{ if (els[j].offsetParent !== null) return true; }}
+    }}
+    return false;
+  }}
+  function report(needsLogin){{
+    try {{
+      if (window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function') {{
+        window.__TAURI__.core.invoke('provider_login_probe', {{ key: KEY, needsLogin: needsLogin }}).catch(function(){{}});
+      }}
+    }} catch(e){{}}
+  }}
+  function tick(){{
+    if (window.__ktBid) {{ clearInterval(iv); return; }}   // a real send/harvest took over this page
+    if (composerPresent()) {{
+      clearInterval(iv);
+      if (reportedLogin) report(false);   // was flagged needing login earlier -> now resolved
+      return;
+    }}
+    if (authWallPresent()) {{
+      if (!reportedLogin) {{ reportedLogin = true; report(true); }}
+      return;   // keep polling: only the LATER composer-appears transition is still of interest
+    }}
+    if (Date.now() - t0 > BUDGET_MS) clearInterval(iv);   // ambiguous the whole time: give up silently
+  }}
+  var iv = setInterval(tick, STEP_MS);
+  setTimeout(tick, 3500);
+}})();"##,
+        key = serde_json::to_string(key).unwrap_or_else(|_| "\"\"".into()),
+    )
+}
+
+/// Report from `login_probe_js` (a passive, on-demand check -- the reactive password check inside
+/// `HARVEST_JS` has its own path via `finish_key`'s `status=="login"` branch, not this command).
+/// `needs_login=true` demotes the provider out of `known_providers` (a stale "known" flag is
+/// exactly how a logged-out provider kept showing up as available in "chiedi a tutti") -- it does
+/// NOT bring the tab on screen: with more than one provider possibly needing login at the same
+/// time, auto-showing would fight over the single visible-tab slot and could pop a page in front
+/// of the user unprompted. The user instead resolves it explicitly, one at a time, via the
+/// "Accedi" button the frontend shows on that provider's card. `needs_login=false` is a no-op
+/// here (it does NOT re-promote to known); that only happens on an actual successful answer
+/// (`mark_provider_known`), a much stronger signal than "a composer is visible".
+#[tauri::command]
+pub fn provider_login_probe(window: Window, key: String, needs_login: bool) {
+    if crate::debug::enabled() {
+        debug::log(format!("provider_login_probe key={key} needs_login={needs_login}"));
+    }
+    if needs_login {
+        crate::set_provider_known(&window.app_handle(), &key, false);
     }
 }
 
@@ -588,26 +774,14 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
             if let Ok(js) = build_resume_js(&bid, key, &text) {
                 let _ = webview.eval(&js);
             }
+            return;
         }
     }
-}
-
-/// Aborts any in-flight harvest for `key` (recipe re-navigation, supersede): the pending
-/// card flips to error right away instead of waiting for the watchdog.
-pub fn abort_key(window: &Window, key: &str) {
-    pending_injections().lock().unwrap().remove(key);
-    active_harvests().lock().unwrap().remove(key);
-    chunk_bufs().lock().unwrap().retain(|(_, k), _| k != key);
-    let bids: Vec<String> = broadcasts()
-        .lock()
-        .unwrap()
-        .iter()
-        .filter(|(_, bc)| bc.pending.contains(key))
-        .map(|(bid, _)| bid.clone())
-        .collect();
-    for bid in bids {
-        finish_key(window, &bid, key, "error", "", false);
-    }
+    // Neither a queued injection nor an owed harvest resume: this page-load is not part of any
+    // in-flight Kotodama send (a manually opened tab, or an idle tab between broadcast turns) --
+    // passively probe whether it needs login, so the app can auto-show it without requiring an
+    // actual send attempt first.
+    let _ = webview.eval(&login_probe_js(key));
 }
 
 /// Broadcast `text` to the given provider tabs WITHOUT showing them.

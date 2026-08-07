@@ -21,14 +21,16 @@
     "reply": "जवाब",
     "email": "ईमेल बनाईं",
     "neutral": "तटस्थ",
-    "translate": "अनुवाद करीं"
+    "translate": "अनुवाद करीं",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "नीचे दिहल पाठ के फेरु से लिखीं:",
     "summarise": "नीचे दिहल पाठ के सारांश करीं:",
     "reply": "नीचे दिहल संदेश के जवाब लिखीं:",
     "email": "एकरे आधार पर एगो ईमेल लिखीं:",
-    "translate": "नीचे दिहल पाठ के अनुवाद करीं:"
+    "translate": "नीचे दिहल पाठ के अनुवाद करीं:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "छोट आ सटीक",
@@ -134,7 +136,8 @@
     "errorEmpty": "कॉपी करे खातिर कुछ नइखे",
     "errorNoAnswer": "कवनो जवाब ना मिलल",
     "stageConnect": "जुड़ल जा रहल बा...",
-    "stageWork": "जवाब आ रहल बा"
+    "stageWork": "जवाब आ रहल बा",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "rename": "नाम बदलीं",
   "edit": "संपादित करीं",
@@ -214,5 +217,25 @@
   "respLabel": "जवाब",
   "respNormal": "सामान्य",
   "respTextOnly": "खाली टेक्स्ट",
-  "answerOnlyText": "खाली टेक्स्ट के साथ जवाब दीं, कवनो भूमिका भा टिप्पणी ना।"
+  "answerOnlyText": "खाली टेक्स्ट के साथ जवाब दीं, कवनो भूमिका भा टिप्पणी ना।",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

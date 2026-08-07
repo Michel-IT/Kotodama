@@ -29,14 +29,16 @@
     "reply": "Svar",
     "email": "Opprett e-post",
     "neutral": "Nøytral",
-    "translate": "Oversett"
+    "translate": "Oversett",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Omformuler følgende tekst:",
     "summarise": "Oppsummer følgende tekst:",
     "reply": "Skriv et svar på følgende melding:",
     "email": "Skriv en e-post basert på:",
-    "translate": "Oversett følgende tekst:"
+    "translate": "Oversett følgende tekst:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Kort og konsist",
@@ -142,7 +144,8 @@
     "errorEmpty": "Ingenting å kopiere",
     "errorNoAnswer": "Ingen svar mottatt",
     "stageConnect": "Kobler til...",
-    "stageWork": "Mottar svaret"
+    "stageWork": "Mottar svaret",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Den kopierte teksten sendes som den er til standardleverandøren.",
   "setRecipe": "Standardoppskrift",
@@ -214,5 +217,25 @@
   "respLabel": "Svar",
   "respNormal": "Normal",
   "respTextOnly": "Bare tekst",
-  "answerOnlyText": "Svar kun med teksten, uten innledning eller kommentarer."
+  "answerOnlyText": "Svar kun med teksten, uten innledning eller kommentarer.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

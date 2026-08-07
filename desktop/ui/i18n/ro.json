@@ -29,14 +29,16 @@
     "reply": "Răspunde",
     "email": "Creează e-mail",
     "neutral": "Neutru",
-    "translate": "Traducere"
+    "translate": "Traducere",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Reformulează textul următor:",
     "summarise": "Rezumă textul următor:",
     "reply": "Scrie un răspuns la mesajul următor:",
     "email": "Scrie un e-mail pornind de la:",
-    "translate": "Tradu următorul text:"
+    "translate": "Tradu următorul text:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Scurt și concis",
@@ -142,7 +144,8 @@
     "errorEmpty": "Nimic de copiat",
     "errorNoAnswer": "Niciun răspuns primit",
     "stageConnect": "Se conectează...",
-    "stageWork": "Se primește răspunsul"
+    "stageWork": "Se primește răspunsul",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Textul copiat este trimis ca atare către furnizorul implicit.",
   "setRecipe": "Rețetă implicită",
@@ -214,5 +217,25 @@
   "respLabel": "Răspuns",
   "respNormal": "Normal",
   "respTextOnly": "Doar text",
-  "answerOnlyText": "Răspunde doar cu textul, fără preambul sau comentarii."
+  "answerOnlyText": "Răspunde doar cu textul, fără preambul sau comentarii.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

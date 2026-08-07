@@ -40,7 +40,7 @@ pub struct Settings {
     /// "Risposta" field: 0 = Normale (nothing added), 1 = Solo testo (append answer-only
     /// constraint). Default 1.
     pub resp_fmt: u32,
-    /// Finestra sempre in primo piano (galleggia sopra le altre finestre). Default: off.
+    /// Finestra sempre in primo piano (galleggia sopra le altre finestre). Default: on.
     pub always_on_top: bool,
     /// La modale di benvenuto (primo avvio, privacy + confine provider) e' stata confermata
     /// con "non mostrare piu'": se true non ricompare all'avvio. Default: false.
@@ -55,6 +55,13 @@ pub struct Settings {
     /// Chat temporanea PER PROVIDER (key -> abilitata). Assente = abilitata dove supportata.
     /// Il frontend sa quali provider la supportano; i toggle degli altri sono disabilitati.
     pub kt_temp_providers: std::collections::HashMap<String, bool>,
+    /// Provider con cui un broadcast Kotodama e' andato a buon fine ALMENO una volta (segno che
+    /// l'utente ha un account attivo li'). Usato dal frontend per pre-selezionare SOLO questi
+    /// nella chat "chiedi a tutti", invece di tutti gli 8 a prescindere dal login: un broadcast
+    /// verso un provider mai autenticato creava comunque la sua webview e finiva su un muro di
+    /// login, per niente. Gli altri provider restano disponibili, l'utente li aggiunge a mano la
+    /// prima volta.
+    pub known_providers: std::collections::HashSet<String>,
 }
 
 impl Default for Settings {
@@ -64,13 +71,13 @@ impl Default for Settings {
             default_provider: "openai".into(),
             hotkey: "Control+Shift+Space".into(),
             monitor_enabled: true,
-            autostart: false,
+            autostart: true,
             theme: "sumi".into(),
             recipe: "key:neutral".into(),
             length: 0,
             tone: 0,
             resp_fmt: 1, // default "Solo testo": clean, answer-only output
-            always_on_top: false,
+            always_on_top: true,
             welcome_ack: false,
             // Default per-recipe shortcuts (fresh installs): Riformula = Ctrl+Alt+C,
             // Traduci = Ctrl+Alt+T. Applied via serde container-default when the field is
@@ -81,6 +88,7 @@ impl Default for Settings {
             ]),
             kt_temp_chats: true,
             kt_temp_providers: std::collections::HashMap::new(),
+            known_providers: std::collections::HashSet::new(),
         }
     }
 }
@@ -97,6 +105,13 @@ fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir.join("settings.json"))
+}
+
+/// True if `settings.json` already exists -- i.e. NOT a fresh install. Used once at startup to
+/// decide whether to force-enable autostart for a brand-new user without touching an existing
+/// user's explicit choice (see `lib.rs::setup`).
+pub fn exists(app: &AppHandle) -> bool {
+    settings_path(app).map(|p| p.exists()).unwrap_or(false)
 }
 
 /// Load the settings; on error or missing file returns the defaults.

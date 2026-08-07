@@ -29,14 +29,16 @@
     "reply": "Atbildēt",
     "email": "Izveidot e-pastu",
     "neutral": "Neitrāls",
-    "translate": "Tulkot"
+    "translate": "Tulkot",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Pārformulē šādu tekstu:",
     "summarise": "Apkopo šādu tekstu:",
     "reply": "Uzraksti atbildi uz šādu ziņojumu:",
     "email": "Uzraksti e-pastu, balstoties uz:",
-    "translate": "Iztulko šo tekstu:"
+    "translate": "Iztulko šo tekstu:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Īss un kodolīgs",
@@ -142,7 +144,8 @@
     "errorEmpty": "Nav ko kopēt",
     "errorNoAnswer": "Atbilde nav saņemta",
     "stageConnect": "Savienojas...",
-    "stageWork": "Atbilde tiek saņemta"
+    "stageWork": "Atbilde tiek saņemta",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Kopētais teksts tiek nosūtīts tāds, kāds ir, uz noklusējuma nodrošinātāju.",
   "setRecipe": "Noklusējuma recepte",
@@ -214,5 +217,25 @@
   "respLabel": "Atbilde",
   "respNormal": "Normāls",
   "respTextOnly": "Tikai teksts",
-  "answerOnlyText": "Atbildi tikai ar tekstu, bez ievada un komentāriem."
+  "answerOnlyText": "Atbildi tikai ar tekstu, bez ievada un komentāriem.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

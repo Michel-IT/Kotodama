@@ -21,14 +21,16 @@
     "reply": "Jibu",
     "email": "Tengeneza barua pepe",
     "neutral": "Wastani",
-    "translate": "Tafsiri"
+    "translate": "Tafsiri",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Andika upya maandishi yafuatayo:",
     "summarise": "Fupisha maandishi yafuatayo:",
     "reply": "Andika jibu kwa ujumbe ufuatao:",
     "email": "Andika barua pepe kwa kuzingatia:",
-    "translate": "Tafsiri maandishi yafuatayo:"
+    "translate": "Tafsiri maandishi yafuatayo:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Fupi na thabiti",
@@ -142,7 +144,8 @@
     "errorEmpty": "Hakuna cha kunakili",
     "errorNoAnswer": "Hakuna jibu lililopokelewa",
     "stageConnect": "Inaunganisha...",
-    "stageWork": "Inapokea jibu"
+    "stageWork": "Inapokea jibu",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Maandishi yaliyonakiliwa hutumwa kama yalivyo kwa mtoa huduma chaguo-msingi.",
   "setRecipe": "Kichocheo chaguo-msingi",
@@ -214,5 +217,25 @@
   "respLabel": "Jibu",
   "respNormal": "Kawaida",
   "respTextOnly": "Maandishi tu",
-  "answerOnlyText": "Jibu kwa maandishi tu, bila utangulizi wala maoni."
+  "answerOnlyText": "Jibu kwa maandishi tu, bila utangulizi wala maoni.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

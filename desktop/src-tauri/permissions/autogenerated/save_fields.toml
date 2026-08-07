@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-fields"
+description = "Enables the save_fields command without any pre-configured scope."
+commands.allow = ["save_fields"]
+
+[[permission]]
+identifier = "deny-save-fields"
+description = "Denies the save_fields command without any pre-configured scope."
+commands.deny = ["save_fields"]

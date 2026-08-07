@@ -20,6 +20,14 @@
 
 ---
 
+<div align="center">
+
+<img src="assets/kotodama-screenshot.png" alt="Kotodama — ask every AI assistant at once" width="900">
+
+</div>
+
+---
+
 ## 🎬 Demo (video)
 
 <div align="center">

@@ -29,14 +29,16 @@
     "reply": "Válasz",
     "email": "E-mail létrehozása",
     "neutral": "Semleges",
-    "translate": "Fordítás"
+    "translate": "Fordítás",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Fogalmazd át a következő szöveget:",
     "summarise": "Foglald össze a következő szöveget:",
     "reply": "Írj választ a következő üzenetre:",
     "email": "Írj egy e-mailt ez alapján:",
-    "translate": "Fordítsd le a következő szöveget:"
+    "translate": "Fordítsd le a következő szöveget:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Rövid és tömör",
@@ -142,7 +144,8 @@
     "errorEmpty": "Nincs mit másolni",
     "errorNoAnswer": "Nem érkezett válasz",
     "stageConnect": "Csatlakozás...",
-    "stageWork": "Válasz fogadása"
+    "stageWork": "Válasz fogadása",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "A másolt szöveg változtatás nélkül megy az alapértelmezett szolgáltatónak.",
   "setRecipe": "Alapértelmezett recept",
@@ -214,5 +217,25 @@
   "respLabel": "Válasz",
   "respNormal": "Normál",
   "respTextOnly": "Csak szöveg",
-  "answerOnlyText": "Csak a szöveggel válaszolj, bevezető és megjegyzések nélkül."
+  "answerOnlyText": "Csak a szöveggel válaszolj, bevezető és megjegyzések nélkül.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

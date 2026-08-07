@@ -29,14 +29,16 @@
     "reply": "ਜਵਾਬ",
     "email": "ਈਮੇਲ ਬਣਾਓ",
     "neutral": "ਨਿਊਟਰਲ",
-    "translate": "ਅਨੁਵਾਦ ਕਰੋ"
+    "translate": "ਅਨੁਵਾਦ ਕਰੋ",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "ਹੇਠਲੇ ਪਾਠ ਨੂੰ ਮੁੜ-ਲਿਖੋ:",
     "summarise": "ਹੇਠਲੇ ਪਾਠ ਦਾ ਸੰਖੇਪ ਕਰੋ:",
     "reply": "ਹੇਠਲੇ ਸੁਨੇਹੇ ਦਾ ਜਵਾਬ ਲਿਖੋ:",
     "email": "ਇਸ ਦੇ ਆਧਾਰ 'ਤੇ ਇੱਕ ਈਮੇਲ ਲਿਖੋ:",
-    "translate": "ਹੇਠਲੇ ਪਾਠ ਦਾ ਅਨੁਵਾਦ ਕਰੋ:"
+    "translate": "ਹੇਠਲੇ ਪਾਠ ਦਾ ਅਨੁਵਾਦ ਕਰੋ:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "ਸੰਖੇਪ ਅਤੇ ਸਪਸ਼ਟ",
@@ -142,7 +144,8 @@
     "errorEmpty": "ਕਾਪੀ ਕਰਨ ਲਈ ਕੁਝ ਨਹੀਂ",
     "errorNoAnswer": "ਕੋਈ ਜਵਾਬ ਨਹੀਂ ਮਿਲਿਆ",
     "stageConnect": "ਕਨੈਕਟ ਹੋ ਰਿਹਾ ਹੈ...",
-    "stageWork": "ਜਵਾਬ ਆ ਰਿਹਾ ਹੈ"
+    "stageWork": "ਜਵਾਬ ਆ ਰਿਹਾ ਹੈ",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "ਕਾਪੀ ਕੀਤਾ ਟੈਕਸਟ ਉਵੇਂ ਹੀ ਡਿਫਾਲਟ ਪ੍ਰੋਵਾਈਡਰ ਨੂੰ ਭੇਜਿਆ ਜਾਂਦਾ ਹੈ।",
   "setRecipe": "ਡਿਫਾਲਟ ਰੈਸਿਪੀ",
@@ -214,5 +217,25 @@
   "respLabel": "ਜਵਾਬ",
   "respNormal": "ਸਧਾਰਨ",
   "respTextOnly": "ਸਿਰਫ਼ ਲਿਖਤ",
-  "answerOnlyText": "ਸਿਰਫ਼ ਲਿਖਤ ਨਾਲ ਜਵਾਬ ਦਿਓ, ਕੋਈ ਭੂਮਿਕਾ ਜਾਂ ਟਿੱਪਣੀ ਨਹੀਂ।"
+  "answerOnlyText": "ਸਿਰਫ਼ ਲਿਖਤ ਨਾਲ ਜਵਾਬ ਦਿਓ, ਕੋਈ ਭੂਮਿਕਾ ਜਾਂ ਟਿੱਪਣੀ ਨਹੀਂ।",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

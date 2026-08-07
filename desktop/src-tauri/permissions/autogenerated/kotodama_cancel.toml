@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kotodama-cancel"
+description = "Enables the kotodama_cancel command without any pre-configured scope."
+commands.allow = ["kotodama_cancel"]
+
+[[permission]]
+identifier = "deny-kotodama-cancel"
+description = "Denies the kotodama_cancel command without any pre-configured scope."
+commands.deny = ["kotodama_cancel"]

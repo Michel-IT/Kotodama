@@ -21,14 +21,16 @@
     "reply": "回复",
     "email": "撰写邮件",
     "neutral": "中性",
-    "translate": "翻译"
+    "translate": "翻译",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "改写以下文本：",
     "summarise": "总结以下文本：",
     "reply": "为以下消息撰写回复：",
     "email": "根据以下内容撰写一封邮件：",
-    "translate": "翻译以下文本："
+    "translate": "翻译以下文本：",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "简短精炼",
@@ -142,7 +144,8 @@
     "errorEmpty": "没有可复制的内容",
     "errorNoAnswer": "未收到回答",
     "stageConnect": "连接中...",
-    "stageWork": "正在接收回答"
+    "stageWork": "正在接收回答",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "复制的文本将原样发送至默认提供商。",
   "setRecipe": "默认配方",
@@ -214,5 +217,25 @@
   "respLabel": "响应",
   "respNormal": "普通",
   "respTextOnly": "仅文本",
-  "answerOnlyText": "只回复文本，不要前言或评论。"
+  "answerOnlyText": "只回复文本，不要前言或评论。",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

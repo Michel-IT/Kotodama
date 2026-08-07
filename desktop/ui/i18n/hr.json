@@ -29,14 +29,16 @@
     "reply": "Odgovori",
     "email": "Stvori e-poštu",
     "neutral": "Neutralno",
-    "translate": "Prevedi"
+    "translate": "Prevedi",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Preoblikuj sljedeći tekst:",
     "summarise": "Sažmi sljedeći tekst:",
     "reply": "Napiši odgovor na sljedeću poruku:",
     "email": "Napiši e-poštu na temelju:",
-    "translate": "Prevedi sljedeći tekst:"
+    "translate": "Prevedi sljedeći tekst:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Kratko i sažeto",
@@ -142,7 +144,8 @@
     "errorEmpty": "Nema što kopirati",
     "errorNoAnswer": "Nije primljen odgovor",
     "stageConnect": "Povezivanje...",
-    "stageWork": "Odgovor stiže"
+    "stageWork": "Odgovor stiže",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Kopirani tekst šalje se kakav jest zadanom pružatelju.",
   "setRecipe": "Zadani recept",
@@ -214,5 +217,25 @@
   "respLabel": "Odgovor",
   "respNormal": "Normalno",
   "respTextOnly": "Samo tekst",
-  "answerOnlyText": "Odgovori samo tekstom, bez uvoda i komentara."
+  "answerOnlyText": "Odgovori samo tekstom, bez uvoda i komentara.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

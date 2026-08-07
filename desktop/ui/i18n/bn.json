@@ -21,14 +21,16 @@
     "reply": "উত্তর",
     "email": "ইমেল তৈরি করুন",
     "neutral": "নিরপেক্ষ",
-    "translate": "অনুবাদ"
+    "translate": "অনুবাদ",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "নিচের লেখাটি পুনরায় লিখুন:",
     "summarise": "নিচের লেখাটির সারসংক্ষেপ করুন:",
     "reply": "নিচের বার্তাটির একটি উত্তর লিখুন:",
     "email": "এর ভিত্তিতে একটি ইমেল লিখুন:",
-    "translate": "নিম্নলিখিত পাঠ্যটি অনুবাদ করুন:"
+    "translate": "নিম্নলিখিত পাঠ্যটি অনুবাদ করুন:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "সংক্ষিপ্ত ও সারগর্ভ",
@@ -142,7 +144,8 @@
     "errorEmpty": "কপি করার কিছু নেই",
     "errorNoAnswer": "কোনো উত্তর পাওয়া যায়নি",
     "stageConnect": "সংযোগ করা হচ্ছে...",
-    "stageWork": "উত্তর আসছে"
+    "stageWork": "উত্তর আসছে",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "কপি করা টেক্সট যেমন আছে তেমনই ডিফল্ট প্রোভাইডারে পাঠানো হয়।",
   "setRecipe": "ডিফল্ট রেসিপি",
@@ -214,5 +217,25 @@
   "respLabel": "উত্তর",
   "respNormal": "সাধারণ",
   "respTextOnly": "শুধু টেক্সট",
-  "answerOnlyText": "শুধু টেক্সট দিয়ে উত্তর দিন, কোনো ভূমিকা বা মন্তব্য ছাড়া।"
+  "answerOnlyText": "শুধু টেক্সট দিয়ে উত্তর দিন, কোনো ভূমিকা বা মন্তব্য ছাড়া।",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

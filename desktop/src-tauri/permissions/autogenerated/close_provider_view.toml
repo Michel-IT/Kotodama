@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-close-provider-view"
+description = "Enables the close_provider_view command without any pre-configured scope."
+commands.allow = ["close_provider_view"]
+
+[[permission]]
+identifier = "deny-close-provider-view"
+description = "Denies the close_provider_view command without any pre-configured scope."
+commands.deny = ["close_provider_view"]

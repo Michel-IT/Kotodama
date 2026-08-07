@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-provider-top-extra"
+description = "Enables the set_provider_top_extra command without any pre-configured scope."
+commands.allow = ["set_provider_top_extra"]
+
+[[permission]]
+identifier = "deny-set-provider-top-extra"
+description = "Denies the set_provider_top_extra command without any pre-configured scope."
+commands.deny = ["set_provider_top_extra"]

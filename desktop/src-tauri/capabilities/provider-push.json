@@ -1,0 +1,20 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "kotodama-provider-push",
+  "description": "Grants ONLY the kotodama_push data-delivery command and the provider_login_probe passive-login-signal command to the provider webviews (remote, untrusted third-party pages like chatgpt.com/claude.ai). No other Tauri command is reachable from them -- everything else (settings, files, clipboard, window control...) stays off-limits, per the isolation documented in default.json. kotodama_push just accepts text keyed by a broadcast id the Rust side already tracks; provider_login_probe just accepts a boolean 'this page has a password field / a chat composer' -- a malicious page could at worst send bogus data for a broadcast it can guess the id of (already possible via the pre-existing kotodama.result navigation-sentinel, a raw URL any page could navigate to) or a bogus login-state flag for itself (at most it can make its OWN tab pop into view or park early, no other provider/window is reachable) -- neither widens the exposure meaningfully. NOTE: 'webviews' alone was NOT enough -- Tauri capabilities also gate on 'local' (default true, meaning ONLY the app's own tauri://localhost origin) vs 'remote' URLs; provider webviews load REAL third-party pages, so this needed an explicit remote.urls allowlist naming every provider domain, or the grant silently never matched (confirmed via the exact runtime error: 'kotodama_push not allowed ... URL: https://chatgpt.com/... allowed on: [..., URL: local]').",
+  "local": false,
+  "remote": {
+    "urls": [
+      "https://chatgpt.com/*",
+      "https://claude.ai/*",
+      "https://grok.com/*",
+      "https://gemini.google.com/*",
+      "https://www.perplexity.ai/*",
+      "https://chat.qwen.ai/*",
+      "https://chat.deepseek.com/*",
+      "https://chat.z.ai/*"
+    ]
+  },
+  "webviews": ["provider:*"],
+  "permissions": ["allow-kotodama-push", "allow-provider-login-probe"]
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-app-write-clipboard"
+description = "Enables the app_write_clipboard command without any pre-configured scope."
+commands.allow = ["app_write_clipboard"]
+
+[[permission]]
+identifier = "deny-app-write-clipboard"
+description = "Denies the app_write_clipboard command without any pre-configured scope."
+commands.deny = ["app_write_clipboard"]

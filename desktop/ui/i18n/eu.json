@@ -29,14 +29,16 @@
     "reply": "Erantzun",
     "email": "Sortu e-posta",
     "neutral": "Neutrala",
-    "translate": "Itzuli"
+    "translate": "Itzuli",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Birformulatu honako testu hau:",
     "summarise": "Laburtu honako testu hau:",
     "reply": "Idatzi erantzun bat honako mezu honi:",
     "email": "Idatzi e-posta bat honetan oinarrituta:",
-    "translate": "Itzuli ondorengo testua:"
+    "translate": "Itzuli ondorengo testua:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Laburra eta zehatza",
@@ -142,7 +144,8 @@
     "errorEmpty": "Ez dago ezer kopiatzeko",
     "errorNoAnswer": "Ez da erantzunik jaso",
     "stageConnect": "Konektatzen...",
-    "stageWork": "Erantzuna iristen ari da"
+    "stageWork": "Erantzuna iristen ari da",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Kopiatutako testua dagoen bezala bidaltzen da hornitzaile lehenetsira.",
   "setRecipe": "Errezeta lehenetsia",
@@ -214,5 +217,25 @@
   "respLabel": "Erantzuna",
   "respNormal": "Normala",
   "respTextOnly": "Testua soilik",
-  "answerOnlyText": "Erantzun testuarekin soilik, sarrerarik edo iruzkinik gabe."
+  "answerOnlyText": "Erantzun testuarekin soilik, sarrerarik edo iruzkinik gabe.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

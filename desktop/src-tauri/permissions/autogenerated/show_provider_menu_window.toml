@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-show-provider-menu-window"
+description = "Enables the show_provider_menu_window command without any pre-configured scope."
+commands.allow = ["show_provider_menu_window"]
+
+[[permission]]
+identifier = "deny-show-provider-menu-window"
+description = "Denies the show_provider_menu_window command without any pre-configured scope."
+commands.deny = ["show_provider_menu_window"]

@@ -29,14 +29,16 @@
     "reply": "Отговори",
     "email": "Създай имейл",
     "neutral": "Неутрална",
-    "translate": "Преведи"
+    "translate": "Преведи",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Преформулирай следния текст:",
     "summarise": "Обобщи следния текст:",
     "reply": "Напиши отговор на следното съобщение:",
     "email": "Напиши имейл въз основа на:",
-    "translate": "Преведи следния текст:"
+    "translate": "Преведи следния текст:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Кратко и ясно",
@@ -142,7 +144,8 @@
     "errorEmpty": "Няма какво да се копира",
     "errorNoAnswer": "Не е получен отговор",
     "stageConnect": "Свързване...",
-    "stageWork": "Отговорът пристига"
+    "stageWork": "Отговорът пристига",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Копираният текст се изпраща както е до доставчика по подразбиране.",
   "setRecipe": "Рецепта по подразбиране",
@@ -214,5 +217,25 @@
   "respLabel": "Отговор",
   "respNormal": "Нормален",
   "respTextOnly": "Само текст",
-  "answerOnlyText": "Отговори само с текста, без предисловие и коментари."
+  "answerOnlyText": "Отговори само с текста, без предисловие и коментари.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

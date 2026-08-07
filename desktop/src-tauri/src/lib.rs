@@ -419,6 +419,38 @@ fn save_ui_state(app: AppHandle, provider: String, recipe: String, length: u32, 
     save_settings_bg(&app, snapshot);
 }
 
+/// Adds (`known:true`) or removes (`known:false`) a provider from `known_providers` -- the
+/// frontend uses this set to pre-select AND show-by-default only providers with an active login
+/// for "chiedi a tutti" (instead of all of them regardless of login state). A no-op (no save, no
+/// event) if the value doesn't actually change, so a normal successful chat doesn't hit disk on
+/// every turn. On a real change, also emits `app://provider-known-changed` so the frontend can
+/// update the chip's visibility immediately instead of waiting for the next app restart.
+pub(crate) fn set_provider_known(app: &AppHandle, key: &str, known: bool) {
+    let snapshot = {
+        let state = app.state::<AppState>();
+        let mut g = state.settings.lock().unwrap();
+        let changed = if known {
+            g.known_providers.insert(key.to_string())
+        } else {
+            g.known_providers.remove(key)
+        };
+        if !changed {
+            return;
+        }
+        g.clone()
+    };
+    save_settings_bg(app, snapshot);
+    let _ = app.emit("app://provider-known-changed", serde_json::json!({ "key": key, "known": known }));
+}
+
+/// Marks a provider as "known" (a Kotodama broadcast to it succeeded at least once, i.e. the user
+/// has an active login there). The inverse (a provider found logged-out) is `set_provider_known`
+/// called directly with `known:false` from `kotodama.rs` (login-wall signals).
+#[tauri::command]
+fn mark_provider_known(app: AppHandle, key: String) {
+    set_provider_known(&app, &key, true);
+}
+
 /// Localizes the tray labels (Open / Start-on-login / Quit) in the app language.
 /// Called by the frontend at startup and on every language change.
 #[tauri::command]
@@ -536,7 +568,14 @@ fn send_combo(vk_letter: u16) {
         key(VK_CONTROL, true),
     ];
     unsafe {
-        SendInput(&inputs, std::mem::size_of::<windows::Win32::UI::Input::KeyboardAndMouse::INPUT>() as i32);
+        let sent = SendInput(&inputs, std::mem::size_of::<windows::Win32::UI::Input::KeyboardAndMouse::INPUT>() as i32);
+        if sent != inputs.len() as u32 {
+            // SendInput returns the number of events it actually queued; less than we asked for
+            // means the OS refused/blocked some of them (e.g. UIPI, a secure/locked desktop, or the
+            // input desktop not being ours yet right after a resume) — GetLastError says why.
+            let err = windows::Win32::Foundation::GetLastError();
+            debug::log(format!("send_combo: SendInput only queued {sent}/{} events, GetLastError={:?}", inputs.len(), err));
+        }
     }
 }
 /// macOS: synthesize Cmd+C / Cmd+V via CGEvent. macOS uses the COMMAND modifier (not Control) for
@@ -635,24 +674,63 @@ fn inline_transform(app: AppHandle, recipe: String) {
                 return;
             }
         }
+        #[cfg(windows)]
+        {
+            // Diagnostic: WHICH window is focused right before we synthesize Ctrl+C. If this is
+            // NULL, our own app, or an unexpected window, the copy has nothing useful to act on —
+            // independent of whether SendInput itself succeeds.
+            use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowTextW, GetWindowThreadProcessId};
+            unsafe {
+                let hwnd = GetForegroundWindow();
+                let mut buf = [0u16; 128];
+                let len = GetWindowTextW(hwnd, &mut buf);
+                let title = String::from_utf16_lossy(&buf[..len.max(0) as usize]);
+                let mut pid = 0u32;
+                GetWindowThreadProcessId(hwnd, Some(&mut pid));
+                debug::log(format!("inline_transform: foreground hwnd={:?} pid={pid} title={title:?}", hwnd.0));
+            }
+        }
         let before = app.state::<Clipboard>().read_text().unwrap_or_default();
+        // Write a SENTINEL before copying, and check the clipboard against IT (not against
+        // `before`): comparing "did it change" is wrong when the user copies text that happens to
+        // be IDENTICAL to what's already in the clipboard (e.g. copy -> paste -> select-all ->
+        // re-copy the very text they just pasted) — the real Ctrl+C fires and the OS clipboard does
+        // get overwritten, but with the SAME bytes, so a before/after diff sees "no change" and
+        // wrongly reports "nothing to copy". A sentinel only the app itself could have written
+        // makes ANY real copy (even of unchanged content) detectable.
+        const SENTINEL: &str = "\u{200B}__kotodama_inline_empty__\u{200B}";
+        let _ = app.state::<Clipboard>().write_text(SENTINEL.to_string());
         send_combo(VK_C);
-        // wait for the OS copy to land (retry: some apps are slow). A FRESH copy = the clipboard
-        // changed to a non-empty value; if it never changes, the selection wasn't captured.
+        // wait for the OS copy to land (retry: some apps are slow).
+        // RE-SEND the combo a few times over a longer window (not just re-check the clipboard):
+        // right after a system resume from sleep, the OS can take a couple of seconds to settle
+        // where synthetic input actually lands, and a SendInput/CGEvent posted in that window can be
+        // silently dropped entirely (not delayed) — polling alone would never see a copy that never
+        // happened. A few resends over ~3.6s recovers this without changing the fast, normal case
+        // (the loop still returns as soon as a fresh copy is seen).
         let mut text = String::new();
         let mut fresh = false;
-        for _ in 0..8 {
+        for i in 0..24 {
             std::thread::sleep(std::time::Duration::from_millis(150));
             let now = app.state::<Clipboard>().read_text().unwrap_or_default();
-            if !now.trim().is_empty() && now != before {
+            if !now.trim().is_empty() && now != SENTINEL {
                 text = now;
                 fresh = true;
                 break;
             }
+            if i == 7 || i == 15 {
+                send_combo(VK_C); // the first synthetic copy may have been dropped -> retry it
+            }
+        }
+        if !fresh {
+            // nothing was copied: put back whatever the clipboard had before, don't leave our
+            // sentinel behind.
+            let _ = app.state::<Clipboard>().write_text(before.clone());
         }
         debug::log(format!(
-            "inline copy: before_len={} fresh={} text_len={}",
-            before.chars().count(), fresh, text.chars().count()
+            "inline copy: before_len={} fresh={} text_len={} text_preview={:?}",
+            before.chars().count(), fresh, text.chars().count(),
+            text.chars().take(120).collect::<String>()
         ));
         // INLINE must transform the CURRENT selection, never a stale clipboard: if the copy produced
         // nothing new, tell the user to select text (immediate, clear) instead of silently reusing
@@ -664,15 +742,34 @@ fn inline_transform(app: AppHandle, recipe: String) {
             st.inline_suppress_toast.store(false, Ordering::SeqCst);
             return;
         }
-        debug::log(format!("inline_transform recipe={recipe} len={}", text.len()));
+        debug::log(format!(
+            "inline_transform recipe={recipe} len={} preview={:?}",
+            text.len(), text.chars().take(120).collect::<String>()
+        ));
         // WebView2 won't load a webview on a hidden window: park the host off-screen first.
         inline_park_window(&app);
         // the frontend shows the localized "processing <recipe>" toast and dispatches
-        if let Some(main) = app.get_window("main") {
-            let _ = main.emit(
-                "app://inline-transform",
-                serde_json::json!({ "text": text, "recipe": recipe }),
-            );
+        match app.get_window("main") {
+            Some(main) => {
+                let _ = main.emit(
+                    "app://inline-transform",
+                    serde_json::json!({ "text": text, "recipe": recipe }),
+                );
+            }
+            None => {
+                // Without the emit reaching the frontend, neither inline_finish nor inline_fail
+                // will EVER be called from JS: without this, inline_busy would stay stuck (silent,
+                // no toast, no log) until the 240s safety net below — every hotkey press in that
+                // whole window would then silently no-op on the busy check at the top. Fail fast
+                // and visibly instead.
+                debug::log("inline_transform: main window not found, aborting");
+                toast::show_state(&app, "error", "sendfail");
+                inline_restore_window(&app);
+                let st = app.state::<AppState>();
+                st.inline_busy.store(false, Ordering::SeqCst);
+                st.inline_suppress_toast.store(false, Ordering::SeqCst);
+                return;
+            }
         }
         // safety: if no answer ever comes back, release the flags after 240s
         let app2 = app.clone();
@@ -735,10 +832,14 @@ fn try_register_hotkey(app: &AppHandle, accel: &str, recipe: Option<String>) -> 
         return false;
     };
     let handle = app.clone();
-    app.global_shortcut()
+    let accel_owned = accel.to_string();
+    let recipe_for_closure = recipe.clone();
+    let ok = app
+        .global_shortcut()
         .on_shortcut(shortcut, move |_app, _sc, event| {
             if event.state() == ShortcutState::Pressed {
-                match &recipe {
+                debug::log(format!("hotkey PRESSED accel={accel_owned} recipe={recipe_for_closure:?}"));
+                match &recipe_for_closure {
                     // per-recipe hotkey: INLINE transform (copy -> process -> paste back)
                     Some(r) => inline_transform(handle.clone(), r.clone()),
                     None => {
@@ -747,7 +848,9 @@ fn try_register_hotkey(app: &AppHandle, accel: &str, recipe: Option<String>) -> 
                 }
             }
         })
-        .is_ok()
+        .is_ok();
+    debug::log(format!("hotkey REGISTER accel={accel} recipe={recipe:?} ok={ok}"));
+    ok
 }
 
 /// Registers the MAIN hotkey with per-platform fallbacks (no unregister here: the caller
@@ -980,19 +1083,12 @@ pub fn run() {
             inline_suppress_toast: AtomicBool::new(false),
             inline_saved_pos: Mutex::new(None),
         })
-        // App-level menu events: the provider's native context menu (browser.rs) puts
-        // "Switch provider" items with ids "sw:<key>:<send|paste>". Copy/Cut/Paste/Select-all
-        // are predefined items and act on the focused webview by themselves (no event here).
+        // App-level menu events: the provider's native EDITING context menu (browser.rs,
+        // `show_context_menu`) puts a "Copy URL" item with id "copy_url". Copy/Cut/Paste/
+        // Select-all are predefined items and act on the focused webview by themselves (no
+        // event here).
         .on_menu_event(|app, event| {
             let id = event.id.as_ref();
-            if id == "downloads" {
-                // Apre la modale "Gestore download" (in-app): il frontend sopprime la
-                // webview provider e mostra la cronologia.
-                if let Some(w) = app.get_window("main") {
-                    let _ = w.emit("app://open-downloads", ());
-                }
-                return;
-            }
             if id == "copy_url" {
                 // Right-click "Copy URL": copy the provider webview's current URL to the clipboard
                 // (ignore-self marker set so the clipboard monitor doesn't pop a toast for it).
@@ -1003,22 +1099,15 @@ pub fn run() {
                         let _ = app.state::<Clipboard>().write_text(s);
                     }
                 }
-                return;
-            }
-            if let Some(rest) = id.strip_prefix("sw:") {
-                // id = "sw:<key>:<open|paste|send>": switch provider with that mode.
-                if let Some((key, mode)) = rest.rsplit_once(':') {
-                    if let Some(w) = app.get_window("main") {
-                        let _ = w.emit(
-                            "app://switch-provider",
-                            serde_json::json!({ "key": key, "mode": mode }),
-                        );
-                    }
-                }
             }
         })
         .setup(|app| {
             let handle = app.handle().clone();
+            // Checked BEFORE load() (which returns defaults on a missing file too, so it alone
+            // can't tell "fresh install" from "existing user, corrupted file"): gates the
+            // fresh-install autostart activation below without ever touching an existing user's
+            // explicit choice.
+            let fresh_install = !settings::exists(&handle);
             let loaded = settings::load(&handle);
 
             // Update the values loaded from disk into the already-registered state.
@@ -1059,21 +1148,21 @@ pub fn run() {
                 let _ = main.set_visible_on_all_workspaces(true);
             }
 
-            // The floating provider menu (⇄) is its own always-on-top window; dismiss it when it
-            // loses OS focus (the JS `window.blur` inside it does NOT fire reliably on Windows).
-            if let Some(menu) = app.get_webview_window("menu") {
-                let mh = menu.clone();
-                menu.on_window_event(move |event| {
-                    if let WindowEvent::Focused(false) = event {
-                        browser::on_menu_focus_lost(&mh);
-                    }
-                });
-            }
-
             // Non-visual init (after the show): tray + autostart sync.
             let autostart_on = {
                 use tauri_plugin_autostart::ManagerExt;
                 handle.autolaunch().is_enabled().unwrap_or(false)
+            };
+            // Fresh install: nothing was ever persisted, so there is no explicit user choice to
+            // respect yet -- actually create the OS login item now, so autostart is really ON
+            // from the very first launch (Settings::default().autostart is true, but the flag
+            // alone does not register anything with the OS; without this an install would sit
+            // "wants ON" until the user happened to open Settings and hit Save).
+            let autostart_on = if fresh_install && !autostart_on {
+                apply_autostart(&handle, true);
+                true
+            } else {
+                autostart_on
             };
             // Il login-item/registro (gestito dal plugin autostart) e' la FONTE DI VERITA':
             // la spunta della tray e settings.json riflettono lo stato REALE. NON forziamo piu'
@@ -1146,9 +1235,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            browser::open_provider_view,
             browser::show_provider_tab,
             kotodama::kotodama_broadcast,
+            kotodama::kotodama_push,
+            kotodama::provider_login_probe,
+            mark_provider_known,
             kotodama::kotodama_cancel,
             get_kotodama_sessions,
             save_kotodama_sessions,
@@ -1159,14 +1250,6 @@ pub fn run() {
             browser::set_provider_top_extra,
             browser::provider_reload,
             browser::provider_back,
-            browser::provider_fill,
-            browser::provider_paste,
-            browser::provider_menu,
-            browser::show_provider_menu_window,
-            browser::menu_pick,
-            browser::menu_downloads,
-            browser::menu_dismiss,
-            browser::menu_log,
             browser::set_provider_menu_labels,
             browser::provider_suppress,
             browser::provider_dock,

@@ -29,14 +29,16 @@
     "reply": "Odpovědět",
     "email": "Vytvořit e-mail",
     "neutral": "Neutrální",
-    "translate": "Přeložit"
+    "translate": "Přeložit",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "Přeformuluj následující text:",
     "summarise": "Shrň následující text:",
     "reply": "Napiš odpověď na následující zprávu:",
     "email": "Napiš e-mail na základě:",
-    "translate": "Přelož následující text:"
+    "translate": "Přelož následující text:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "Krátké a výstižné",
@@ -142,7 +144,8 @@
     "errorEmpty": "Není co kopírovat",
     "errorNoAnswer": "Žádná odpověď",
     "stageConnect": "Připojování...",
-    "stageWork": "Přijímání odpovědi"
+    "stageWork": "Přijímání odpovědi",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "Zkopírovaný text se odešle tak, jak je, výchozímu poskytovateli.",
   "setRecipe": "Výchozí recept",
@@ -214,5 +217,25 @@
   "respLabel": "Odpověď",
   "respNormal": "Normální",
   "respTextOnly": "Pouze text",
-  "answerOnlyText": "Odpověz pouze textem, bez úvodu a komentářů."
+  "answerOnlyText": "Odpověz pouze textem, bez úvodu a komentářů.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-inline-toast"
+description = "Enables the inline_toast command without any pre-configured scope."
+commands.allow = ["inline_toast"]
+
+[[permission]]
+identifier = "deny-inline-toast"
+description = "Denies the inline_toast command without any pre-configured scope."
+commands.deny = ["inline_toast"]

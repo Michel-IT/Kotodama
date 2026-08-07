@@ -29,14 +29,16 @@
     "reply": "השב",
     "email": "צור אימייל",
     "neutral": "ניטרלי",
-    "translate": "תרגם"
+    "translate": "תרגם",
+    "search": "Search"
   },
   "instr": {
     "rephrase": "נסח מחדש את הטקסט הבא:",
     "summarise": "סכם את הטקסט הבא:",
     "reply": "כתוב תשובה להודעה הבאה:",
     "email": "כתוב אימייל בהתבסס על:",
-    "translate": "תרגם את הטקסט הבא:"
+    "translate": "תרגם את הטקסט הבא:",
+    "search": "Search the web for the following:"
   },
   "lengthOpts": [
     "קצר ותמציתי",
@@ -142,7 +144,8 @@
     "errorEmpty": "אין מה להעתיק",
     "errorNoAnswer": "לא התקבלה תשובה",
     "stageConnect": "מתחבר...",
-    "stageWork": "מקבל את התשובה"
+    "stageWork": "מקבל את התשובה",
+    "errorAccessibility": "Allow Accessibility for Kotodama"
   },
   "neutralHint": "הטקסט שהועתק נשלח כפי שהוא לספק ברירת המחדל.",
   "setRecipe": "מתכון ברירת מחדל",
@@ -214,5 +217,25 @@
   "respLabel": "תגובה",
   "respNormal": "רגיל",
   "respTextOnly": "טקסט בלבד",
-  "answerOnlyText": "השב בטקסט בלבד, ללא הקדמה או הערות."
+  "answerOnlyText": "השב בטקסט בלבד, ללא הקדמה או הערות.",
+  "ktAddProvider": "Add provider",
+  "ktOpenRealPage": "Open real page",
+  "ktTabHistory": "History",
+  "ktTabRecipes": "Recipes",
+  "ktRecipeNeutral": "Back to Neutral",
+  "ktSelectAllProviders": "Select all",
+  "ktAddSelectedBtn": "Add",
+  "ktLoginBtn": "Log in",
+  "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
+  "setTabProviders": "Providers",
+  "setProvidersBar": "Providers in the bar",
+  "setProvidersBarHint": "The ones on the right are the ones shown in \"Selected providers\" and in the \"+\" menu.",
+  "provXferAvailable": "Available",
+  "provXferSelected": "Selected",
+  "provXferAllRightTitle": "Add all",
+  "provXferToRightTitle": "Add",
+  "provXferToLeftTitle": "Remove",
+  "provXferAllLeftTitle": "Remove all",
+  "ktAddMoreProviders": "Add more providers",
+  "version": "Version"
 }

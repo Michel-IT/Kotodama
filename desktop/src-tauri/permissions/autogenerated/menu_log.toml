@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-menu-log"
+description = "Enables the menu_log command without any pre-configured scope."
+commands.allow = ["menu_log"]
+
+[[permission]]
+identifier = "deny-menu-log"
+description = "Denies the menu_log command without any pre-configured scope."
+commands.deny = ["menu_log"]
