@@ -246,5 +246,6 @@
   "oopsTitle": "Щось пішло не так",
   "oopsMessage": "Kotodama не вдалося завантажити цю сторінку.\nСпробуйте перезапустити.",
   "oopsRestart": "Перезапустити",
-  "provComingSoon": "Невдовзі"
+  "provComingSoon": "Невдовзі",
+  "close": "Закрити"
 }

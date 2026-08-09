@@ -246,5 +246,6 @@
   "oopsTitle": "Etwas ist schiefgelaufen",
   "oopsMessage": "Kotodama konnte diese Seite nicht laden.\nVersuchen Sie einen Neustart.",
   "oopsRestart": "Neu starten",
-  "provComingSoon": "Demnächst"
+  "provComingSoon": "Demnächst",
+  "close": "Schließen"
 }

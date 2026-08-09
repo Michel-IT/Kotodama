@@ -66,12 +66,16 @@ pub(crate) fn active_webview<R: Runtime, M: Manager<R>>(manager: &M) -> Option<t
 /// remote sites, and without this flag some domains fail with
 /// ERR_QUIC_PROTOCOL_ERROR and stay blank. Aligned with `additionalBrowserArgs`
 /// in tauri.conf.json.
-/// `accept-lang` follows the OS language so provider sites (ChatGPT, Claude, …)
-/// open in the user's language instead of a hardcoded one.
+/// `accept-lang` is pinned to English for EVERY provider (was: followed the OS language) --
+/// this is shared across the whole WebView2 environment, so there is no way to set it only for
+/// one provider. Needed so Kotodama's login-wall detection can match stable English button text
+/// ("Log in"/"Sign up") -- Grok specifically has NO structural (data-testid/id/stable-class)
+/// marker on its login controls, and its DOM around them isn't even deterministic between page
+/// loads, so text matching pinned to a known language is the only reliable signal left. The
+/// trade-off: every provider's UI now renders in English regardless of the user's own OS/app
+/// language, not just Grok's.
 #[cfg(windows)]
 pub fn provider_browser_args() -> String {
-    let loc = sys_locale::get_locale().unwrap_or_else(|| "en-US".into()); // e.g. "fr-FR"
-    let primary = loc.split('-').next().unwrap_or("en").to_string();      // e.g. "fr"
     // Provider webviews are parked OFF-SCREEN almost all the time (only shown when their tab is
     // active), so Chromium's Native Window Occlusion + background-tab timer throttling see them as
     // "hidden" essentially forever and progressively slow their JS timers -> the Kotodama gateway's
@@ -79,7 +83,7 @@ pub fn provider_browser_args() -> String {
     // so an inline transform / broadcast triggered post-standby never delivers an answer even though
     // the page is visibly working (fill+send ran, harvesting never fires). Same root cause as the
     // macOS WKWebView occlusion fix (`mac_disable_occlusion`); this is the WebView2/Chromium side.
-    format!("--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --disable-background-timer-throttling --disable-quic --accept-lang={loc},{primary},en-US,en")
+    "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --disable-background-timer-throttling --disable-quic --accept-lang=en-US,en".to_string()
 }
 
 /// "Clean Chrome desktop" User-Agent for the provider webview. Several sites
@@ -132,6 +136,27 @@ pub const CLIENT_HINTS_JS: &str = r#"
       }
     };
     Object.defineProperty(navigator, 'userAgentData', { get: function(){ return fake; }, configurable: true });
+  } catch(e){}
+})();
+"#;
+
+/// Forces `navigator.language`/`navigator.languages` to English on grok.com ONLY (self-gated by
+/// hostname, like the other injected scripts in this file are self-gated by feature presence --
+/// no per-provider branching needed in `create_tab`). Grok's own login/sign-up UI text has no
+/// stable structural marker to detect by (confirmed live: no reliable data-testid/id, and the
+/// generic Tailwind wrapper classes around those buttons are NOT deterministic between page loads
+/// -- 3 separate captures showed 3 different structures), so detecting the login wall by TEXT is
+/// the only option left; pinning that text to English keeps the check language-independent from
+/// KOTODAMA's side even though it now relies on Grok always answering in English. Client-side
+/// only (many modern SPAs, Grok included, pick UI language from `navigator.language` rather than
+/// solely the `Accept-Language` HTTP header, which stays user-locale via `provider_browser_args`
+/// -- that header is set once for the whole WebView2 environment, not overridable per-webview).
+pub const FORCE_EN_LANG_JS: &str = r#"
+(function(){
+  try {
+    if (location.hostname.indexOf('grok.com') === -1) return;
+    Object.defineProperty(navigator, 'language', { get: function(){ return 'en-US'; }, configurable: true });
+    Object.defineProperty(navigator, 'languages', { get: function(){ return ['en-US', 'en']; }, configurable: true });
   } catch(e){}
 })();
 "#;
@@ -414,6 +439,7 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
         .user_agent(PROVIDER_UA)
         .initialization_script(NO_MENU_JS)
         .initialization_script(CLIENT_HINTS_JS)
+        .initialization_script(FORCE_EN_LANG_JS)
         .on_navigation(move |u| {
             debug::log(format!("on_navigation -> {u}"));
             // Right-click sentinel -> our native EDITING menu (on the main thread). Nav is blocked.

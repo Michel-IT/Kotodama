@@ -1,4 +1,6 @@
-//! Notification window (toast) in the bottom-right corner.
+//! Notification window (toast), right-aligned on the current monitor:
+//! bottom-right on Windows/Linux (next to the taskbar), top-right on macOS
+//! (next to the menu bar / Notification Center).
 //!
 //! The "toast" window is pre-created hidden in `tauri.conf.json`
 //! (frameless, always-on-top, transparent, skip-taskbar). Here we position it
@@ -25,9 +27,17 @@ struct ToastContent {
     theme: String,
     /// Current UI language (code, e.g. "it"): the toast localizes its own texts.
     language: String,
+    /// "mac" | "other": tells the frontend which corner is flush against the screen edge
+    /// (top on macOS, bottom elsewhere) so it can flip the card's rounded corners to match.
+    os: String,
 }
 
-/// Internal: emit content + position bottom-right + show.
+#[cfg(target_os = "macos")]
+const OS_TAG: &str = "mac";
+#[cfg(not(target_os = "macos"))]
+const OS_TAG: &str = "other";
+
+/// Internal: emit content + position right-aligned (bottom on Win/Linux, top on macOS) + show.
 fn emit_and_show(app: &AppHandle, mode: &str, label: &str, preview: String) {
     let Some(window) = app.get_webview_window("toast") else {
         return;
@@ -46,6 +56,7 @@ fn emit_and_show(app: &AppHandle, mode: &str, label: &str, preview: String) {
             hotkey,
             theme,
             language,
+            os: OS_TAG.into(),
         },
     );
 
@@ -64,12 +75,16 @@ fn emit_and_show(app: &AppHandle, mode: &str, label: &str, preview: String) {
     let phys_h = (logical_h * scale).round() as u32;
     let _ = window.set_size(PhysicalSize::new(cur_w, phys_h));
 
-    // Bottom-right of the monitor WORK AREA (excludes the taskbar), so the toast
-    // sits right next to the taskbar like a native notification. Uses the JUST-SET
-    // height so the window stays flush to the bottom for every state.
+    // Right edge of the monitor WORK AREA (excludes taskbar/menu bar) on every platform --
+    // the vertical edge flips per-OS to match where each system's own notifications/tray
+    // live: bottom-right on Windows (next to the taskbar), TOP-right on macOS (the menu
+    // bar -- and thus Notification Center -- sits at the top, not the bottom, there).
     if let Ok(Some(monitor)) = window.current_monitor() {
-        let wa = monitor.work_area(); // physical px, taskbar already excluded
+        let wa = monitor.work_area(); // physical px, taskbar/menu bar already excluded
         let x = wa.position.x + wa.size.width as i32 - cur_w as i32;
+        #[cfg(target_os = "macos")]
+        let y = wa.position.y;
+        #[cfg(not(target_os = "macos"))]
         let y = wa.position.y + wa.size.height as i32 - phys_h as i32;
         let _ = window.set_position(PhysicalPosition::new(x, y));
     }

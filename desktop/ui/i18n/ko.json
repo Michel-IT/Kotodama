@@ -246,5 +246,6 @@
   "oopsTitle": "문제가 발생했습니다",
   "oopsMessage": "Kotodama가 이 페이지를 불러오지 못했습니다.\n다시 시작해 보세요.",
   "oopsRestart": "다시 시작",
-  "provComingSoon": "곧 출시"
+  "provComingSoon": "곧 출시",
+  "close": "닫기"
 }

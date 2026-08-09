@@ -246,5 +246,6 @@
   "oopsTitle": "Midagi läks valesti",
   "oopsMessage": "Kotodama ei suutnud seda lehte laadida.\nProovi taaskäivitada.",
   "oopsRestart": "Taaskäivita",
-  "provComingSoon": "Tulemas"
+  "provComingSoon": "Tulemas",
+  "close": "Sulge"
 }

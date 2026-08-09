@@ -246,5 +246,6 @@
   "oopsTitle": "משהו השתבש",
   "oopsMessage": "ל-Kotodama לא הצליחה לטעון את הדף הזה.\nנסה להפעיל מחדש.",
   "oopsRestart": "הפעל מחדש",
-  "provComingSoon": "בקרוב"
+  "provComingSoon": "בקרוב",
+  "close": "סגור"
 }

@@ -246,5 +246,6 @@
   "oopsTitle": "Hiba történt",
   "oopsMessage": "A Kotodama nem tudta betölteni ezt az oldalt.\nPróbáld meg újraindítani.",
   "oopsRestart": "Újraindítás",
-  "provComingSoon": "Hamarosan"
+  "provComingSoon": "Hamarosan",
+  "close": "Bezárás"
 }

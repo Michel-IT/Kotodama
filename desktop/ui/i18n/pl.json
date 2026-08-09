@@ -246,5 +246,6 @@
   "oopsTitle": "Coś poszło nie tak",
   "oopsMessage": "Kotodama nie mogła załadować tej strony.\nSpróbuj ponownie uruchomić.",
   "oopsRestart": "Uruchom ponownie",
-  "provComingSoon": "Wkrótce"
+  "provComingSoon": "Wkrótce",
+  "close": "Zamknij"
 }

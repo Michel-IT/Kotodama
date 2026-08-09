@@ -246,5 +246,6 @@
   "oopsTitle": "Něco se pokazilo",
   "oopsMessage": "Kotodama se nepodařilo načíst tuto stránku.\nZkuste restartovat.",
   "oopsRestart": "Restartovat",
-  "provComingSoon": "Již brzy"
+  "provComingSoon": "Již brzy",
+  "close": "Zavřít"
 }

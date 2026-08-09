@@ -246,5 +246,6 @@
   "oopsTitle": "Er is iets misgegaan",
   "oopsMessage": "Kotodama kon deze pagina niet laden.\nProbeer opnieuw te starten.",
   "oopsRestart": "Herstarten",
-  "provComingSoon": "Binnenkort"
+  "provComingSoon": "Binnenkort",
+  "close": "Sluiten"
 }

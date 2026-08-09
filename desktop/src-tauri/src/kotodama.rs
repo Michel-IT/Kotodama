@@ -339,16 +339,18 @@ const HARVEST_JS: &str = r##"
         for (var i=0;i<loginEls.length;i++){ if (loginEls[i].offsetParent !== null) return true; }
       }
       // Grok-specific: its login/signup buttons carry NO testid/id/distinguishing class of their
-      // own (confirmed via live census -- both just share a generic component class also used
-      // elsewhere on the page), so matching by identity, not text: exactly 2 sibling <button>s
-      // with an IDENTICAL class inside a `flex flex-row items-center gap-2` wrapper. Grok's
-      // composer renders and looks usable even while logged out (only sending actually fails),
-      // so this can't gate on composer-absence like the check above.
+      // own, and the generic Tailwind wrapper classes around them are NOT deterministic between
+      // page loads either (3 separate live captures showed 3 different structures -- confirmed
+      // NOT a selector bug, the DOM itself varies, likely an A/B test or JIT class hashing).
+      // Structural matching is therefore a dead end here. `browser.rs`'s FORCE_EN_LANG_JS pins
+      // this page's `navigator.language` to English specifically so this text check is reliable
+      // regardless of the user's own app/OS language -- Grok always renders "Log in"/"Sign up"
+      // here, never a translation of them.
       if (KEY === 'grok') {
-        var flexPairs = document.querySelectorAll('div.flex.flex-row.items-center.gap-2');
-        for (var fp=0; fp<flexPairs.length; fp++){
-          var btns = flexPairs[fp].querySelectorAll(':scope > button');
-          if (btns.length === 2 && btns[0].className === btns[1].className && btns[0].offsetParent !== null) return true;
+        var els = document.querySelectorAll('button, a');
+        for (var gi=0; gi<els.length; gi++){
+          var gt = (els[gi].innerText || '').trim();
+          if ((gt === 'Log in' || gt === 'Sign up') && els[gi].offsetParent !== null) return true;
         }
       }
     } catch(e){}

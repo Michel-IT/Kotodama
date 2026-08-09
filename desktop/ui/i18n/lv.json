@@ -246,5 +246,6 @@
   "oopsTitle": "Kaut kas nogāja greizi",
   "oopsMessage": "Kotodama neizdevās ielādēt šo lapu.\nMēģiniet restartēt.",
   "oopsRestart": "Restartēt",
-  "provComingSoon": "Drīzumā"
+  "provComingSoon": "Drīzumā",
+  "close": "Aizvērt"
 }

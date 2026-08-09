@@ -246,5 +246,6 @@
   "oopsTitle": "مشکلی پیش آمد",
   "oopsMessage": "Kotodama نتوانست این صفحه را بارگذاری کند.\nراه‌اندازی مجدد را امتحان کنید.",
   "oopsRestart": "راه‌اندازی مجدد",
-  "provComingSoon": "به زودی"
+  "provComingSoon": "به زودی",
+  "close": "بستن"
 }

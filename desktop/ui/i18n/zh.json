@@ -246,5 +246,6 @@
   "oopsTitle": "出了点问题",
   "oopsMessage": "Kotodama 无法加载此页面。\n请尝试重启。",
   "oopsRestart": "重启",
-  "provComingSoon": "即将推出"
+  "provComingSoon": "即将推出",
+  "close": "关闭"
 }

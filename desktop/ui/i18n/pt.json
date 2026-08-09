@@ -246,5 +246,6 @@
   "oopsTitle": "Algo deu errado",
   "oopsMessage": "O Kotodama não conseguiu carregar esta página.\nTente reiniciar.",
   "oopsRestart": "Reiniciar",
-  "provComingSoon": "Em Breve"
+  "provComingSoon": "Em Breve",
+  "close": "Fechar"
 }

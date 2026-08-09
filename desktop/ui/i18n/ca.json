@@ -246,5 +246,6 @@
   "oopsTitle": "Alguna cosa ha fallat",
   "oopsMessage": "Kotodama no ha pogut carregar aquesta pàgina.\nProva de reiniciar.",
   "oopsRestart": "Reinicia",
-  "provComingSoon": "Aviat"
+  "provComingSoon": "Aviat",
+  "close": "Tanca"
 }

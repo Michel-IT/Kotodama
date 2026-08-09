@@ -246,5 +246,6 @@
   "oopsTitle": "Jokin meni pieleen",
   "oopsMessage": "Kotodama ei pystynyt lataamaan tätä sivua.\nYritä käynnistää uudelleen.",
   "oopsRestart": "Käynnistä uudelleen",
-  "provComingSoon": "Tulossa pian"
+  "provComingSoon": "Tulossa pian",
+  "close": "Sulje"
 }

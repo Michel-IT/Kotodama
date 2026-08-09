@@ -246,5 +246,6 @@
   "oopsTitle": "Bir şeyler ters gitti",
   "oopsMessage": "Kotodama bu sayfayı yükleyemedi.\nYeniden başlatmayı deneyin.",
   "oopsRestart": "Yeniden başlat",
-  "provComingSoon": "Yakında"
+  "provComingSoon": "Yakında",
+  "close": "Kapat"
 }

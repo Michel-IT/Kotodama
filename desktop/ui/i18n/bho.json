@@ -246,5 +246,6 @@
   "oopsTitle": "कुछ गलत हो गइल",
   "oopsMessage": "Kotodama ई पेज लोड ना कर पाइल।\nफेरु से चालू करे के कोशिश करीं।",
   "oopsRestart": "फेरु से चालू करीं",
-  "provComingSoon": "जल्द आ रहा है"
+  "provComingSoon": "जल्द आ रहा है",
+  "close": "बंद करीं"
 }

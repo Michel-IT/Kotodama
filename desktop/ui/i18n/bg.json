@@ -246,5 +246,6 @@
   "oopsTitle": "Нещо се обърка",
   "oopsMessage": "Kotodama не успя да зареди тази страница.\nОпитайте да рестартирате.",
   "oopsRestart": "Рестартиране",
-  "provComingSoon": "Очаквайте"
+  "provComingSoon": "Очаквайте",
+  "close": "Затвори"
 }

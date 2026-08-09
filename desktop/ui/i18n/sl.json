@@ -246,5 +246,6 @@
   "oopsTitle": "Nekaj je šlo narobe",
   "oopsMessage": "Kotodama ni mogla naložiti te strani.\nPoskusite znova zagnati.",
   "oopsRestart": "Znova zaženi",
-  "provComingSoon": "Kmalu"
+  "provComingSoon": "Kmalu",
+  "close": "Zapri"
 }

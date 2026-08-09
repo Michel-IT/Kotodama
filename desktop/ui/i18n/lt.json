@@ -246,5 +246,6 @@
   "oopsTitle": "Kažkas nutiko negerai",
   "oopsMessage": "Kotodama nepavyko įkelti šio puslapio.\nBandykite paleisti iš naujo.",
   "oopsRestart": "Paleisti iš naujo",
-  "provComingSoon": "Netrukus"
+  "provComingSoon": "Netrukus",
+  "close": "Uždaryti"
 }

@@ -1100,8 +1100,11 @@ pub fn run() {
     // provider child) fails to initialize and stays BLANK. We therefore set the
     // arguments once, process-wide, BEFORE any webview is created — instead of
     // per-window (which previously diverged: main/toast without `--accept-lang`,
-    // provider with it). This keeps the dynamic OS-language accept-lang AND keeps
-    // every webview consistent. We append to any pre-existing value (e.g. debug flags).
+    // provider with it). `accept-lang` is now pinned to English (was: OS language) so
+    // Kotodama's login-wall text matching stays reliable regardless of the user's own
+    // language -- see `provider_browser_args`. Harmless on the main/toast windows: they
+    // never fetch server-rendered remote content, so Accept-Language is a no-op there.
+    // We append to any pre-existing value (e.g. debug flags).
     #[cfg(windows)]
     {
         let extra = browser::provider_browser_args();
@@ -1356,6 +1359,38 @@ pub fn run() {
                         }
                     });
                 }
+            }
+
+            // DEBUG-only: auto-fire an inline transform (the per-recipe hotkey flow: gated on
+            // macOS Accessibility, synthetic Cmd+C, process, paste back) without needing a real
+            // global-hotkey press -- so Accessibility-permission / synthetic-copy issues can be
+            // diagnosed remotely via logs alone. Set KOTO_AUTOINLINE=<recipe key> (e.g.
+            // key:rephrase). Fires ~10s after start -- select some text in the frontmost app
+            // (e.g. TextEdit) before that window elapses.
+            if let Ok(recipe) = std::env::var("KOTO_AUTOINLINE") {
+                let h2 = handle.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(10000));
+                    debug::log(format!("auto-inline transform: {recipe}"));
+                    inline_transform(h2, recipe);
+                });
+            }
+
+            // DEBUG-only: auto-fire the toast window (no hotkey / clipboard / Accessibility
+            // needed -- pure UI positioning check). Set KOTO_AUTOTOAST=copy for the "text
+            // copied" preview toast, or =processing|done|error for a state toast. Fires ~5s
+            // after start, useful to remotely confirm the per-OS corner (bottom-right on
+            // Windows/Linux, top-right on macOS).
+            if let Ok(mode) = std::env::var("KOTO_AUTOTOAST") {
+                let h3 = handle.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(5000));
+                    debug::log(format!("auto-toast: {mode}"));
+                    match mode.as_str() {
+                        "processing" | "done" | "error" => toast::show_state(&h3, &mode, "Test"),
+                        _ => toast::show(&h3, "Anteprima notifica Kotodama -- test posizionamento in alto a destra su macOS."),
+                    }
+                });
             }
 
             // DEBUG-only: auto-fire a Kotodama broadcast to one provider with the incognito path

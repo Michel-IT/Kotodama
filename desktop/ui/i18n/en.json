@@ -74,6 +74,7 @@
   "winMin": "Minimize",
   "winMax": "Maximize",
   "winClose": "Close",
+  "close": "Close",
   "version": "Version",
   "settingsTitle": "Settings",
   "setTheme": "Theme",

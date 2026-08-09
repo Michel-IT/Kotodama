@@ -246,5 +246,6 @@
   "oopsTitle": "Nešto je pošlo po zlu",
   "oopsMessage": "Kotodama nije uspjela učitati ovu stranicu.\nPokušajte ponovno pokrenuti.",
   "oopsRestart": "Ponovno pokreni",
-  "provComingSoon": "Uskoro"
+  "provComingSoon": "Uskoro",
+  "close": "Zatvori"
 }

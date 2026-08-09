@@ -246,5 +246,6 @@
   "oopsTitle": "কিছু ভুল হয়েছে",
   "oopsMessage": "Kotodama এই পৃষ্ঠাটি লোড করতে পারেনি।\nপুনরায় চালু করার চেষ্টা করুন।",
   "oopsRestart": "পুনরায় চালু করুন",
-  "provComingSoon": "শীঘ্রই আসছে"
+  "provComingSoon": "শীঘ্রই আসছে",
+  "close": "বন্ধ"
 }
