@@ -245,5 +245,6 @@
   "linkIssues": "Teata probleemist",
   "oopsTitle": "Midagi läks valesti",
   "oopsMessage": "Kotodama ei suutnud seda lehte laadida.\nProovi taaskäivitada.",
-  "oopsRestart": "Taaskäivita"
+  "oopsRestart": "Taaskäivita",
+  "provComingSoon": "Tulemas"
 }

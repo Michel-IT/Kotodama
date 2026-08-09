@@ -245,5 +245,6 @@
   "linkIssues": "問題を報告する",
   "oopsTitle": "問題が発生しました",
   "oopsMessage": "Kotodamaはこのページを読み込めませんでした。\n再起動をお試しください。",
-  "oopsRestart": "再起動"
+  "oopsRestart": "再起動",
+  "provComingSoon": "近日公開"
 }

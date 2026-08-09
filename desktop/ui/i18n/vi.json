@@ -245,5 +245,6 @@
   "linkIssues": "Báo cáo sự cố",
   "oopsTitle": "Đã xảy ra sự cố",
   "oopsMessage": "Kotodama không thể tải trang này.\nHãy thử khởi động lại.",
-  "oopsRestart": "Khởi động lại"
+  "oopsRestart": "Khởi động lại",
+  "provComingSoon": "Sắp có"
 }

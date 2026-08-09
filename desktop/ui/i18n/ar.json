@@ -245,5 +245,6 @@
   "linkIssues": "الإبلاغ عن مشكلة",
   "oopsTitle": "حدث خطأ ما",
   "oopsMessage": "تعذّر على Kotodama تحميل هذه الصفحة.\nحاول إعادة التشغيل.",
-  "oopsRestart": "إعادة التشغيل"
+  "oopsRestart": "إعادة التشغيل",
+  "provComingSoon": "قريبا"
 }

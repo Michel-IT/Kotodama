@@ -82,8 +82,23 @@ const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
     ("perplexity", r#"main .prose"#, r#"button[aria-label*="stop" i]"#),
     ("deepseek", r#".ds-markdown"#, ""),
     ("qwen", "", ""),
-    ("grok", r#"[class*="message-bubble"]"#, ""),
-    ("zai", "", ""),
+    // Was `[class*="message-bubble"]`, matching the USER's own bubble too (both share the
+    // class) -- with no distinct answer element, the SENT-text safety net kept discarding it
+    // as "that's my own message", stalling forever at 0 chars. `rounded-br-lg` decorates only
+    // the sender's (user's) bubble corner, so excluding it isolates the assistant's reply.
+    // Verified against a real captured DOM (not guessed); still no confirmed busy-marker.
+    ("grok", r#".message-bubble:not(.rounded-br-lg)"#, ""),
+    // Verified live (chat.z.ai): explicit assistant/user class pair (no ambiguity), and the
+    // round stop button that replaces send while generating.
+    ("zai", r#".chat-assistant"#, r#"button.rounded-full.bg-black"#),
+    ("mistral", r#"[data-message-author-role="assistant"]"#, ""),
+    ("poe", r#"[class*="Message_botMessageBubble"]"#, ""),
+    ("kimi", r#".segment-assistant"#, r#".send-button-container.stop"#),
+    ("meta", r#"[data-testid="assistant-message"]"#, r#"[data-testid="composer-stop-button"]"#),
+    // copilot.com has no verified selectors anywhere (the only sources found cover
+    // copilot.microsoft.com, a different domain/bundle) -- empty rather than guessed, same as
+    // qwen: falls back to the generic chain, to be tightened after live DOM verification.
+    ("copilot", "", ""),
 ];
 
 fn selectors_for(key: &str) -> (&'static str, &'static str) {
@@ -162,8 +177,27 @@ const HARVEST_JS: &str = r##"
     try { var els = document.querySelectorAll(sel); return els.length ? els[els.length-1] : null; }
     catch(e){ return null; }
   }
+  // A candidate is never valid if it IS the composer/input control itself, or directly wraps/is
+  // wrapped BY it -- when no real answer exists yet (e.g. a logged-out page with zero messages),
+  // every selector in the fallback chain below can end up matching the input toolbar itself
+  // (observed on Grok: `.query-bar`, the composer's own wrapper, picked up as the "answer"
+  // because it happens to also match a generic candidate -- its innerText was a mode-toggle
+  // label, not a reply). Checked with `matches()` on the candidate ITSELF, never `closest()` on
+  // its ancestors: a real answer bubble commonly lives inside the SAME outer `<form>`/composer
+  // region as the input box (observed on ChatGPT), so rejecting anything merely NESTED under
+  // such a wrapper throws real answers away too -- confirmed live: harvest found "OK" via
+  // ChatGPT's own dedicated selector, composer had correctly emptied (message sent), and this
+  // check discarded it anyway before the ancestor-vs-self fix below.
+  function isInputArea(el){
+    if (!el) return false;
+    try {
+      var composerEl = findComposerEl();
+      if (composerEl && el === composerEl) return true;
+      return el.matches('form, [role="textbox"], [class*="query-bar" i]');
+    } catch(e){ return false; }
+  }
   function getAnswerEl(){
-    return lastMatch(ANS_SEL)
+    var el = lastMatch(ANS_SEL)
         || lastMatch('[data-message-author-role="assistant"]')
         || lastMatch('[class*="assistant" i]')
         || lastMatch('[class*="answer" i]')
@@ -171,6 +205,7 @@ const HARVEST_JS: &str = r##"
         || lastMatch('.markdown, .prose')
         || lastMatch('article')
         || lastMatch('[class*="bubble" i]');
+    return isInputArea(el) ? null : el;
   }
   function answerTxt(){
     var el = getAnswerEl();
@@ -267,7 +302,7 @@ const HARVEST_JS: &str = r##"
     }
     return false;
   }
-  function composerVal(){
+  function findComposerEl(){
     // Same VISIBLE-only pick as the fill script (ChatGPT keeps a hidden legacy textarea).
     var el = null;
     var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'];
@@ -275,6 +310,10 @@ const HARVEST_JS: &str = r##"
       var els = document.querySelectorAll(sels[i]);
       for (var j=0;j<els.length;j++){ if (els[j].offsetParent !== null) { el = els[j]; break; } }
     }
+    return el;
+  }
+  function composerVal(){
+    var el = findComposerEl();
     if (!el) return null;
     return (el.value !== undefined ? el.value : el.innerText) || '';
   }
@@ -289,6 +328,29 @@ const HARVEST_JS: &str = r##"
     try {
       if (document.querySelector('input[type="password"]')) return true;
       if (document.querySelector('[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]')) return true;
+      // Some providers (observed: Meta AI) show NEITHER a password field nor a captcha when
+      // signed out -- just a visible "log in"/"sign in" control and no composer anywhere on
+      // the page. Matched by testid/id substring (developer-set, language-independent, same
+      // principle as the captcha check above) + composer absence, so a login link that's
+      // merely present-but-irrelevant (e.g. "sign in with another account" while already
+      // logged in, composer working fine) doesn't false-positive.
+      var loginEls = document.querySelectorAll('[data-testid*="login" i], [id*="login-button" i], [data-testid*="sign-in" i], [id*="sign-in-button" i]');
+      if (loginEls.length && composerVal() === null) {
+        for (var i=0;i<loginEls.length;i++){ if (loginEls[i].offsetParent !== null) return true; }
+      }
+      // Grok-specific: its login/signup buttons carry NO testid/id/distinguishing class of their
+      // own (confirmed via live census -- both just share a generic component class also used
+      // elsewhere on the page), so matching by identity, not text: exactly 2 sibling <button>s
+      // with an IDENTICAL class inside a `flex flex-row items-center gap-2` wrapper. Grok's
+      // composer renders and looks usable even while logged out (only sending actually fails),
+      // so this can't gate on composer-absence like the check above.
+      if (KEY === 'grok') {
+        var flexPairs = document.querySelectorAll('div.flex.flex-row.items-center.gap-2');
+        for (var fp=0; fp<flexPairs.length; fp++){
+          var btns = flexPairs[fp].querySelectorAll(':scope > button');
+          if (btns.length === 2 && btns[0].className === btns[1].className && btns[0].offsetParent !== null) return true;
+        }
+      }
     } catch(e){}
     return false;
   }
@@ -323,10 +385,36 @@ const HARVEST_JS: &str = r##"
   // and even FINISH answering before this script runs, so snapshotting would swallow the
   // whole answer. Warm turns: snapshot the previous answer so we wait for the new one.
   var initialAnswer = FRESH ? '' : answerTxt();
-  var sawText = false, armTries = 0;
+  var sawText = false, armTries = 0, authCensusSent = false;
+  // One-time diagnostic (debug log only, via the existing 'diag' push): inventories every
+  // visible <a>/<button> whose text/attrs look login-related, so a provider that shows a
+  // WORKING-LOOKING composer while still logged out (observed: Grok -- typing looks fine, only
+  // sending actually fails) can be diagnosed from real data instead of guessed at again. Fires
+  // once per harvest regardless of which path (login/answer/sendfail) it ends up taking.
+  function authCensus(){
+    if (authCensusSent) return;
+    authCensusSent = true;
+    try {
+      var out = [], seen = document.querySelectorAll('a, button'), n = 0;
+      for (var i=0;i<seen.length && n<10;i++){
+        var el = seen[i]; if (el.offsetParent === null) continue;
+        var txt = (el.innerText||'').trim().slice(0,20);
+        var idl = (el.getAttribute('data-testid')||el.getAttribute('aria-label')||el.id||'').slice(0,25);
+        var hay = (txt+' '+idl+' '+(el.getAttribute('href')||'')).toLowerCase();
+        if (!/log.?in|sign.?in|sign.?up|regist|accedi|login|entrar|anmeld|connexion/.test(hay)) continue;
+        var par = el.parentElement, pdesc = par ? (par.tagName+'.'+(par.className||'').toString().slice(0,60)) : '';
+        var gpar = par && par.parentElement, gdesc = gpar ? (gpar.tagName+'.'+(gpar.className||'').toString().slice(0,60)) : '';
+        out.push(el.tagName+':"'+txt+'" id='+idl+' cls='+(el.className||'').toString().slice(0,50)+' parent='+pdesc+' gparent='+gdesc);
+        n++;
+      }
+      out.push('composer='+(composerVal()===null?'NONE':'present'));
+      window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('AUTHWALL-CENSUS '+out.join(' || ')).slice(0,1400) });
+    } catch(e){}
+  }
   var armIv = setInterval(function(){
     if (window.__ktBid !== BID) { clearInterval(armIv); return; }
     armTries++;
+    authCensus();
     if (authWallPresent()) { clearInterval(armIv); deliver('login',''); return; }
     var cur = answerTxt();
     if (cur && cur !== initialAnswer) { clearInterval(armIv); harvest(); return; }  // answer streaming
@@ -379,9 +467,33 @@ const HARVEST_JS: &str = r##"
       var busy = isBusy();
       if (txt && txt === last) { stable++; } else { stable = 0; }
       last = txt;
-      // done = text stable 3 polls with no busy marker; OR stable 10 polls regardless
+      // done = text stable N polls with no busy marker; OR stable 10 polls regardless
       // (some pages keep a false-positive "stop"-like control on screen forever, e.g. Qwen).
-      if (stable >= 3 && !busy || stable >= 10) { clearInterval(iv); deliver('done', txt, elToMd(getAnswerEl())); return; }
+      // N is higher for SHORT text (<40 chars): a brief opener ("Ciao!") followed by a
+      // thinking pause before the model continues can look "stable" for a few seconds even
+      // though the answer isn't finished -- observed truncating real multi-sentence Claude
+      // replies down to just the first word. Longer text stabilizing for 3s is a much safer
+      // signal (a real answer that long rarely pauses mid-stream for multiple seconds).
+      var neededStable = (txt.length < 40) ? 6 : 3;
+      if (stable >= neededStable && !busy || stable >= 10) {
+        clearInterval(iv);
+        // Diagnostic aid: a short "done" answer is exactly the shape a wrong selector produces
+        // (some unrelated short UI label matched instead of a real reply, e.g. Grok's mode-toggle
+        // pill briefly mistaken for the answer bubble) -- dump the matched element's own identity
+        // BEFORE delivering, so a bad selector shows itself in the debug log instead of silently
+        // reporting a fake "success". Real answers under 40 chars ("OK", "Ciao!") also trigger
+        // this; that's fine, false positives here just cost a harmless log line.
+        if (txt.length < 40) {
+          try {
+            var elDbg = getAnswerEl();
+            var idl = elDbg ? (elDbg.tagName + '.' + (elDbg.className||'').toString().slice(0,120) + ' #' + (elDbg.id||'')) : 'NONE';
+            var outer = elDbg ? (elDbg.outerHTML||'').slice(0,300) : '';
+            window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('SHORT-DONE txt="'+txt+'" el='+idl+' html='+outer).slice(0,1400) });
+          } catch(e){}
+        }
+        deliver('done', txt, elToMd(getAnswerEl()));
+        return;
+      }
       if (Date.now() - t0 > 180000) { clearInterval(iv); deliver(txt ? 'timeout' : 'error', txt, txt ? elToMd(getAnswerEl()) : ''); return; }
       if (!sentCensus && polls === 15 && !txt) { sentCensus = true; census(); }
       if (polls % 3 === 0) { window.__ktPush({ b: BID, k: KEY, st: 'progress', len: txt.length }); }

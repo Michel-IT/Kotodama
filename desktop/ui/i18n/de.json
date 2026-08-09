@@ -245,5 +245,6 @@
   "linkIssues": "Problem melden",
   "oopsTitle": "Etwas ist schiefgelaufen",
   "oopsMessage": "Kotodama konnte diese Seite nicht laden.\nVersuchen Sie einen Neustart.",
-  "oopsRestart": "Neu starten"
+  "oopsRestart": "Neu starten",
+  "provComingSoon": "Demnächst"
 }

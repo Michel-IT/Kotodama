@@ -245,5 +245,6 @@
   "linkIssues": "Пријави проблем",
   "oopsTitle": "Нешто није у реду",
   "oopsMessage": "Kotodama није успела да учита ову страницу.\nПокушајте да рестартујете.",
-  "oopsRestart": "Рестартуј"
+  "oopsRestart": "Рестартуј",
+  "provComingSoon": "Uskoro"
 }

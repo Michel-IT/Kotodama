@@ -245,5 +245,6 @@
   "linkIssues": "Rapporter et problem",
   "oopsTitle": "Noget gik galt",
   "oopsMessage": "Kotodama kunne ikke indlæse denne side.\nPrøv at genstarte.",
-  "oopsRestart": "Genstart"
+  "oopsRestart": "Genstart",
+  "provComingSoon": "Kommer snart"
 }

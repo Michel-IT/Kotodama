@@ -12,7 +12,12 @@
       "https://www.perplexity.ai/*",
       "https://chat.qwen.ai/*",
       "https://chat.deepseek.com/*",
-      "https://chat.z.ai/*"
+      "https://chat.z.ai/*",
+      "https://chat.mistral.ai/*",
+      "https://poe.com/*",
+      "https://www.kimi.com/*",
+      "https://www.meta.ai/*",
+      "https://copilot.com/*"
     ]
   },
   "webviews": ["provider:*"],

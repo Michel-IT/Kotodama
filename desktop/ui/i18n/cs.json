@@ -245,5 +245,6 @@
   "linkIssues": "Nahlásit problém",
   "oopsTitle": "Něco se pokazilo",
   "oopsMessage": "Kotodama se nepodařilo načíst tuto stránku.\nZkuste restartovat.",
-  "oopsRestart": "Restartovat"
+  "oopsRestart": "Restartovat",
+  "provComingSoon": "Již brzy"
 }

@@ -245,5 +245,6 @@
   "linkIssues": "Ziņot par problēmu",
   "oopsTitle": "Kaut kas nogāja greizi",
   "oopsMessage": "Kotodama neizdevās ielādēt šo lapu.\nMēģiniet restartēt.",
-  "oopsRestart": "Restartēt"
+  "oopsRestart": "Restartēt",
+  "provComingSoon": "Drīzumā"
 }

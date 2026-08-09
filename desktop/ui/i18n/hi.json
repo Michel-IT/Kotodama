@@ -245,5 +245,6 @@
   "linkIssues": "समस्या की रिपोर्ट करें",
   "oopsTitle": "कुछ गलत हो गया",
   "oopsMessage": "Kotodama यह पेज लोड नहीं कर सका।\nपुनः आरंभ करने का प्रयास करें।",
-  "oopsRestart": "पुनः आरंभ करें"
+  "oopsRestart": "पुनः आरंभ करें",
+  "provComingSoon": "जल्द आ रहा है"
 }

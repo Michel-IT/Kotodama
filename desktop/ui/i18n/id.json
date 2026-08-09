@@ -245,5 +245,6 @@
   "linkIssues": "Laporkan masalah",
   "oopsTitle": "Terjadi kesalahan",
   "oopsMessage": "Kotodama gagal memuat halaman ini.\nCoba mulai ulang.",
-  "oopsRestart": "Mulai ulang"
+  "oopsRestart": "Mulai ulang",
+  "provComingSoon": "Segera Hadir"
 }

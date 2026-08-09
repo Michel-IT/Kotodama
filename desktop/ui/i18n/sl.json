@@ -245,5 +245,6 @@
   "linkIssues": "Prijavi težavo",
   "oopsTitle": "Nekaj je šlo narobe",
   "oopsMessage": "Kotodama ni mogla naložiti te strani.\nPoskusite znova zagnati.",
-  "oopsRestart": "Znova zaženi"
+  "oopsRestart": "Znova zaženi",
+  "provComingSoon": "Kmalu"
 }

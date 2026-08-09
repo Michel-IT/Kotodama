@@ -245,5 +245,6 @@
   "linkIssues": "Reportar um problema",
   "oopsTitle": "Algo deu errado",
   "oopsMessage": "O Kotodama não conseguiu carregar esta página.\nTente reiniciar.",
-  "oopsRestart": "Reiniciar"
+  "oopsRestart": "Reiniciar",
+  "provComingSoon": "Em Breve"
 }

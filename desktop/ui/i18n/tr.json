@@ -245,5 +245,6 @@
   "linkIssues": "Sorun bildirin",
   "oopsTitle": "Bir şeyler ters gitti",
   "oopsMessage": "Kotodama bu sayfayı yükleyemedi.\nYeniden başlatmayı deneyin.",
-  "oopsRestart": "Yeniden başlat"
+  "oopsRestart": "Yeniden başlat",
+  "provComingSoon": "Yakında"
 }

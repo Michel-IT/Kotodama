@@ -245,5 +245,6 @@
   "linkIssues": "Raportează o problemă",
   "oopsTitle": "Ceva n-a mers bine",
   "oopsMessage": "Kotodama nu a putut încărca această pagină.\nÎncearcă să repornești.",
-  "oopsRestart": "Repornește"
+  "oopsRestart": "Repornește",
+  "provComingSoon": "Curând"
 }

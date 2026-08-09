@@ -245,5 +245,6 @@
   "linkIssues": "Ilmoita ongelmasta",
   "oopsTitle": "Jokin meni pieleen",
   "oopsMessage": "Kotodama ei pystynyt lataamaan tätä sivua.\nYritä käynnistää uudelleen.",
-  "oopsRestart": "Käynnistä uudelleen"
+  "oopsRestart": "Käynnistä uudelleen",
+  "provComingSoon": "Tulossa pian"
 }

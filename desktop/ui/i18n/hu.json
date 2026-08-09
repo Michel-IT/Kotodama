@@ -245,5 +245,6 @@
   "linkIssues": "Probléma jelentése",
   "oopsTitle": "Hiba történt",
   "oopsMessage": "A Kotodama nem tudta betölteni ezt az oldalt.\nPróbáld meg újraindítani.",
-  "oopsRestart": "Újraindítás"
+  "oopsRestart": "Újraindítás",
+  "provComingSoon": "Hamarosan"
 }

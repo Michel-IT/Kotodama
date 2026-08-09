@@ -245,5 +245,6 @@
   "linkIssues": "Arazo bat jakinarazi",
   "oopsTitle": "Zerbait gaizki joan da",
   "oopsMessage": "Kotodama-k ezin izan du orri hau kargatu.\nSaiatu berrabiarazten.",
-  "oopsRestart": "Berrabiarazi"
+  "oopsRestart": "Berrabiarazi",
+  "provComingSoon": "Laburrean"
 }

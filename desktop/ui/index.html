@@ -146,9 +146,11 @@
     body.tauri .appbar { position:fixed; top:0; left:0; right:0; z-index:1000; box-shadow:0 1px 0 rgba(0,0,0,.25); }
 
     /* Claude login warning banner: below the topbar, in the main webview.
-       The provider webview is pushed down by the same height (set_provider_top_extra). */
+       The provider webview is pushed down by the same height (set_provider_top_extra).
+       z-index above .kt-view (1200, always-on under KT_ONLY) -- otherwise the banner
+       renders but sits behind it, permanently invisible. */
     .claude-hint {
-      position:fixed; top:var(--topbar-h); left:0; right:0; z-index:900;
+      position:fixed; top:var(--topbar-h); left:0; right:0; z-index:1210;
       display:flex; align-items:center; gap:10px; box-sizing:border-box;
       padding:9px 14px; font-size:13px; line-height:1.35;
       background:#2a2118; color:#f4e9d7; border-bottom:1px solid #6b4f1d;
@@ -697,9 +699,14 @@
     #ktRecipeBadgeSave, #ktRecipeBadgeSave:hover { color:var(--accent); }
     .kt-composer { flex:none; display:flex; align-items:flex-end; gap:10px; padding:12px 16px;
       border-top:1px solid var(--border-soft); background:var(--bg-1); }
-    .kt-composer textarea { flex:1; min-height:44px; max-height:160px; resize:vertical;
+    /* No resize:vertical -- it fights the JS auto-grow (ktAutoGrow) that drives height now.
+       overflow-y starts hidden: ktAutoGrow flips it to auto ONLY once content truly exceeds
+       KT_INPUT_MAX (JS-side threshold check, not left to the browser's own scrollHeight-vs-
+       max-height comparison, which showed a false-positive scrollbar as early as line 2 --
+       likely a sub-pixel rounding mismatch between scrollHeight and the CSS max-height). */
+    .kt-composer textarea { flex:1; min-height:32px; max-height:200px; overflow-y:hidden;
       background:var(--field); border:1px solid var(--border); border-radius:12px;
-      color:var(--text); font-size:13.5px; padding:10px 14px; outline:none; font-family:inherit; }
+      color:var(--text); font-size:13.5px; padding:14px 14px; outline:none; font-family:inherit; }
     .kt-composer textarea:focus { border-color:var(--accent); }
     .kt-send { flex:none; width:48px; height:48px; font-size:20px; }   /* eredita .send (cerchio gradiente) */
     .modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border-soft); flex:none; }
@@ -773,6 +780,11 @@
        the row's right edge by .nm's flex:1 above. */
     .prov-xfer-temp { flex:none; display:flex; align-items:center; gap:6px; cursor:default; }
     .prov-xfer-temp .sub { font-size:10.5px; }
+    /* Integrated-but-unverified providers (see PROV_COMING_SOON): greyed out, no hover/pick
+       affordance -- pinned to Disponibili, can't be dragged into Selezionati. */
+    .prov-xfer-row.coming-soon { cursor:default; opacity:.55; }
+    .prov-xfer-row.coming-soon:hover { background:none; }
+    .prov-xfer-badge { flex:none; font-size:10.5px; color:var(--text-dim); }
     .prov-xfer-mid { display:flex; flex-direction:column; justify-content:center; gap:8px; }
     .prov-xfer-btn { width:38px; height:34px; font-size:15px; padding:0; }
 
@@ -962,6 +974,26 @@
             <div class="prov" data-prov="zai" style="--pc:#1ab39d">
               <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">Z</text></svg></span>
               <span class="pname">Z.ai</span>
+            </div>
+            <div class="prov" data-prov="mistral" style="--pc:#fa5b0f">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">M</text></svg></span>
+              <span class="pname">Mistral</span>
+            </div>
+            <div class="prov" data-prov="poe" style="--pc:#a855f7">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">P</text></svg></span>
+              <span class="pname">Poe</span>
+            </div>
+            <div class="prov" data-prov="kimi" style="--pc:#0ea5e9">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">K</text></svg></span>
+              <span class="pname">Kimi</span>
+            </div>
+            <div class="prov" data-prov="meta" style="--pc:#0081fb">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12c0-3 1.8-6 4-6 1.6 0 2.8 1.8 4 4 1.2-2.2 2.4-4 4-4 2.2 0 4 3 4 6s-1.8 6-4 6c-1.6 0-2.8-1.8-4-4-1.2 2.2-2.4 4-4 4-2.2 0-4-3-4-6Z"/></svg></span>
+              <span class="pname">Meta AI</span>
+            </div>
+            <div class="prov" data-prov="copilot" style="--pc:#5865f2">
+              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">C</text></svg></span>
+              <span class="pname">Copilot</span>
             </div>
             <div class="prov" data-prov="kotodama" style="--pc:#c9a7ff">
               <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="5" r="1.6"/><circle cx="19.5" cy="5" r="1.6"/><circle cx="4.5" cy="19" r="1.6"/><circle cx="19.5" cy="19" r="1.6"/><path d="M6 6.2 10.3 10.5M18 6.2 13.7 10.5M6 17.8 10.3 13.5M18 17.8 13.7 13.5"/></svg></span>
@@ -1342,7 +1374,7 @@
         </div>
       </div>
       <div class="kt-composer">
-        <textarea id="ktInput" rows="2" data-i18n-ph="ktPlaceholder" placeholder="Chiedi a tutti i provider selezionati..."></textarea>
+        <textarea id="ktInput" rows="1" data-i18n-ph="ktPlaceholder" placeholder="Chiedi a tutti i provider selezionati..."></textarea>
         <button class="send kt-send" id="ktSend" data-i18n-title="ktSendBtn" title="Invia">→</button>
       </div>
     </div>
@@ -1373,6 +1405,11 @@
       qwen:       { name:'Qwen',       base:'https://chat.qwen.ai/',            q:'',    mode:'clipboard', autosend:true, tempClick:true },
       deepseek:   { name:'DeepSeek',   base:'https://chat.deepseek.com/',       q:'',    mode:'clipboard', autosend:true },
       zai:        { name:'Z.ai',       base:'https://chat.z.ai/',               q:'',    mode:'clipboard', autosend:true, loginUrl:'https://chat.z.ai/auth' },
+      mistral:    { name:'Mistral',    base:'https://chat.mistral.ai/chat',     q:'',    mode:'clipboard', autosend:true },
+      poe:        { name:'Poe',        base:'https://poe.com/',                 q:'',    mode:'clipboard', autosend:true },
+      kimi:       { name:'Kimi',       base:'https://www.kimi.com/',            q:'',    mode:'clipboard', autosend:true },
+      meta:       { name:'Meta AI',    base:'https://www.meta.ai/',             q:'',    mode:'clipboard', autosend:true },
+      copilot:    { name:'Copilot',    base:'https://copilot.com/',             q:'',    mode:'clipboard', autosend:true },
       kotodama:   { name:'Kotodama',   base:'',                                 q:'',    mode:'meta' }
     };
     let lastProviderUrl='';
@@ -1415,6 +1452,7 @@
       setTabProviders:'Providers', setProvidersBar:'Providers in the bar',
       setProvidersBarHint:'The ones on the right are the ones available in the "+" menu, where you pick which to use in the "Selected providers" bar.',
       provXferAvailable:'Available', provXferSelected:'Selected', ktTempColHeader:'Private chat',
+      provComingSoon:'Coming soon',
       provXferAllRightTitle:'Add all', provXferToRightTitle:'Add', provXferToLeftTitle:'Remove', provXferAllLeftTitle:'Remove all',
       ktTabHistory:'History', ktTabRecipes:'Recipes', ktRecipeNeutral:'Back to Neutral',
       ktNeutralHint:'Text is sent as-is, with no extra instructions.',
@@ -1744,6 +1782,18 @@
     const ktThread=document.getElementById('ktThread');
     const ktInput=document.getElementById('ktInput');
     const ktSearch=document.getElementById('ktSearch');
+    // Auto-grow: grows with content up to KT_INPUT_MAX_H, then scrolls -- overflow-y is only
+    // flipped to 'auto' once scrollHeight truly exceeds the cap (own threshold check, not the
+    // browser's scrollHeight-vs-max-height comparison: that showed a scrollbar as early as line
+    // 2, a rounding false-positive). Must match CSS .kt-composer textarea's max-height.
+    const KT_INPUT_MAX_H = 200;
+    function ktAutoGrow(){
+      ktInput.style.height='auto';
+      const needed=ktInput.scrollHeight;
+      if(needed>KT_INPUT_MAX_H){ ktInput.style.height=KT_INPUT_MAX_H+'px'; ktInput.style.overflowY='auto'; }
+      else{ ktInput.style.height=needed+'px'; ktInput.style.overflowY='hidden'; }
+    }
+    ktInput.addEventListener('input', ktAutoGrow);
     let ktSel=null;              // Set of provider keys CURRENTLY IN THE BAR (persisted)
     let ktEnabled=null;          // Set of provider keys ENABLED at all (Settings > Provider; persisted).
                                   // ktSel is always a subset -- Settings picks the pool, the "+"
@@ -2244,6 +2294,11 @@
     // provider here also drops it from ktSel if it was active in the bar (can't stay there once
     // it's no longer in the pool); enabling one does NOT auto-add it to the bar -- the user still
     // picks that explicitly from the "+" menu, same as any other pool member.
+    // Integrated but not yet verified live against the real page (selectors sourced from
+    // external research, never confirmed in Kotodama itself) -- kept visible so they're not
+    // forgotten, but greyed out and pinned to "Disponibili": can't be moved to "Selezionati"
+    // (and so can't be broadcast to) until someone confirms they actually work.
+    const PROV_COMING_SOON=new Set(['meta','copilot','grok']);
     let provXferPickAvail=null, provXferPickSel=null;   // currently highlighted row per column
     function renderProviderXfer(){
       const availEl=document.getElementById('provXferAvail'), selEl=document.getElementById('provXferSel');
@@ -2255,11 +2310,19 @@
       availEl.innerHTML=''; selEl.innerHTML='';
       real.forEach(key=>{
         const p=PROVIDERS[key], bits=ktTileBits(key);
-        const inSel=ktEnabled.has(key);
+        const comingSoon=PROV_COMING_SOON.has(key);
+        const inSel=!comingSoon && ktEnabled.has(key);
         const row=document.createElement('div'); row.className='prov-xfer-row'; row.dataset.prov=key;
         if(bits.color) row.style.setProperty('--pc', bits.color);
         row.innerHTML=`<span class="ic">${bits.svg}</span><span class="nm"></span>`;
         row.querySelector('.nm').textContent=p.name;
+        if(comingSoon){
+          row.classList.add('coming-soon');
+          const badge=document.createElement('span'); badge.className='prov-xfer-badge'; badge.textContent=TR.provComingSoon;
+          row.appendChild(badge);
+          availEl.appendChild(row);
+          return;   // no pick/move interaction -- can't be selected or dragged into Selezionati
+        }
         row.classList.toggle('picked', key===(inSel?provXferPickSel:provXferPickAvail));
         row.addEventListener('click', ()=>{
           if(inSel) provXferPickSel = (provXferPickSel===key)?null:key;
@@ -2295,7 +2358,8 @@
     document.getElementById('provXferToRight').addEventListener('click', ()=>{ if(provXferPickAvail) provXferMoveIn(provXferPickAvail); });
     document.getElementById('provXferToLeft').addEventListener('click', ()=>{ if(provXferPickSel) provXferMoveOut(provXferPickSel); });
     document.getElementById('provXferAllRight').addEventListener('click', ()=>{
-      ktRealKeys().forEach(k=>ktEnabled.add(k)); provXferPickAvail=null; ktSaveEnabled(); renderKtChips();
+      ktRealKeys().filter(k=>!PROV_COMING_SOON.has(k)).forEach(k=>ktEnabled.add(k));
+      provXferPickAvail=null; ktSaveEnabled(); renderKtChips();
     });
     document.getElementById('provXferAllLeft').addEventListener('click', ()=>{
       ktEnabled.clear(); provXferPickSel=null; ktSaveEnabled();
@@ -2420,7 +2484,7 @@
         if(!ktSession) ktNewConversation();
       }
       renderKtSessions();
-      if(prefill!==undefined && prefill!==null && prefill!=='') ktInput.value=prefill;
+      if(prefill!==undefined && prefill!==null && prefill!==''){ ktInput.value=prefill; ktAutoGrow(); }
       if(autosend){ ktNewConversation(); ktDoSend(); }
       else ktInput.focus();
     }
@@ -2546,7 +2610,7 @@
       if(!ktSession) ktNewConversation();
       const bid='b'+(ktSeq++)+'-'+Math.random().toString(36).slice(2,8);
       ktAppendTurn(bid, text, keys);
-      ktInput.value='';
+      ktInput.value=''; ktAutoGrow();
       // session bookkeeping: append the turn, title from the first message, persist
       const turn={ text, answers:{} }; keys.forEach(k=>{ turn.answers[k]={status:'pending', text:''}; });
       const hadTurns=ktSession.turns.length>0;
@@ -3490,7 +3554,7 @@
       // Main hotkey / toast "Open" / tray: fill Kotodama's composer and stay on the home view.
       // The user picks recipe/provider from there; nothing auto-sends. Used to fill the classic
       // builder's #content, invisible now that it sits under the always-on Kotodama view (KT_ONLY).
-      listen('app://fill-clipboard', e=>{ ktInput.value=e.payload||''; closeProviderBar(); closeKotodama(); ktInput.focus(); });
+      listen('app://fill-clipboard', e=>{ ktInput.value=e.payload||''; ktAutoGrow(); closeProviderBar(); closeKotodama(); ktInput.focus(); });
       // Per-recipe hotkey -> INLINE transform: the text was copied from ANOTHER app; process
       // it invisibly with the default provider and paste the answer back (inline_finish).
       listen('app://inline-transform', e=>{

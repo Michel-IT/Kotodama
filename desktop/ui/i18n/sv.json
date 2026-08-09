@@ -245,5 +245,6 @@
   "linkIssues": "Rapportera ett problem",
   "oopsTitle": "Något gick fel",
   "oopsMessage": "Kotodama kunde inte läsa in den här sidan.\nFörsök starta om.",
-  "oopsRestart": "Starta om"
+  "oopsRestart": "Starta om",
+  "provComingSoon": "Kommer snart"
 }

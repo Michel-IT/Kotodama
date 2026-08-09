@@ -98,6 +98,44 @@ pub const PROVIDER_UA: &str =
 pub const PROVIDER_UA: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
+/// Closes a gap left by `PROVIDER_UA`: that only rewrites the classic `navigator.userAgent`
+/// string/header, but on Chromium/WebView2 the newer Client Hints API (`navigator.userAgentData`
+/// + the `Sec-CH-UA*` request headers) still exposes the REAL engine identity (Edge/WebView2
+/// brand tokens), even with the classic UA spoofed to plain Chrome -- a site cross-checking both
+/// could catch the mismatch. Self-gating: on WKWebView (macOS) `navigator.userAgentData` doesn't
+/// exist at all (real Safari has no Client Hints), so the early return leaves it correctly
+/// absent there -- no `#[cfg(target_os...)]` split needed, unlike `PROVIDER_UA`.
+/// NOTE: brand/version here (Chrome 126) must stay in sync with `PROVIDER_UA`'s `Chrome/126...`.
+pub const CLIENT_HINTS_JS: &str = r#"
+(function(){
+  try {
+    if (!navigator.userAgentData) return;
+    var brands = [
+      { brand: 'Not/A)Brand', version: '8' },
+      { brand: 'Chromium', version: '126' },
+      { brand: 'Google Chrome', version: '126' }
+    ];
+    var fullVersionList = [
+      { brand: 'Not/A)Brand', version: '8.0.0.0' },
+      { brand: 'Chromium', version: '126.0.0.0' },
+      { brand: 'Google Chrome', version: '126.0.0.0' }
+    ];
+    var fake = {
+      brands: brands, mobile: false, platform: 'Windows',
+      toJSON: function(){ return { brands: brands, mobile: false, platform: 'Windows' }; },
+      getHighEntropyValues: function(hints){
+        var full = { architecture: 'x86', bitness: '64', model: '', platformVersion: '19.0.0',
+          uaFullVersion: '126.0.0.0', fullVersionList: fullVersionList };
+        var out = { brands: brands, mobile: false, platform: 'Windows' };
+        (hints || []).forEach(function(h){ if (h in full) out[h] = full[h]; });
+        return Promise.resolve(out);
+      }
+    };
+    Object.defineProperty(navigator, 'userAgentData', { get: function(){ return fake; }, configurable: true });
+  } catch(e){}
+})();
+"#;
+
 /// Script injected into EVERY provider page (external sites):
 /// - right-click -> OUR native context menu: preventDefault the page menu and navigate to the
 ///   `kotodama.menu` sentinel, which Rust `on_navigation` turns into a native `popup_menu`
@@ -375,6 +413,7 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
     let builder = WebviewBuilder::new(provider_label(key), WebviewUrl::External(url))
         .user_agent(PROVIDER_UA)
         .initialization_script(NO_MENU_JS)
+        .initialization_script(CLIENT_HINTS_JS)
         .on_navigation(move |u| {
             debug::log(format!("on_navigation -> {u}"));
             // Right-click sentinel -> our native EDITING menu (on the main thread). Nav is blocked.

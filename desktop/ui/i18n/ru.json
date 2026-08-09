@@ -245,5 +245,6 @@
   "linkIssues": "Сообщить об ошибке",
   "oopsTitle": "Что-то пошло не так",
   "oopsMessage": "Kotodama не удалось загрузить эту страницу.\nПопробуйте перезапустить.",
-  "oopsRestart": "Перезапустить"
+  "oopsRestart": "Перезапустить",
+  "provComingSoon": "Скоро"
 }
