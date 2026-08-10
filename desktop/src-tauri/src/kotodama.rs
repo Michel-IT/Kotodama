@@ -98,7 +98,7 @@ const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
     // copilot.com has no verified selectors anywhere (the only sources found cover
     // copilot.microsoft.com, a different domain/bundle) -- empty rather than guessed, same as
     // qwen: falls back to the generic chain, to be tightened after live DOM verification.
-    ("copilot", "", ""),
+    ("copilot", r#"[data-testid="ai-message-body"]"#, ""),
 ];
 
 fn selectors_for(key: &str) -> (&'static str, &'static str) {
@@ -324,8 +324,24 @@ const HARVEST_JS: &str = r##"
   // language. A captcha can in principle appear for anti-bot reasons even while logged in; treated
   // the same as a login wall here because either way the send is stuck and needs the user to open
   // the real page and resolve it by hand.
+  // Landed on the provider's OWN dedicated login URL, reached by an automatic redirect the
+  // provider's own app code performed (never guessed/typed by us) -- confirmed live (Playwright,
+  // real logout+relogin, 2026-08-10) for these three: visiting the base chat URL while logged out
+  // bounces straight to this path on its own. Far more reliable than DOM/text scraping (the site
+  // itself is telling us it needs a login), and the path never changes with UI language.
+  // See docs/research/login-detection-providers.md.
+  function loginUrlRedirected(){
+    try {
+      var p = location.pathname || '';
+      if (KEY === 'anthropic' && p.indexOf('/login') !== -1) return true;
+      if (KEY === 'deepseek' && p.indexOf('/sign_in') !== -1) return true;
+      if (KEY === 'poe' && p.indexOf('/login') !== -1) return true;
+    } catch(e){}
+    return false;
+  }
   function authWallPresent(){
     try {
+      if (loginUrlRedirected()) return true;
       if (document.querySelector('input[type="password"]')) return true;
       if (document.querySelector('[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]')) return true;
       // Some providers (observed: Meta AI) show NEITHER a password field nor a captcha when
@@ -410,6 +426,8 @@ const HARVEST_JS: &str = r##"
         n++;
       }
       out.push('composer='+(composerVal()===null?'NONE':'present'));
+      try { out.push('nav.language='+navigator.language+' nav.languages='+JSON.stringify(navigator.languages)); } catch(e){}
+      try { out.push('cookie='+(document.cookie||'').slice(0,300)); } catch(e){}
       window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('AUTHWALL-CENSUS '+out.join(' || ')).slice(0,1400) });
     } catch(e){}
   }
@@ -861,8 +879,18 @@ fn login_probe_js(key: &str) -> String {
   var KEY = {key};
   var BUDGET_MS = 600000, STEP_MS = 4000, t0 = Date.now(), reportedLogin = false;
   // Password field OR captcha challenge (see HARVEST_JS's authWallPresent for why both count).
+  function loginUrlRedirected(){{
+    try {{
+      var p = location.pathname || '';
+      if (KEY === 'anthropic' && p.indexOf('/login') !== -1) return true;
+      if (KEY === 'deepseek' && p.indexOf('/sign_in') !== -1) return true;
+      if (KEY === 'poe' && p.indexOf('/login') !== -1) return true;
+    }} catch(e){{}}
+    return false;
+  }}
   function authWallPresent(){{
     try {{
+      if (loginUrlRedirected()) return true;
       if (document.querySelector('input[type="password"]')) return true;
       if (document.querySelector('[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]')) return true;
     }} catch(e){{}}

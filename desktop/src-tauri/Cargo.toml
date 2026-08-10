@@ -35,13 +35,19 @@ serde_json = "1"
 # Windows only: move the window onto the CURRENT virtual desktop (IVirtualDesktopManager).
 # The Tauri set_visible_on_all_workspaces API is a no-op on Windows.
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.60", features = [
+windows = { version = "0.61", features = [
     "Win32_Foundation",
     "Win32_System_Com",
     "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
     "Win32_UI_Input_KeyboardAndMouse",   # SendInput: inline transform (simulated Ctrl+C / Ctrl+V)
 ] }
+# WebView2 COM interfaces (CookieManager, WebResourceResponseReceived) for provider login-state
+# probing. `windows` bumped 0.60 -> 0.61 to MATCH webview2-com-sys's own pin (it requires exactly
+# "0.61"): a mismatched minor version here resolves as two separate incompatible copies of
+# windows-core/windows-strings in the dependency tree, so PWSTR from our code and PWSTR expected
+# by webview2-com-sys's bindings are literally different types (verified: this broke compilation).
+webview2-com = "0.38"
 
 # macOS only: synthesize Cmd+C / Cmd+V for the inline transform via CGEvent (requires the app to
 # have Accessibility permission), and the AXIsProcessTrusted prompt. Versions pinned to what the

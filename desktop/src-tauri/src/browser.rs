@@ -151,12 +151,22 @@ pub const CLIENT_HINTS_JS: &str = r#"
 /// only (many modern SPAs, Grok included, pick UI language from `navigator.language` rather than
 /// solely the `Accept-Language` HTTP header, which stays user-locale via `provider_browser_args`
 /// -- that header is set once for the whole WebView2 environment, not overridable per-webview).
+///
+/// ALSO overwrites the `i18nextLng` cookie/localStorage key: live diagnostics (AUTHWALL-CENSUS)
+/// showed `navigator.language` was ALREADY correctly "en-US" (Accept-Language pinning worked),
+/// yet Grok still rendered Italian -- because Grok's i18next language-detector reads a PERSISTED
+/// `i18nextLng=it` cookie (saved on an earlier visit, before Accept-Language was pinned) with
+/// higher priority than navigator.language, and the WebView2 profile survives across app updates
+/// so that stale cookie never expires on its own. Runs at document-start (before Grok's own i18n
+/// init reads it), so the overwrite wins the race.
 pub const FORCE_EN_LANG_JS: &str = r#"
 (function(){
   try {
     if (location.hostname.indexOf('grok.com') === -1) return;
     Object.defineProperty(navigator, 'language', { get: function(){ return 'en-US'; }, configurable: true });
     Object.defineProperty(navigator, 'languages', { get: function(){ return ['en-US', 'en']; }, configurable: true });
+    document.cookie = 'i18nextLng=en; path=/; max-age=31536000';
+    try { localStorage.setItem('i18nextLng', 'en'); } catch(e){}
   } catch(e){}
 })();
 "#;
@@ -548,7 +558,100 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
     // the host window minimized (the inline transform relies on it scraping in the background).
     #[cfg(target_os = "macos")]
     crate::mac_disable_occlusion(&_child);
+    #[cfg(windows)]
+    win_probe_login_signals(&_child, key);
     Ok(())
+}
+
+/// DEBUG-only probe (Windows): checks whether the WebView2 CookieManager and
+/// WebResourceResponseReceived APIs are usable from this exact Tauri/wry setup, as real signal
+/// candidates for provider login-state detection (see docs/research/login-detection-providers.md)
+/// -- more robust than DOM/text scraping because a session cookie or an actual HTTP 401/403 is
+/// server-issued ground truth, not a proxy inferred from page markup. Logs cookie names (never
+/// values, even in local debug logs) for this webview's whole cookie jar, and the URL+status of
+/// the first responses it receives. No-op unless KOTODAMA_DEBUG is set.
+#[cfg(windows)]
+fn win_probe_login_signals<R: tauri::Runtime>(webview: &tauri::Webview<R>, key: &str) {
+    if !debug::enabled() {
+        return;
+    }
+    let key = key.to_string();
+    let _ = webview.with_webview(move |pw| {
+        use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2_2;
+        use webview2_com::{take_pwstr, GetCookiesCompletedHandler, WebResourceResponseReceivedEventHandler};
+        use windows::core::Interface;
+
+        let controller = pw.controller();
+        let core = match unsafe { controller.CoreWebView2() } {
+            Ok(c) => c,
+            Err(e) => {
+                debug::log(format!("win_probe[{key}]: CoreWebView2() failed: {e}"));
+                return;
+            }
+        };
+        let core2 = match core.cast::<ICoreWebView2_2>() {
+            Ok(c) => c,
+            Err(e) => {
+                debug::log(format!("win_probe[{key}]: cast to ICoreWebView2_2 failed: {e}"));
+                return;
+            }
+        };
+
+        // Cookies: whole jar for this webview's profile (empty URI = no filter), names only.
+        if let Ok(mgr) = unsafe { core2.CookieManager() } {
+            let k = key.clone();
+            let handler = GetCookiesCompletedHandler::create(Box::new(move |hr, list| {
+                if let Err(e) = hr {
+                    debug::log(format!("win_probe[{k}]: GetCookies failed: {e}"));
+                    return Ok(());
+                }
+                let Some(list) = list else { return Ok(()) };
+                let mut count = 0u32;
+                let _ = unsafe { list.Count(&mut count) };
+                let mut names = Vec::new();
+                for i in 0..count.min(60) {
+                    if let Ok(cookie) = unsafe { list.GetValueAtIndex(i) } {
+                        let mut name_p = windows::core::PWSTR::null();
+                        let mut domain_p = windows::core::PWSTR::null();
+                        let _ = unsafe { cookie.Name(&mut name_p) };
+                        let _ = unsafe { cookie.Domain(&mut domain_p) };
+                        names.push(format!("{}@{}", take_pwstr(name_p), take_pwstr(domain_p)));
+                    }
+                }
+                debug::log(format!("win_probe[{k}]: cookies count={count} names={names:?}"));
+                Ok(())
+            }));
+            let _ = unsafe { mgr.GetCookies(windows::core::PCWSTR::null(), &handler) };
+        } else {
+            debug::log(format!("win_probe[{key}]: CookieManager() failed"));
+        }
+
+        // Network: log URL+status of the first responses this webview receives (capped, so a busy
+        // provider tab doesn't flood the debug log). Handler is never removed -- fine for a
+        // one-shot probe; a real implementation would remove_WebResourceResponseReceived once
+        // it has what it needs.
+        let seen = std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0));
+        let k2 = key.clone();
+        let handler2 = WebResourceResponseReceivedEventHandler::create(Box::new(move |_sender, args| {
+            let Some(args) = args else { return Ok(()) };
+            let n = seen.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if n >= 20 {
+                return Ok(());
+            }
+            if let (Ok(req), Ok(resp)) = (unsafe { args.Request() }, unsafe { args.Response() }) {
+                let mut uri_p = windows::core::PWSTR::null();
+                let _ = unsafe { req.Uri(&mut uri_p) };
+                let mut status = 0i32;
+                let _ = unsafe { resp.StatusCode(&mut status) };
+                debug::log(format!("win_probe[{k2}]: net {status} {}", take_pwstr(uri_p)));
+            }
+            Ok(())
+        }));
+        let mut token: i64 = 0;
+        if let Err(e) = unsafe { core2.add_WebResourceResponseReceived(&handler2, &mut token) } {
+            debug::log(format!("win_probe[{key}]: add_WebResourceResponseReceived failed: {e}"));
+        }
+    });
 }
 
 /// SWITCH to provider `key` (header icon strip / double-click tile / ⇄ "Open"): if its tab already

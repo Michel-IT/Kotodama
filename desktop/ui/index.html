@@ -785,6 +785,10 @@
     .prov-xfer-row.coming-soon { cursor:default; opacity:.55; }
     .prov-xfer-row.coming-soon:hover { background:none; }
     .prov-xfer-badge { flex:none; font-size:10.5px; color:var(--text-dim); }
+    /* Per-row move button: same action as clicking the row, just an explicit affordance. */
+    .prov-xfer-row-arrow { flex:none; width:22px; height:22px; padding:0; border:none; background:transparent;
+      color:var(--text-dim); font-size:15px; line-height:1; border-radius:6px; cursor:pointer; }
+    .prov-xfer-row-arrow:hover { background:var(--panel-3,var(--border)); color:var(--text); }
     .prov-xfer-mid { display:flex; flex-direction:column; justify-content:center; gap:8px; }
     .prov-xfer-btn { width:38px; height:34px; font-size:15px; padding:0; }
 
@@ -2219,12 +2223,15 @@
     function ktLoadEnabled(){
       if(ktEnabled) return ktEnabled;
       let saved=null; try{ saved=JSON.parse(localStorage.getItem('kotodama.enabled')||'null'); }catch(e){}
-      const real=ktRealKeys();
+      const real=ktRealKeys().filter(k=>!PROV_COMING_SOON.has(k));
       ktEnabled = Array.isArray(saved) ? new Set(saved.filter(k=>real.includes(k))) : new Set(real);
       return ktEnabled;
     }
     function ktSaveEnabled(){ try{ localStorage.setItem('kotodama.enabled', JSON.stringify([...ktEnabled])); }catch(e){} }
-    function ktEnabledKeys(){ ktLoadEnabled(); return ktRealKeys().filter(k=>ktEnabled.has(k)); }
+    // Coming-soon providers (PROV_COMING_SOON) can never be moved into "Selezionati" from the
+    // Settings UI, but a stale/bootstrapped `ktEnabled` entry for one must not leak into the pool
+    // that feeds the "+" menu / chip bar -- filter them out here too, not just at render time.
+    function ktEnabledKeys(){ ktLoadEnabled(); return ktRealKeys().filter(k=>ktEnabled.has(k) && !PROV_COMING_SOON.has(k)); }
     // "Kotodama-di-uno": the chat view locked to a single provider (tile click, ⇄ menu, → button
     // on a non-meta provider). Overrides the selection WITHOUT touching ktSel/localStorage -- the
     // user's real multi-provider selection is snapshotted and restored on unlock.
@@ -2296,7 +2303,10 @@
     // external research, never confirmed in Kotodama itself) -- kept visible so they're not
     // forgotten, but greyed out and pinned to "Disponibili": can't be moved to "Selezionati"
     // (and so can't be broadcast to) until someone confirms they actually work.
-    const PROV_COMING_SOON=new Set(['meta','copilot','grok']);
+    // Grok and Meta AI confirmed working live (full regression pass, 2026-08-10: real send +
+    // harvested answer, both logged in). Copilot stays gated until its harvest selector fix is
+    // verified live too (see kotodama.rs HARVEST_SELECTORS).
+    const PROV_COMING_SOON=new Set(['copilot']);
     function renderProviderXfer(){
       const availEl=document.getElementById('provXferAvail'), selEl=document.getElementById('provXferSel');
       if(!availEl || !selEl) return;
@@ -2318,8 +2328,15 @@
           availEl.appendChild(row);
           return;   // no click interaction -- can't be moved into Selezionati
         }
-        // One click = immediate move to the other column, no separate "Add"/"Remove" button.
+        // Click anywhere on the row = immediate move to the other column. The per-row arrow
+        // button below does the exact same move -- it's just an explicit affordance for users
+        // who look for a button rather than a clickable row; both trigger the same function.
         row.addEventListener('click', ()=> inSel ? provXferMoveOut(key) : provXferMoveIn(key));
+        const arrow=document.createElement('button'); arrow.type='button'; arrow.className='prov-xfer-row-arrow';
+        arrow.textContent=inSel?'‹':'›';
+        arrow.title=inSel?(TR.provXferToLeftTitle||'Remove'):(TR.provXferToRightTitle||'Add');
+        arrow.addEventListener('click', e=>{ e.stopPropagation(); inSel?provXferMoveOut(key):provXferMoveIn(key); });
+        row.appendChild(arrow);
         // Temp-chat toggle: only meaningful for a provider actually in use (Selezionati) --
         // merged in here instead of a separate "Chat temporanee nei provider" list so the same
         // provider isn't shown twice in the tab.
