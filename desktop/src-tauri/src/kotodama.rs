@@ -537,6 +537,10 @@ const GROK_PRIVATE_SVG: &str = "5.562148571014404,-0.8140220046"; // ghost <path
 const PERPLEXITY_INCOG_SVG: &str = "pplx-icon-spy";               // <use href="#pplx-icon-spy">
 const QWEN_TEMP_SVG: &str = "icon-line-private-chat-01";          // <use href="#icon-line-private-chat-01">
 const GEMINI_TEMP_SVG: &str = "gemini_chat_temp";                // <mat-icon data-mat-icon-name="gemini_chat_temp">
+// Captured live 2026-08-10 (Playwright, real logged-in session) -- see
+// docs/research/login-detection-providers.md for the per-provider incognito/temp-chat survey.
+const POE_TEMP_SVG: &str = "M12.014 19.837a1 1 0 0 1 1.149";      // "Attiva chat temporanea" clock icon <path d>
+const COPILOT_TEMP_SVG: &str = "M0.860549 14.0576";               // "Immetti chat temporanea" dashed-clock <path d>
 
 fn temp_trigger_js(key: &str) -> Option<String> {
     match key {
@@ -547,6 +551,8 @@ fn temp_trigger_js(key: &str) -> Option<String> {
         "perplexity" => Some(temp_click_js(PERPLEXITY_INCOG_SVG)), // "Usa in incognito" spy icon
         "qwen" => Some(temp_click_js(QWEN_TEMP_SVG)),           // "Temporary Chat" toggle
         "gemini" => Some(temp_click_js(GEMINI_TEMP_SVG)),       // "Chat temporanea" mat-icon
+        "poe" => Some(temp_click_js(POE_TEMP_SVG)),             // "Attiva chat temporanea" toggle
+        "copilot" => Some(temp_click_js(COPILOT_TEMP_SVG)),     // "Immetti chat temporanea" toggle
         _ => None,
     }
 }
