@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama nije uspjela učitati ovu stranicu.\nPokušajte ponovno pokrenuti.",
   "oopsRestart": "Ponovno pokreni",
   "provComingSoon": "Uskoro",
-  "close": "Zatvori"
+  "close": "Zatvori",
+  "ktSideCollapse": "Smanji bočnu traku",
+  "ktSideExpand": "Proširi bočnu traku"
 }

@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama se nepodařilo načíst tuto stránku.\nZkuste restartovat.",
   "oopsRestart": "Restartovat",
   "provComingSoon": "Již brzy",
-  "close": "Zavřít"
+  "close": "Zavřít",
+  "ktSideCollapse": "Sbalit boční panel",
+  "ktSideExpand": "Rozbalit boční panel"
 }

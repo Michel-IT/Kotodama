@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama bu sayfayı yükleyemedi.\nYeniden başlatmayı deneyin.",
   "oopsRestart": "Yeniden başlat",
   "provComingSoon": "Yakında",
-  "close": "Kapat"
+  "close": "Kapat",
+  "ktSideCollapse": "Kenar çubuğunu daralt",
+  "ktSideExpand": "Kenar çubuğunu genişlet"
 }

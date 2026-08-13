@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama نتوانست این صفحه را بارگذاری کند.\nراه‌اندازی مجدد را امتحان کنید.",
   "oopsRestart": "راه‌اندازی مجدد",
   "provComingSoon": "به زودی",
-  "close": "بستن"
+  "close": "بستن",
+  "ktSideCollapse": "جمع کردن نوار کناری",
+  "ktSideExpand": "گسترش نوار کناری"
 }

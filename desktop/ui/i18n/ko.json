@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama가 이 페이지를 불러오지 못했습니다.\n다시 시작해 보세요.",
   "oopsRestart": "다시 시작",
   "provComingSoon": "곧 출시",
-  "close": "닫기"
+  "close": "닫기",
+  "ktSideCollapse": "사이드바 접기",
+  "ktSideExpand": "사이드바 펼치기"
 }

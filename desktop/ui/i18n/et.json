@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama ei suutnud seda lehte laadida.\nProovi taaskäivitada.",
   "oopsRestart": "Taaskäivita",
   "provComingSoon": "Tulemas",
-  "close": "Sulge"
+  "close": "Sulge",
+  "ktSideCollapse": "Ahenda külgriba",
+  "ktSideExpand": "Laienda külgriba"
 }

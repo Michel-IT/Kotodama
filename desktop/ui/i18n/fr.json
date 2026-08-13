@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama n'a pas pu charger cette page.\nEssayez de redémarrer.",
   "oopsRestart": "Redémarrer",
   "provComingSoon": "Prochainement",
-  "close": "Fermer"
+  "close": "Fermer",
+  "ktSideCollapse": "Réduire la barre latérale",
+  "ktSideExpand": "Développer la barre latérale"
 }

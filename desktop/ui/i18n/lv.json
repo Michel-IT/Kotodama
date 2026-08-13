@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama neizdevās ielādēt šo lapu.\nMēģiniet restartēt.",
   "oopsRestart": "Restartēt",
   "provComingSoon": "Drīzumā",
-  "close": "Aizvērt"
+  "close": "Aizvērt",
+  "ktSideCollapse": "Sakļaut sānjoslu",
+  "ktSideExpand": "Izvērst sānjoslu"
 }

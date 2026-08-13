@@ -247,5 +247,7 @@
   "oopsMessage": "تعذّر على Kotodama تحميل هذه الصفحة.\nحاول إعادة التشغيل.",
   "oopsRestart": "إعادة التشغيل",
   "provComingSoon": "قريبا",
-  "close": "إغلاق"
+  "close": "إغلاق",
+  "ktSideCollapse": "طي الشريط الجانبي",
+  "ktSideExpand": "توسيع الشريط الجانبي"
 }

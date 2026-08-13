@@ -247,5 +247,7 @@
   "oopsMessage": "ל-Kotodama לא הצליחה לטעון את הדף הזה.\nנסה להפעיל מחדש.",
   "oopsRestart": "הפעל מחדש",
   "provComingSoon": "בקרוב",
-  "close": "סגור"
+  "close": "סגור",
+  "ktSideCollapse": "כיווץ סרגל צד",
+  "ktSideExpand": "הרחיבו סרגל צד"
 }

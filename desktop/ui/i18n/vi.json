@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama không thể tải trang này.\nHãy thử khởi động lại.",
   "oopsRestart": "Khởi động lại",
   "provComingSoon": "Sắp có",
-  "close": "Đóng"
+  "close": "Đóng",
+  "ktSideCollapse": "Thu gọn thanh bên",
+  "ktSideExpand": "Mở rộng thanh bên"
 }

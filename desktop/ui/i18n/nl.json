@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama kon deze pagina niet laden.\nProbeer opnieuw te starten.",
   "oopsRestart": "Herstarten",
   "provComingSoon": "Binnenkort",
-  "close": "Sluiten"
+  "close": "Sluiten",
+  "ktSideCollapse": "Zijbalk samenvouwen",
+  "ktSideExpand": "Zijbalk uitvouwen"
 }

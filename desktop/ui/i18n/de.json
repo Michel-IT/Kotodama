@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama konnte diese Seite nicht laden.\nVersuchen Sie einen Neustart.",
   "oopsRestart": "Neu starten",
   "provComingSoon": "Demnächst",
-  "close": "Schließen"
+  "close": "Schließen",
+  "ktSideCollapse": "Seitenleiste zusammenklappen",
+  "ktSideExpand": "Seitenleiste erweitern"
 }

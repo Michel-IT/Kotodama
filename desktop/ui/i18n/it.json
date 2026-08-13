@@ -218,6 +218,8 @@
   "provXferAllLeftTitle": "Rimuovi tutti",
   "ktTabHistory": "Cronologia",
   "ktTabRecipes": "Ricette",
+  "ktSideCollapse": "Comprimi sidebar",
+  "ktSideExpand": "Espandi sidebar",
   "ktRecipeNeutral": "Torna a Neutro",
   "ktNeutralHint": "Il testo viene inviato così com'è, senza istruzioni aggiuntive.",
   "ktCtxIntro": "Contesto della nostra conversazione precedente; rispondi al nuovo messaggio in fondo.",

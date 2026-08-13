@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama nie mogła załadować tej strony.\nSpróbuj ponownie uruchomić.",
   "oopsRestart": "Uruchom ponownie",
   "provComingSoon": "Wkrótce",
-  "close": "Zamknij"
+  "close": "Zamknij",
+  "ktSideCollapse": "Zwiń pasek boczny",
+  "ktSideExpand": "Rozwiń pasek boczny"
 }

@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama આ પેજ લોડ કરી શક્યું નહીં.\nફરીથી શરૂ કરવાનો પ્રયાસ કરો.",
   "oopsRestart": "ફરીથી શરૂ કરો",
   "provComingSoon": "જલ્દીથી",
-  "close": "બંધ કરો"
+  "close": "બંધ કરો",
+  "ktSideCollapse": "સાઇડબાર સંકુચિત કરો",
+  "ktSideExpand": "સાઇડબાર વિસ્તૃત કરો"
 }

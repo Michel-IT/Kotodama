@@ -503,15 +503,83 @@
     .kt-view { position:fixed; inset:0; top:var(--topbar-h); z-index:1200; display:none;
       flex-direction:row; background:var(--bg-0, var(--bg-1)); }
     body.kotodama-open .kt-view { display:flex; }
-    /* session sidebar (left column) */
+    /* session sidebar (left column). Collapsible: .collapsed narrows it to an icon-only rail --
+       used both for the manual toggle and automatically under 820px (replaces the old
+       display:none, which used to make the whole sidebar vanish instead of just shrinking it). */
     .kt-side { flex:none; width:242px; display:flex; flex-direction:column; min-height:0;
-      background:var(--bg-1); border-right:1px solid var(--border-soft); }
+      background:var(--bg-1); border-right:1px solid var(--border-soft); transition:width .15s ease; }
+    /* overflow:hidden -- da collassata i contenuti a larghezza piena (bottoni, ricerca) non devono
+       poter generare una barra di scorrimento orizzontale dentro il rail. */
+    .kt-side.collapsed { width:56px; overflow:hidden; }
+    /* Sta in fondo alla colonna (ultimo figlio): il pannello sopra ha flex:1 e lo spinge giù. */
+    .kt-side-collapse-row { flex:none; display:flex; justify-content:flex-end; padding:4px 6px;
+      border-top:1px solid var(--border-soft); }
+    .kt-side.collapsed .kt-side-collapse-row { justify-content:center; }
+    .kt-side-toggle { width:22px; height:22px; border:none; border-radius:6px; background:none;
+      color:var(--text-faint); cursor:pointer; font-size:12px; display:grid; place-items:center; }
+    .kt-side-toggle:hover { background:var(--panel-glow); color:var(--accent); }
     .kt-side-tabs { flex:none; display:flex; border-bottom:1px solid var(--border-soft); }
-    .kt-side-tab { flex:1; padding:9px 0; text-align:center; font-size:12px; font-weight:600;
+    .kt-side-tab { flex:1; padding:9px 0; display:flex; align-items:center; justify-content:center;
+      gap:6px; text-align:center; font-size:12px; font-weight:600;
       color:var(--text-faint); background:none; border:none; border-bottom:2px solid transparent;
       cursor:pointer; transition:color .15s, border-color .15s; }
+    .kt-side-tab-ico { flex:none; font-size:13px; line-height:1; }
     .kt-side-tab:hover { color:var(--text); }
     .kt-side-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+    /* Da collassata le due tab si impilano a tutta larghezza del rail (56px), invece di dividerselo
+       in due mezze colonne da 28px che schiacciano le icone contro i bordi. L'attiva si segna con
+       una barretta interna a sinistra (box-shadow, non border: non sposta l'icona di 2px). */
+    .kt-side.collapsed .kt-side-tabs { flex-direction:column; }
+    .kt-side.collapsed .kt-side-tab-label { display:none; }
+    .kt-side.collapsed .kt-side-tab { padding:11px 0; border-bottom:none; }
+    .kt-side.collapsed .kt-side-tab-ico { font-size:16px; }
+    .kt-side.collapsed .kt-side-tab.active { box-shadow:inset 2px 0 0 var(--accent); }
+    /* Collapsed / Ricette: le righe hanno gia' la loro icona, restano usabili -- via i nomi e il
+       sotto-pannello Vincoli (nessuna forma a sole icone avrebbe senso li'). */
+    .kt-side.collapsed #ktPanelRecipes .sidebar-head .seclabel,
+    .kt-side.collapsed #ktPanelRecipes .recipe .rname { display:none; }
+    .kt-side.collapsed #ktPanelRecipes .sidebar-head { justify-content:center; }
+    .kt-side.collapsed #ktPanelRecipes .recipe { justify-content:center; padding-left:0; padding-right:0; }
+    .kt-side.collapsed .kt-vincoli-group { display:none; }
+    /* Collapsed / Cronologia: ogni conversazione diventa un quadratino con la sua INIZIALE (icone
+       tutte uguali non si distinguerebbero); il titolo completo e la data restano nel tooltip
+       della riga, impostato in renderKtSessions(). Sopra restano "nuova conversazione" e la
+       ricerca (che al clic riapre la sidebar e mette a fuoco il campo).
+       Senza queste regole il bottone "Nuova conversazione" straripava fuori dal rail e le righe
+       restavano appese con la sola data visibile. */
+    .kt-sess-ico { display:none; }
+    /* 34px + 3px sopra/sotto = passo verticale di 40px, lo stesso di ricerca e "nuova
+       conversazione" (34px + gap 6px): un'unica colonna di quadrati con lo stesso ritmo. */
+    .kt-side.collapsed .kt-sess { justify-content:center; padding:3px 0; gap:0; }
+    .kt-side.collapsed .kt-sess-meta,
+    .kt-side.collapsed .kt-sess-ren,
+    .kt-side.collapsed .kt-sess-del,
+    .kt-side.collapsed .kt-empty { display:none; }
+    .kt-side.collapsed .kt-sess-ico { flex:none; display:grid; place-items:center;
+      width:34px; height:34px; border-radius:9px; background:var(--field);
+      color:var(--text-faint); font-size:13px; font-weight:700; }
+    .kt-side.collapsed .kt-sess:hover .kt-sess-ico { color:var(--text); }
+    .kt-side.collapsed .kt-sess.active .kt-sess-ico { color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+    /* barra di scorrimento invisibile: in un rail da 56px ruberebbe meta' della larghezza */
+    .kt-side.collapsed .kt-sess-list { scrollbar-width:none; }
+    .kt-side.collapsed .kt-sess-list::-webkit-scrollbar { width:0; height:0; }
+    .kt-side.collapsed #ktPanelHistory .kt-side-head { padding:8px 0; gap:6px; align-items:center;
+      border-bottom:none; }
+    .kt-side.collapsed #ktPanelHistory .kt-search { width:34px; height:34px; padding:0; gap:0;
+      justify-content:center; border-radius:9px; cursor:pointer; }
+    .kt-side.collapsed #ktPanelHistory .kt-search:hover { border-color:var(--accent); }
+    .kt-side.collapsed #ktPanelHistory .kt-search input { display:none; }
+    .kt-side.collapsed #ktPanelHistory .kt-new { width:34px; height:34px; padding:0;
+      display:grid; place-items:center; }
+    .kt-side.collapsed #ktPanelHistory .kt-new-label { display:none; }
+    .kt-new-ico { display:none; font-size:16px; line-height:1; }
+    .kt-side.collapsed #ktPanelHistory .kt-new-ico { display:block; }
+    /* Sotto la soglia il rail e' imposto dalla larghezza: via i due comandi che servirebbero solo a
+       riaprirlo (il toggle e la ricerca), altrimenti resterebbero visibili senza poter fare nulla. */
+    @media (max-width:819px) {
+      .kt-side-collapse-row { display:none; }
+      .kt-side.collapsed #ktPanelHistory .kt-search { display:none; }
+    }
     /* Vincoli NON scorre MAI internamente: altezza sempre naturale/dinamica (cresce aggiungendo
        campi personalizzati). Ricette è l'UNICO a scorrere/espandersi: riempie TUTTO lo spazio
        residuo fino a Vincoli (flex:1, niente margin-top:auto su Vincoli -- competerebbe con la
@@ -558,7 +626,6 @@
     .kt-sess-del.confirm { opacity:1; background:#5a2323; color:#ffb4b4; font-size:10px; width:auto; padding:0 7px; }
     .kt-empty { text-align:center; color:var(--text-faint); font-size:12.5px; padding:26px 8px; }
     .kt-main { flex:1; min-width:0; display:flex; flex-direction:column; min-height:0; }
-    @media (max-width:820px) { .kt-side { display:none; } }
     .kt-head { flex:none; display:flex; align-items:center; gap:12px; padding:10px 16px;
       border-bottom:1px solid var(--border-soft); background:var(--bg-1); flex-wrap:wrap; }
     .kt-title { display:flex; align-items:center; gap:8px; flex:none; }
@@ -1317,8 +1384,12 @@
          recipe list+CRUD, applied to the Kotodama composer instead of the builder's own prompt). -->
     <aside class="kt-side" id="ktSide">
       <div class="kt-side-tabs">
-        <button class="kt-side-tab active" id="ktTabRecipesBtn" data-tab="recipes" data-i18n="ktTabRecipes">Ricette</button>
-        <button class="kt-side-tab" id="ktTabHistoryBtn" data-tab="history" data-i18n="ktTabHistory">Cronologia</button>
+        <button class="kt-side-tab active" id="ktTabRecipesBtn" data-tab="recipes" data-i18n-title="ktTabRecipes" title="Ricette">
+          <span class="kt-side-tab-ico">📋</span><span class="kt-side-tab-label" data-i18n="ktTabRecipes">Ricette</span>
+        </button>
+        <button class="kt-side-tab" id="ktTabHistoryBtn" data-tab="history" data-i18n-title="ktTabHistory" title="Cronologia">
+          <span class="kt-side-tab-ico">🕘</span><span class="kt-side-tab-label" data-i18n="ktTabHistory">Cronologia</span>
+        </button>
       </div>
       <div class="kt-side-panel" id="ktPanelHistory" hidden>
         <div class="kt-side-head">
@@ -1326,7 +1397,7 @@
             <span class="dl-search-i">⌕</span>
             <input id="ktSearch" type="text" data-i18n-ph="ktSearch" placeholder="Cerca nelle conversazioni...">
           </div>
-          <button class="btn kt-new" id="ktNew" data-i18n="ktNewChat">Nuova conversazione</button>
+          <button class="btn kt-new" id="ktNew" data-i18n-title="ktNewChat" title="Nuova conversazione"><span class="kt-new-ico">＋</span><span class="kt-new-label" data-i18n="ktNewChat">Nuova conversazione</span></button>
         </div>
         <div class="kt-sess-list" id="ktSessList"></div>
       </div>
@@ -1336,13 +1407,13 @@
           <button class="add-btn" id="ktAddRecipe" data-i18n-title="newRecipe" title="Nuova ricetta">+</button>
         </div>
         <ul class="recipes" id="ktRecipes">
-          <li class="recipe active" data-key="neutral"><span class="ico">↦</span> <span class="rname">Neutral</span></li>
-          <li class="recipe" data-key="rephrase"><span class="ico">↻</span> <span class="rname">Rephrase</span></li>
-          <li class="recipe" data-key="summarise"><span class="ico">☰</span> <span class="rname">Summarise</span></li>
-          <li class="recipe" data-key="reply"><span class="ico">↩</span> <span class="rname">Reply</span></li>
-          <li class="recipe" data-key="email"><span class="ico">✉</span> <span class="rname">Create Email</span></li>
-          <li class="recipe" data-key="translate"><span class="ico">🌐</span> <span class="rname">Translate</span></li>
-          <li class="recipe" data-key="search"><span class="ico">🔍</span> <span class="rname">Search</span></li>
+          <li class="recipe active" data-key="neutral" title="Neutral"><span class="ico">↦</span> <span class="rname">Neutral</span></li>
+          <li class="recipe" data-key="rephrase" title="Rephrase"><span class="ico">↻</span> <span class="rname">Rephrase</span></li>
+          <li class="recipe" data-key="summarise" title="Summarise"><span class="ico">☰</span> <span class="rname">Summarise</span></li>
+          <li class="recipe" data-key="reply" title="Reply"><span class="ico">↩</span> <span class="rname">Reply</span></li>
+          <li class="recipe" data-key="email" title="Create Email"><span class="ico">✉</span> <span class="rname">Create Email</span></li>
+          <li class="recipe" data-key="translate" title="Translate"><span class="ico">🌐</span> <span class="rname">Translate</span></li>
+          <li class="recipe" data-key="search" title="Search"><span class="ico">🔍</span> <span class="rname">Search</span></li>
         </ul>
         <div class="kt-vincoli-group">
           <div class="sidebar-head">
@@ -1351,6 +1422,9 @@
           </div>
           <div class="kt-constraints" id="ktConstraints"><!-- #controls (Lunghezza/Tono/Risposta + campi personalizzati) viene spostato qui via JS: stesso pannello del builder classico, stesso stato persistito. --></div>
         </div>
+      </div>
+      <div class="kt-side-collapse-row">
+        <button class="kt-side-toggle" id="ktSideToggle" title="Comprimi sidebar">«</button>
       </div>
     </aside>
     <div class="kt-main">
@@ -1457,6 +1531,7 @@
       provComingSoon:'Coming soon',
       provXferAllRightTitle:'Add all', provXferToRightTitle:'Add', provXferToLeftTitle:'Remove', provXferAllLeftTitle:'Remove all',
       ktTabHistory:'History', ktTabRecipes:'Recipes', ktRecipeNeutral:'Back to Neutral',
+      ktSideCollapse:'Collapse sidebar', ktSideExpand:'Expand sidebar',
       ktNeutralHint:'Text is sent as-is, with no extra instructions.',
       ktCtxIntro:'Context from our earlier conversation; answer the new message at the end.',
       ktCtxUser:'User:', ktCtxYou:'You answered:', ktCtxNew:'New message:',
@@ -1601,7 +1676,8 @@
       document.querySelectorAll('[data-i18n-title]').forEach(el=>{ const k=el.getAttribute('data-i18n-title'); if(t[k]!==undefined) el.title=t[k]; });
       document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(t[k]!==undefined) el.placeholder=t[k]; });
       recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]) li.querySelector('.rname').textContent=t.recipeNames[k]; });
-      if(ktRecipesEl) ktRecipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]) li.querySelector('.rname').textContent=t.recipeNames[k]; });
+      if(ktRecipesEl) ktRecipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]){ li.querySelector('.rname').textContent=t.recipeNames[k]; li.title=t.recipeNames[k]; } });
+      if(typeof ktSideApply==='function') ktSideApply();   // re-translate the collapse toggle's tooltip
       // "open on the fly" tooltip on each provider (Kotodama gets its own meta tooltip)
       providers.querySelectorAll('.prov').forEach(tile=>{
         if(tile.dataset.prov==='kotodama'){ tile.title=t.ktTileTitle; return; }
@@ -1838,10 +1914,20 @@
       if(!items.length){ const e=document.createElement('div'); e.className='kt-empty'; e.textContent=TR.ktNoSessions; list.appendChild(e); return; }
       items.forEach(s=>{
         const row=document.createElement('div'); row.className='kt-sess'+(ktSession&&s.id===ktSession.id?' active':'');
+        const titolo=s.title||'...', data=ktFmtDate(s.updated||s.created);
+        // Tooltip su TUTTA la riga: da collassata e' l'unico modo di sapere che conversazione sia
+        // (si vede solo l'iniziale), da espansa recupera i titoli troncati con l'ellissi.
+        row.title=titolo+' · '+data;
+        // Iniziale come icona: le conversazioni non hanno un simbolo proprio, ma l'iniziale le
+        // distingue una dall'altra (a differenza di un'icona uguale per tutte). Visibile solo nel
+        // rail collassato.
+        const ico=document.createElement('span'); ico.className='kt-sess-ico';
+        ico.textContent=(titolo.trim().match(/\p{L}|\p{N}/u)||['·'])[0].toUpperCase();
         const meta=document.createElement('div'); meta.className='kt-sess-meta';
-        const tt=document.createElement('div'); tt.className='kt-sess-title'; tt.textContent=s.title||'...';
-        const dd=document.createElement('div'); dd.className='kt-sess-date'; dd.textContent=ktFmtDate(s.updated||s.created);
+        const tt=document.createElement('div'); tt.className='kt-sess-title'; tt.textContent=titolo;
+        const dd=document.createElement('div'); dd.className='kt-sess-date'; dd.textContent=data;
         meta.appendChild(tt); meta.appendChild(dd);
+        row.appendChild(ico);
         const ren=document.createElement('button'); ren.className='kt-sess-ren'; ren.textContent='✎'; ren.title=TR.rename;
         ren.addEventListener('click', ev=>{ ev.stopPropagation(); startRenameSession(s, tt); });
         const del=document.createElement('button'); del.className='kt-sess-del'; del.textContent='✕';
@@ -2675,8 +2761,51 @@
     }
     const ktPanelHistory=document.getElementById('ktPanelHistory');
     const ktPanelRecipes=document.getElementById('ktPanelRecipes');
+    // Entrambe le tab hanno una forma valida anche da collassate (Ricette: le icone delle ricette;
+    // Cronologia: nuova conversazione + ricerca), quindi cambiare tab non forza mai l'espansione.
     document.getElementById('ktTabHistoryBtn').addEventListener('click', ()=>ktSwitchSideTab('history'));
     document.getElementById('ktTabRecipesBtn').addEventListener('click', ()=>ktSwitchSideTab('recipes'));
+
+    /* ===================== KOTODAMA SIDEBAR COLLAPSE (icon-only rail) =====================
+       Two independent reasons to be collapsed, OR'd together: the user's manual toggle
+       (persisted) and the window being too narrow for the full 242px column -- this replaces
+       the old @media(max-width:820px){display:none} rule, which used to make the sidebar vanish
+       entirely instead of shrinking to icons. */
+    const ktSide=document.getElementById('ktSide');
+    const ktSideToggle=document.getElementById('ktSideToggle');
+    // Sotto i 820px comanda SEMPRE la larghezza (rail a icone, non discutibile): e' il
+    // comportamento richiesto, la sidebar non deve mai sparire ne' restare larga in una finestra
+    // che non la contiene. Sopra la soglia comanda la scelta dell'utente, che resta salvata.
+    // Nota: quando e' la larghezza a decidere, i comandi che servirebbero a riaprire (il toggle e
+    // l'icona di ricerca) sono nascosti via CSS -- non devono restare li' a non fare niente.
+    let ktSidePref = localStorage.getItem('ktSideCollapsed');   // '1' | '0' | null
+    function ktSideNarrow(){ return window.innerWidth<820; }
+    function ktSideCollapsedNow(){
+      return ktSideNarrow() ? true : ktSidePref==='1';
+    }
+    function ktSideApply(){
+      const collapsed = ktSideCollapsedNow();
+      ktSide.classList.toggle('collapsed', collapsed);
+      ktSideToggle.textContent = collapsed ? '»' : '«';
+      ktSideToggle.title = (collapsed ? TR.ktSideExpand : TR.ktSideCollapse) || ktSideToggle.title;
+    }
+    function ktSideSetCollapsed(v){
+      ktSidePref = v?'1':'0';
+      localStorage.setItem('ktSideCollapsed', ktSidePref);
+      ktSideApply();
+    }
+    ktSideToggle.addEventListener('click', ()=>ktSideSetCollapsed(!ktSideCollapsedNow()));
+    window.addEventListener('resize', ktSideApply);
+    ktSideApply();
+    // Da collassata la ricerca e' una sola icona: cliccarla riapre la sidebar e mette a fuoco il
+    // campo, che li' dentro non ci sarebbe stato. In finestra stretta l'icona e' nascosta (la
+    // sidebar non puo' riaprirsi), quindi il ramo non e' raggiungibile.
+    { const box=ktPanelHistory.querySelector('.kt-search');
+      if(box) box.addEventListener('click', ()=>{
+        if(!ktSide.classList.contains('collapsed') || ktSideNarrow()) return;
+        ktSideSetCollapsed(false);
+        if(ktSearch) ktSearch.focus();
+      }); }
 
     /* ===================== KOTODAMA RECIPES (sticky, reuses builder's data+modal+CRUD) =====================
        KT_ONLY means the builder's OWN recipe list/instruction editor is currently unreachable, so
@@ -2734,6 +2863,7 @@
         li.className='recipe recipe-custom'; li.dataset.id=r.id; li.dataset.instruction=r.instruction;
         li.innerHTML='<span class="ico">★</span><span class="rname"></span><button class="recipe-del">✕</button>';
         li.querySelector('.rname').textContent=r.name;
+        li.title=r.name;
         li.querySelector('.recipe-del').title=t.delete;
         ktRecipesEl.appendChild(li);
       });

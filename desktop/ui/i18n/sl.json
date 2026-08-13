@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama ni mogla naložiti te strani.\nPoskusite znova zagnati.",
   "oopsRestart": "Znova zaženi",
   "provComingSoon": "Kmalu",
-  "close": "Zapri"
+  "close": "Zapri",
+  "ktSideCollapse": "Strni stransko vrstico",
+  "ktSideExpand": "Razširi stransko vrstico"
 }

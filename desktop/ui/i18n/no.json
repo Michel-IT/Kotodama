@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama klarte ikke å laste denne siden.\nPrøv å starte på nytt.",
   "oopsRestart": "Start på nytt",
   "provComingSoon": "Kommer snart",
-  "close": "Lukk"
+  "close": "Lukk",
+  "ktSideCollapse": "Slå sammen sidepanel",
+  "ktSideExpand": "Utvid sidepanel"
 }

@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama nu a putut încărca această pagină.\nÎncearcă să repornești.",
   "oopsRestart": "Repornește",
   "provComingSoon": "Curând",
-  "close": "Închide"
+  "close": "Închide",
+  "ktSideCollapse": "Restrânge bara laterală",
+  "ktSideExpand": "Extinde bara laterală"
 }

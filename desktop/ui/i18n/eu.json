@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama-k ezin izan du orri hau kargatu.\nSaiatu berrabiarazten.",
   "oopsRestart": "Berrabiarazi",
   "provComingSoon": "Laburrean",
-  "close": "Itxi"
+  "close": "Itxi",
+  "ktSideCollapse": "Tolestu alboko barra",
+  "ktSideExpand": "Hedatu alboko barra"
 }

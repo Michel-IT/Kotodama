@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama kunne ikke indlæse denne side.\nPrøv at genstarte.",
   "oopsRestart": "Genstart",
   "provComingSoon": "Kommer snart",
-  "close": "Luk"
+  "close": "Luk",
+  "ktSideCollapse": "Skjul sidepanel",
+  "ktSideExpand": "Vis sidepanel"
 }

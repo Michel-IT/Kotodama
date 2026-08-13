@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama এই পৃষ্ঠাটি লোড করতে পারেনি।\nপুনরায় চালু করার চেষ্টা করুন।",
   "oopsRestart": "পুনরায় চালু করুন",
   "provComingSoon": "শীঘ্রই আসছে",
-  "close": "বন্ধ"
+  "close": "বন্ধ",
+  "ktSideCollapse": "সাইডবার সংকুচিত করুন",
+  "ktSideExpand": "সাইডবার সম্প্রসারিত করুন"
 }

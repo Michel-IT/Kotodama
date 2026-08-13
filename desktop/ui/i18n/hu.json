@@ -247,5 +247,7 @@
   "oopsMessage": "A Kotodama nem tudta betölteni ezt az oldalt.\nPróbáld meg újraindítani.",
   "oopsRestart": "Újraindítás",
   "provComingSoon": "Hamarosan",
-  "close": "Bezárás"
+  "close": "Bezárás",
+  "ktSideCollapse": "Oldalsáv összecsukása",
+  "ktSideExpand": "Oldalsáv kibontása"
 }

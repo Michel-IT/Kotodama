@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama โหลดหน้านี้ไม่สำเร็จ\nลองรีสตาร์ทดูอีกครั้ง",
   "oopsRestart": "รีสตาร์ท",
   "provComingSoon": "เร็วๆ นี้",
-  "close": "ปิด"
+  "close": "ปิด",
+  "ktSideCollapse": "ยุบแถบด้านข้าง",
+  "ktSideExpand": "ขยายแถบด้านข้าง"
 }

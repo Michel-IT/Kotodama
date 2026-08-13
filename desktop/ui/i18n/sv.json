@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama kunde inte läsa in den här sidan.\nFörsök starta om.",
   "oopsRestart": "Starta om",
   "provComingSoon": "Kommer snart",
-  "close": "Stäng"
+  "close": "Stäng",
+  "ktSideCollapse": "Fäll ihop sidofältet",
+  "ktSideExpand": "Fäll ut sidofältet"
 }

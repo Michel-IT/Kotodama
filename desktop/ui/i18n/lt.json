@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama nepavyko įkelti šio puslapio.\nBandykite paleisti iš naujo.",
   "oopsRestart": "Paleisti iš naujo",
   "provComingSoon": "Netrukus",
-  "close": "Uždaryti"
+  "close": "Uždaryti",
+  "ktSideCollapse": "Sutraukti šoninę juostą",
+  "ktSideExpand": "Išplėsti šoninę juostą"
 }

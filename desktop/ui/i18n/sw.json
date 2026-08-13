@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama haikuweza kupakia ukurasa huu.\nJaribu kuanzisha upya.",
   "oopsRestart": "Anzisha upya",
   "provComingSoon": "Ikuja sasa",
-  "close": "Funga"
+  "close": "Funga",
+  "ktSideCollapse": "Kunja upau wa kando",
+  "ktSideExpand": "Panua upau wa kando"
 }

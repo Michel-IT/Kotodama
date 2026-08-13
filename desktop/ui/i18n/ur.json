@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama یہ صفحہ لوڈ نہیں کر سکا۔\nدوبارہ شروع کرنے کی کوشش کریں۔",
   "oopsRestart": "دوبارہ شروع کریں",
   "provComingSoon": "جلد",
-  "close": "بند کریں"
+  "close": "بند کریں",
+  "ktSideCollapse": "سائیڈ بار سمیٹیں",
+  "ktSideExpand": "سائیڈ بار پھیلائیں"
 }

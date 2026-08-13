@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama 无法加载此页面。\n请尝试重启。",
   "oopsRestart": "重启",
   "provComingSoon": "即将推出",
-  "close": "关闭"
+  "close": "关闭",
+  "ktSideCollapse": "折叠侧边栏",
+  "ktSideExpand": "展开侧边栏"
 }

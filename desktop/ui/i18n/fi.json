@@ -247,5 +247,7 @@
   "oopsMessage": "Kotodama ei pystynyt lataamaan tätä sivua.\nYritä käynnistää uudelleen.",
   "oopsRestart": "Käynnistä uudelleen",
   "provComingSoon": "Tulossa pian",
-  "close": "Sulje"
+  "close": "Sulje",
+  "ktSideCollapse": "Kutista sivupalkki",
+  "ktSideExpand": "Laajenna sivupalkki"
 }

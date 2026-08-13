@@ -218,6 +218,8 @@
   "provXferAllLeftTitle": "Remove all",
   "ktTabHistory": "History",
   "ktTabRecipes": "Recipes",
+  "ktSideCollapse": "Collapse sidebar",
+  "ktSideExpand": "Expand sidebar",
   "ktRecipeNeutral": "Back to Neutral",
   "ktNeutralHint": "Text is sent as-is, with no extra instructions.",
   "ktCtxIntro": "Context from our earlier conversation; answer the new message at the end.",
