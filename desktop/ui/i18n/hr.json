@@ -249,5 +249,8 @@
   "provComingSoon": "Uskoro",
   "close": "Zatvori",
   "ktSideCollapse": "Smanji bočnu traku",
-  "ktSideExpand": "Proširi bočnu traku"
+  "ktSideExpand": "Proširi bočnu traku",
+  "setLowPower": "Ušteda resursa",
+  "setLowPowerHint": "Manje memorije: iscrtavanje procesorom i neaktivni pružatelji suspendirani. Potrebno je ponovno pokretanje.",
+  "setLowPowerRestart": "Sačuvano. Ponovno pokrenite Kotodama da bi se ušteda resursa primijenila."
 }

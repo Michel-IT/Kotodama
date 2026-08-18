@@ -249,5 +249,8 @@
   "provComingSoon": "Hamarosan",
   "close": "Bezárás",
   "ktSideCollapse": "Oldalsáv összecsukása",
-  "ktSideExpand": "Oldalsáv kibontása"
+  "ktSideExpand": "Oldalsáv kibontása",
+  "setLowPower": "Erőforrás-takarékosság",
+  "setLowPowerHint": "Kevesebb memória: kirajzolás a processzorral, a tétlen szolgáltatók felfüggesztve. Újraindítás szükséges.",
+  "setLowPowerRestart": "Mentve. Indítsa újra a Kotodamát az erőforrás-takarékosság alkalmazásához."
 }

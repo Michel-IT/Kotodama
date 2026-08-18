@@ -249,5 +249,8 @@
   "provComingSoon": "Binnenkort",
   "close": "Sluiten",
   "ktSideCollapse": "Zijbalk samenvouwen",
-  "ktSideExpand": "Zijbalk uitvouwen"
+  "ktSideExpand": "Zijbalk uitvouwen",
+  "setLowPower": "Resources besparen",
+  "setLowPowerHint": "Minder geheugen: tekenen via de CPU en ongebruikte providers gepauzeerd. Vereist een herstart.",
+  "setLowPowerRestart": "Opgeslagen. Start Kotodama opnieuw om het besparen van resources toe te passen."
 }

@@ -1,8 +1,8 @@
-//! Feature 1 — AI provider inside the app as a full-window webview.
+//! Feature 1 â€” AI provider inside the app as a full-window webview.
 //!
 //! The "provider" webview is a child of the main window (multi-webview,
 //! `unstable` feature). It covers the whole window except the top strip
-//! `TOPBAR_H` where the in-app browser bar (← / ⟳ / url) stays visible,
+//! `TOPBAR_H` where the in-app browser bar (â† / âŸ³ / url) stays visible,
 //! which lives in the main webview.
 //!
 //! Documented fallback: if multi-webview turns out to be unstable on an OS, one
@@ -56,6 +56,11 @@ pub fn provider_label(key: &str) -> String {
 fn active_key() -> Option<String> {
     active_provider().lock().unwrap().clone()
 }
+/// Same, for the gateway: it must never send a tab the user is LOOKING AT off to another page (the
+/// warm-tab pre-warm navigates tabs in the background after an answer).
+pub(crate) fn foreground_key() -> Option<String> {
+    active_key()
+}
 /// The webview of the foreground tab, if any.
 pub(crate) fn active_webview<R: Runtime, M: Manager<R>>(manager: &M) -> Option<tauri::Webview<R>> {
     active_key().and_then(|k| manager.get_webview(&provider_label(&k)))
@@ -84,6 +89,205 @@ pub fn provider_browser_args() -> String {
     // the page is visibly working (fill+send ran, harvesting never fires). Same root cause as the
     // macOS WKWebView occlusion fix (`mac_disable_occlusion`); this is the WebView2/Chromium side.
     "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --disable-background-timer-throttling --disable-quic --accept-lang=en-US,en".to_string()
+}
+
+/* ===================== Idle provider suspension (opt-in) =====================
+   Provider tabs, once created, live for the whole session: none is ever closed. Anyone who leaves
+   the app open all day carries a renderer for every provider they opened even once. `TrySuspend`
+   freezes the page and returns the renderer's memory while KEEPING the webview -- unlike destroying
+   it, which would lose the loaded page.
+
+   WHY IT IS OPT-IN (`KOTO_SUSPEND_IDLE=<seconds>`, or the "resource saving" setting): `TrySuspend`
+   requires the webview to be NOT visible, and this project documents that on Windows
+   `hide()`/`close()` BLOCK once the page has navigated -- which is why parking uses `set_position`
+   (see `PARK_Y`). We call `SetIsVisible(false)` on the controller directly instead of Tauri's
+   `hide()`, but it is the same dangerous area: verified live before being made the default. */
+fn last_used() -> &'static Mutex<std::collections::HashMap<String, std::time::Instant>> {
+    static L: OnceLock<Mutex<std::collections::HashMap<String, std::time::Instant>>> =
+        OnceLock::new();
+    L.get_or_init(|| Mutex::new(std::collections::HashMap::new()))
+}
+fn suspended_keys() -> &'static Mutex<std::collections::HashSet<String>> {
+    static S: OnceLock<Mutex<std::collections::HashSet<String>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
+}
+/// Marks the provider as used RIGHT NOW: a send, a harvest, or its tab brought to the front.
+pub(crate) fn touch_provider(key: &str) {
+    last_used()
+        .lock()
+        .unwrap()
+        .insert(key.to_string(), std::time::Instant::now());
+}
+/// Idle threshold in seconds, or `None` = suspension disabled (historic behaviour). Two sources, in
+/// order: `KOTO_SUSPEND_IDLE=<seconds>` (tests only, allows very short thresholds) and the user's
+/// "resource saving" setting, which when on suspends providers idle for 3 minutes. Tied to that one
+/// switch instead of having its own: it is the same promise ("less memory, at the cost of a moment's
+/// wait"), and it stays off by default, so nobody gets frozen pages without asking for them.
+#[cfg(windows)]
+fn suspend_idle_secs() -> Option<u64> {
+    if let Some(s) = std::env::var("KOTO_SUSPEND_IDLE")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .filter(|s| *s > 0)
+    {
+        return Some(s);
+    }
+    if crate::read_low_power_pref() {
+        Some(180)
+    } else {
+        None
+    }
+}
+
+/// Wakes the provider if it was suspended, and in any case refreshes its last-used stamp. Must be
+/// called BEFORE every use (opening the tab, sending): a frozen page runs no JS, so a fill script
+/// injected into a suspended webview would never start.
+///
+/// `wait`: `with_webview` QUEUES the work on the main thread and returns immediately. On a send we
+/// must therefore WAIT for the resume to have happened, otherwise the fill script lands in a page
+/// that is still frozen and never runs -- observed live: the log showed "inject (warm)" BEFORE
+/// "Resume ok" and the send ended in `sendfail`. Pass `false` when calling from the main thread
+/// (e.g. `show_tab`, which page-load handlers also invoke): waiting there would block the very
+/// thread that has to perform the resume.
+pub(crate) fn resume_provider<R: Runtime, M: Manager<R>>(manager: &M, key: &str, wait: bool) {
+    touch_provider(key);
+    let was_suspended = suspended_keys().lock().unwrap().remove(key);
+    if !was_suspended {
+        return;
+    }
+    debug::log(format!("suspend[{key}]: RESUME requested (wait={wait})"));
+    #[cfg(windows)]
+    if let Some(wv) = manager.get_webview(&provider_label(key)) {
+        let k = key.to_string();
+        let klog = key.to_string();
+        let (tx, rx) = std::sync::mpsc::channel::<()>();
+        let _ = wv.with_webview(move |pw| {
+            let _guard = SendOnDrop(tx);
+            use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2_3;
+            use windows::core::Interface;
+            let controller = pw.controller();
+            match unsafe { controller.CoreWebView2() }.and_then(|c| c.cast::<ICoreWebView2_3>()) {
+                Ok(c3) => match unsafe { c3.Resume() } {
+                    Ok(()) => debug::log(format!("suspend[{k}]: Resume ok")),
+                    Err(e) => debug::log(format!("suspend[{k}]: Resume KO: {e}")),
+                },
+                Err(e) => debug::log(format!("suspend[{k}]: cast ICoreWebView2_3 KO: {e}")),
+            }
+            // Made visible AFTER the resume: the reverse order risks painting a frame of a page
+            // that is still frozen.
+            if let Err(e) = unsafe { controller.SetIsVisible(true) } {
+                debug::log(format!("suspend[{k}]: SetIsVisible(true) KO: {e}"));
+            }
+        });
+        if wait {
+            match rx.recv_timeout(std::time::Duration::from_millis(2000)) {
+                Ok(()) => {
+                    // Resume returned: give the page a moment to actually restart its timers before
+                    // we inject the send script into it.
+                    std::thread::sleep(std::time::Duration::from_millis(150));
+                }
+                Err(_) => debug::log(format!("suspend[{klog}]: resume wait timed out, going on anyway")),
+            }
+        }
+    }
+}
+
+/// Signals completion when the closure handed to `with_webview` ends, including when it leaves
+/// through an error path: without this, an early `return` would leave the waiter hanging until the
+/// timeout.
+#[cfg(windows)]
+struct SendOnDrop(std::sync::mpsc::Sender<()>);
+#[cfg(windows)]
+impl Drop for SendOnDrop {
+    fn drop(&mut self) {
+        let _ = self.0.send(());
+    }
+}
+
+/// Suspends an idle provider. Never called on the foreground provider, nor on one with a send or a
+/// harvest in flight: those checks live in the janitor below.
+#[cfg(windows)]
+fn win_suspend_provider<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
+    let k = key.to_string();
+    let _ = webview.with_webview(move |pw| {
+        use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2_3;
+        use webview2_com::TrySuspendCompletedHandler;
+        use windows::core::Interface;
+        let controller = pw.controller();
+        // API requirement: without this, TrySuspend fails and nothing is freed.
+        if let Err(e) = unsafe { controller.SetIsVisible(false) } {
+            debug::log(format!("suspend[{k}]: SetIsVisible(false) KO: {e}"));
+            return;
+        }
+        let c3 = match unsafe { controller.CoreWebView2() }.and_then(|c| c.cast::<ICoreWebView2_3>())
+        {
+            Ok(c) => c,
+            Err(e) => {
+                debug::log(format!("suspend[{k}]: cast ICoreWebView2_3 KO: {e}"));
+                let _ = unsafe { controller.SetIsVisible(true) };
+                return;
+            }
+        };
+        let k2 = k.clone();
+        let handler = TrySuspendCompletedHandler::create(Box::new(move |hr, ok| {
+            match hr {
+                Ok(()) => debug::log(format!("suspend[{k2}]: TrySuspend esito={ok}")),
+                Err(e) => debug::log(format!("suspend[{k2}]: TrySuspend KO: {e}")),
+            }
+            Ok(())
+        }));
+        if let Err(e) = unsafe { c3.TrySuspend(&handler) } {
+            debug::log(format!("suspend[{k}]: TrySuspend chiamata KO: {e}"));
+            let _ = unsafe { controller.SetIsVisible(true) };
+        }
+    });
+}
+
+/// Janitor: every 15s, suspends providers idle for longer than the configured threshold. Does not
+/// start at all when suspension is disabled (see `suspend_idle_secs`).
+#[cfg(windows)]
+pub fn start_idle_suspender(app: &tauri::AppHandle) {
+    let Some(idle) = suspend_idle_secs() else {
+        return;
+    };
+    debug::log(format!("suspend: janitor active, threshold {idle}s"));
+    let app = app.clone();
+    std::thread::spawn(move || loop {
+        std::thread::sleep(std::time::Duration::from_secs(15));
+        let active = active_key();
+        let candidates: Vec<(String, tauri::Webview<tauri::Wry>)> = app
+            .webviews()
+            .into_iter()
+            .filter_map(|(label, wv)| {
+                let key = label.strip_prefix("provider:")?.to_string();
+                if active.as_deref() == Some(key.as_str()) {
+                    return None; // it is the foreground one
+                }
+                if suspended_keys().lock().unwrap().contains(&key) {
+                    return None; // already suspended
+                }
+                if crate::kotodama::provider_busy(&key) {
+                    return None; // send or harvest in flight: never touch it
+                }
+                let idle_enough = last_used()
+                    .lock()
+                    .unwrap()
+                    .get(&key)
+                    .map(|t| t.elapsed().as_secs() >= idle)
+                    .unwrap_or(false);
+                if idle_enough {
+                    Some((key, wv))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        for (key, wv) in candidates {
+            debug::log(format!("suspend[{key}]: idle, suspending"));
+            suspended_keys().lock().unwrap().insert(key.clone());
+            win_suspend_provider(&wv, &key);
+        }
+    });
 }
 
 /// "Clean Chrome desktop" User-Agent for the provider webview. Several sites
@@ -364,6 +568,10 @@ fn show_tab(window: &Window, key: &str) {
     // have switched away, and letting that older pending show land later would put the wrong
     // provider in front of the one now selected (fast provider switching).
     *pending_show_key().lock().unwrap() = None;
+    // If it was suspended for idleness it must be woken BEFORE being shown, otherwise the user
+    // would be looking at a frozen page (no JS, no scrolling). Without waiting: we are (also) on
+    // the main thread here, which is the very thread that has to perform the resume.
+    resume_provider(window, key, false);
     if let Some(wv) = window.get_webview(&provider_label(key)) {
         if let Ok((w, h)) = provider_bounds(window) {
             let _ = wv.set_position(LogicalPosition::new(0.0, provider_top()));
@@ -495,7 +703,7 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
                 crate::kotodama::on_page_finished(&webview, &key_load);
             }
         })
-        // Abilita i DOWNLOAD nella webview del provider (senza handler wry/WebView2 li scarta):
+        // Enables DOWNLOADS in the provider webview (without a handler, wry/WebView2 discards them):
         // salviamo in Download/Kotodama e notifichiamo il frontend.
         .on_download(|webview, event| {
             use tauri::webview::DownloadEvent;
@@ -560,7 +768,63 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
     crate::mac_disable_occlusion(&_child);
     #[cfg(windows)]
     win_probe_login_signals(&_child, key);
+    // This page's renderer is the process that actually weighs (measured: 4 open providers = 895 MB
+    // out of the tree's 1305 total, against 31 MB for the Rust core), so the "keep less memory"
+    // request belongs RIGHT HERE, not only on the main webview.
+    #[cfg(windows)]
+    win_low_memory_mode(&_child, key);
+    touch_provider(key);   // born now: not idle
     Ok(())
+}
+
+/// Windows: asks WebView2 to hold on to less memory (`MemoryUsageTargetLevel = Low`). The engine
+/// flushes its internal caches more aggressively (decoded images, unused JS memory, rendering
+/// buffers) and returns pages to Windows instead of keeping them for convenience -- the same lever
+/// Edge pulls when it puts a tab into memory saver.
+///
+/// To be applied to EVERY webview (provider, main, toast, menu): the level is per-webview, and
+/// setting it only on the main one would leave out exactly the processes that consume.
+///
+/// The API lives on `ICoreWebView2_19`, NOT on `ICoreWebView2Controller8`. On an older WebView2
+/// runtime the cast fails: we log and carry on without touching anything. And it is a HINT to the
+/// engine, not an order: the saving must be measured, not assumed.
+///
+/// `KOTO_NO_LOWMEM=1` skips the setting: it exists to MEASURE its real effect on the SAME binary
+/// (with and without) instead of comparing two different builds and crediting the memory level with
+/// differences that come from elsewhere. A measurement tool only, no effect on normal use.
+#[cfg(windows)]
+pub(crate) fn win_low_memory_mode<R: tauri::Runtime>(webview: &tauri::Webview<R>, tag: &str) {
+    if std::env::var("KOTO_NO_LOWMEM").is_ok() {
+        debug::log(format!("low_mem[{tag}]: SKIPPED (KOTO_NO_LOWMEM)"));
+        return;
+    }
+    let tag = tag.to_string();
+    let _ = webview.with_webview(move |pw| {
+        use webview2_com::Microsoft::Web::WebView2::Win32::{
+            ICoreWebView2_19, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW,
+        };
+        use windows::core::Interface;
+        let core = match unsafe { pw.controller().CoreWebView2() } {
+            Ok(c) => c,
+            Err(e) => {
+                debug::log(format!("low_mem[{tag}]: CoreWebView2() failed: {e}"));
+                return;
+            }
+        };
+        match core.cast::<ICoreWebView2_19>() {
+            Ok(c19) => {
+                match unsafe {
+                    c19.SetMemoryUsageTargetLevel(COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW)
+                } {
+                    Ok(()) => debug::log(format!("low_mem[{tag}]: MemoryUsageTargetLevel=Low")),
+                    Err(e) => debug::log(format!("low_mem[{tag}]: set failed: {e}")),
+                }
+            }
+            Err(e) => debug::log(format!(
+                "low_mem[{tag}]: WebView2 runtime without ICoreWebView2_19 ({e}) -- ignored"
+            )),
+        }
+    });
 }
 
 /// DEBUG-only probe (Windows): checks whether the WebView2 CookieManager and
@@ -654,7 +918,7 @@ fn win_probe_login_signals<R: tauri::Runtime>(webview: &tauri::Webview<R>, key: 
     });
 }
 
-/// SWITCH to provider `key` (header icon strip / double-click tile / ⇄ "Open"): if its tab already
+/// SWITCH to provider `key` (header icon strip / double-click tile / â‡„ "Open"): if its tab already
 /// exists, bring it on screen AS-IS (keeps its page, NO reload) UNLESS `force_reload` -- used when
 /// opening specifically to log in (e.g. from a "login required" card): the tab may already be
 /// sitting on an unrelated/stale page (mid Kotodama harvest, or just its normal chat homepage,
@@ -690,7 +954,7 @@ pub async fn show_provider_tab(
     }
 }
 
-/// Returns to the builder by "parking" the active tab out of view (all tabs stay ALIVE). (← Builder / Esc)
+/// Returns to the builder by "parking" the active tab out of view (all tabs stay ALIVE). (â† Builder / Esc)
 /// NB: we use `set_position` (non-blocking), NOT `hide()`/`close()`, which on Windows freeze once the
 /// page has navigated.
 #[tauri::command]
@@ -715,7 +979,7 @@ pub fn provider_reload(window: Window) -> Result<(), String> {
     Ok(())
 }
 
-/// Navigates the embedded page back in its history (← button in the in-app bar).
+/// Navigates the embedded page back in its history (â† button in the in-app bar).
 #[tauri::command]
 pub fn provider_back(window: Window) -> Result<(), String> {
     if let Some(webview) = active_webview(&window) {
@@ -729,8 +993,10 @@ pub fn provider_back(window: Window) -> Result<(), String> {
 /// Auto-fill: inserts the prompt into the provider page's input and (optionally) submits.
 /// RESILIENT LOOP (~60s, 400ms ticks), designed for cold pages hydrating late:
 /// - re-picks the composer every tick (hydration may REPLACE the node);
-/// - re-fills whenever the field is empty again (hydration can WIPE a too-early fill);
-/// - retries submit (Enter + send-button click) throttled, and stops ONLY when the
+/// - re-fills whenever the field is empty again (hydration can WIPE a too-early fill) -- but NOT
+///   in the instants right after a submit, where an empty field means "sent" and re-filling used
+///   to trap the loop into rewriting the text forever (see `delivered`);
+/// - retries submit (Enter + send-button click) throttled and CAPPED, and stops as soon as the
 ///   message actually APPEARS in the page thread (the one reliable success signal);
 /// - `?q=`-prefilled composers just get submitted.
 /// `fill_js` builds the script, reused by the Kotodama broadcast gateway (`kotodama.rs`), the
@@ -771,14 +1037,29 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
   //   1) data-testid / type=submit  (language-neutral attributes)
   //   2) GEOMETRY: the rightmost small icon button on the composer's bottom row = the send
   //      button in EVERY language (bottom-right is where every chat UI puts it).
+  // Controls that live in the SAME band as the send button but do NOT send. The geometric fallback
+  // takes the rightmost one and, measured live on ChatGPT (log `btnsComposer`: Upgrade@159,
+  // composer-plus-btn@307, svg?y@763, Start dictation@813), the rightmost is the MICROPHONE: without
+  // this filter the fallback click opened voice dictation instead of sending. `stop` is on the list
+  // for the opposite but equally serious reason: while generating, that button replaces send, and
+  // clicking it would abort the answer.
+  // Matched on data-testid/aria-label/id. Careful: `--accept-lang=en-US` does NOT guarantee English
+  // labels -- ChatGPT honours it (aria-label "Start dictation"), Claude does not, it follows the
+  // account language (observed live: "Invia messaggio", "Tieni premuto per registrare"). So this list
+  // only filters where labels are English or where a data-testid exists; where they are not, what
+  // saves us is the geometric ORDER (send is the rightmost anyway). A button's name is never used to
+  // DECIDE that something is the send button, only to exclude.
+  var NOT_SEND = /dictation|dictate|voice|mic|speech|audio|attach|upload|file|photo|image|camera|plus|model|setting|search|tool|upgrade|menu|close|cancel|stop|scroll/i;
   function findSendBtn(){
-    var sels = ['button[data-testid="send-button"]','button[data-testid*="send" i]','button[type="submit"]:not([disabled])'];
+    var sels = ['button[data-testid="send-button"]','button[data-testid*="send" i]','button[aria-label*="send" i]','button[type="submit"]:not([disabled])'];
     for (var i=0;i<sels.length;i++){ var b=document.querySelector(sels[i]); if (vis(b)) return b; }
     var el = pickComposer(); if (!el || !getVal(el).length) return null;
     var cr = el.getBoundingClientRect();
     var all = document.querySelectorAll('button'), best=null, bestX=-1e9;
     for (var k=0;k<all.length;k++){
       var c=all[k]; if (!vis(c) || !c.querySelector('svg')) continue;
+      var tag = (c.getAttribute('data-testid')||'') + ' ' + (c.getAttribute('aria-label')||'') + ' ' + (c.id||'');
+      if (NOT_SEND.test(tag)) continue;                       // mic/attach/stop/... do not send
       var r=c.getBoundingClientRect();
       if (r.width<14 || r.width>90) continue;                 // send buttons are small square icons
       if (r.top >= cr.top-10 && r.top <= cr.bottom+72 && r.left >= cr.right-140){
@@ -789,28 +1070,138 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
   }
   // TRUE once the sent message is visible in the page OUTSIDE the composer: the only
   // reliable "accepted" signal (composer emptying alone can also mean hydration wiped it).
+  //
+  // NB: "the composer still holds the text -> not delivered" looks like a shortcut, and is instead
+  // the only rule that holds in every case. Subtracting the composer's text from the page and
+  // searching the rest is worse: if the same text appears ELSEWHERE (typically a conversation title
+  // in the sidebar, when re-sending the same prompt in a non-temporary chat) the check would report
+  // "delivered" before anything was sent, and the send would never happen. The real trap (the loop
+  // rewriting the text forever after a successful send) is closed in the loop below, not here: do
+  // not immediately re-fill a field that went empty AFTER a submit.
+  //
+  // All the text that "belongs" to the field: both its value and its content. For a React-managed
+  // <textarea> the two diverge -- measured on Copilot: after the fill and the resulting re-render,
+  // `.value` read empty while the text showed up as the element's CONTENT, hence inside
+  // `body.innerText`. Looking at `.value` alone, `delivered()` concluded "already sent" with the
+  // message still sitting in the field: the loop exited without pressing Enter and the send ended in
+  // `sendfail` with the text left in the box.
+  function composerAllText(el){
+    try {
+      var v = (el.value !== undefined ? (el.value || '') : '');
+      return (v + ' ' + (el.innerText || '')).replace(/\s+/g,' ');
+    } catch(e){ return ''; }
+  }
+  // Searching the WHOLE page for the message is not enough: providers title conversations with the
+  // text of their first message, so after the first send that text stays forever in the sidebar's
+  // history list. On the next round `delivered()` found it there and declared "already sent" without
+  // having sent anything -- measured live on Copilot ("Temporary Today <text> Smart") and on Grok
+  // ("Projects Add project History <text> ..."), both stuck at `sendfail` with the message never
+  // leaving the box.
+  //
+  // ONLY elements that cannot contain a conversation. The match uses `closest`, so it walks up to the
+  // root: filtering by class NAME is very dangerous here. Filtering `[class*="history" i]` cost six
+  // copies of the same message posted to Poe -- chat UIs call the MESSAGE LIST "history", not the
+  // sidebar, so the conversation was excluded wholesale, `delivered()` never concluded and the loop
+  // kept pressing Enter. Sidebars are excluded by the geometry below, which does not depend on what
+  // they are called.
+  var NAV_SEL = 'a, button, [role="button"], [role="link"], [role="menuitem"], [role="option"], nav, [role="navigation"]';
+  // The criterion that holds where markers do not: GEOMETRY. The sent message appears in the same
+  // COLUMN as the input field (the conversation sits above it), while the history list sits in a side
+  // column, outside that horizontal band. No names, no classes, no language: the same principle used
+  // to recognize the send button.
+  function foundInConversation(){
+    try {
+      var el = pickComposer();
+      var cr = el ? el.getBoundingClientRect() : null;
+      var probe = HEAD.slice(0, 20);
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+      var node, seen = 0;
+      while ((node = walker.nextNode())) {
+        if (++seen > 20000) break;                       // huge pages: never stall the loop
+        var txt = node.textContent || '';
+        if (txt.length < 3 || txt.replace(/\s+/g,' ').indexOf(probe) === -1) continue;
+        var p = node.parentElement; if (!p) continue;
+        // The INPUT FIELD is in the conversation's column too -- it sits at the bottom of it. Without
+        // excluding it, the text we just typed counts as "already in the conversation" and the loop
+        // leaves without ever pressing Enter. Short test prompts hid this (they matched the composer
+        // check above and returned early); a real prompt of a hundred characters did not, and the
+        // send silently never happened (measured on Claude: "exit: delivered at tick 3", submits=0).
+        if (el && (el === p || el.contains(p))) continue;
+        if (p.closest(NAV_SEL)) continue;                // declared navigation: does not count
+        if (!cr) return true;                            // no field to measure from: do not obstruct
+        var r = p.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;    // hidden
+        var cx = (r.left + r.right) / 2;
+        if (cx >= cr.left - 30 && cx <= cr.right + 30) return true;   // inside the conversation column
+      }
+      return false;   // found only outside the column (or not found): it was not sent
+
+    } catch(e){ return false; }
+  }
   function delivered(){
     try {
       var el = pickComposer();
-      if (el && getVal(el).replace(/\s+/g,' ').indexOf(HEAD) !== -1) return false; // still (only) in composer
-      return ((document.body && document.body.innerText) || '').replace(/\s+/g,' ').indexOf(HEAD) !== -1;
+      if (el && composerAllText(el).indexOf(HEAD) !== -1) return false;   // still (only) in composer
+      // Cheap whole-page check first: if the text is nowhere, there is no need to walk the DOM. Only
+      // when it IS somewhere do we verify WHERE it actually sits.
+      var all = ((document.body && document.body.innerText) || '').replace(/\s+/g,' ');
+      if (all.indexOf(HEAD) === -1) return false;
+      return foundInConversation();
+    } catch(e){ return false; }
+  }
+  // Does the field REALLY hold our text? "Not empty" is not enough: on rich editors
+  // (TipTap/ProseMirror) the synthetic insertion can take only partially -- measured on Grok: visible
+  // field with ONE character, and its send button stays disabled because for it the message is
+  // incomplete. Under the old "empty" condition that case was never healed: the loop pressed Enter
+  // for 60s on a half-written field. We compare a leading slice, not the whole text: editors normalize
+  // whitespace and newlines, so an exact comparison would be brittle.
+  function composerHasOurText(el){
+    try {
+      var probe = text.trim().replace(/\s+/g,' ').slice(0, 20);
+      if (!probe) return true;
+      return getVal(el).replace(/\s+/g,' ').indexOf(probe) !== -1;
     } catch(e){ return false; }
   }
   function fill(el){
+    // Re-check the baton HERE, not only at the start of a tick: up to 400ms pass between a newer
+    // injection taking the baton and this loop noticing it, and in that window both could write into
+    // the field. On a rich editor the synthetic insertion APPENDS (when "select all" does not take),
+    // so the result was the message written twice in a row -- seen by the user as "fine and you?fine
+    // and you?".
+    if (window.__ktFillRun !== RUN) return;
     var isText = (el.tagName === 'TEXTAREA' || el.value !== undefined);
     try { el.focus(); } catch(e){}
     if (isText) {
+      // Typed the way a person types it: focus, select what is there, and let the editing command
+      // insert the text. This produces the same event sequence real typing does, which is what
+      // frameworks listen to -- setting `.value` directly can leave a framework believing the box is
+      // still empty. Measured on Qwen: the text was visibly in the textarea (len16) while its send
+      // button never appeared at all, because its own state had not changed. The native setter stays
+      // as the fallback for editors where the command does not take.
+      var wanted = text.trim().replace(/\s+/g,' ').slice(0, 20);
       try {
-        var set = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
-        set.call(el, text);
-      } catch (e) { el.value = text; }
-      el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.focus();
+        el.setSelectionRange(0, (el.value || '').length);
+        document.execCommand('insertText', false, text);
+      } catch (e) {}
+      if ((el.value || '').replace(/\s+/g,' ').indexOf(wanted) === -1) {
+        try {
+          var set = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+          set.call(el, text);
+        } catch (e) { el.value = text; }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        // Some frameworks only commit on `change`; harmless where they do not.
+        try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch(e){}
+      }
     } else {
       // contenteditable (ProseMirror/Quill, e.g. Claude): a synthetic PASTE is the most
       // reliable insertion - the editor's OWN paste handler updates its internal state, so
       // the send button ENABLES and Enter sends. execCommand no longer registers on some
       // React editors. Fall back to execCommand if the paste didn't take.
-      try { document.execCommand('selectAll', false, null); } catch(e){}
+      // We CLEAR before pasting, not just "select all": if the selection does not take, the paste
+      // APPENDS to the existing content and the message goes out written twice. Deleting explicitly
+      // makes this a replacement even when the selection fails to stick.
+      try { document.execCommand('selectAll', false, null); document.execCommand('delete', false, null); } catch(e){}
       try {
         var dt = new DataTransfer(); dt.setData('text/plain', text);
         el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
@@ -824,9 +1215,9 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
     }
   }
   function submitOnce(el){
-    try { el.focus(); } catch(e){}                          // Claude/ProseMirror ignora l'Invio senza focus
+    try { el.focus(); } catch(e){}                          // Claude/ProseMirror ignores Enter without focus
     if (el.value === undefined) {
-      // rich editor precompilato: caret in fondo + input, così React abilita l'invio
+      // pre-filled rich editor: caret at the end + input, so React enables the send button
       try { var rng = document.createRange(); rng.selectNodeContents(el); rng.collapse(false); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rng); } catch (e) {}
       el.dispatchEvent(new InputEvent('input', { bubbles: true }));
     }
@@ -839,23 +1230,101 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
       if (el2 && getVal(el2).trim().length) { var b = findSendBtn(); if (b) b.click(); }
     }, 300);
   }
-  var ticks = 0, lastSubmit = -10;
+  // Loop diagnostics (only under KOTODAMA_DEBUG, over the existing 'diag' channel). Needed because
+  // this loop was the one black box: on Copilot and Grok the field stayed empty for 30s and the logs
+  // could not tell whether the loop never started, never found the field, or filled into nothing.
+  function fdiag(m){
+    try { if (window.__ktDiag && window.__ktPush) window.__ktPush({ b: __kt_bid, k: __kt_key, st: 'diag', d: 'FILL ' + m }); } catch(e){}
+  }
+  function elId(e){ try { return e ? (e.tagName + '.' + String(e.className||'').slice(0,24)) : 'NONE'; } catch(err){ return '?'; } }
+  fdiag('start send=' + send + ' hold=' + (!!window.__ktHoldFill) + ' el=' + elId(pickComposer()));
+  // ONE loop per page. Every injection (first load, resume after a navigation, follow-up turn) created
+  // a NEW one without stopping the previous ones, and each pressed Enter on its own: that is how the
+  // same message ended up posted several times to the provider (measured: three live loops on Gemini,
+  // 7-8 attempts each; six copies seen on Poe). Same technique the harvest uses with `window.__ktBid`:
+  // the newest wins, older ones stop themselves.
+  var RUN = 'f' + (new Date()).getTime() + '-' + Math.random();
+  window.__ktFillRun = RUN;
+  var ticks = 0, lastSubmit = -10, submits = 0, emptyAfterSubmit = 0, refillsAfterSubmit = 0, sawOurText = false;
+  // Attempt cap: its only job is to avoid posting copies in bursts if a provider accepted Enter
+  // without clearing the field. It must be tuned to the 30s arming loop in kotodama.rs (past that
+  // point it declares `sendfail` anyway): with the 3-tick throttle (~1.2s) it takes ~25 attempts to
+  // cover them. At 12 the useful window was halved, and a provider slow to accept Enter (Claude's
+  // editor enables itself unhurriedly) risked going from working to `sendfail`.
+  var MAX_SUBMITS = 25;
   var iv = setInterval(function(){
-    if (window.__ktHoldFill) return;                         // temp-chat toggle in progress: wait
+    if (window.__ktFillRun !== RUN) { fdiag('exit: superseded by a newer injection'); clearInterval(iv); return; }
+    if (window.__ktHoldFill) { if (ticks === 0) fdiag('waiting: hold is active'); return; }
     ticks++;
-    if (delivered()) { clearInterval(iv); return; }          // accepted and visible -> done
-    var el = pickComposer();
-    if (!el) { if (ticks > 150) clearInterval(iv); return; }
-    var val = getVal(el).trim();
-    if (val.length === 0) {
-      fill(el);                                              // (re)fill: heals hydration wipes
-    } else if (send && ticks - lastSubmit >= 3) {
-      lastSubmit = ticks;                                    // throttle submit attempts (~1.2s)
-      submitOnce(el);
-    } else if (!send) {
-      clearInterval(iv); return;                             // paste-only: text in place, stop
+    if (delivered()) {
+      // "Delivered" BEFORE any submit is suspicious: legitimate only for providers that send by
+      // themselves from the URL (?q=). Otherwise it means HEAD was found somewhere else on the page
+      // and the loop would leave without having sent anything: we record WHERE the false positive
+      // comes from, with its surrounding context, instead of leaving it a mystery.
+      if (submits === 0) {
+        try {
+          var el0 = pickComposer();
+          var body0 = ((document.body && document.body.innerText) || '').replace(/\s+/g,' ');
+          var at = body0.indexOf(HEAD);
+          fdiag('SUSPECT delivered with no submits: fieldLen=' + (el0 ? composerAllText(el0).length : -1)
+            + ' pos=' + at + ' ctx="' + body0.slice(Math.max(0, at - 45), at + HEAD.length + 25) + '"');
+        } catch(e){}
+      }
+      fdiag('exit: delivered at tick ' + ticks);
+      clearInterval(iv); return;
     }
-    if (ticks > 150) clearInterval(iv);                      // ~60s budget
+    var el = pickComposer();
+    if (!el) {
+      if (ticks === 1 || ticks === 30) fdiag('no field found at tick ' + ticks);
+      if (ticks > 150) { fdiag('exit: field never found'); clearInterval(iv); }
+      return;
+    }
+    if (ticks === 1 || ticks === 10 || ticks === 30 || ticks === 75) {
+      fdiag('tick ' + ticks + ' el=' + elId(el) + ' len=' + getVal(el).length
+        + ' ours=' + composerHasOurText(el) + ' submits=' + submits);
+    }
+    // "the field holds our text" instead of "the field is not empty": this distinguishes an emptied
+    // field from a HALF-filled one (on Grok a single character arrived and the loop never healed it,
+    // because it only healed the empty case).
+    if (composerHasOurText(el)) {
+      sawOurText = true;
+      if (!send) { fdiag('exit: paste-only, text in place'); clearInterval(iv); return; }
+      if (ticks - lastSubmit >= 3) {                          // throttle attempts (~1.2s)
+        if (submits >= MAX_SUBMITS) { fdiag('exit: attempt cap'); clearInterval(iv); return; }
+        lastSubmit = ticks; submits++;
+        // Announced to Rust BEFORE pressing: from the instant Enter goes out, no script re-injected
+        // after a navigation may send the same message again. Announcing it after confirmation would
+        // be too late -- it is precisely the navigation that follows a send which kills this script,
+        // so the confirmation would never arrive.
+        if (submits === 1) {
+          try { if (window.__ktPush) window.__ktPush({ b: __kt_bid, k: __kt_key, st: 'sent' }); } catch(e){}
+          // Marks the instant the send left, for STREAM_WATCH_JS: only streams opened after this
+          // count as the answer's stream (a page can keep telemetry streams open at all times).
+          try { window.__ktSentAt = Date.now(); } catch(e){}
+        }
+        submitOnce(el);
+      }
+      if (ticks > 150) { fdiag('exit: budget expired'); clearInterval(iv); }
+      return;
+    }
+    // The field does NOT hold our text. Two cases, and the first is the SAFETY NET against double
+    // sending: it held our text, it is empty now, and we had pressed Enter -> the provider accepted
+    // it. We just leave: NEVER a second attempt. A missed send is an annoyance, six copies posted to
+    // the user's account are damage -- and the arming loop in kotodama.rs uses the same signal
+    // (filled -> empty = accepted) to start harvesting the answer.
+    if (sawOurText && submits > 0 && getVal(el).trim().length === 0) {
+      fdiag('exit: field emptied after submit = accepted');
+      clearInterval(iv); return;
+    }
+    // Emptied BEFORE any submit: that is a hydration wipe (the case this healing exists for). Allow a
+    // short wait, then rewrite exactly once.
+    if (getVal(el).trim().length === 0 && submits === 0 && sawOurText) {
+      if (++emptyAfterSubmit <= 4) return;
+      if (refillsAfterSubmit >= 1) { fdiag('exit: field wiped and unrecoverable'); clearInterval(iv); return; }
+      refillsAfterSubmit++; emptyAfterSubmit = 0;
+    }
+    fill(el);                                                // (re)write: heals wipes and partial fills
+    if (ticks > 150) { fdiag('exit: budget expired without sending'); clearInterval(iv); }
   }, 400);
 })();
 "#)
@@ -865,11 +1334,11 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
 /// repositions the provider webview if it is on screen. Used by the native
 /// banner (Claude login notice): the banner lives in the main webview, so the
 /// provider must be pushed down by `px` to avoid ending up under it.
-/// `px = 0` → no banner (provider goes back up).
+/// `px = 0` â†’ no banner (provider goes back up).
 #[tauri::command]
 pub fn set_provider_top_extra(window: Window, px: f64) -> Result<(), String> {
     *provider_top_extra().lock().unwrap() = px.max(0.0);
-    *last_provider_bounds().lock().unwrap() = None; // invalidate cache → force reposition
+    *last_provider_bounds().lock().unwrap() = None; // invalidate cache â†’ force reposition
     if active_key().is_some() {
         if let Some(webview) = active_webview(&window) {
             let (w, h) = provider_bounds(&window)?;
@@ -881,7 +1350,7 @@ pub fn set_provider_top_extra(window: Window, px: f64) -> Result<(), String> {
 }
 
 /// Temporarily hides (`on=true`) or restores (`on=false`) the provider webview so an
-/// app modal (Download manager) can show on top of it — the provider webview is opaque
+/// app modal (Download manager) can show on top of it â€” the provider webview is opaque
 /// and would otherwise cover any HTML overlay. Restore repositions to the current bounds.
 #[tauri::command]
 pub fn provider_suppress(window: Window, on: bool) -> Result<(), String> {
@@ -955,7 +1424,7 @@ pub fn resize_provider(window: &WebviewWindow) {
 
 /// "Parks" the provider out of view (returns to the builder) on the Rust side.
 /// Uses `set_position` (NON-blocking) instead of `hide()`/`close()`, which on
-/// Windows freeze once the provider's page has navigated → the ✕/← Builder used
+/// Windows freeze once the provider's page has navigated â†’ the âœ•/â† Builder used
 /// to get stuck. The webview stays alive (fast resume), just moved outside the
 /// window; `resize_provider` does not bring it back up thanks to the `None` active key.
 /// All tabs stay ALIVE (only the front one is parked), so switching back is instant.

@@ -249,5 +249,8 @@
   "provComingSoon": "قريبا",
   "close": "إغلاق",
   "ktSideCollapse": "طي الشريط الجانبي",
-  "ktSideExpand": "توسيع الشريط الجانبي"
+  "ktSideExpand": "توسيع الشريط الجانبي",
+  "setLowPower": "توفير الموارد",
+  "setLowPowerHint": "ذاكرة أقل: الرسم بالمعالج وتعليق المزوّدين غير النشطين. يتطلب إعادة التشغيل.",
+  "setLowPowerRestart": "تم الحفظ. أعد تشغيل Kotodama لتطبيق توفير الموارد."
 }

@@ -249,5 +249,8 @@
   "provComingSoon": "Kmalu",
   "close": "Zapri",
   "ktSideCollapse": "Strni stransko vrstico",
-  "ktSideExpand": "Razširi stransko vrstico"
+  "ktSideExpand": "Razširi stransko vrstico",
+  "setLowPower": "Varčevanje z viri",
+  "setLowPowerHint": "Manj pomnilnika: izrisovanje s procesorjem in nedejavni ponudniki zamrznjeni. Zahteva ponovni zagon.",
+  "setLowPowerRestart": "Shranjeno. Znova zaženite Kotodama, da se varčevanje z viri uveljavi."
 }

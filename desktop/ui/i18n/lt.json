@@ -249,5 +249,8 @@
   "provComingSoon": "Netrukus",
   "close": "Uždaryti",
   "ktSideCollapse": "Sutraukti šoninę juostą",
-  "ktSideExpand": "Išplėsti šoninę juostą"
+  "ktSideExpand": "Išplėsti šoninę juostą",
+  "setLowPower": "Išteklių tausojimas",
+  "setLowPowerHint": "Mažiau atminties: vaizdą atkuria procesorius, nenaudojami teikėjai pristabdomi. Reikia paleisti iš naujo.",
+  "setLowPowerRestart": "Išsaugota. Paleiskite Kotodama iš naujo, kad išteklių tausojimas įsigaliotų."
 }

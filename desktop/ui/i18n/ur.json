@@ -249,5 +249,8 @@
   "provComingSoon": "جلد",
   "close": "بند کریں",
   "ktSideCollapse": "سائیڈ بار سمیٹیں",
-  "ktSideExpand": "سائیڈ بار پھیلائیں"
+  "ktSideExpand": "سائیڈ بار پھیلائیں",
+  "setLowPower": "وسائل کی بچت",
+  "setLowPowerHint": "کم میموری: سی پی یو سے ڈرائنگ اور غیر فعال پرووائیڈرز معطل۔ دوبارہ شروع کرنا ضروری ہے۔",
+  "setLowPowerRestart": "محفوظ ہو گیا۔ وسائل کی بچت لاگو کرنے کے لیے Kotodama دوبارہ شروع کریں۔"
 }

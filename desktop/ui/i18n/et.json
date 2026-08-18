@@ -249,5 +249,8 @@
   "provComingSoon": "Tulemas",
   "close": "Sulge",
   "ktSideCollapse": "Ahenda külgriba",
-  "ktSideExpand": "Laienda külgriba"
+  "ktSideExpand": "Laienda külgriba",
+  "setLowPower": "Ressursisääst",
+  "setLowPowerHint": "Vähem mälu: joonistamine protsessoriga ja jõudeolekus pakkujad peatatud. Nõuab taaskäivitust.",
+  "setLowPowerRestart": "Salvestatud. Taaskäivita Kotodama, et ressursisääst rakenduks."
 }

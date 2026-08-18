@@ -249,5 +249,8 @@
   "provComingSoon": "Laburrean",
   "close": "Itxi",
   "ktSideCollapse": "Tolestu alboko barra",
-  "ktSideExpand": "Hedatu alboko barra"
+  "ktSideExpand": "Hedatu alboko barra",
+  "setLowPower": "Baliabideak aurreztea",
+  "setLowPowerHint": "Memoria gutxiago: CPUz marraztea eta erabiltzen ez diren hornitzaileak eten. Berrabiarazi behar da.",
+  "setLowPowerRestart": "Gordeta. Berrabiarazi Kotodama baliabideen aurrezpena aplikatzeko."
 }

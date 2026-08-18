@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kotodama-prewarm"
+description = "Enables the kotodama_prewarm command without any pre-configured scope."
+commands.allow = ["kotodama_prewarm"]
+
+[[permission]]
+identifier = "deny-kotodama-prewarm"
+description = "Denies the kotodama_prewarm command without any pre-configured scope."
+commands.deny = ["kotodama_prewarm"]

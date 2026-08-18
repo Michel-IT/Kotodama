@@ -503,9 +503,10 @@
     .kt-view { position:fixed; inset:0; top:var(--topbar-h); z-index:1200; display:none;
       flex-direction:row; background:var(--bg-0, var(--bg-1)); }
     body.kotodama-open .kt-view { display:flex; }
-    /* session sidebar (left column). Collapsible: .collapsed narrows it to an icon-only rail --
-       used both for the manual toggle and automatically under 820px (replaces the old
-       display:none, which used to make the whole sidebar vanish instead of just shrinking it). */
+    /* session sidebar (left column). Collapsible: .collapsed narrows it to an icon-only rail.
+       Collapsing is MANUAL ONLY (the toggle at the bottom of the column, choice persisted): the
+       window width never decides it, at any threshold -- explicitly requested, after a round in
+       which the automatic rule kept opening/closing the sidebar against the user's intent. */
     .kt-side { flex:none; width:242px; display:flex; flex-direction:column; min-height:0;
       background:var(--bg-1); border-right:1px solid var(--border-soft); transition:width .15s ease; }
     /* overflow:hidden -- da collassata i contenuti a larghezza piena (bottoni, ricerca) non devono
@@ -574,12 +575,12 @@
     .kt-side.collapsed #ktPanelHistory .kt-new-label { display:none; }
     .kt-new-ico { display:none; font-size:16px; line-height:1; }
     .kt-side.collapsed #ktPanelHistory .kt-new-ico { display:block; }
-    /* Sotto la soglia il rail e' imposto dalla larghezza: via i due comandi che servirebbero solo a
-       riaprirlo (il toggle e la ricerca), altrimenti resterebbero visibili senza poter fare nulla. */
-    @media (max-width:819px) {
-      .kt-side-collapse-row { display:none; }
-      .kt-side.collapsed #ktPanelHistory .kt-search { display:none; }
-    }
+    /* In the collapsed 56px rail, two controls would become a second glyph stuck to the recipe's
+       icon: the delete ✕ (which appears on hover over custom recipes) and the ★ of the default
+       recipe. Both out -- deleting stays available from the right-click menu (Set as default /
+       Rename / Delete) and the ★ comes back when the sidebar is reopened. */
+    .kt-side.collapsed #ktPanelRecipes .recipe-del,
+    .kt-side.collapsed #ktPanelRecipes .recipe.is-default::after { display:none; }
     /* Vincoli NON scorre MAI internamente: altezza sempre naturale/dinamica (cresce aggiungendo
        campi personalizzati). Ricette è l'UNICO a scorrere/espandersi: riempie TUTTO lo spazio
        residuo fino a Vincoli (flex:1, niente margin-top:auto su Vincoli -- competerebbe con la
@@ -1247,6 +1248,15 @@
                 <label class="switch"><input type="checkbox" id="setAlwaysOnTop"><span class="slider"></span></label>
               </div>
             </div>
+            <div class="setting">
+              <div class="row">
+                <div>
+                  <label data-i18n="setLowPower">Risparmio risorse</label>
+                  <div class="sub" data-i18n="setLowPowerHint">Meno memoria: disegno via CPU e provider inattivi sospesi. Richiede il riavvio.</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="setLowPower"><span class="slider"></span></label>
+              </div>
+            </div>
           </div>
           <div class="set-grid">
             <div class="setting">
@@ -1478,7 +1488,12 @@
       grok:       { name:'Grok',       base:'https://grok.com/',                q:'?q=', mode:'query', tempClick:true },
       gemini:     { name:'Gemini',     base:'https://gemini.google.com/app',    q:'',    mode:'clipboard', autosend:true, tempClick:true },
       perplexity: { name:'Perplexity', base:'https://www.perplexity.ai/search', q:'?q=', mode:'query', tempClick:true },
-      qwen:       { name:'Qwen',       base:'https://chat.qwen.ai/',            q:'',    mode:'clipboard', autosend:true, tempClick:true },
+      // Qwen: temporary chat NOT offered any more. Its private-chat toggle can no longer be found
+      // (the discovery probe reports no candidate control at all, 2026-08-18), so the click silently
+      // did nothing and the app was telling the user their Qwen chats were anonymous while they were
+      // being saved -- worse than not offering it. Re-add `tempClick:true` (and its arm in
+      // temp_trigger_js) once the new control is captured.
+      qwen:       { name:'Qwen',       base:'https://chat.qwen.ai/',            q:'',    mode:'clipboard', autosend:true },
       deepseek:   { name:'DeepSeek',   base:'https://chat.deepseek.com/',       q:'',    mode:'clipboard', autosend:true },
       zai:        { name:'Z.ai',       base:'https://chat.z.ai/',               q:'',    mode:'clipboard', autosend:true, loginUrl:'https://chat.z.ai/auth' },
       mistral:    { name:'Mistral',    base:'https://chat.mistral.ai/chat',     q:'',    mode:'clipboard', autosend:true },
@@ -1556,6 +1571,8 @@
       setMonitor:'Clipboard monitor', setMonitorHint:'Show the toast when you copy text.',
       setAutostart:'Start on login', setAutostartHint:'Starts minimized in the tray at login.',
       setAlwaysOnTop:'Always on top', setAlwaysOnTopHint:'Kotodama stays above other windows.',
+      setLowPower:'Resource saving', setLowPowerHint:'Less memory: CPU drawing and idle providers suspended. Requires a restart.',
+      setLowPowerRestart:'Saved. Restart Kotodama to apply resource saving.',
       downloadDone:'Saved to Downloads/Kotodama', downloadFail:'Download failed',
       dlTitle:'Download history', dlSearch:'Search downloads', dlClear:'Clear all',
       dlEmpty:'No downloads yet', dlNoMatch:'No matches', dlCopyLink:'Copy link', dlFolder:'Open folder', dlRemove:'Remove from list', dlLinkCopied:'Link copied', dlDownloading:'Downloading…',
@@ -1633,7 +1650,7 @@
     }
 
     const THEMES = ['ginga','hisui','kohaku','murasaki','sumi'];
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Alt+Space', monitor_enabled:true, autostart:true, always_on_top:true, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Alt+Space', monitor_enabled:true, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -2176,10 +2193,29 @@
     // without driving the UI. Answer routing is a no-op (no session/card).
     window.__ktAutoTest = function(key){
       try {
-        const bid='auto-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
-        inlinePending[bid]=true;   // swallow the answer (no card)
-        ktDispatchKey(bid, key, 'Rispondi solo con: OK', null, true);
+        // Goes through the same path a person does: typing first (which is what triggers the warm-tab
+        // pre-warm), then sending a few seconds later. Dispatching straight away would skip the
+        // pre-warm entirely and measure something the user never experiences.
+        // ktPrewarmed is normally re-armed by ktDoSend, which this harness bypasses.
+        try { ktPrewarmed = false; ktInput.value = 'x'; ktInput.dispatchEvent(new Event('input', { bubbles: true })); ktInput.value = ''; } catch(e){}
+        setTimeout(function(){
+          const bid='auto-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
+          inlinePending[bid]=true;   // swallow the answer (no card)
+          ktDispatchKey(bid, key, 'Ricorda questo numero: 4242. Rispondi solo con: OK', null, true);
+        }, 4000);
       } catch(e){ console.error('autotest', e); }
+    };
+    // DEBUG-only (KOTO_AUTOWARM): a FOLLOW-UP message in the already open tab (warm inject), the
+    // path __ktAutoTest does not cover -- here there is no ?q= URL sending on our behalf, the send
+    // depends ONLY on the synthetic Enter / send-button click inside the composer, so this is the
+    // only way to tell from the logs whether a provider changed its composer. Different text from
+    // the first send: otherwise the harvest could not tell the new answer from the previous one.
+    window.__ktAutoWarm = function(key){
+      try {
+        const bid='warm-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
+        inlinePending[bid]=true;   // swallow the answer (no card)
+        ktDispatchKey(bid, key, 'Qual e il numero che ti ho appena detto? Rispondi solo con il numero.', null, false);
+      } catch(e){ console.error('autowarm', e); }
     };
     /* --- INLINE transform (per-recipe hotkey pressed in another app) --- */
     // Pure helpers: recipe data WITHOUT touching the visible builder state.
@@ -2690,8 +2726,15 @@
       const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
       // a stale heartbeat (duplicate in-page script) must never overwrite a FINAL status
       if(ref.card.classList.contains('done')||ref.card.classList.contains('error')||ref.card.classList.contains('timeout')) return;
+      // MONOTONIC counter. The raw count can go backwards with nothing wrong: when the provider's
+      // page navigates mid-stream (ChatGPT rewrites ?q= into &prompt= on its own, emitting several
+      // page_finished events) the harvest is re-injected into the new document and restarts from
+      // zero. Showing that bounce (0 -> 144 -> 0) makes a working send look broken, so we always
+      // show the highest value reached.
       const len=d.len||0;
-      ref.st.textContent=ktStatusLabel('streaming', len>=1000?`${(len/1000).toFixed(1)}k`:String(len));
+      if(len>(ref.maxLen||0)) ref.maxLen=len;
+      const shown=ref.maxLen||0;
+      ref.st.textContent=ktStatusLabel('streaming', shown>=1000?`${(shown/1000).toFixed(1)}k`:String(shown));
     }
     async function ktDoSend(){
       const t=TR, text=ktInput.value.trim();
@@ -2746,6 +2789,9 @@
         }
         if(respSel.selectedIndex===1) sendText+='\n\n'+t.answerOnlyText;
       }
+      // The pre-warmed page is being consumed by this very send: re-arm, so the NEXT message
+      // pre-warms again on its first keystroke.
+      ktPrewarmed = false;
       try{
         // Per-key dispatch (same bid -> Rust merges): warm tabs continue their session with
         // plain text; fresh ones get the per-provider context preamble when history exists.
@@ -2767,22 +2813,15 @@
     document.getElementById('ktTabRecipesBtn').addEventListener('click', ()=>ktSwitchSideTab('recipes'));
 
     /* ===================== KOTODAMA SIDEBAR COLLAPSE (icon-only rail) =====================
-       Two independent reasons to be collapsed, OR'd together: the user's manual toggle
-       (persisted) and the window being too narrow for the full 242px column -- this replaces
-       the old @media(max-width:820px){display:none} rule, which used to make the sidebar vanish
-       entirely instead of shrinking to icons. */
+       ONE source of truth: the toggle at the bottom of the column, saved in localStorage.
+       The window width is NO LONGER part of the decision (there was an 820px threshold that forced
+       the rail: it made the behaviour unpredictable -- the sidebar closed itself again after the
+       user had opened it by hand). Narrowing the window now leaves the sidebar alone: the window
+       has a 720px minWidth anyway, so the chat stays usable even with the sidebar open. */
     const ktSide=document.getElementById('ktSide');
     const ktSideToggle=document.getElementById('ktSideToggle');
-    // Sotto i 820px comanda SEMPRE la larghezza (rail a icone, non discutibile): e' il
-    // comportamento richiesto, la sidebar non deve mai sparire ne' restare larga in una finestra
-    // che non la contiene. Sopra la soglia comanda la scelta dell'utente, che resta salvata.
-    // Nota: quando e' la larghezza a decidere, i comandi che servirebbero a riaprire (il toggle e
-    // l'icona di ricerca) sono nascosti via CSS -- non devono restare li' a non fare niente.
     let ktSidePref = localStorage.getItem('ktSideCollapsed');   // '1' | '0' | null
-    function ktSideNarrow(){ return window.innerWidth<820; }
-    function ktSideCollapsedNow(){
-      return ktSideNarrow() ? true : ktSidePref==='1';
-    }
+    function ktSideCollapsedNow(){ return ktSidePref==='1'; }
     function ktSideApply(){
       const collapsed = ktSideCollapsedNow();
       ktSide.classList.toggle('collapsed', collapsed);
@@ -2795,14 +2834,12 @@
       ktSideApply();
     }
     ktSideToggle.addEventListener('click', ()=>ktSideSetCollapsed(!ktSideCollapsedNow()));
-    window.addEventListener('resize', ktSideApply);
     ktSideApply();
-    // Da collassata la ricerca e' una sola icona: cliccarla riapre la sidebar e mette a fuoco il
-    // campo, che li' dentro non ci sarebbe stato. In finestra stretta l'icona e' nascosta (la
-    // sidebar non puo' riaprirsi), quindi il ramo non e' raggiungibile.
+    // When collapsed, search is a single icon: clicking it reopens the sidebar and focuses the input,
+    // which would not have fitted inside the rail.
     { const box=ktPanelHistory.querySelector('.kt-search');
       if(box) box.addEventListener('click', ()=>{
-        if(!ktSide.classList.contains('collapsed') || ktSideNarrow()) return;
+        if(!ktSide.classList.contains('collapsed')) return;
         ktSideSetCollapsed(false);
         if(ktSearch) ktSearch.focus();
       }); }
@@ -2914,8 +2951,26 @@
       openModal(recipeOverlay); setTimeout(()=>document.getElementById('recipeName').focus(),50);
     });
 
+    /* ===================== WARM TABS =====================
+       A brand-new provider conversation costs a full page load, and that load used to sit right in
+       the middle of the user's wait (measured on ChatGPT: ~4s of ~7s). So we ask the backend to put
+       the selected providers' tabs on an empty new conversation the moment the user STARTS WRITING
+       the next message -- the page then loads while they type, and the send finds it ready
+       (measured: 6.8s -> 3.1s).
+       Why on the first keystroke and not as soon as an answer arrives: pre-warming navigates the tab
+       away from the conversation just answered, and opening the provider's own tab to read or
+       continue it there is a normal thing to do. This way it stays until the user has clearly moved
+       on. Backend-side refusals (tab in the foreground, send in flight, click-toggle incognito) are
+       in kotodama_prewarm. */
+    let ktPrewarmed = false;
+    function ktPrewarm(){
+      if (ktPrewarmed || !TAURI) return;
+      ktPrewarmed = true;
+      try { invoke('kotodama_prewarm', { keys: [...ktLoadSel()] }); } catch(e){}
+    }
+    ktInput.addEventListener('input', ()=>{ if(ktInput.value.trim().length) ktPrewarm(); });
     document.getElementById('ktSend').addEventListener('click', ktDoSend);
-    document.getElementById('ktNew').addEventListener('click', ktNewConversation);
+    document.getElementById('ktNew').addEventListener('click', ()=>{ ktPrewarmed=false; ktPrewarm(); ktNewConversation(); });
     document.getElementById('ktBackBar').addEventListener('click', closeKotodama);
     // Enter sends; Shift+Enter (or Ctrl/Cmd+Enter) inserts a newline. IME composition is left alone.
     ktInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.isComposing){ e.preventDefault(); ktDoSend(); } });
@@ -3075,6 +3130,7 @@
     const rhGlobalNotify=document.getElementById('rhGlobalNotify');
     const setAutostart=document.getElementById('setAutostart');
     const setAlwaysOnTop=document.getElementById('setAlwaysOnTop');
+    const setLowPower=document.getElementById('setLowPower');
     let capturedHotkey=DEFAULT_SETTINGS.hotkey;
 
     function keyLabel(part){
@@ -3188,6 +3244,7 @@
       buildShortcutRows();
       setAutostart.checked=!!currentSettings.autostart;
       setAlwaysOnTop.checked=!!currentSettings.always_on_top;
+      setLowPower.checked=!!currentSettings.low_power;
       renderProviderXfer();
     }
     function openSettings(){ fillSettingsForm(); settingsShowTab('system'); openModal(settingsOverlay); checkUpdate(true); }
@@ -3205,12 +3262,16 @@
         Object.keys(capturedRecipeHotkeys).forEach(k=>{ const a=capturedRecipeHotkeys[k]; if(a && vals[a]===1) rh[k]=a; });
       }
       const rn={}; Object.keys(capturedRecipeNotify).forEach(k=>{ if(capturedRecipeNotify[k]===false) rn[k]=false; });
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
+      const lowPowerChanged = !!currentSettings.low_power !== setLowPower.checked;
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
       closeModal(settingsOverlay);
       // warn if the chosen shortcut was not registrable and was replaced
       if(eff.hotkey!==desired.hotkey){ toast(TR.hotkeyFallback.replace('{k}', friendlyHotkey(eff.hotkey))); }
+      // Resource saving acts on the arguments WebView2 creates its environment with: it reads them
+      // once, at process start, so the change only takes effect after a restart.
+      else if(lowPowerChanged){ toast(TR.setLowPowerRestart); }
       else { toast(TR.settingsSaved); }
     }
     let restoring=false;   // during restore do not re-save (avoids resetting the indices)

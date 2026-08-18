@@ -249,5 +249,8 @@
   "provComingSoon": "Sắp có",
   "close": "Đóng",
   "ktSideCollapse": "Thu gọn thanh bên",
-  "ktSideExpand": "Mở rộng thanh bên"
+  "ktSideExpand": "Mở rộng thanh bên",
+  "setLowPower": "Tiết kiệm tài nguyên",
+  "setLowPowerHint": "Ít bộ nhớ hơn: vẽ bằng CPU và tạm dừng các nhà cung cấp không dùng. Cần khởi động lại.",
+  "setLowPowerRestart": "Đã lưu. Khởi động lại Kotodama để áp dụng tiết kiệm tài nguyên."
 }

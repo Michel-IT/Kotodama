@@ -249,5 +249,8 @@
   "provComingSoon": "Ikuja sasa",
   "close": "Funga",
   "ktSideCollapse": "Kunja upau wa kando",
-  "ktSideExpand": "Panua upau wa kando"
+  "ktSideExpand": "Panua upau wa kando",
+  "setLowPower": "Kuhifadhi rasilimali",
+  "setLowPowerHint": "Kumbukumbu kidogo: uchoraji kwa CPU na watoa huduma wasiotumika wamesitishwa. Inahitaji kuanzishwa upya.",
+  "setLowPowerRestart": "Imehifadhiwa. Anzisha Kotodama upya ili kutumia kuhifadhi rasilimali."
 }

@@ -5,7 +5,7 @@ fn main() {
     // we declare any, we must declare (and grant back) ALL of them, or the undeclared ones start
     // failing with "not allowed... Command not found" (this broke show_provider_tab once already).
     let commands: &[&str] = &[
-        "show_provider_tab", "kotodama_broadcast", "kotodama_push",
+        "show_provider_tab", "kotodama_broadcast", "kotodama_push", "kotodama_prewarm",
         "provider_login_probe",
         "mark_provider_known", "kotodama_cancel", "get_kotodama_sessions", "save_kotodama_sessions",
         "inline_toast", "inline_finish", "inline_fail", "close_provider_view",

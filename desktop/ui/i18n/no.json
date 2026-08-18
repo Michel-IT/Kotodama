@@ -249,5 +249,8 @@
   "provComingSoon": "Kommer snart",
   "close": "Lukk",
   "ktSideCollapse": "Slå sammen sidepanel",
-  "ktSideExpand": "Utvid sidepanel"
+  "ktSideExpand": "Utvid sidepanel",
+  "setLowPower": "Ressurssparing",
+  "setLowPowerHint": "Mindre minne: tegning via prosessoren og inaktive leverandører satt på pause. Krever omstart.",
+  "setLowPowerRestart": "Lagret. Start Kotodama på nytt for å bruke ressurssparingen."
 }

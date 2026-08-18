@@ -66,6 +66,16 @@ pub struct Settings {
     /// login, per niente. Gli altri provider restano disponibili, l'utente li aggiunge a mano la
     /// prima volta.
     pub known_providers: std::collections::HashSet<String>,
+    /// Resource saving. Two effects, both with a cost that must stay the user's choice:
+    ///  - no hardware acceleration for the webviews (`--disable-gpu`): the GPU process gets lighter
+    ///    (measured -30/-50 MB, it does NOT disappear), in exchange drawing moves to the CPU and
+    ///    scrolling in long chats can feel less smooth;
+    ///  - providers idle for 3 minutes are suspended (`TrySuspend`): their page freezes and returns
+    ///    memory, and is woken on first use with a moment's wait.
+    /// Default OFF = historic behaviour: nobody gets worse off without asking for it.
+    /// Requires an app RESTART: the browser arguments are read by WebView2 once, when it creates its
+    /// environment (see `run()`), before any window exists.
+    pub low_power: bool,
 }
 
 impl Default for Settings {
@@ -94,6 +104,7 @@ impl Default for Settings {
             kt_temp_chats: true,
             kt_temp_providers: std::collections::HashMap::new(),
             known_providers: std::collections::HashSet::new(),
+            low_power: false, // hardware acceleration on: no user gets worse off unknowingly
         }
     }
 }

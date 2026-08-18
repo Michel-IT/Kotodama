@@ -249,5 +249,8 @@
   "provComingSoon": "Tulossa pian",
   "close": "Sulje",
   "ktSideCollapse": "Kutista sivupalkki",
-  "ktSideExpand": "Laajenna sivupalkki"
+  "ktSideExpand": "Laajenna sivupalkki",
+  "setLowPower": "Resurssien säästö",
+  "setLowPowerHint": "Vähemmän muistia: piirto suorittimella ja käyttämättömät palvelut keskeytetään. Vaatii uudelleenkäynnistyksen.",
+  "setLowPowerRestart": "Tallennettu. Käynnistä Kotodama uudelleen, jotta resurssien säästö otetaan käyttöön."
 }

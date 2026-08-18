@@ -249,5 +249,8 @@
   "provComingSoon": "Yakında",
   "close": "Kapat",
   "ktSideCollapse": "Kenar çubuğunu daralt",
-  "ktSideExpand": "Kenar çubuğunu genişlet"
+  "ktSideExpand": "Kenar çubuğunu genişlet",
+  "setLowPower": "Kaynak tasarrufu",
+  "setLowPowerHint": "Daha az bellek: çizim işlemciyle, kullanılmayan sağlayıcılar askıya alınır. Yeniden başlatma gerekir.",
+  "setLowPowerRestart": "Kaydedildi. Kaynak tasarrufunu uygulamak için Kotodama'yı yeniden başlatın."
 }

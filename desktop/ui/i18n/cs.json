@@ -249,5 +249,8 @@
   "provComingSoon": "Již brzy",
   "close": "Zavřít",
   "ktSideCollapse": "Sbalit boční panel",
-  "ktSideExpand": "Rozbalit boční panel"
+  "ktSideExpand": "Rozbalit boční panel",
+  "setLowPower": "Úspora prostředků",
+  "setLowPowerHint": "Méně paměti: vykreslování procesorem a pozastavení nečinných poskytovatelů. Vyžaduje restart.",
+  "setLowPowerRestart": "Uloženo. Restartujte Kotodama, aby se úspora prostředků použila."
 }

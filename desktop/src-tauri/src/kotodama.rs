@@ -77,7 +77,11 @@ fn active_harvests() -> &'static Mutex<HashMap<String, (String, String)>> {
 /// degrades to the generic chain instead of breaking.
 const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
     ("openai", r#"[data-message-author-role="assistant"]"#, r#"button[data-testid="stop-button"]"#),
-    ("anthropic", r#".font-claude-message"#, r#"div[data-is-streaming="true"]"#),
+    // `.font-claude-response` is the current class; `.font-claude-message` was the previous one and is
+    // kept so an older build of their UI still matches. Captured live 2026-08-18 -- with neither
+    // matching, the chain fell back to the whole message wrapper and harvested the screen-reader
+    // label and the reasoning block along with the answer.
+    ("anthropic", r#".font-claude-response, .font-claude-message"#, r#"div[data-is-streaming="true"]"#),
     ("gemini", r#"message-content, .model-response-text"#, ""),
     ("perplexity", r#"main .prose"#, r#"button[aria-label*="stop" i]"#),
     ("deepseek", r#".ds-markdown"#, ""),
@@ -91,7 +95,12 @@ const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
     // Verified live (chat.z.ai): explicit assistant/user class pair (no ambiguity), and the
     // round stop button that replaces send while generating.
     ("zai", r#".chat-assistant"#, r#"button.rounded-full.bg-black"#),
-    ("mistral", r#"[data-message-author-role="assistant"]"#, ""),
+    // Its data-message-author-role marks the WHOLE message row, which includes the timestamp and the
+    // "Was this helpful?/Skip" controls -- they ended up inside the delivered answer ("OK\n\n1:16pm").
+    // So we descend to the content container. If a redesign changes it, this selector stops matching
+    // and the generic chain resumes from `[data-message-author-role="assistant"]`, i.e. back to the
+    // previous behaviour: no risk of getting worse, only of not getting better.
+    ("mistral", r#"[data-message-author-role="assistant"] .prose, [data-message-author-role="assistant"] [class*="markdown" i]"#, ""),
     ("poe", r#"[class*="Message_botMessageBubble"]"#, ""),
     ("kimi", r#".segment-assistant"#, r#".send-button-container.stop"#),
     ("meta", r#"[data-testid="assistant-message"]"#, r#"[data-testid="composer-stop-button"]"#),
@@ -100,6 +109,109 @@ const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
     // qwen: falls back to the generic chain, to be tightened after live DOM verification.
     ("copilot", r#"[data-testid="ai-message-body"]"#, ""),
 ];
+
+/// Sends ALREADY OUT: (broadcast id, provider key). The single authority on "this message has been
+/// sent", and it lives in Rust for a precise reason: the page is not a place to keep that fact. Every
+/// provider navigation resets the JS context and causes the script to be re-injected, and it restarts
+/// convinced it never sent -- that is how the same message ended up in TWO conversations (measured:
+/// two different /c/<id> on ChatGPT from a single user send). Any heuristic based on reading the page
+/// fails for the same reason: in the NEW page the message is not there, so it "looks unsent". Marked
+/// by the fill loop at the instant it pressed Enter, read before re-injecting: whoever arrives later
+/// harvests the answer and does NOT send.
+fn sent_marks() -> &'static Mutex<HashSet<(String, String)>> {
+    static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashSet::new()))
+}
+fn already_sent(bid: &str, key: &str) -> bool {
+    sent_marks().lock().unwrap().contains(&(bid.to_string(), key.to_string()))
+}
+
+/// WARM TABS. A brand-new conversation used to cost a full page load on the critical path: the
+/// frontend builds a fresh URL, we navigate there, and only then can we type and send. Measured on
+/// ChatGPT: ~4s of the ~8.8s the user waits. So after an answer has been delivered we send the tab
+/// back to an EMPTY new conversation in the background; the next send then finds the page already
+/// loaded and only has to type into it -- the same path a follow-up message takes (measured 3.8s).
+///
+/// `fresh_bases`: per provider, the fresh-conversation URL with the prompt stripped out (the `q=` /
+/// `prompt=` parameters carry the message; everything else -- notably the temporary-chat markers --
+/// must be preserved). Recorded from the URL the frontend already sends us, so no new command and no
+/// duplicated knowledge of provider URLs.
+/// `prewarmed`: which providers are currently sitting on such a page, and at which URL, so a send can
+/// tell "ready to type into" from "the user browsed somewhere else in the meantime".
+fn fresh_bases() -> &'static Mutex<HashMap<String, String>> {
+    static F: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+    F.get_or_init(|| Mutex::new(HashMap::new()))
+}
+fn prewarmed() -> &'static Mutex<HashMap<String, String>> {
+    static P: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+    P.get_or_init(|| Mutex::new(HashMap::new()))
+}
+/// Providers whose pre-warm navigation has STARTED but not finished. A page that is still loading is
+/// not a warm tab: injecting into it is worse than navigating normally, because committing the new
+/// document wipes the injected script (measured: a send into a page pre-warmed 4s earlier took 29s
+/// instead of 3s). A tab is only promoted to `prewarmed` when its load actually completes.
+fn prewarming() -> &'static Mutex<HashSet<String>> {
+    static W: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+    W.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+/// The fresh URL without the message in it. Keeps scheme/host/path and every parameter EXCEPT the
+/// ones that carry the prompt, so `?temporary-chat=true` (and any other provider marker) survives:
+/// pre-warming into a non-anonymous conversation would silently break the user's incognito setting.
+fn strip_prompt_params(url: &str) -> Option<String> {
+    let mut u = url.parse::<Url>().ok()?;
+    let kept: Vec<(String, String)> = u
+        .query_pairs()
+        .filter(|(k, _)| k != "q" && k != "prompt")
+        .map(|(k, v)| (k.into_owned(), v.into_owned()))
+        .collect();
+    u.set_query(None);
+    if !kept.is_empty() {
+        let mut qs = u.query_pairs_mut();
+        for (k, v) in kept {
+            qs.append_pair(&k, &v);
+        }
+    }
+    Some(u.to_string())
+}
+
+/// Is this webview still sitting where we pre-warmed it? Compared on origin + path + the presence of
+/// the temporary-chat markers, not on the exact query string: providers rewrite their own URL after
+/// loading (ChatGPT turns `?q=` into `&prompt=`), so an exact match would always fail.
+fn prewarm_still_valid(current: &str, expected: &str) -> bool {
+    let (Ok(c), Ok(e)) = (current.parse::<Url>(), expected.parse::<Url>()) else {
+        return false;
+    };
+    if c.origin() != e.origin() || c.path() != e.path() {
+        return false;
+    }
+    let temp_of = |u: &Url| {
+        u.query_pairs()
+            .any(|(k, v)| (k == "temporary-chat" || k == "incognito") && v != "false")
+    };
+    temp_of(&c) == temp_of(&e)
+}
+
+/// The provider has a send or a harvest IN FLIGHT. Queries the only two structures that know:
+/// `pending_injections` (fill waiting for the page to load) and `active_harvests` (answer incoming).
+/// Used by the idle-provider janitor in `browser.rs`: suspending a page while it is working would
+/// freeze its JS and the answer would never arrive.
+pub(crate) fn provider_busy(key: &str) -> bool {
+    pending_injections().lock().unwrap().contains_key(key)
+        || active_harvests().lock().unwrap().contains_key(key)
+}
+
+/// Providers whose "generating" marker (the second field of `HARVEST_SELECTORS`) has been verified
+/// live, and where HARVEST_JS may therefore trust its disappearance as a real end-of-answer event
+/// instead of waiting for text stability. Being wrong here truncates answers, so it is opened one
+/// provider at a time, after measuring: ChatGPT first (`button[data-testid="stop-button"]`).
+/// `KOTO_NO_FASTDONE=1` turns it off, to compare with and without on the SAME binary.
+fn fast_done_for(key: &str) -> bool {
+    if std::env::var("KOTO_NO_FASTDONE").is_ok() {
+        return false;
+    }
+    matches!(key, "openai")
+}
 
 fn selectors_for(key: &str) -> (&'static str, &'static str) {
     HARVEST_SELECTORS
@@ -163,9 +275,144 @@ pub(crate) const SR_HIDE_JS: &str = r##"
   } catch(e){}
 })();
 "##;
+/// DISCOVERY probe (debug only, `KOTO_NETPROBE=1`): wraps the page's own network APIs to learn how a
+/// provider actually streams its answer, so the harvest can be driven by REAL EVENTS instead of
+/// polling the DOM and inferring the end from text stability (measured: 6s of pure waiting after the
+/// answer was already complete, and a warm turn that never concluded at all in 180s).
+///
+/// Deliberately observation-only: it logs method/URL/status/content-type, the first bytes of each
+/// streamed chunk and the moment the stream CLOSES -- which is the event we want. Nothing is
+/// intercepted or altered, and every hook is wrapped so a failure can never break the provider page.
+/// Must be injected BEFORE the fill script, otherwise the send request itself is missed.
+const NET_PROBE_JS: &str = r##"
+(function(){
+  if (window.__ktNetProbe) return;
+  window.__ktNetProbe = true;
+  function say(m){ try { if (window.__ktPush) window.__ktPush({ b: __kt_bid, k: __kt_key, st: 'diag', d: 'NET ' + String(m).slice(0,700) }); } catch(e){} }
+  var seq = 0;
+  // fetch: the modern streaming path. The body is TEE'd so the page keeps its own copy untouched.
+  try {
+    var of = window.fetch;
+    window.fetch = function(input, init){
+      var id = ++seq;
+      var url = ''; try { url = (typeof input === 'string') ? input : (input && input.url) || ''; } catch(e){}
+      var method = (init && init.method) || (input && input.method) || 'GET';
+      var short = url.replace(/^https?:\/\/[^/]+/, '').slice(0, 110);
+      return of.apply(this, arguments).then(function(res){
+        var ct = '';
+        try { ct = res.headers.get('content-type') || ''; } catch(e){}
+        say('#' + id + ' ' + method + ' ' + short + ' -> ' + res.status + ' ct=' + ct);
+        var streamy = /event-stream|x-ndjson|octet-stream/i.test(ct);
+        if (!streamy || !res.body || !res.body.tee) return res;
+        try {
+          var pair = res.body.tee();
+          var mine = pair[0].getReader(), chunks = 0, bytes = 0, t0 = Date.now(), first = '';
+          (function pump(){
+            mine.read().then(function(r){
+              if (r.done) {
+                say('#' + id + ' STREAM END chunks=' + chunks + ' bytes=' + bytes + ' ms=' + (Date.now() - t0) + ' first=' + JSON.stringify(first.slice(0,220)));
+                return;
+              }
+              chunks++; bytes += (r.value && r.value.length) || 0;
+              if (chunks <= 2) { try { first += new TextDecoder().decode(r.value); } catch(e){} }
+              pump();
+            }, function(){ say('#' + id + ' STREAM ERROR chunks=' + chunks); });
+          })();
+          return new Response(pair[1], { status: res.status, statusText: res.statusText, headers: res.headers });
+        } catch(e) { say('#' + id + ' tee failed: ' + e); return res; }
+      });
+    };
+  } catch(e) { say('fetch hook failed: ' + e); }
+  // EventSource: the other streaming shape some providers use.
+  try {
+    var OES = window.EventSource;
+    if (OES) {
+      window.EventSource = function(u, c){
+        var id = ++seq;
+        say('#' + id + ' EventSource ' + String(u).replace(/^https?:\/\/[^/]+/, '').slice(0,110));
+        var es = new OES(u, c);
+        es.addEventListener('message', function(ev){ if (id) { say('#' + id + ' ES msg ' + JSON.stringify(String(ev.data).slice(0,160))); id = 0; } });
+        es.addEventListener('error', function(){ say('#' + id + ' ES error/close'); });
+        return es;
+      };
+      window.EventSource.prototype = OES.prototype;
+    }
+  } catch(e) { say('EventSource hook failed: ' + e); }
+})();
+"##;
+
+/// Turns "the answer is finished" into an EVENT instead of an inference.
+///
+/// Every provider streams its answer over a long-lived HTTP response, and when it has finished it
+/// CLOSES that response. That close is the exact signal we want, and it needs no knowledge of any
+/// provider's DOM or of its JSON format: the discriminator is the content type
+/// (`text/event-stream`, ndjson), which is how streaming is done on the web, not a ChatGPT detail.
+/// Captured live on ChatGPT: `POST /backend-api/f/conversation -> text/event-stream`, stream closed
+/// 1581ms after the request, while the DOM-stability path was still counting and delivered at 4.0s.
+///
+/// Only streams opened AFTER our own send count (`__ktSentAt`, set by the fill script when it presses
+/// Enter): a page can keep telemetry or notification streams open, and those must never be mistaken
+/// for the answer. The response body is TEE'd, so the page keeps its own untouched copy and the
+/// provider's UI behaves exactly as before -- this observes, it never intercepts.
+/// If anything here fails, or the provider does not stream, nothing happens and the stability
+/// counters in HARVEST_JS remain in charge, exactly as before.
+const STREAM_WATCH_JS: &str = r##"
+(function(){
+  if (window.__ktStreamWatch) return;
+  window.__ktStreamWatch = true;
+  var STREAMY = /event-stream|x-ndjson|application\/stream/i;
+  function ended(){ try { if (window.__ktStreamEnd) window.__ktStreamEnd(); } catch(e){} }
+  try {
+    var of = window.fetch;
+    if (typeof of !== 'function') return;
+    window.fetch = function(){
+      var p = of.apply(this, arguments);
+      try {
+        if (!window.__ktSentAt) return p;              // nothing sent yet: not our stream
+        return p.then(function(res){
+          try {
+            var ct = (res.headers && res.headers.get('content-type')) || '';
+            if (!STREAMY.test(ct) || !res.body || typeof res.body.tee !== 'function') return res;
+            var pair = res.body.tee();
+            var mine = pair[0].getReader();
+            // An OPEN stream means the provider is working on our answer right now. The arming loop
+            // reads this before deciding to give up: a model that reasons before writing can stay
+            // silent in the DOM for longer than the arming budget, and declaring `sendfail` there is
+            // wrong twice over -- the message did go out, and the answer is on its way.
+            try { window.__ktStreamOpen = (window.__ktStreamOpen || 0) + 1; } catch(e){}
+            function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} ended(); }
+            (function pump(){
+              mine.read().then(function(r){ if (r.done) { closed(); return; } pump(); }, function(){ closed(); });
+            })();
+            return new Response(pair[1], { status: res.status, statusText: res.statusText, headers: res.headers });
+          } catch(e) { return res; }
+        });
+      } catch(e) { return p; }
+    };
+  } catch(e){}
+  try {
+    var OES = window.EventSource;
+    if (OES) {
+      window.EventSource = function(u, c){
+        var es = new OES(u, c), got = false;
+        try {
+          es.addEventListener('message', function(){ got = true; });
+          // For EventSource a close surfaces as 'error'. Only counted once at least one message has
+          // arrived: an error before any data is a failed connection, not a finished answer.
+          es.addEventListener('error', function(){ if (got && window.__ktSentAt) ended(); });
+        } catch(e){}
+        return es;
+      };
+      try { window.EventSource.prototype = OES.prototype; } catch(e){}
+    }
+  } catch(e){}
+})();
+"##;
+
 const HARVEST_JS: &str = r##"
 (function(){
   var BID = __kt_bid, KEY = __kt_key, ANS_SEL = __kt_ans, BUSY_SEL = __kt_busy, FRESH = __kt_fresh;
+  var FAST_DONE = __kt_fast;   // trust the provider's own "generating" marker, see below
   // The prompt we just sent (from the fill script): never harvest our own message back
   // (the generic selector chain can match the USER bubble on providers without a
   // dedicated assistant selector).
@@ -220,6 +467,11 @@ const HARVEST_JS: &str = r##"
       lines.shift();
       t = lines.join('\n').trim();
     }
+    // Trailing timestamp: some providers print it inside the message row (measured on Mistral:
+    // "OK\n\n1:16pm"). Stripped ONLY when it is the last thing and ONLY in the hour:minute form with
+    // optional am/pm -- digits and a colon, hence language-independent. It cannot eat real content: an
+    // isolated time at the very end is never part of the answer.
+    t = t.replace(/\s*\b\d{1,2}:\d{2}(:\d{2})?\s*(am|pm|AM|PM)?\s*$/, '').trim();
     return t;
   }
   // "Still generating?" - LANGUAGE-INDEPENDENT (no localized aria-label text). Uses the
@@ -290,6 +542,17 @@ const HARVEST_JS: &str = r##"
       return out.join('\n\n');
     }
     try { return blockMd(el, 0).trim(); } catch(e){ return ''; }
+  }
+  // The provider's OWN verified "generating" marker, without the generic fallbacks. Kept separate
+  // from `isBusy()` on purpose: the fallbacks are guesses that false-positive on unrelated controls,
+  // and the fast-completion path below is only sound on a marker we have verified for that provider.
+  function busyVerified(){
+    if (!BUSY_SEL) return false;
+    try {
+      var els = document.querySelectorAll(BUSY_SEL);
+      for (var i=0;i<els.length;i++){ if (els[i].offsetParent !== null) return true; }
+    } catch(e){}
+    return false;
   }
   function isBusy(){
     var sels = [BUSY_SEL, '[data-testid*="stop" i]', '[data-is-streaming="true"]', '[class*="result-streaming" i]', '[class*="is-streaming" i]'];
@@ -431,21 +694,60 @@ const HARVEST_JS: &str = r##"
       window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('AUTHWALL-CENSUS '+out.join(' || ')).slice(0,1400) });
     } catch(e){}
   }
+  /* ===================== END OF ANSWER AS AN EVENT =====================
+     Everything below this line used to be inferred: the answer was considered finished when its text
+     stopped changing for N polls. Measured cost of that inference on ChatGPT: 6.0s of pure waiting
+     after the answer was already complete on screen (and one warm turn that never concluded at all
+     in 180s). The provider itself knows exactly when it has finished -- it closes the response
+     stream. `STREAM_WATCH_JS` watches the page's own network calls and calls in here when a streaming
+     response opened after our send has CLOSED; from that moment the text in the DOM is final, so
+     there is nothing left to wait for.
+     The stability counters stay as the fallback: providers that do not stream, or a hook that sees
+     nothing, keep working exactly as before. */
+  var streamEnded = false, harvesting = false, stepNow = null;
+  window.__ktStreamEnd = function(){
+    if (streamEnded || window.__ktBid !== BID) return;
+    streamEnded = true;
+    try { if (window.__ktDiag) window.__ktPush({ b: BID, k: KEY, st: 'diag', d: 'STREAM-END event received' }); } catch(e){}
+    // If the answer had not even been detected yet, stop waiting for it and start harvesting now.
+    if (!harvesting) { try { clearInterval(armIv); } catch(e){} harvest(); return; }
+    if (stepNow) stepNow();   // already harvesting: evaluate immediately, do not wait for the next poll
+  };
+  var armT0 = Date.now();
   var armIv = setInterval(function(){
     if (window.__ktBid !== BID) { clearInterval(armIv); return; }
-    armTries++;
+    // The budget below must measure the time since the message COULD have gone out, not since this
+    // script was injected. While the page is still hydrating there is no composer, nothing has been
+    // sent, and counting that time punishes a provider for how many tabs happen to be loading at
+    // once. Measured on a 10-provider broadcast from cold: the last in the queue (Qwen, Z.ai) were
+    // declared `sendfail` at 45-49s having simply not reached their own composer yet -- the very same
+    // providers answer fine when sent to alone. So the clock only runs once there is a composer.
+    if (composerVal() !== null) armTries++;
+    // Absolute ceiling, so a page that never produces a composer cannot wait forever.
+    if (Date.now() - armT0 > 180000) { clearInterval(armIv); census(); setTimeout(function(){ deliver('sendfail',''); }, 300); return; }
     authCensus();
     if (authWallPresent()) { clearInterval(armIv); deliver('login',''); return; }
+    // Arms the stream watcher as soon as the message is known to be out. Needed because on `?q=`
+    // providers the URL itself sends, so our fill script exits without ever pressing Enter and never
+    // sets `__ktSentAt` -- which left exactly the fastest providers falling back to text stability
+    // (measured: ChatGPT decided by stability at poll 5 while its stream had long since closed). The
+    // answer's stream is still open at this point, so its close is captured.
+    function armWatcher(){ try { if (!window.__ktSentAt) window.__ktSentAt = Date.now(); } catch(e){} }
     var cur = answerTxt();
-    if (cur && cur !== initialAnswer) { clearInterval(armIv); harvest(); return; }  // answer streaming
+    if (cur && cur !== initialAnswer) { armWatcher(); clearInterval(armIv); harvest(); return; }  // answer streaming
     var v = composerVal();
     if (v !== null) {
       if (v.trim().length > 0) { sawText = true; }
-      else if (sawText) { clearInterval(armIv); harvest(); return; }                 // composer emptied = accepted
+      else if (sawText) { armWatcher(); clearInterval(armIv); harvest(); return; }    // composer emptied = accepted
     }
     // ~30s: never sent. census() first (-> debug log), then deliver AFTER a gap: two
     // back-to-back location.href assignments coalesce and the first would be lost.
-    if (armTries > 60) { clearInterval(armIv); census(); setTimeout(function(){ deliver('sendfail',''); }, 300); }
+    // ~30s with nothing to show: normally that means the message never left. But NOT while a response
+    // stream is open -- the provider is generating, it simply has not painted anything yet, which is
+    // exactly what a model that reasons before answering does (measured on Claude: the message was
+    // sent, Claude thought for longer than the budget, and this declared `sendfail` anyway). While a
+    // stream is open we keep waiting; the harvest's own 180s budget is still the outer bound.
+    if (armTries > 60 && !window.__ktStreamOpen) { clearInterval(armIv); census(); setTimeout(function(){ deliver('sendfail',''); }, 300); }
   }, 500);
   // One-shot DOM census when the harvest stays empty: which candidate selectors match
   // what on THIS provider's page. Only reaches the debug log (KOTODAMA_DEBUG) — it is
@@ -465,28 +767,74 @@ const HARVEST_JS: &str = r##"
     }
     out.push('title="'+document.title.slice(0,60)+'"');
     var c = composerVal(); out.push('composer='+(c===null?'NONE':('len'+c.length)));
-    // visible buttons inventory (send-button selector tuning): testid/aria-label + disabled flag
+    // ALL candidate fields, not only the chosen one: `composer=len1` on Grok did not say whether the
+    // fill had landed in the wrong field or failed to take in the right one. Here we see each one's
+    // tag/class/visibility/length/bottom-edge -- and the edge matters, because the fill picks the
+    // BOTTOM-most while this diagnostic used to report the first.
     try {
-      var bs = document.querySelectorAll('button'), bl = [];
-      for (var k=0;k<bs.length && bl.length<8;k++){
-        var b = bs[k]; if (b.offsetParent === null) continue;
-        var idl = (b.getAttribute('data-testid') || b.getAttribute('aria-label') || b.id || '').slice(0,25);
-        if (idl) bl.push(idl + (b.disabled ? '!D' : ''));
+      var csels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'];
+      var cc = [];
+      for (var ci=0; ci<csels.length; ci++){
+        var cels = document.querySelectorAll(csels[ci]);
+        for (var cj=0; cj<cels.length && cc.length<8; cj++){
+          var ce = cels[cj];
+          var cv = (ce.value !== undefined ? ce.value : ce.innerText) || '';
+          cc.push(ce.tagName + '.' + String(ce.className||'').slice(0,26)
+            + '[' + (ce.offsetParent === null ? 'HID' : 'vis') + ',len' + cv.length
+            + ',y' + Math.round(ce.getBoundingClientRect().bottom) + ']');
+        }
       }
-      out.push('btns=' + bl.join(','));
+      out.push('composerCands=' + cc.join(' , '));
+    } catch(e){}
+    // Button inventory for tuning the SEND selector. It used to be the first 8 in DOM order: it ran
+    // out on the sidebar's buttons and NEVER reached the composer, i.e. exactly the one thing worth
+    // knowing when a provider changes its editor. Now two signals:
+    //   1) sendSel  -> does findSendBtn's primary selector (browser.rs) still exist? is it enabled?
+    //   2) btnsComposer -> the buttons in the composer's geometric band, with their x so we can tell
+    //      which is the rightmost (the one the geometric fallback picks).
+    try {
+      var prim = document.querySelector('button[data-testid="send-button"], button[data-testid*="send" i], button[type="submit"]');
+      out.push('sendSel=' + (prim ? ((prim.getAttribute('data-testid') || prim.type || 'submit')
+        + (prim.disabled ? '!D' : '') + (prim.offsetParent === null ? '/HID' : '/vis')) : 'NONE'));
+      var cel = findComposerEl(), bl = [];
+      if (cel) {
+        var cr = cel.getBoundingClientRect(), bs = document.querySelectorAll('button');
+        for (var k=0;k<bs.length && bl.length<10;k++){
+          var b = bs[k]; if (b.offsetParent === null) continue;
+          var r = b.getBoundingClientRect();
+          if (r.top < cr.top - 10 || r.top > cr.bottom + 72) continue;   // stessa fascia di findSendBtn
+          var idl = (b.getAttribute('data-testid') || b.getAttribute('aria-label') || b.id
+            || ('svg?' + (b.querySelector('svg') ? 'y' : 'n'))).slice(0,22);
+          bl.push(idl + (b.disabled ? '!D' : '') + '@' + Math.round(r.left));
+        }
+      }
+      out.push('btnsComposer=' + bl.join(','));
     } catch(e){}
     window.__ktPush({ b: BID, k: KEY, st: 'diag', d: out.join(' || ').slice(0,1400) });
   }
   function harvest(){
-    var last = '', stable = 0, polls = 0, sentCensus = false;
-    var iv = setInterval(function(){
+    harvesting = true;
+    var last = '', stable = 0, polls = 0, sentCensus = false, sawBusy = false;
+    // Timing instrumentation (debug only). `sinceLastChange` is the number that matters: how long
+    // after the answer STOPPED GROWING we actually handed it over. Guessing it from the wall clock
+    // conflates it with the model's own generation time.
+    var t0 = Date.now(), lastChangeAt = t0, trace = [];
+    var iv = null;
+    function step(){
       if (window.__ktBid !== BID) { clearInterval(iv); return; }
       polls++;
       var txt = answerTxt();
       if (txt === initialAnswer) txt = '';   // still showing the previous answer, new one not in DOM yet
       var busy = isBusy();
-      if (txt && txt === last) { stable++; } else { stable = 0; }
+      if (busyVerified()) sawBusy = true;    // the marker exists on this page and we have seen it
+      if (txt && txt === last) { stable++; } else { stable = 0; lastChangeAt = Date.now(); }
       last = txt;
+      // Per-poll trace: poll number, len, and WHICH busy signal is up (B = generic isBusy, v = the
+      // provider's own verified marker). This is what tells whether a late delivery was the
+      // stability count or a busy marker that never went away.
+      if (window.__ktDiag && trace.length < 45) {
+        trace.push(polls + (busy ? 'B' : '-') + (busyVerified() ? 'v' : '-') + ':' + txt.length);
+      }
       // done = text stable N polls with no busy marker; OR stable 10 polls regardless
       // (some pages keep a false-positive "stop"-like control on screen forever, e.g. Qwen).
       // N is higher for SHORT text (<40 chars): a brief opener ("Ciao!") followed by a
@@ -495,8 +843,37 @@ const HARVEST_JS: &str = r##"
       // replies down to just the first word. Longer text stabilizing for 3s is a much safer
       // signal (a real answer that long rarely pauses mid-stream for multiple seconds).
       var neededStable = (txt.length < 40) ? 6 : 3;
-      if (stable >= neededStable && !busy || stable >= 10) {
+      // FAST COMPLETION. The counts above infer the end from text stability, because providers emit
+      // no "answer finished" event -- and for short answers they deliberately wait 6 polls (~6s),
+      // since a brief opener plus a thinking pause looks stable. But where the provider has its OWN
+      // verified "generating" marker, that marker going from PRESENT to ABSENT is a real end signal,
+      // not an inference: waiting six seconds on top of it buys nothing. Two conditions, both
+      // required: the marker must have been SEEN during this answer (if it never appeared we cannot
+      // read anything into its absence), and the provider must be one where it is verified live.
+      if (FAST_DONE && sawBusy && !busy && txt) neededStable = 2;
+      // THE EVENT WINS over the stability counts, but it is not the whole story: the stream closing
+      // means the SERVER has finished sending, not that the page has finished PAINTING. Measured on
+      // Claude: at the poll right after the close the DOM held "O" of "OK", with its own
+      // `data-is-streaming="true"` still up -- delivering there truncated the answer to one letter.
+      // So the event still requires the page to agree: no busy marker, and the text unchanged for one
+      // poll. That costs about a second and removes the truncation, while still being far ahead of
+      // the six polls the stability rule would have waited.
+      var doneByEvent = streamEnded && !!txt && !busy && stable >= 1;
+      if (doneByEvent || (stable >= neededStable && !busy) || stable >= 10) {
         clearInterval(iv);
+        // How long the completion decision took, in polls (~1s each): the number to compare when
+        // tuning the thresholds above, instead of guessing from the wall clock.
+        if (window.__ktDiag) {
+          try {
+            window.__ktPush({ b: BID, k: KEY, st: 'diag',
+              d: 'HARVEST-DONE by=' + (doneByEvent ? 'STREAM-EVENT' : 'stability')
+                 + ' polls=' + polls + ' stable=' + stable + ' needed=' + neededStable
+                 + ' sawBusy=' + sawBusy + ' fast=' + FAST_DONE + ' len=' + txt.length
+                 + ' elapsedMs=' + (Date.now() - t0)
+                 + ' sinceLastChangeMs=' + (Date.now() - lastChangeAt)
+                 + ' trace=' + trace.join(',') });
+          } catch(e){}
+        }
         // Diagnostic aid: a short "done" answer is exactly the shape a wrong selector produces
         // (some unrelated short UI label matched instead of a real reply, e.g. Grok's mode-toggle
         // pill briefly mistaken for the answer bubble) -- dump the matched element's own identity
@@ -508,7 +885,23 @@ const HARVEST_JS: &str = r##"
             var elDbg = getAnswerEl();
             var idl = elDbg ? (elDbg.tagName + '.' + (elDbg.className||'').toString().slice(0,120) + ' #' + (elDbg.id||'')) : 'NONE';
             var outer = elDbg ? (elDbg.outerHTML||'').slice(0,300) : '';
-            window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('SHORT-DONE txt="'+txt+'" el='+idl+' html='+outer).slice(0,1400) });
+            // Direct children of the harvested element: used to NARROW the selector when provider UI
+            // ends up inside it (Mistral delivered "OK\n\n1:16pm" plus "Was this helpful?/Skip",
+            // because its data-message-author-role marks the whole message row). Without this list the
+            // only alternative was guessing a class name.
+            var kids = [];
+            try {
+              var chs = elDbg ? elDbg.children : [];
+              for (var ki=0; ki<chs.length && ki<10; ki++){
+                var ch = chs[ki];
+                kids.push(ch.tagName + '.' + String(ch.className||'').slice(0,34)
+                  + '("' + (ch.innerText||'').trim().replace(/\s+/g,' ').slice(0,22) + '")');
+              }
+            } catch(e){}
+            // The harvested text can contain real newlines, which break the log line and cut off
+            // everything after it: flatten them so the diagnostic arrives whole.
+            var txtFlat = String(txt).replace(/\s+/g,' ');
+            window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('SHORT-DONE txt="'+txtFlat+'" el='+idl+' kids=[' + kids.join(' | ') + '] html='+outer).slice(0,1400) });
           } catch(e){}
         }
         deliver('done', txt, elToMd(getAnswerEl()));
@@ -517,7 +910,12 @@ const HARVEST_JS: &str = r##"
       if (Date.now() - t0 > 180000) { clearInterval(iv); deliver(txt ? 'timeout' : 'error', txt, txt ? elToMd(getAnswerEl()) : ''); return; }
       if (!sentCensus && polls === 15 && !txt) { sentCensus = true; census(); }
       if (polls % 3 === 0) { window.__ktPush({ b: BID, k: KEY, st: 'progress', len: txt.length }); }
-    }, 1000);
+    }
+    stepNow = step;
+    iv = setInterval(step, 1000);
+    // The stream may already have closed while the answer was being detected: in that case there is
+    // nothing to wait for, evaluate at once instead of losing a poll interval.
+    if (streamEnded) step();
   }
 })();
 "##;
@@ -549,7 +947,10 @@ fn temp_trigger_js(key: &str) -> Option<String> {
         // present) when temp is on so the toggle can be clicked before fill+send.
         "grok" => Some(temp_click_js(GROK_PRIVATE_SVG)),         // "Passa alla chat privata" ghost
         "perplexity" => Some(temp_click_js(PERPLEXITY_INCOG_SVG)), // "Usa in incognito" spy icon
-        "qwen" => Some(temp_click_js(QWEN_TEMP_SVG)),           // "Temporary Chat" toggle
+        // "qwen" is deliberately absent: its private-chat toggle can no longer be found (the discovery
+        // probe reports `visMatches=0 :: (no control matched)`, 2026-08-18), so clicking did nothing
+        // while the app kept promising anonymity. The frontend no longer offers it either -- see the
+        // note on the qwen entry in PROVIDERS. Restore both together once the new control is captured.
         "gemini" => Some(temp_click_js(GEMINI_TEMP_SVG)),       // "Chat temporanea" mat-icon
         "poe" => Some(temp_click_js(POE_TEMP_SVG)),             // "Attiva chat temporanea" toggle
         "copilot" => Some(temp_click_js(COPILOT_TEMP_SVG)),     // "Immetti chat temporanea" toggle
@@ -654,11 +1055,12 @@ const TEMP_PROBE_JS: &str = r##"
 fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp: bool) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     let prelude = format!(
-        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; window.__ktDiag = {diag};",
+        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; window.__ktDiag = {diag};",
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
         serde_json::to_string(key).map_err(|e| e.to_string())?,
         serde_json::to_string(ans).map_err(|e| e.to_string())?,
         serde_json::to_string(busy).map_err(|e| e.to_string())?,
+        fast = fast_done_for(key),
         diag = crate::debug::enabled(),
     );
     // incognito/temporary trigger (holds the fill until done), only on fresh turns of providers
@@ -667,7 +1069,23 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
     // The INCOG diagnostic probe only runs under KOTODAMA_DEBUG (used to discover a provider's
     // incognito URL/selector); never in production.
     let probe = if fresh && crate::debug::enabled() { TEMP_PROBE_JS } else { "" };
-    Ok(prelude + PUSH_HELPER_JS + SR_HIDE_JS + &temp_part + &browser::fill_js(text, true)? + HARVEST_JS + probe)
+    // Network discovery probe: BEFORE the fill, or the send request itself is missed.
+    let net = if crate::debug::enabled() && std::env::var("KOTO_NETPROBE").is_ok() {
+        NET_PROBE_JS
+    } else {
+        ""
+    };
+    // STREAM_WATCH_JS goes BEFORE the fill: it has to be in place before the send opens the answer's
+    // stream, otherwise the one request that matters is the one it misses.
+    Ok(prelude
+        + PUSH_HELPER_JS
+        + SR_HIDE_JS
+        + net
+        + STREAM_WATCH_JS
+        + &temp_part
+        + &browser::fill_js(text, true)?
+        + HARVEST_JS
+        + probe)
 }
 
 /// Resume script for a page that navigated mid-broadcast. Two cases, decided IN PAGE:
@@ -675,32 +1093,63 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
 ///   a duplicate would double-post on ChatGPT-style redirects);
 /// - the sent text is NOT in the DOM -> the original injection died before sending (Qwen/Z.ai
 ///   landing pages navigate right after load), so fill+send first, then harvest.
-fn build_resume_js(broadcast_id: &str, key: &str, text: &str) -> Result<String, String> {
+fn build_resume_js(
+    broadcast_id: &str,
+    key: &str,
+    text: &str,
+    allow_send: bool,
+) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     // Whitespace-collapsed head of the message for a robust "is it on the page?" check.
     let head: String = text.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(60).collect();
     let prelude = format!(
-        "var __apb_text = {}; var __apb_send = true; var __kt_head = {}; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true;",
+        // `window.__ktDiag` must be set HERE too: without it, all the fill-loop diagnostics stayed
+        // silent in exactly the path where they are needed -- the resume after a navigation (providers
+        // whose temporary chat is a click DO navigate).
+        "var __apb_text = {}; var __kt_head = {}; var __apb_send = true; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true; var __kt_fast = {fast}; window.__ktDiag = {diag};",
         serde_json::to_string(text).map_err(|e| e.to_string())?,
         serde_json::to_string(&head).map_err(|e| e.to_string())?,
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
         serde_json::to_string(key).map_err(|e| e.to_string())?,
         serde_json::to_string(ans).map_err(|e| e.to_string())?,
         serde_json::to_string(busy).map_err(|e| e.to_string())?,
+        fast = fast_done_for(key),
+        diag = crate::debug::enabled(),
     );
+    // `allow_send` is decided by Rust from `sent_marks`, NOT by reading the page:
+    //  - send not out yet -> inject the fill (the case this resume exists for: pages that navigate
+    //    right after loading, killing the script before it sends);
+    //  - send ALREADY out -> harvest ONLY. This is where the mess was: the new page does not contain
+    //    the message, so every DOM-based heuristic concludes "not sent" and sends again -- and the
+    //    second copy, starting from the root URL, even opened a NEW CONVERSATION (and a non-anonymous
+    //    one, because the temporary-chat route only applies to the first send).
+    if !allow_send {
+        // Already sent before the navigation: only harvest. The stream watcher still goes in -- the
+        // answer's stream may well be opened by the NEW document, and its close is what we are after.
+        // `__ktSentAt` is set here by hand: in this fresh JS context no fill script will set it, but
+        // Rust already knows the send went out, so the watcher must be armed from the start.
+        return Ok(prelude
+            + PUSH_HELPER_JS
+            + SR_HIDE_JS
+            + "try { window.__ktSentAt = Date.now(); } catch(e){}\n"
+            + STREAM_WATCH_JS
+            + HARVEST_JS);
+    }
     let fill = browser::fill_js(text, true)?;
-    Ok(prelude
-        + PUSH_HELPER_JS
-        + SR_HIDE_JS
-        + &format!(
-            "if (!(document.body && document.body.innerText.replace(/\\s+/g,' ').indexOf(__kt_head) !== -1)) {{ {fill} }}"
-        )
-        + HARVEST_JS)
+    Ok(prelude + PUSH_HELPER_JS + SR_HIDE_JS + &fill + HARVEST_JS)
 }
 
 /// Marks (bid, key) answered: removes it from the broadcast, emits `app://kotodama-answer`
 /// and, when the broadcast empties, `app://kotodama-finished`. Duplicate calls are no-ops.
 fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, truncated: bool, md: &str) {
+    // Total wall-clock from the broadcast being registered to the answer being handed to the UI. Read
+    // together with HARVEST-DONE's `sinceLastChangeMs` it splits the wait into "the model was still
+    // writing" and "we were still deciding it had finished" -- the second is the only part we control.
+    let total_ms = broadcasts()
+        .lock()
+        .unwrap()
+        .get(bid)
+        .map(|bc| bc.started.elapsed().as_millis());
     let (emit_it, all_done) = {
         let mut b = broadcasts().lock().unwrap();
         match b.get_mut(bid) {
@@ -718,6 +1167,10 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     if !emit_it {
         return;
     }
+    // Turn over: drop the "already sent" mark too, otherwise the next message to the same provider
+    // would find the previous turn's mark. The key is (bid, key), so in practice it does not collide,
+    // but leaving it around is a leak that serves nobody.
+    sent_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     // Answer delivered: stop resuming this key's harvest on future page loads (only if the
     // registered harvest belongs to THIS broadcast — a newer one must keep its entry).
     {
@@ -727,8 +1180,10 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
         }
     }
     debug::log(format!(
-        "kotodama answer bid={bid} key={key} status={status} len={} preview={:?}",
-        text.len(), text.chars().take(160).collect::<String>()
+        "kotodama answer bid={bid} key={key} status={status} len={} totalMs={} preview={:?}",
+        text.len(),
+        total_ms.map(|m| m.to_string()).unwrap_or_else(|| "?".into()),
+        text.chars().take(160).collect::<String>()
     ));
     if status == "login" {
         // A real send hit a login wall: this is the strongest, most direct signal that the
@@ -821,6 +1276,13 @@ fn handle_push(
     if st == "diag" {
         // DOM census from a stuck harvest: log-only, this is how provider selectors get tuned.
         debug::log(format!("kotodama DIAG key={key}: {}", data.unwrap_or_default()));
+        return;
+    }
+    // The fill loop announces that it pressed Enter. From here on NOBODY may send the same message
+    // again, not even if the page navigates and the script is re-injected.
+    if st == "sent" {
+        debug::log(format!("kotodama SENT key={key} bid={bid} -- no further send allowed"));
+        sent_marks().lock().unwrap().insert((bid, key));
         return;
     }
     if st == "progress" {
@@ -937,6 +1399,62 @@ fn login_probe_js(key: &str) -> String {
     )
 }
 
+/// WARM TABS: get the given providers' tabs onto an empty new conversation NOW, in the background,
+/// so the next send finds a loaded page and skips the page load entirely (measured on ChatGPT: a
+/// second fresh conversation went from 6.8s to 3.1s).
+///
+/// Called by the frontend on a USER event -- the first keystroke of the next message, or "new
+/// conversation" -- deliberately NOT right after an answer arrives. Pre-warming on delivery would
+/// navigate the tab away from the conversation that was just answered, and opening the provider's tab
+/// to read or continue it there is a normal thing to do: the speed is not worth taking that away.
+/// Waiting for the user to start writing costs nothing, because the page loads while they type.
+///
+/// Refusals, all silent: a provider with no recorded fresh URL (never sent to yet, or its temporary
+/// chat is a click-toggle -- see `kotodama_broadcast`), a tab the user is currently looking at, and a
+/// provider with a send still in flight.
+#[tauri::command]
+pub fn kotodama_prewarm(window: Window, keys: Vec<String>) {
+    // A provider still OWED an answer must never be pre-warmed: navigating its tab throws away the
+    // answer that is on its way. `provider_busy` alone was not enough -- it only knows about the
+    // injection and harvest bookkeeping, and there are moments in between where a provider is still
+    // expected to answer while looking idle. The authoritative list is the broadcasts' pending sets.
+    // Measured: a 10-provider run where pre-warming a tab mid-harvest turned three working providers
+    // (ChatGPT, DeepSeek, Mistral) into `sendfail`.
+    let awaited: HashSet<String> = broadcasts()
+        .lock()
+        .unwrap()
+        .values()
+        .flat_map(|bc| bc.pending.iter().cloned())
+        .collect();
+    for key in keys {
+        if browser::foreground_key().as_deref() == Some(key.as_str())
+            || provider_busy(&key)
+            || awaited.contains(&key)
+        {
+            continue;
+        }
+        if prewarmed().lock().unwrap().contains_key(&key) {
+            continue; // already sitting on a fresh page
+        }
+        let Some(url) = fresh_bases().lock().unwrap().get(&key).cloned() else {
+            continue;
+        };
+        let Some(wv) = window.get_webview(&browser::provider_label(&key)) else {
+            continue;
+        };
+        match url.parse::<Url>() {
+            Ok(parsed) => {
+                if wv.navigate(parsed).is_ok() {
+                    debug::log(format!("kotodama prewarm START key={key} -> {}", &url[..url.len().min(90)]));
+                    // Not ready yet: `on_page_finished` promotes it once the page has actually loaded.
+                    prewarming().lock().unwrap().insert(key);
+                }
+            }
+            Err(e) => debug::log(format!("kotodama prewarm key={key} bad url: {e}")),
+        }
+    }
+}
+
 /// Report from `login_probe_js` (a passive, on-demand check -- the reactive password check inside
 /// `HARVEST_JS` has its own path via `finish_key`'s `status=="login"` branch, not this command).
 /// `needs_login=true` demotes the provider out of `known_providers` (a stale "known" flag is
@@ -1000,11 +1518,25 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
             .map(|bc| bc.pending.contains(key))
             .unwrap_or(false);
         if still_pending {
-            debug::log(format!("kotodama RESUME harvest after nav key={key} bid={bid}"));
-            if let Ok(js) = build_resume_js(&bid, key, &text) {
+            let allow_send = !already_sent(&bid, key);
+            debug::log(format!(
+                "kotodama RESUME after nav key={key} bid={bid} resend={}",
+                if allow_send { "YES (never went out)" } else { "NO (already sent)" }
+            ));
+            if let Ok(js) = build_resume_js(&bid, key, &text, allow_send) {
                 let _ = webview.eval(&js);
             }
             return;
+        }
+    }
+    // A pre-warm navigation has just finished: NOW the tab is a warm tab, and the next send can type
+    // straight into it. Promoted here rather than when the navigation was requested, because a page
+    // that is still loading is not ready -- see `prewarming`.
+    if prewarming().lock().unwrap().remove(key) {
+        let here = webview.url().map(|u| u.to_string()).unwrap_or_default();
+        if !here.is_empty() {
+            debug::log(format!("kotodama prewarm READY key={key}"));
+            prewarmed().lock().unwrap().insert(key.to_string(), here);
         }
     }
     // Neither a queued injection nor an owed harvest resume: this page-load is not part of any
@@ -1075,6 +1607,9 @@ pub async fn kotodama_broadcast(
             finish_key(&window, &broadcast_id, key, "error", "", false, "");
             continue;
         };
+        // Unico imbuto di TUTTI gli invii (broadcast, ritenta, inline transform): risvegliare qui
+        // copre ogni percorso. Un webview congelato non eseguirebbe lo script di fill iniettato.
+        browser::resume_provider(&window, key, true);
         let label = browser::provider_label(key);
         let existing = window.get_webview(&label);
         if let (Some(webview), false) = (&existing, new_chat) {
@@ -1094,6 +1629,58 @@ pub async fn kotodama_broadcast(
                 Err(_) => finish_key(&window, &broadcast_id, key, "error", "", false, ""),
             }
             continue;
+        }
+        // Fresh conversation. Remember the URL WITHOUT the message: it is what a pre-warm has to
+        // navigate to later, and it is the only place we get to know it (the provider URL rules live
+        // in the frontend).
+        //
+        // NOT recorded -- i.e. no pre-warming -- for providers whose temporary chat is a CLICK on an
+        // in-page toggle rather than a URL parameter: a reloaded page comes back in its normal state,
+        // and if the provider happened to remember the private mode, clicking the toggle again would
+        // switch it OFF. Anonymity must never be lost to a speed optimisation, so those keep loading
+        // the way they do today. Providers whose temporary chat lives in the URL (ChatGPT, Claude)
+        // carry it in the stripped base and are safe.
+        let click_temp = temp_for(key) && temp_trigger_js(key).is_some();
+        if !click_temp {
+            if let Some(stripped) = strip_prompt_params(base) {
+                fresh_bases().lock().unwrap().insert(key.clone(), stripped);
+            }
+        } else {
+            fresh_bases().lock().unwrap().remove(key);
+        }
+        // A send supersedes any pre-warm still in flight: drop the pending state, or the page-load it
+        // is about to finish would be mistaken for a ready warm tab while we are navigating elsewhere.
+        prewarming().lock().unwrap().remove(key);
+        // WARM TAB SHORTCUT: this provider is already sitting on an empty new conversation, so there
+        // is nothing to load -- type into it instead, exactly like a follow-up. This is where the ~4s
+        // page load leaves the user's waiting time. The URL is re-checked first: if the user browsed
+        // elsewhere in that tab, or the temporary-chat state no longer matches, we navigate as usual.
+        let prewarm_url = prewarmed().lock().unwrap().get(key).cloned();
+        if let (Some(webview), Some(expected)) = (&existing, prewarm_url) {
+            let here = webview.url().map(|u| u.to_string()).unwrap_or_default();
+            if prewarm_still_valid(&here, &expected) {
+                prewarmed().lock().unwrap().remove(key);
+                // `fresh = true`: the conversation IS new, so no previous answer to snapshot. `temp`
+                // is false because the temporary-chat state is already in place from the pre-warm --
+                // clicking its toggle again would switch it back OFF.
+                match build_inject_js(&broadcast_id, key, &text, true, false) {
+                    Ok(js) => {
+                        debug::log(format!("kotodama inject (warm tab, no page load) key={key}"));
+                        if webview.eval(&js).is_err() {
+                            finish_key(&window, &broadcast_id, key, "error", "", false, "");
+                        } else {
+                            active_harvests()
+                                .lock()
+                                .unwrap()
+                                .insert(key.clone(), (broadcast_id.clone(), text.clone()));
+                        }
+                    }
+                    Err(_) => finish_key(&window, &broadcast_id, key, "error", "", false, ""),
+                }
+                continue;
+            }
+            debug::log(format!("kotodama prewarm stale key={key} here={} ", &here[..here.len().min(90)]));
+            prewarmed().lock().unwrap().remove(key);
         }
         // Fresh conversation: navigate (or create parked) and inject once loaded.
         pending_injections().lock().unwrap().insert(

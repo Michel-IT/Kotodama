@@ -249,5 +249,8 @@
   "provComingSoon": "Curând",
   "close": "Închide",
   "ktSideCollapse": "Restrânge bara laterală",
-  "ktSideExpand": "Extinde bara laterală"
+  "ktSideExpand": "Extinde bara laterală",
+  "setLowPower": "Economie de resurse",
+  "setLowPowerHint": "Mai puțină memorie: desenare de către procesor și furnizorii inactivi suspendați. Necesită repornire.",
+  "setLowPowerRestart": "Salvat. Repornește Kotodama pentru a aplica economia de resurse."
 }

@@ -249,5 +249,8 @@
   "provComingSoon": "Segera Hadir",
   "close": "Tutup",
   "ktSideCollapse": "Tutup bilah samping",
-  "ktSideExpand": "Perluas bilah samping"
+  "ktSideExpand": "Perluas bilah samping",
+  "setLowPower": "Penghematan sumber daya",
+  "setLowPowerHint": "Memori lebih sedikit: penggambaran oleh CPU dan penyedia menganggur ditangguhkan. Perlu dimulai ulang.",
+  "setLowPowerRestart": "Disimpan. Mulai ulang Kotodama untuk menerapkan penghematan sumber daya."
 }

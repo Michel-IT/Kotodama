@@ -249,5 +249,8 @@
   "provComingSoon": "即将推出",
   "close": "关闭",
   "ktSideCollapse": "折叠侧边栏",
-  "ktSideExpand": "展开侧边栏"
+  "ktSideExpand": "展开侧边栏",
+  "setLowPower": "资源节省",
+  "setLowPowerHint": "更少内存：由 CPU 绘制，闲置的提供方将被暂停。需要重启。",
+  "setLowPowerRestart": "已保存。请重启 Kotodama 以应用资源节省。"
 }

@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "kotodama-provider-push",
-  "description": "Grants ONLY the kotodama_push data-delivery command and the provider_login_probe passive-login-signal command to the provider webviews (remote, untrusted third-party pages like chatgpt.com/claude.ai). No other Tauri command is reachable from them -- everything else (settings, files, clipboard, window control...) stays off-limits, per the isolation documented in default.json. kotodama_push just accepts text keyed by a broadcast id the Rust side already tracks; provider_login_probe just accepts a boolean 'this page has a password field / a chat composer' -- a malicious page could at worst send bogus data for a broadcast it can guess the id of (already possible via the pre-existing kotodama.result navigation-sentinel, a raw URL any page could navigate to) or a bogus login-state flag for itself (at most it can make its OWN tab pop into view or park early, no other provider/window is reachable) -- neither widens the exposure meaningfully. NOTE: 'webviews' alone was NOT enough -- Tauri capabilities also gate on 'local' (default true, meaning ONLY the app's own tauri://localhost origin) vs 'remote' URLs; provider webviews load REAL third-party pages, so this needed an explicit remote.urls allowlist naming every provider domain, or the grant silently never matched (confirmed via the exact runtime error: 'kotodama_push not allowed ... URL: https://chatgpt.com/... allowed on: [..., URL: local]').",
+  "description": "Grants ONLY the kotodama_push data-delivery command and the provider_login_probe passive-login-signal command to the provider webviews (remote, untrusted third-party pages like chatgpt.com/claude.ai). No other Tauri command is reachable from them -- everything else (settings, files, clipboard, window control...) stays off-limits, per the isolation documented in default.json. kotodama_push just accepts text keyed by a broadcast id the Rust side already tracks; provider_login_probe just accepts a boolean 'this page has a password field / a chat composer' -- a malicious page could at worst send bogus data for a broadcast it can guess the id of (already possible via the pre-existing kotodama.result navigation-sentinel, a raw URL any page could navigate to) or a bogus login-state flag for itself (at most it can make its OWN tab pop into view or park early, no other provider/window is reachable) -- neither widens the exposure meaningfully. NOTE: 'webviews' alone was NOT enough -- Tauri capabilities also gate on 'local' (default true, meaning ONLY the app's own tauri://localhost origin) vs 'remote' URLs; provider webviews load REAL third-party pages, so this needed an explicit remote.urls allowlist naming every provider domain, or the grant silently never matched (confirmed via the exact runtime error: 'kotodama_push not allowed ... URL: https://chatgpt.com/... allowed on: [..., URL: local]'). SECOND TRAP, same shape: the match is against the EFFECTIVE URL after redirects, not the one configured in PROVIDERS. copilot.com redirects to www.copilot.com, so the entry without 'www' did not cover the real page and every send to Copilot ended in 'sendfail' -- not for missing selectors (which is what it looked like) but because the injected script could not deliver its result. When one provider fails ALWAYS and only that one, grep '__IPCERR__' in the debug log before blaming its DOM.",
   "local": false,
   "remote": {
     "urls": [
@@ -17,7 +17,8 @@
       "https://poe.com/*",
       "https://www.kimi.com/*",
       "https://www.meta.ai/*",
-      "https://copilot.com/*"
+      "https://copilot.com/*",
+      "https://www.copilot.com/*"
     ]
   },
   "webviews": ["provider:*"],

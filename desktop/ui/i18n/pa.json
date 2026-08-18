@@ -249,5 +249,8 @@
   "provComingSoon": "ਜਲਦ ਆ ਰਿਹਾ",
   "close": "ਬੰਦ ਕਰੋ",
   "ktSideCollapse": "ਸਾਈਡਬਾਰ ਸਮੇਟੋ",
-  "ktSideExpand": "ਸਾਈਡਬਾਰ ਫੈਲਾਓ"
+  "ktSideExpand": "ਸਾਈਡਬਾਰ ਫੈਲਾਓ",
+  "setLowPower": "ਸਰੋਤ ਬਚਤ",
+  "setLowPowerHint": "ਘੱਟ ਮੈਮਰੀ: CPU ਨਾਲ ਡਰਾਇੰਗ ਅਤੇ ਵਿਹਲੇ ਪ੍ਰਦਾਤਾ ਰੋਕੇ ਗਏ। ਮੁੜ ਚਾਲੂ ਕਰਨਾ ਲੋੜੀਂਦਾ ਹੈ।",
+  "setLowPowerRestart": "ਸੰਭਾਲਿਆ ਗਿਆ। ਸਰੋਤ ਬਚਤ ਲਾਗੂ ਕਰਨ ਲਈ Kotodama ਮੁੜ ਚਾਲੂ ਕਰੋ।"
 }

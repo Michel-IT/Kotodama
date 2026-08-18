@@ -249,5 +249,8 @@
   "provComingSoon": "בקרוב",
   "close": "סגור",
   "ktSideCollapse": "כיווץ סרגל צד",
-  "ktSideExpand": "הרחיבו סרגל צד"
+  "ktSideExpand": "הרחיבו סרגל צד",
+  "setLowPower": "חיסכון במשאבים",
+  "setLowPowerHint": "פחות זיכרון: ציור במעבד וספקים לא פעילים מושהים. נדרשת הפעלה מחדש.",
+  "setLowPowerRestart": "נשמר. הפעל מחדש את Kotodama כדי להחיל את החיסכון במשאבים."
 }

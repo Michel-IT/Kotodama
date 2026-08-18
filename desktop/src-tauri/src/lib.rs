@@ -1093,6 +1093,24 @@ async fn install_update(app: AppHandle) -> Result<(), String> {
 
 // ============================ ENTRY ============================
 
+/// Reads ONLY `low_power` from settings.json without going through Tauri, because it is needed before
+/// an AppHandle exists (see the comment in `run`). The path is the one `app_config_dir()` would
+/// resolve on Windows: `%APPDATA%\<identifier>\settings.json`. Any problem (file missing on first
+/// launch, malformed JSON, absent field) means `false`: hardware acceleration stays on, which is the
+/// historic behaviour and the one that makes nobody worse off.
+#[cfg(windows)]
+pub(crate) fn read_low_power_pref() -> bool {
+    let Ok(appdata) = std::env::var("APPDATA") else { return false };
+    let path = std::path::Path::new(&appdata)
+        .join("com.kotodama.app")
+        .join("settings.json");
+    let Ok(raw) = std::fs::read_to_string(path) else { return false };
+    serde_json::from_str::<serde_json::Value>(&raw)
+        .ok()
+        .and_then(|v| v.get("low_power").and_then(|b| b.as_bool()))
+        .unwrap_or(false)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // WebView2 (Windows): ALL webviews of the process must create their environment
@@ -1107,7 +1125,17 @@ pub fn run() {
     // We append to any pre-existing value (e.g. debug flags).
     #[cfg(windows)]
     {
-        let extra = browser::provider_browser_args();
+        let mut extra = browser::provider_browser_args();
+        // "Resource saving" (settings.low_power): no hardware acceleration -> WebView2 keeps its GPU
+        // process much lighter. It must be decided HERE and not in setup: WebView2 reads these
+        // arguments when it creates its own environment, i.e. before any window exists and therefore
+        // before there is an AppHandle to call settings::load with. Hence the value is read straight
+        // from the file, at the same path app_config_dir() resolves (%APPDATA%\<identifier>,
+        // identifier in tauri.conf.json). Missing/unreadable file or absent field -> acceleration on,
+        // i.e. the historic behaviour.
+        if read_low_power_pref() {
+            extra.push_str(" --disable-gpu --disable-gpu-compositing");
+        }
         let value = match std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS") {
             Ok(existing) if !existing.trim().is_empty() => format!("{existing} {extra}"),
             _ => extra,
@@ -1178,6 +1206,19 @@ pub fn run() {
 
             // Update the values loaded from disk into the already-registered state.
             *app.state::<AppState>().settings.lock().unwrap() = loaded.clone();
+
+            // Windows: "keep less memory" on every webview that ALREADY exists (here just the main
+            // one). Provider webviews get the same setting at birth, in browser::create_tab: those are
+            // the heavy processes, the main one is the garnish.
+            #[cfg(windows)]
+            for (label, wv) in app.webviews() {
+                browser::win_low_memory_mode(&wv, &label);
+            }
+            // Idle provider suspension: starts ONLY with KOTO_SUSPEND_IDLE=<seconds> or the "resource
+            // saving" setting, because it goes through SetIsVisible(false) -- the area that has already
+            // frozen this app on Windows in the past (see the comment on PARK_Y).
+            #[cfg(windows)]
+            browser::start_idle_suspender(&handle);
 
             // Main window lifecycle + show IMMEDIATELY: the first paint arrives
             // before the non-visual init (tray/hotkey/monitor) below.
@@ -1400,11 +1441,24 @@ pub fn run() {
                 if let Some(main) = handle.get_webview_window("main") {
                     let keys: Vec<String> = if list.is_empty() { vec!["anthropic".to_string()] }
                         else { list.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect() };
+                    // KOTO_AUTOWARM (with KOTO_AUTOKOTO): after the first send, at a safe distance, a
+                    // FOLLOW-UP message in the same tab (warm inject). Needed because on a ?q= provider
+                    // the first send is fired by the URL, so it does not exercise sending from the
+                    // composer at all -- the only path left when a provider changes its editor. The 50s
+                    // are there not to cancel the previous send: a new broadcast on the same key closes
+                    // the ones still in flight (verified: two sends 24s apart made the first end in
+                    // `status=error`).
+                    let warm = std::env::var("KOTO_AUTOWARM").is_ok();
                     std::thread::spawn(move || {
                         for (i, k) in keys.iter().enumerate() {
                             std::thread::sleep(std::time::Duration::from_millis(if i == 0 { 8000 } else { 24000 }));
                             debug::log(format!("auto-kotodama broadcast: {k}"));
                             let _ = main.eval(format!("window.__ktAutoTest && __ktAutoTest('{k}')"));
+                            if warm {
+                                std::thread::sleep(std::time::Duration::from_millis(50_000));
+                                debug::log(format!("auto-kotodama WARM follow-up: {k}"));
+                                let _ = main.eval(format!("window.__ktAutoWarm && __ktAutoWarm('{k}')"));
+                            }
                         }
                     });
                 }
@@ -1415,6 +1469,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             browser::show_provider_tab,
             kotodama::kotodama_broadcast,
+            kotodama::kotodama_prewarm,
             kotodama::kotodama_push,
             kotodama::provider_login_probe,
             mark_provider_known,

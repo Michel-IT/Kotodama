@@ -249,5 +249,8 @@
   "provComingSoon": "Kommer snart",
   "close": "Luk",
   "ktSideCollapse": "Skjul sidepanel",
-  "ktSideExpand": "Vis sidepanel"
+  "ktSideExpand": "Vis sidepanel",
+  "setLowPower": "Ressourcebesparelse",
+  "setLowPowerHint": "Mindre hukommelse: tegning via CPU og inaktive udbydere sat på pause. Kræver genstart.",
+  "setLowPowerRestart": "Gemt. Genstart Kotodama for at anvende ressourcebesparelsen."
 }

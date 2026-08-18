@@ -16,6 +16,7 @@
     "core:window:allow-internal-toggle-maximize",
     "allow-show-provider-tab",
     "allow-kotodama-broadcast",
+    "allow-kotodama-prewarm",
     "allow-kotodama-push",
     "allow-provider-login-probe",
     "allow-mark-provider-known",

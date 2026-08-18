@@ -249,5 +249,8 @@
   "provComingSoon": "Aviat",
   "close": "Tanca",
   "ktSideCollapse": "Aplega la barra lateral",
-  "ktSideExpand": "Desplega la barra lateral"
+  "ktSideExpand": "Desplega la barra lateral",
+  "setLowPower": "Estalvi de recursos",
+  "setLowPowerHint": "Menys memòria: dibuix per CPU i proveïdors inactius suspesos. Cal reiniciar.",
+  "setLowPowerRestart": "Desat. Reinicia Kotodama per aplicar l'estalvi de recursos."
 }

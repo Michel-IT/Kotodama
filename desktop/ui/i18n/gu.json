@@ -249,5 +249,8 @@
   "provComingSoon": "જલ્દીથી",
   "close": "બંધ કરો",
   "ktSideCollapse": "સાઇડબાર સંકુચિત કરો",
-  "ktSideExpand": "સાઇડબાર વિસ્તૃત કરો"
+  "ktSideExpand": "સાઇડબાર વિસ્તૃત કરો",
+  "setLowPower": "સંસાધન બચત",
+  "setLowPowerHint": "ઓછી મેમરી: CPU દ્વારા ચિત્રણ અને નિષ્ક્રિય પ્રદાતાઓ સ્થગિત. પુનઃપ્રારંભ જરૂરી છે.",
+  "setLowPowerRestart": "સાચવ્યું. સંસાધન બચત લાગુ કરવા Kotodama પુનઃપ્રારંભ કરો."
 }

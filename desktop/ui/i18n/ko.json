@@ -249,5 +249,8 @@
   "provComingSoon": "곧 출시",
   "close": "닫기",
   "ktSideCollapse": "사이드바 접기",
-  "ktSideExpand": "사이드바 펼치기"
+  "ktSideExpand": "사이드바 펼치기",
+  "setLowPower": "리소스 절약",
+  "setLowPowerHint": "메모리 절약: CPU 그리기, 사용하지 않는 제공자는 일시 중단. 다시 시작해야 합니다.",
+  "setLowPowerRestart": "저장했습니다. 리소스 절약을 적용하려면 Kotodama를 다시 시작하세요."
 }

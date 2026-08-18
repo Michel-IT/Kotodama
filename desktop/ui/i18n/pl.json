@@ -249,5 +249,8 @@
   "provComingSoon": "Wkrótce",
   "close": "Zamknij",
   "ktSideCollapse": "Zwiń pasek boczny",
-  "ktSideExpand": "Rozwiń pasek boczny"
+  "ktSideExpand": "Rozwiń pasek boczny",
+  "setLowPower": "Oszczędzanie zasobów",
+  "setLowPowerHint": "Mniej pamięci: rysowanie przez procesor i wstrzymanie nieużywanych dostawców. Wymaga ponownego uruchomienia.",
+  "setLowPowerRestart": "Zapisano. Uruchom Kotodama ponownie, aby zastosować oszczędzanie zasobów."
 }

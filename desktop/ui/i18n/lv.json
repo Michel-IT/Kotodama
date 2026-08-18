@@ -249,5 +249,8 @@
   "provComingSoon": "Drīzumā",
   "close": "Aizvērt",
   "ktSideCollapse": "Sakļaut sānjoslu",
-  "ktSideExpand": "Izvērst sānjoslu"
+  "ktSideExpand": "Izvērst sānjoslu",
+  "setLowPower": "Resursu taupīšana",
+  "setLowPowerHint": "Mazāk atmiņas: zīmēšana ar procesoru un neaktīvie pakalpojumi apturēti. Nepieciešama restartēšana.",
+  "setLowPowerRestart": "Saglabāts. Restartējiet Kotodama, lai resursu taupīšana tiktu piemērota."
 }

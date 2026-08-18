@@ -249,5 +249,8 @@
   "provComingSoon": "Kommer snart",
   "close": "Stäng",
   "ktSideCollapse": "Fäll ihop sidofältet",
-  "ktSideExpand": "Fäll ut sidofältet"
+  "ktSideExpand": "Fäll ut sidofältet",
+  "setLowPower": "Resursbesparing",
+  "setLowPowerHint": "Mindre minne: ritning via processorn och inaktiva leverantörer pausade. Kräver omstart.",
+  "setLowPowerRestart": "Sparat. Starta om Kotodama för att tillämpa resursbesparingen."
 }
