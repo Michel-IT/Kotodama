@@ -379,7 +379,13 @@ const STREAM_WATCH_JS: &str = r##"
             // reads this before deciding to give up: a model that reasons before writing can stay
             // silent in the DOM for longer than the arming budget, and declaring `sendfail` there is
             // wrong twice over -- the message did go out, and the answer is on its way.
+            // Two counters, two questions. `__ktStreamOpen` = how many streams are open RIGHT NOW
+            // (is it generating?). `__ktStreamEver` = has one ever opened since this injection (did
+            // the message reach the provider at all?). The second is what the arming loop needs: a
+            // model can finish its reasoning stream and open the answer one a moment later, and in
+            // that gap the first counter is legitimately zero while the send was plainly fine.
             try { window.__ktStreamOpen = (window.__ktStreamOpen || 0) + 1; } catch(e){}
+            try { window.__ktStreamEver = (window.__ktStreamEver || 0) + 1; } catch(e){}
             function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} ended(); }
             (function pump(){
               mine.read().then(function(r){ if (r.done) { closed(); return; } pump(); }, function(){ closed(); });
@@ -413,6 +419,8 @@ const HARVEST_JS: &str = r##"
 (function(){
   var BID = __kt_bid, KEY = __kt_key, ANS_SEL = __kt_ans, BUSY_SEL = __kt_busy, FRESH = __kt_fresh;
   var FAST_DONE = __kt_fast;   // trust the provider's own "generating" marker, see below
+  // Set by Rust on a re-injection after the page navigated: this message is already out.
+  var KNOWN_SENT = (typeof __kt_sent !== 'undefined') && !!__kt_sent;
   // The prompt we just sent (from the fill script): never harvest our own message back
   // (the generic selector chain can match the USER bubble on providers without a
   // dedicated assistant selector).
@@ -468,10 +476,16 @@ const HARVEST_JS: &str = r##"
       t = lines.join('\n').trim();
     }
     // Trailing timestamp: some providers print it inside the message row (measured on Mistral:
-    // "OK\n\n1:16pm"). Stripped ONLY when it is the last thing and ONLY in the hour:minute form with
-    // optional am/pm -- digits and a colon, hence language-independent. It cannot eat real content: an
-    // isolated time at the very end is never part of the answer.
-    t = t.replace(/\s*\b\d{1,2}:\d{2}(:\d{2})?\s*(am|pm|AM|PM)?\s*$/, '').trim();
+    // "OK\n\n1:16pm"). Stripped ONLY in the hour:minute form with optional am/pm -- digits and a
+    // colon, hence language-independent -- and ONLY when it sits ON ITS OWN LINE, which is how a
+    // message-row timestamp is printed. The earlier version matched a trailing time anywhere and so
+    // ate real content: an answer that IS a time ("17:25") was erased down to nothing, and the
+    // harvest then waited out its whole budget and reported a failure for an answer sitting in plain
+    // sight (measured on all four of Claude/ChatGPT/DeepSeek/Gemini asked for an arrival time). An
+    // answer ENDING in a time ("arriva alle 17:25") lost it the same way. The final guard makes the
+    // rule unable to empty an answer under any input.
+    var noStamp = t.replace(/\n\s*\d{1,2}:\d{2}(:\d{2})?\s*(am|pm|AM|PM)?\s*$/, '').trim();
+    if (noStamp) t = noStamp;
     return t;
   }
   // "Still generating?" - LANGUAGE-INDEPENDENT (no localized aria-label text). Uses the
@@ -724,7 +738,8 @@ const HARVEST_JS: &str = r##"
     // providers answer fine when sent to alone. So the clock only runs once there is a composer.
     if (composerVal() !== null) armTries++;
     // Absolute ceiling, so a page that never produces a composer cannot wait forever.
-    if (Date.now() - armT0 > 180000) { clearInterval(armIv); census(); setTimeout(function(){ deliver('sendfail',''); }, 300); return; }
+    // A message we KNOW went out and that produced nothing in 180s is a timeout, not a failed send.
+    if (Date.now() - armT0 > 180000) { clearInterval(armIv); census(); setTimeout(function(){ deliver(KNOWN_SENT ? 'timeout' : 'sendfail', ''); }, 300); return; }
     authCensus();
     if (authWallPresent()) { clearInterval(armIv); deliver('login',''); return; }
     // Arms the stream watcher as soon as the message is known to be out. Needed because on `?q=`
@@ -742,12 +757,20 @@ const HARVEST_JS: &str = r##"
     }
     // ~30s: never sent. census() first (-> debug log), then deliver AFTER a gap: two
     // back-to-back location.href assignments coalesce and the first would be lost.
-    // ~30s with nothing to show: normally that means the message never left. But NOT while a response
-    // stream is open -- the provider is generating, it simply has not painted anything yet, which is
-    // exactly what a model that reasons before answering does (measured on Claude: the message was
-    // sent, Claude thought for longer than the budget, and this declared `sendfail` anyway). While a
-    // stream is open we keep waiting; the harvest's own 180s budget is still the outer bound.
-    if (armTries > 60 && !window.__ktStreamOpen) { clearInterval(armIv); census(); setTimeout(function(){ deliver('sendfail',''); }, 300); }
+    // ~30s with nothing to show: normally that means the message never left. But NOT once a response
+    // stream has been seen -- the provider took the message and is working on it, it simply has not
+    // painted anything yet, which is exactly what a model that reasons before writing does. Checking
+    // only "a stream is open right now" was not enough: measured on a reasoning question, all four
+    // providers had their stream open and closed inside the budget and were declared `sendfail`
+    // anyway, with the answer already on its way. `__ktStreamEver` is the honest test -- did this
+    // send ever reach the provider -- and the harvest's own 180s budget remains the outer bound.
+    // KNOWN_SENT closes the last hole: after the page navigates (Claude and friends jump to the new
+    // conversation the moment the message goes out) the script is re-injected on a page where the
+    // composer was never filled, so "field emptied = accepted" cannot fire, and the answer's stream
+    // opened before the watcher was reinstalled, so neither counter sees it. Rust, however, knows
+    // the send is out -- it marked it -- and passes that in. Calling THAT `sendfail` was simply
+    // false, and it is what made every reasoning answer fail while quick ones worked.
+    if (armTries > 60 && !window.__ktStreamOpen && !window.__ktStreamEver && !KNOWN_SENT) { clearInterval(armIv); census(); setTimeout(function(){ deliver('sendfail',''); }, 300); }
   }, 500);
   // One-shot DOM census when the harvest stays empty: which candidate selectors match
   // what on THIS provider's page. Only reaches the debug log (KOTODAMA_DEBUG) — it is
@@ -766,6 +789,23 @@ const HARVEST_JS: &str = r##"
       } catch(e){ out.push(sels[i].slice(0,34)+' >> ERR'); }
     }
     out.push('title="'+document.title.slice(0,60)+'"');
+    // The counts above say a selector matched; they do not say WHICH element the harvest ends up
+    // taking, and that is the part that goes wrong: on Qwen `[class*="message"]` matched nine
+    // elements with the LAST one empty, so the answer sat in the page while the chain returned
+    // nothing. Here we list the tail of that chain with each element's identity and text length, so
+    // the provider's real answer container can be read off the page instead of guessed at.
+    try {
+      var tail = document.querySelectorAll('[class*="message" i], [class*="bubble" i], [class*="chat" i]');
+      var td = [];
+      for (var ti = Math.max(0, tail.length - 6); ti < tail.length; ti++) {
+        var e = tail[ti];
+        var cls = (typeof e.className === 'string' ? e.className : '').trim().split(/\s+/).slice(0,3).join('.');
+        var role = e.getAttribute('data-role') || e.getAttribute('data-message-role') || '';
+        td.push(e.tagName.toLowerCase() + (cls ? '.' + cls.slice(0,40) : '') + (role ? '[' + role + ']' : '')
+          + ' len=' + ((e.innerText||'').trim().length));
+      }
+      out.push('tail=' + td.join(' ; '));
+    } catch(e){}
     var c = composerVal(); out.push('composer='+(c===null?'NONE':('len'+c.length)));
     // ALL candidate fields, not only the chosen one: `composer=len1` on Grok did not say whether the
     // fill had landed in the wrong field or failed to take in the right one. Here we see each one's
@@ -811,6 +851,51 @@ const HARVEST_JS: &str = r##"
       out.push('btnsComposer=' + bl.join(','));
     } catch(e){}
     window.__ktPush({ b: BID, k: KEY, st: 'diag', d: out.join(' || ').slice(0,1400) });
+  }
+  // DISCOVERY probe (debug only, KOTO_THINKPROBE=1): reasoning models print their thinking in a
+  // block that is a SIBLING of the answer, inside the same assistant turn -- so the answer selector
+  // never sees it and we have nothing to show the user. Rather than guessing a selector per
+  // provider, this dumps the structural identity (tag + data-* + class fragments) of every text
+  // node group in the turn that sits OUTSIDE the answer element, so the real marker can be read off
+  // a live page and codified. Emitted once, at delivery time, with the answer already complete.
+  function thinkCensus(){
+    try {
+      var ans = getAnswerEl(); if (!ans) return;
+      // Climb to the assistant TURN: the first ancestor that is meaningfully taller than the answer
+      // (the reasoning block is what makes it taller). Bounded, or we end up at <body>.
+      var wrap = ans.parentElement, hops = 0, ah = ans.getBoundingClientRect().height;
+      while (wrap && hops < 8) {
+        var wh = wrap.getBoundingClientRect().height;
+        if (wh > ah + 24 && (wrap.innerText || '').length > (ans.innerText || '').length + 20) break;
+        wrap = wrap.parentElement; hops++;
+      }
+      if (!wrap) return;
+      function ident(el){
+        var a = [el.tagName.toLowerCase()];
+        for (var i=0;i<el.attributes.length;i++){
+          var at = el.attributes[i];
+          if (at.name.indexOf('data-') === 0 || at.name === 'id' || at.name === 'role' || at.name === 'aria-expanded') {
+            a.push(at.name + '=' + String(at.value).slice(0,28));
+          }
+        }
+        var cl = (typeof el.className === 'string' ? el.className : '').trim();
+        if (cl) a.push('.' + cl.split(/\s+/).slice(0,4).join('.').slice(0,60));
+        return a.join('|');
+      }
+      var out = ['THINK-CENSUS hops=' + hops + ' wrap=' + ident(wrap)];
+      var all = wrap.querySelectorAll('*');
+      for (var i=0; i<all.length && out.length < 14; i++) {
+        var el = all[i];
+        if (el === ans || ans.contains(el) || el.contains(ans)) continue;  // the answer itself
+        var t = (el.innerText || '').trim();
+        if (t.length < 12) continue;                                       // labels, icons, chrome
+        // Only the OUTERMOST element of each text group: its children repeat the same text.
+        if (el.parentElement && el.parentElement !== wrap && !ans.contains(el.parentElement)
+            && (el.parentElement.innerText || '').trim().length === t.length) continue;
+        out.push(ident(el) + ' len=' + t.length + ' "' + t.replace(/\s+/g,' ').slice(0,60) + '"');
+      }
+      window.__ktPush({ b: BID, k: KEY, st: 'diag', d: out.join(' || ').slice(0,1400) });
+    } catch(e){}
   }
   function harvest(){
     harvesting = true;
@@ -904,6 +989,7 @@ const HARVEST_JS: &str = r##"
             window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('SHORT-DONE txt="'+txtFlat+'" el='+idl+' kids=[' + kids.join(' | ') + '] html='+outer).slice(0,1400) });
           } catch(e){}
         }
+        if (window.__ktThinkProbe) thinkCensus();
         deliver('done', txt, elToMd(getAnswerEl()));
         return;
       }
@@ -1041,7 +1127,15 @@ const TEMP_PROBE_JS: &str = r##"
         icons.push((r.left|0)+':'+(b.getAttribute('aria-label')||'').slice(0,16)+':'+(sp.getAttribute('d')||'').slice(0,40));
       }
       var msg = 'INCOG['+tag+'] url='+location.pathname+' visMatches='+vis+' pressed='+pressed+' :: '+(hits.length?hits.join('  ||  '):'(no control matched)')+' :: TOPICONS '+icons.join(' | ');
-      window.location.href = 'https://kotodama.result/?b='+encodeURIComponent(__kt_bid)+'&k='+encodeURIComponent(__kt_key)+'&st=diag&d='+encodeURIComponent(msg.slice(0,1400));
+      // Deliver over IPC when the page has the bridge, and navigate ONLY as a fallback. Navigating
+      // is not free: it TEARS DOWN the very page being probed. Measured on Qwen -- the two probe
+      // dumps navigated the tab away mid-answer, the app came back on the site's root (a brand new
+      // empty chat), and the harvester then searched an empty page for three minutes and reported a
+      // failure. The conversation and its answer were fine; the diagnostic had destroyed the thing
+      // it was diagnosing. Any probe added here must obey the same rule.
+      var d = msg.slice(0,1400);
+      if (window.__ktPush) { window.__ktPush({ b: __kt_bid, k: __kt_key, st: 'diag', d: d }); return; }
+      window.location.href = 'https://kotodama.result/?b='+encodeURIComponent(__kt_bid)+'&k='+encodeURIComponent(__kt_key)+'&st=diag&d='+encodeURIComponent(d);
     } catch(err){}
   }
   try { setTimeout(function(){ dump('pre'); }, 2500); } catch(e){}
@@ -1055,7 +1149,7 @@ const TEMP_PROBE_JS: &str = r##"
 fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp: bool) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     let prelude = format!(
-        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; window.__ktDiag = {diag};",
+        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0;",
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
         serde_json::to_string(key).map_err(|e| e.to_string())?,
         serde_json::to_string(ans).map_err(|e| e.to_string())?,
@@ -1069,6 +1163,12 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
     // The INCOG diagnostic probe only runs under KOTODAMA_DEBUG (used to discover a provider's
     // incognito URL/selector); never in production.
     let probe = if fresh && crate::debug::enabled() { TEMP_PROBE_JS } else { "" };
+    // Reasoning discovery probe: only sets a flag; the census itself runs at delivery time.
+    let think = if crate::debug::enabled() && std::env::var("KOTO_THINKPROBE").is_ok() {
+        "window.__ktThinkProbe = true;"
+    } else {
+        ""
+    };
     // Network discovery probe: BEFORE the fill, or the send request itself is missed.
     let net = if crate::debug::enabled() && std::env::var("KOTO_NETPROBE").is_ok() {
         NET_PROBE_JS
@@ -1078,6 +1178,7 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
     // STREAM_WATCH_JS goes BEFORE the fill: it has to be in place before the send opens the answer's
     // stream, otherwise the one request that matters is the one it misses.
     Ok(prelude
+        + think
         + PUSH_HELPER_JS
         + SR_HIDE_JS
         + net
@@ -1106,7 +1207,7 @@ fn build_resume_js(
         // `window.__ktDiag` must be set HERE too: without it, all the fill-loop diagnostics stayed
         // silent in exactly the path where they are needed -- the resume after a navigation (providers
         // whose temporary chat is a click DO navigate).
-        "var __apb_text = {}; var __kt_head = {}; var __apb_send = true; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true; var __kt_fast = {fast}; window.__ktDiag = {diag};",
+        "var __apb_text = {}; var __kt_head = {}; var __apb_send = true; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true; var __kt_fast = {fast}; var __kt_sent = {sent}; window.__ktDiag = {diag}; window.__ktStreamEver = 0;",
         serde_json::to_string(text).map_err(|e| e.to_string())?,
         serde_json::to_string(&head).map_err(|e| e.to_string())?,
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
@@ -1114,6 +1215,9 @@ fn build_resume_js(
         serde_json::to_string(ans).map_err(|e| e.to_string())?,
         serde_json::to_string(busy).map_err(|e| e.to_string())?,
         fast = fast_done_for(key),
+        // The send is a FACT Rust holds (sent_marks), not something to re-derive from the page: the
+        // harvester must never declare "never sent" about a message it knows went out.
+        sent = !allow_send,
         diag = crate::debug::enabled(),
     );
     // `allow_send` is decided by Rust from `sent_marks`, NOT by reading the page:
@@ -1487,7 +1591,9 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
         if std::env::var("KOTO_AUTOPROBE").ok().map(|v| v.split(',').any(|k| k.trim() == key)).unwrap_or(false) {
             let prelude = format!("var __kt_bid={}; var __kt_key={};",
                 serde_json::to_string("probe").unwrap(), serde_json::to_string(key).unwrap());
-            let _ = webview.eval(&(prelude + TEMP_PROBE_JS));
+            // PUSH_HELPER_JS first: without it the probe has no IPC and falls back to navigation,
+            // which is exactly what wrecks the page under examination.
+            let _ = webview.eval(&(prelude + PUSH_HELPER_JS + TEMP_PROBE_JS));
             return;
         }
     }

@@ -78,12 +78,45 @@ pub struct Settings {
     pub low_power: bool,
 }
 
+/// Default modifier pair for every built-in shortcut, per platform.
+///
+/// macOS gets Ctrl+Cmd instead of Ctrl+Alt: on a Mac keyboard Option is a dead-key modifier that
+/// composes characters (Opt+C types a cedilla), so Ctrl+Alt+<letter> is both awkward to press and
+/// prone to clashing with text input, while Ctrl+Cmd is the free combination Apple leaves to apps.
+/// Windows and Linux keep Ctrl+Alt, which is what those users already have.
+#[cfg(target_os = "macos")]
+pub const DEFAULT_MOD: &str = "Control+Super"; // Super == Command on macOS
+#[cfg(not(target_os = "macos"))]
+pub const DEFAULT_MOD: &str = "Control+Alt";
+
+/// The modifier every platform used before this split. Only settings still holding EXACTLY these
+/// combinations are migrated (see `migrate_platform_hotkeys`).
+pub const LEGACY_MOD: &str = "Control+Alt";
+
+/// The shortcuts a fresh install ships with. Also the reference used to tell an untouched default
+/// from a user's own choice when migrating (see `migrate_platform_hotkeys`).
+pub fn default_hotkey() -> String {
+    // The main shortcut cannot be <mod>+Space on macOS: BOTH candidates are taken by the system
+    // there -- Ctrl+Cmd+Space opens Emoji & Symbols, and Ctrl+Opt+Space switches input source. K
+    // (for Kotodama) is free under Ctrl+Cmd, unlike F/Q/D/Space which macOS already claims.
+    // `cfg!` rather than `#[cfg]` on purpose: both arms are compiled on every platform, so a
+    // Windows build still type-checks the macOS one.
+    let key = if cfg!(target_os = "macos") { "KeyK" } else { "Space" };
+    format!("{DEFAULT_MOD}+{key}")
+}
+pub fn default_recipe_hotkeys() -> std::collections::HashMap<String, String> {
+    std::collections::HashMap::from([
+        ("key:rephrase".to_string(), format!("{DEFAULT_MOD}+KeyC")),
+        ("key:translate".to_string(), format!("{DEFAULT_MOD}+KeyT")),
+    ])
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Settings {
             language: "".into(), // auto: the frontend detects the OS language on first launch
             default_provider: "openai".into(),
-            hotkey: "Control+Alt+Space".into(),
+            hotkey: default_hotkey(),
             monitor_enabled: true,
             autostart: true,
             theme: "sumi".into(),
@@ -93,13 +126,11 @@ impl Default for Settings {
             resp_fmt: 1, // default "Solo testo": clean, answer-only output
             always_on_top: true,
             welcome_ack: false,
-            // Default per-recipe shortcuts (fresh installs): Riformula = Ctrl+Alt+C,
-            // Traduci = Ctrl+Alt+T. Applied via serde container-default when the field is
-            // absent from settings.json; users who already set their own keep theirs.
-            recipe_hotkeys: std::collections::HashMap::from([
-                ("key:rephrase".to_string(), "Control+Alt+KeyC".to_string()),
-                ("key:translate".to_string(), "Control+Alt+KeyT".to_string()),
-            ]),
+            // Default per-recipe shortcuts (fresh installs): Rephrase = <mod>+C, Translate =
+            // <mod>+T, where <mod> is Ctrl+Alt everywhere and Ctrl+Cmd on macOS (see DEFAULT_MOD).
+            // Applied via serde container-default when the field is absent from settings.json;
+            // users who already set their own keep theirs.
+            recipe_hotkeys: default_recipe_hotkeys(),
             recipe_notify: std::collections::HashMap::new(),
             kt_temp_chats: true,
             kt_temp_providers: std::collections::HashMap::new(),
@@ -137,6 +168,35 @@ pub fn load(app: &AppHandle) -> Settings {
         .ok()
         .and_then(|s| serde_json::from_str(&s).ok())
         .unwrap_or_default()
+}
+
+/// Moves an install off the shortcuts it inherited from the historic Ctrl+Alt defaults onto the
+/// ones this platform now ships (see `DEFAULT_MOD`). In practice: macOS only, since every other
+/// platform still defaults to Ctrl+Alt and the function then does nothing.
+///
+/// Only values still EXACTLY equal to the old default are touched: a combination the user picked
+/// themselves is their choice and stays, even if it happens to be a poor one on this platform.
+/// Returns true when something changed, so the caller can persist and re-register.
+pub fn migrate_platform_hotkeys(s: &mut Settings) -> bool {
+    if DEFAULT_MOD == LEGACY_MOD {
+        return false; // this platform never moved: nothing to migrate
+    }
+    let mut changed = false;
+    if s.hotkey == format!("{LEGACY_MOD}+Space") {
+        s.hotkey = default_hotkey();
+        changed = true;
+    }
+    let fresh = default_recipe_hotkeys();
+    for (recipe, legacy_key) in [("key:rephrase", "KeyC"), ("key:translate", "KeyT")] {
+        let legacy = format!("{LEGACY_MOD}+{legacy_key}");
+        if s.recipe_hotkeys.get(recipe) == Some(&legacy) {
+            if let Some(v) = fresh.get(recipe) {
+                s.recipe_hotkeys.insert(recipe.to_string(), v.clone());
+                changed = true;
+            }
+        }
+    }
+    changed
 }
 
 /// Save the settings to disk.
@@ -226,4 +286,50 @@ pub fn save_kt_sessions(app: &AppHandle, sessions: &serde_json::Value) -> Result
     let json = serde_json::to_string(sessions).map_err(|e| e.to_string())?; // compact: can be large
     let _guard = io_lock().lock().unwrap();
     fs::write(path, json).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The shipped shortcuts must follow the platform: macOS on Ctrl+Cmd (Option is a dead-key
+    /// modifier there and Ctrl+Alt+Space is the system input-source switcher), everyone else on
+    /// the historic Ctrl+Alt.
+    #[test]
+    fn defaults_follow_the_platform() {
+        let r = default_recipe_hotkeys();
+        if cfg!(target_os = "macos") {
+            assert_eq!(DEFAULT_MOD, "Control+Super");
+            assert_eq!(default_hotkey(), "Control+Super+KeyK");
+            assert_eq!(r["key:rephrase"], "Control+Super+KeyC");
+            assert_eq!(r["key:translate"], "Control+Super+KeyT");
+        } else {
+            assert_eq!(DEFAULT_MOD, "Control+Alt");
+            assert_eq!(default_hotkey(), "Control+Alt+Space");
+            assert_eq!(r["key:rephrase"], "Control+Alt+KeyC");
+            assert_eq!(r["key:translate"], "Control+Alt+KeyT");
+        }
+    }
+
+    /// The migration moves what the install merely inherited, and nothing the user chose. Off
+    /// macOS it must not move anything at all.
+    #[test]
+    fn migration_moves_only_untouched_defaults() {
+        let mut s = Settings::default();
+        s.hotkey = "Control+Alt+Space".into();
+        s.recipe_hotkeys
+            .insert("key:rephrase".into(), "Control+Alt+KeyC".into());
+        s.recipe_hotkeys
+            .insert("key:translate".into(), "Control+Shift+F9".into()); // the user's own choice
+
+        let changed = migrate_platform_hotkeys(&mut s);
+
+        assert_eq!(changed, cfg!(target_os = "macos"));
+        assert_eq!(s.hotkey, default_hotkey());
+        assert_eq!(
+            s.recipe_hotkeys["key:rephrase"],
+            default_recipe_hotkeys()["key:rephrase"]
+        );
+        assert_eq!(s.recipe_hotkeys["key:translate"], "Control+Shift+F9");
+    }
 }

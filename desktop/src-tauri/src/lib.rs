@@ -632,7 +632,9 @@ fn send_combo(vk_letter: u16) {
         }
     };
     // 1) release the hotkey's own modifiers (control=0x3B, option=0x3A, shift=0x38) still held, so
-    //    the app doesn't see e.g. Ctrl+Opt+Cmd+C instead of a clean Cmd+C.
+    //    the app doesn't see e.g. Ctrl+Opt+Cmd+C instead of a clean Cmd+C. Command is deliberately
+    //    NOT released: the macOS shortcuts are Ctrl+Cmd based, so a still-held Command is the very
+    //    modifier this combo needs, and pressing it again below is harmless.
     post(0x3B, false, false);
     post(0x3A, false, false);
     post(0x38, false, false);
@@ -1202,7 +1204,13 @@ pub fn run() {
             // fresh-install autostart activation below without ever touching an existing user's
             // explicit choice.
             let fresh_install = !settings::exists(&handle);
-            let loaded = settings::load(&handle);
+            let mut loaded = settings::load(&handle);
+            // macOS only: an install that still carries the Ctrl+Alt shortcuts inherited from the
+            // Windows defaults is moved onto Ctrl+Cmd once, and persisted right away so the move
+            // survives even if the user never opens Settings again.
+            if settings::migrate_platform_hotkeys(&mut loaded) {
+                let _ = settings::save(&handle, &loaded);
+            }
 
             // Update the values loaded from disk into the already-registered state.
             *app.state::<AppState>().settings.lock().unwrap() = loaded.clone();
@@ -1453,7 +1461,11 @@ pub fn run() {
                         for (i, k) in keys.iter().enumerate() {
                             std::thread::sleep(std::time::Duration::from_millis(if i == 0 { 8000 } else { 24000 }));
                             debug::log(format!("auto-kotodama broadcast: {k}"));
-                            let _ = main.eval(format!("window.__ktAutoTest && __ktAutoTest('{k}')"));
+                            let arg = std::env::var("KOTO_AUTOTEXT")
+                                .ok()
+                                .and_then(|t| serde_json::to_string(&t).ok())
+                                .unwrap_or_else(|| "undefined".to_string());
+                            let _ = main.eval(format!("window.__ktAutoTest && __ktAutoTest('{k}', {arg})"));
                             if warm {
                                 std::thread::sleep(std::time::Duration::from_millis(50_000));
                                 debug::log(format!("auto-kotodama WARM follow-up: {k}"));

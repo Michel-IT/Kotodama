@@ -1650,7 +1650,15 @@
     }
 
     const THEMES = ['ginga','hisui','kohaku','murasaki','sumi'];
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:'Control+Alt+Space', monitor_enabled:true, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
+    // Default shortcut modifier, per platform -- mirrors settings.rs::DEFAULT_MOD. macOS uses
+    // Ctrl+Cmd because Option is a dead-key modifier there (Opt+C types a cedilla), so Ctrl+Alt
+    // clashes with plain text entry; every other platform keeps Ctrl+Alt.
+    const IS_MAC = /Mac|iPhone|iPad|iPod/.test((navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||navigator.userAgent);
+    const DEFAULT_MOD = IS_MAC ? 'Control+Super' : 'Control+Alt';
+    // Main shortcut: <mod>+Space everywhere, but macOS reserves BOTH Ctrl+Cmd+Space (Emoji &
+    // Symbols) and Ctrl+Opt+Space (input source), so it gets K -- for Kotodama -- instead.
+    const DEFAULT_MAIN_HOTKEY = DEFAULT_MOD + (IS_MAC ? '+KeyK' : '+Space');
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:DEFAULT_MAIN_HOTKEY, monitor_enabled:true, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -2191,7 +2199,9 @@
     // DEBUG-only autonomous test (KOTO_AUTOKOTO=<key>): fire a fresh single-provider broadcast
     // with the incognito path engaged, so the dev loop can validate the temp toggle from logs
     // without driving the UI. Answer routing is a no-op (no session/card).
-    window.__ktAutoTest = function(key){
+    // `text` (optional, KOTO_AUTOTEXT) overrides the probe prompt: some diagnostics need a
+    // question the model has to work on (reasoning blocks) rather than the short memory check.
+    window.__ktAutoTest = function(key, text){
       try {
         // Goes through the same path a person does: typing first (which is what triggers the warm-tab
         // pre-warm), then sending a few seconds later. Dispatching straight away would skip the
@@ -2201,7 +2211,7 @@
         setTimeout(function(){
           const bid='auto-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
           inlinePending[bid]=true;   // swallow the answer (no card)
-          ktDispatchKey(bid, key, 'Ricorda questo numero: 4242. Rispondi solo con: OK', null, true);
+          ktDispatchKey(bid, key, text || 'Ricorda questo numero: 4242. Rispondi solo con: OK', null, true);
         }, 4000);
       } catch(e){ console.error('autotest', e); }
     };
@@ -3135,9 +3145,11 @@
 
     function keyLabel(part){
       switch(part){
-        case 'Control': case 'CommandOrControl': case 'CmdOrCtrl': return 'Ctrl';
-        case 'Super': case 'Meta': return 'Win'; case 'Command': return 'Cmd';
-        case 'Alt': case 'Option': return 'Alt'; case 'Shift': return 'Shift';
+        // On macOS the modifiers are shown as the glyphs printed on the keys, not the Windows words.
+        case 'Control': case 'CommandOrControl': case 'CmdOrCtrl': return IS_MAC?'⌃':'Ctrl';
+        case 'Super': case 'Meta': case 'Command': return IS_MAC?'⌘':(part==='Command'?'Cmd':'Win');
+        case 'Alt': case 'Option': return IS_MAC?'⌥':'Alt';
+        case 'Shift': return IS_MAC?'⇧':'Shift';
         case 'IntlBackslash': return '<'; case 'Backslash': return '\\'; case 'Backquote': return '`';
         case 'BracketLeft': return '['; case 'BracketRight': return ']'; case 'Semicolon': return ';';
         case 'Quote': return "'"; case 'Comma': return ','; case 'Period': return '.'; case 'Slash': return '/';
