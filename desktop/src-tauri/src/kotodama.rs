@@ -670,6 +670,29 @@ const HARVEST_JS: &str = r##"
     } catch(e){}
     return false;
   }
+  // Consulted ONLY when the harvest has already failed, never on the success path: it decides the
+  // MESSAGE, not the outcome, so it cannot cost a working answer. `authWallPresent` deliberately
+  // requires the composer to be ABSENT before trusting a login control, because a logged-in page
+  // can carry a stray "sign in" link. ChatGPT signed out breaks that assumption: it shows a working
+  // composer AND the login buttons, lets the message through, answers anonymously, and the harvest
+  // then found nothing and reported "no answer received" -- true, and useless to the user, who only
+  // needed to be told to sign in. Here the composer guard is dropped: we are already failing.
+  // English text is a valid signal for providers: browser.rs pins their UI language to English.
+  function fdiagArm(m){ try { if (window.__ktDiag && window.__ktPush) window.__ktPush({ b: BID, k: KEY, st: 'diag', d: String(m).slice(0,300) }); } catch(e){} }
+  function loginHintPresent(){
+    try {
+      var marked = document.querySelectorAll('[data-testid*="login" i],[data-testid*="signup" i],[data-testid*="sign-in" i],[id*="login-button" i],[id*="signup-button" i]');
+      for (var i = 0; i < marked.length; i++) { if (marked[i].offsetParent !== null) return true; }
+      var els = document.querySelectorAll('button, a, [role="button"]');
+      for (var j = 0; j < els.length && j < 400; j++) {
+        var t = (els[j].innerText || '').trim();
+        if (t.length > 22) continue;
+        if (!/^(log ?in|sign ?in|sign ?up)/i.test(t)) continue;
+        if (els[j].offsetParent !== null) return true;
+      }
+    } catch(e){}
+    return false;
+  }
   function authWallPresent(){
     try {
       if (loginUrlRedirected()) return true;
@@ -793,7 +816,7 @@ const HARVEST_JS: &str = r##"
     if (composerVal() !== null) armTries++;
     // Absolute ceiling, so a page that never produces a composer cannot wait forever.
     // A message we KNOW went out and that produced nothing in 180s is a timeout, not a failed send.
-    if (Date.now() - armT0 > 180000) { clearInterval(armIv); census(); setTimeout(function(){ deliver(KNOWN_SENT ? 'timeout' : 'sendfail', ''); }, 300); return; }
+    if (Date.now() - armT0 > 180000) { clearInterval(armIv); fdiagArm('EXIT arm-180s hint=' + loginHintPresent() + ' streamEver=' + (window.__ktStreamEver||0) + ' armTries=' + armTries); census(); setTimeout(function(){ deliver(loginHintPresent() ? 'login' : (KNOWN_SENT ? 'timeout' : 'sendfail'), ''); }, 300); return; }
     authCensus();
     if (authWallPresent()) { clearInterval(armIv); deliver('login',''); return; }
     // Arms the stream watcher as soon as the message is known to be out. Needed because on `?q=`
@@ -824,6 +847,13 @@ const HARVEST_JS: &str = r##"
     // opened before the watcher was reinstalled, so neither counter sees it. Rust, however, knows
     // the send is out -- it marked it -- and passes that in. Calling THAT `sendfail` was simply
     // false, and it is what made every reasoning answer fail while quick ones worked.
+    // Signed out: say so after the arming budget instead of waiting out the whole 180s. Three
+    // independent conditions have to hold together, and together they describe only that case:
+    // no answer text has appeared, NO response stream has ever opened (a provider that is
+    // generating always opens one), and a login control is visible. Measured on ChatGPT signed
+    // out: zero streams, the "Log in" button on screen, and the user told to sign in after 182
+    // seconds -- correct, and three minutes too late.
+    if (armTries > 60 && !window.__ktStreamEver && loginHintPresent()) { clearInterval(armIv); fdiagArm('EXIT arm-login-early'); census(); setTimeout(function(){ deliver('login',''); }, 300); return; }
     if (armTries > 60 && !window.__ktStreamOpen && !window.__ktStreamEver && !KNOWN_SENT) { clearInterval(armIv); census(); setTimeout(function(){ deliver('sendfail',''); }, 300); }
   }, 500);
   // One-shot DOM census when the harvest stays empty: which candidate selectors match
@@ -1115,7 +1145,19 @@ const HARVEST_JS: &str = r##"
         deliver('done', sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt, elToMd(getAnswerEl()));
         return;
       }
-      if (Date.now() - t0 > 180000) { clearInterval(iv); deliver(txt ? 'timeout' : 'error', txt ? (sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt) : txt, txt ? elToMd(getAnswerEl()) : ''); return; }
+      // Signed out: say so early instead of waiting out the whole budget. Measured: the decision
+      // is taken HERE, not in the arming loop (EXIT harvest-180s txtLen=0 hint=true), because the
+      // page does carry some text that hands the arming loop over before the answer exists. Three
+      // conditions must hold together and together they describe only that case: no answer text,
+      // no response stream EVER opened (a provider that is generating always opens one), and a
+      // login control visible on the page. It only chooses the MESSAGE of an outcome that is
+      // already a failure, so it cannot cost a working answer.
+      if (polls > 45 && !txt && !window.__ktStreamEver && loginHintPresent()) {
+        clearInterval(iv); fdiagArm('EXIT harvest-login-early polls=' + polls);
+        deliver('login', '');
+        return;
+      }
+      if (Date.now() - t0 > 180000) { clearInterval(iv); fdiagArm('EXIT harvest-180s txtLen=' + (txt||'').length + ' hint=' + loginHintPresent()); deliver(txt ? 'timeout' : (loginHintPresent() ? 'login' : 'error'), txt ? (sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt) : txt, txt ? elToMd(getAnswerEl()) : ''); return; }
       if (!sentCensus && polls === 15 && !txt) { sentCensus = true; census(); }
       if (polls % 3 === 0) { window.__ktPush({ b: BID, k: KEY, st: 'progress', len: txt.length }); }
     }
