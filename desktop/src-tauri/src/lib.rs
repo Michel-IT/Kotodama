@@ -116,6 +116,29 @@ fn app_write_clipboard(app: AppHandle, text: String) -> Result<(), String> {
 /// - macOS/Linux: `set_visible_on_all_workspaces(true)` is left ON so the window follows the active space.
 fn bring_to_front(w: &tauri::Window) {
     let _ = w.set_skip_taskbar(false);
+    // An inline transform running right now may have this window PARKED off-screen, with a pending
+    // restore that ends in SW_HIDE. That restore assumes the window is still hidden, as it was when
+    // the transform started -- so if the user asks for the window in the meantime, the transform
+    // finishes and hides the window they just opened. Reported as "the window disappears when I
+    // maximize"; the maximize was only where the user happened to be looking. An explicit show wins:
+    // take the saved position (so the restore finds nothing to do) and put the window back on it.
+    {
+        let saved = w
+            .app_handle()
+            .state::<AppState>()
+            .inline_saved_pos
+            .lock()
+            .unwrap()
+            .take();
+        #[cfg(windows)]
+        if let Some((x, y)) = saved {
+            if let Ok(h) = w.hwnd() {
+                win_move_to(h.0 as isize, x, y);
+            }
+        }
+        #[cfg(not(windows))]
+        let _ = saved;
+    }
     #[cfg(not(windows))]
     {
         let _ = w.set_visible_on_all_workspaces(true);
@@ -176,6 +199,21 @@ fn win_park_offscreen(hwnd_raw: isize) -> (i32, i32) {
         let _ = SetWindowPos(hwnd, Some(HWND_BOTTOM), 32000, 32000, 0, 0,
             SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
         (r.left, r.top)
+    }
+}
+
+/// Move the window back to (x,y) WITHOUT hiding it, changing its size or stealing focus. Used when
+/// the user asks for the window while an inline transform has it parked off-screen.
+#[cfg(windows)]
+fn win_move_to(hwnd_raw: isize, x: i32, y: i32) {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SetWindowPos, HWND_BOTTOM, SWP_NOACTIVATE, SWP_NOSIZE, SWP_NOZORDER,
+    };
+    unsafe {
+        let hwnd = HWND(hwnd_raw as *mut core::ffi::c_void);
+        let _ = SetWindowPos(hwnd, Some(HWND_BOTTOM), x, y, 0, 0,
+            SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
     }
 }
 
@@ -1243,7 +1281,28 @@ pub fn run() {
                             hide_to_tray(&w);
                         }
                     }
-                    WindowEvent::Resized(_) => browser::resize_provider(&win),
+                    WindowEvent::Resized(_) => {
+                        // Debug trace: a window that "disappears" is usually a window that MOVED
+                        // (the inline transform parks it off-screen at 32000,32000). Logging the
+                        // real geometry on every change tells the two apart instead of guessing.
+                        if debug::enabled() {
+                            let pos = win.outer_position().ok().map(|p| (p.x, p.y));
+                            let size = win.outer_size().ok().map(|s| (s.width, s.height));
+                            debug::log(format!(
+                                "WIN Resized pos={pos:?} size={size:?} visible={:?} maximized={:?} minimized={:?}",
+                                win.is_visible(), win.is_maximized(), win.is_minimized()
+                            ));
+                        }
+                        browser::resize_provider(&win)
+                    }
+                    WindowEvent::Moved(p) => {
+                        if debug::enabled() {
+                            debug::log(format!(
+                                "WIN Moved to ({},{}) visible={:?} maximized={:?}",
+                                p.x, p.y, win.is_visible(), win.is_maximized()
+                            ));
+                        }
+                    }
                     _ => {}
                 });
 
@@ -1257,6 +1316,40 @@ pub fn run() {
                 // window shortly after startup, so the Oops-page watchdog/buttons can be exercised
                 // on demand instead of waiting for the real (intermittent, environment-specific)
                 // asset-load race this was built to catch.
+                // Debug-only reproduction knobs for the window-state reports. Both take a delay in
+                // seconds (KOTO_AUTOMAX=90), so a whole sequence can be staged: hide to tray, run an
+                // inline transform (which parks the window off-screen), reopen, then maximize --
+                // which is the order the user actually performs, and the one a fresh-start test
+                // never reaches.
+                // KOTO_AUTOMAX: clicks the app's OWN maximize button.
+                if debug::enabled() {
+                    if let Ok(v) = std::env::var("KOTO_AUTOMAX") {
+                        let secs: u64 = v.parse().unwrap_or(10);
+                        let m = main.clone();
+                        std::thread::spawn(move || {
+                            std::thread::sleep(std::time::Duration::from_secs(secs));
+                            debug::log("AUTOMAX: clicking winMax".to_string());
+                            let _ = m.eval("document.getElementById('winMax').click()");
+                        });
+                    }
+                    // KOTO_AUTOHIDE: closes to tray (the app's own X), so the next inline transform
+                    // takes the hidden-window path that parks the window off-screen.
+                    if let Ok(v) = std::env::var("KOTO_AUTOHIDE") {
+                        let secs: u64 = v.parse().unwrap_or(8);
+                        let h2 = handle.clone();
+                        std::thread::spawn(move || {
+                            std::thread::sleep(std::time::Duration::from_secs(secs));
+                            debug::log("AUTOHIDE: closing to tray".to_string());
+                            let h3 = h2.clone();
+                            let _ = h2.run_on_main_thread(move || {
+                                if let Some(w) = h3.get_window("main") {
+                                    browser::park_provider(&w);
+                                    hide_to_tray(&w);
+                                }
+                            });
+                        });
+                    }
+                }
                 if debug::enabled() && std::env::var("KOTODAMA_TEST_OOPS").is_ok() {
                     let main_test = main.clone();
                     std::thread::spawn(move || {

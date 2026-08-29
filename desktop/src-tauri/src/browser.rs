@@ -1313,6 +1313,17 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
     // the user's account are damage -- and the arming loop in kotodama.rs uses the same signal
     // (filled -> empty = accepted) to start harvesting the answer.
     if (sawOurText && submits > 0 && getVal(el).trim().length === 0) {
+      // DIAGNOSTIC ONLY (debug builds): "the field emptied" is a PROXY for acceptance, not proof.
+      // Record whether our message is actually in the conversation at this instant, so a provider
+      // that clears its composer and drops the message anyway can be told apart from one that
+      // really took it. No behaviour change: the exit below is unchanged.
+      try {
+        if (window.__ktDiag) {
+          var inPage = ((document.body && document.body.innerText) || '').replace(/\s+/g,' ').indexOf(HEAD) !== -1;
+          fdiag('ACCEPT-CHECK ourTextInPage=' + inPage + ' inConversation=' + foundInConversation()
+                + ' submits=' + submits + ' ticks=' + ticks);
+        }
+      } catch(e){}
       fdiag('exit: field emptied after submit = accepted');
       clearInterval(iv); return;
     }

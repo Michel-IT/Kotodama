@@ -89,6 +89,42 @@ fn emit_and_show(app: &AppHandle, mode: &str, label: &str, preview: String) {
         let _ = window.set_position(PhysicalPosition::new(x, y));
     }
 
+    show_without_stealing_focus(&window);
+}
+
+/// Show the toast WITHOUT letting it take the foreground.
+///
+/// `focus: false` in tauri.conf only applies when the window is CREATED; every later show goes
+/// through ShowWindow(SW_SHOW), which by definition activates the window. For a notification that
+/// is fatal: the inline transform fires while the user is typing in another app, and stealing the
+/// foreground there means the result gets pasted into the wrong window -- measured with Notepad,
+/// where the rewritten text never came back.
+///
+/// The fix is WS_EX_NOACTIVATE on the window itself, NOT a raw SW_SHOWNOACTIVATE in place of
+/// Tauri's `show()`. Tauri's show does more than ShowWindow: it also tells the WebView2 controller
+/// it is visible. Bypassing it left the webview considered hidden, so its JavaScript timers never
+/// ran -- and the timer is exactly what closes the toast, which then stayed on screen for good
+/// (reported, and reproduced). With the extended style set, `show()` displays the window and leaves
+/// the foreground where it was. Mouse input still reaches it, so the Open/close buttons keep
+/// working; only keyboard activation is refused.
+fn show_without_stealing_focus(window: &tauri::WebviewWindow) {
+    #[cfg(windows)]
+    {
+        use windows::Win32::Foundation::HWND;
+        use windows::Win32::UI::WindowsAndMessaging::{
+            GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE,
+        };
+        if let Ok(h) = window.hwnd() {
+            unsafe {
+                let hwnd = HWND(h.0 as *mut core::ffi::c_void);
+                let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+                let want = ex | (WS_EX_NOACTIVATE.0 as isize);
+                if ex != want {
+                    SetWindowLongPtrW(hwnd, GWL_EXSTYLE, want);
+                }
+            }
+        }
+    }
     let _ = window.show();
 }
 

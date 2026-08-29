@@ -462,31 +462,83 @@ const HARVEST_JS: &str = r##"
         || lastMatch('[class*="bubble" i]');
     return isInputArea(el) ? null : el;
   }
-  function answerTxt(){
-    var el = getAnswerEl();
-    var t = el ? ((el.innerText||'').trim()) : '';
-    t = t.replace(new RegExp('[' + String.fromCharCode(57344) + '-' + String.fromCharCode(63743) + ']', 'g'), '').trim();   // strip private-use icon glyphs (UI font icons)
+  // Interactive chrome a provider renders INSIDE the answer container: toolbars, buttons and their
+  // labels are interface, never content. Measured on ChatGPT, which wraps some answers in a
+  // "writing block" surface carrying its own controls -- the "Edit" label was landing at the head of
+  // every inline-transform result the user pasted back. Matched on STRUCTURE (tag/role), never on
+  // the label text, which changes with the interface language.
+  var CHROME_SEL = 'button, [role="button"], [role="toolbar"], [role="menu"], [role="menuitem"],'
+    + ' [role="tab"], [role="tablist"], select, input, textarea';
+  // Reads the answer's text while SKIPPING that chrome. Hiding the controls and re-reading
+  // innerText does not work -- measured: with three controls hidden the string came back byte for
+  // byte identical, because innerText serves a value the engine had already computed. So the text
+  // is walked here instead: text nodes are collected, controls and anything computed-hidden are
+  // stepped over, and block-level elements insert the line breaks innerText would have produced.
+  // Used at DELIVERY only; the polling loop keeps the cheap innerText, which just has to be stable.
+  var BLOCK_TAGS = ' p div li tr h1 h2 h3 h4 h5 h6 blockquote pre section article header footer ul ol table figure ';
+  function cleanAnswerText(el){
+    if (!el) return '';
+    // Built from char codes on purpose: this JS is embedded in Rust and passed through more than
+    // one layer of quoting, and a backslash escape here has already come out the other side as a
+    // REAL line break, splitting the string literals and killing the whole harvest script.
+    var LF = String.fromCharCode(10), TAB = String.fromCharCode(9);
+    var out = '';
+    function nl(){ if (out && out.slice(-1) !== LF) out += LF; }
+    function walk(node){
+      for (var i = 0; i < node.childNodes.length; i++) {
+        var c = node.childNodes[i];
+        if (c.nodeType === 3) { out += c.textContent; continue; }
+        if (c.nodeType !== 1) continue;
+        try { if (c.matches(CHROME_SEL)) continue; } catch(e){}
+        var cs = null;
+        try { cs = window.getComputedStyle(c); } catch(e){}
+        if (cs && (cs.display === 'none' || cs.visibility === 'hidden')) continue;
+        var tag = c.tagName.toLowerCase();
+        if (tag === 'br') { out += LF; continue; }
+        var isBlock = BLOCK_TAGS.indexOf(' ' + tag + ' ') !== -1
+          || (cs && (cs.display === 'block' || cs.display === 'flex' || cs.display === 'grid'
+                     || cs.display === 'list-item' || cs.display === 'table'));
+        if (isBlock) nl();
+        walk(c);
+        if (isBlock) nl();
+      }
+    }
+    try { walk(el); } catch(e){ return ''; }
+    var trailing = new RegExp('[ ' + TAB + ']+' + LF, 'g');
+    var runs = new RegExp(LF + '{3,}', 'g');
+    return out.replace(trailing, LF).replace(runs, LF + LF).trim();
+  }
+  // Every cleanup the harvested text needs, in ONE place. It must be applied to whatever string is
+  // handed over, not just to the innerText path: delivering the DOM-walked text while these lived
+  // only in answerTxt() let a provider's row timestamp back into the answer (measured on Poe:
+  // "OK" came out as "OK<newline>1:28 PM") -- the very defect fixed earlier the same day.
+  function sanitizeAnswer(t){
+    t = (t || '').trim();
+    // strip private-use icon glyphs (UI font icons)
+    t = t.replace(new RegExp('[' + String.fromCharCode(57344) + '-' + String.fromCharCode(63743) + ']', 'g'), '').trim();
     if (t && SENT && t === SENT) return '';   // that's our own message, not an answer
     // Drop a leading collapsed-thinking header ("Ha pensato per 2s" / "Thought for 2s"):
     // Claude nests it inside the answer container with no stable class to hide via CSS.
-    var lines = t.split('\n');
+    var lines = t.split(String.fromCharCode(10));
     if (lines.length > 1 && lines[0].trim().length < 40
         && /^(ha pensato|thought|pensato|processo di ragionamento|reasoning|ragionamento|r[ée]fl[ée]ch|pens[óé]|dachte|thinking)/i.test(lines[0].trim())) {
       lines.shift();
-      t = lines.join('\n').trim();
+      t = lines.join(String.fromCharCode(10)).trim();
     }
     // Trailing timestamp: some providers print it inside the message row (measured on Mistral:
-    // "OK\n\n1:16pm"). Stripped ONLY in the hour:minute form with optional am/pm -- digits and a
-    // colon, hence language-independent -- and ONLY when it sits ON ITS OWN LINE, which is how a
-    // message-row timestamp is printed. The earlier version matched a trailing time anywhere and so
-    // ate real content: an answer that IS a time ("17:25") was erased down to nothing, and the
-    // harvest then waited out its whole budget and reported a failure for an answer sitting in plain
-    // sight (measured on all four of Claude/ChatGPT/DeepSeek/Gemini asked for an arrival time). An
-    // answer ENDING in a time ("arriva alle 17:25") lost it the same way. The final guard makes the
+    // "OK" + blank line + "1:16pm"). Stripped ONLY in the hour:minute form with optional am/pm --
+    // digits and a colon, hence language-independent -- and ONLY when it sits ON ITS OWN LINE, which
+    // is how a message-row timestamp is printed. An earlier version matched a trailing time anywhere
+    // and ate real content: an answer that IS a time ("17:25") was erased down to nothing and the
+    // harvest reported a failure for an answer sitting in plain sight. The final guard makes the
     // rule unable to empty an answer under any input.
     var noStamp = t.replace(/\n\s*\d{1,2}:\d{2}(:\d{2})?\s*(am|pm|AM|PM)?\s*$/, '').trim();
     if (noStamp) t = noStamp;
     return t;
+  }
+  function answerTxt(){
+    var el = getAnswerEl();
+    return sanitizeAnswer(el ? (el.innerText || '') : '');
   }
   // "Still generating?" - LANGUAGE-INDEPENDENT (no localized aria-label text). Uses the
   // per-provider BUSY_SEL (data-* attrs) + neutral streaming markers. NB: this only speeds
@@ -519,6 +571,8 @@ const HARVEST_JS: &str = r##"
       node.childNodes.forEach(function(n){
         if (n.nodeType === 3) { var t = n.textContent.trim(); if (t) out.push(esc(t)); return; }
         if (n.nodeType !== 1) return;
+        // Same rule as the plain-text path: a control's label is not part of the answer.
+        try { if (n.matches && n.matches(CHROME_SEL)) return; } catch(e){}
         var tag = n.tagName.toLowerCase();
         if (/^h[1-6]$/.test(tag)) { out.push('#'.repeat(+tag[1]) + ' ' + inlineMd(n).trim()); return; }
         if (tag === 'pre') {
@@ -943,7 +997,24 @@ const HARVEST_JS: &str = r##"
       // So the event still requires the page to agree: no busy marker, and the text unchanged for one
       // poll. That costs about a second and removes the truncation, while still being far ahead of
       // the six polls the stability rule would have waited.
-      var doneByEvent = streamEnded && !!txt && !busy && stable >= 1;
+      // ...and it must not still be PAINTING. The stream closing says the server finished sending;
+      // the provider can keep revealing the text afterwards with an animation, and its container
+      // carries a marker while it does. Delivering in that window truncates the answer: measured on
+      // ChatGPT's writing-block UI, "OK" came out as "O" on two runs out of two, while the same
+      // build had been fine that morning -- the provider had changed how it renders, not us.
+      // Structural markers only, scoped to the answer element. If one ever lingers after the end,
+      // nothing hangs: the stability rule below still completes the harvest, just without the
+      // shortcut.
+      function stillPainting(){
+        try {
+          var el = getAnswerEl();
+          if (!el) return false;
+          var sel = '[class*="streaming" i],[data-is-streaming="true"]';
+          if (el.matches && el.matches(sel)) return true;
+          return !!el.querySelector(sel);
+        } catch(e){ return false; }
+      }
+      var doneByEvent = streamEnded && !!txt && !busy && !stillPainting() && stable >= 1;
       if (doneByEvent || (stable >= neededStable && !busy) || stable >= 10) {
         clearInterval(iv);
         // How long the completion decision took, in polls (~1s each): the number to compare when
@@ -989,11 +1060,62 @@ const HARVEST_JS: &str = r##"
             window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('SHORT-DONE txt="'+txtFlat+'" el='+idl+' kids=[' + kids.join(' | ') + '] html='+outer).slice(0,1400) });
           } catch(e){}
         }
+        // DISCOVERY (debug only): the structure of the delivered answer. A UI control's label can
+        // ride along inside the answer container -- measured: ChatGPT's "Edit" landing at the head
+        // of every inline-transform result. Dumping the head of the markup identifies the element
+        // to exclude structurally, instead of filtering a word that changes with the UI language.
+        if (window.__ktDiag) {
+          try {
+            var ael = getAnswerEl();
+            if (ael) {
+              var kids = [];
+              for (var ci = 0; ci < ael.children.length && ci < 6; ci++) {
+                var ch = ael.children[ci];
+                var cls = (typeof ch.className === 'string' ? ch.className : '').trim().split(/\s+/).slice(0,3).join('.');
+                kids.push(ch.tagName.toLowerCase() + (cls ? '.' + cls.slice(0,34) : '')
+                  + '("' + (ch.innerText||'').trim().replace(/\s+/g,' ').slice(0,26) + '")');
+              }
+              // Identity of the FIRST element that contributes text: that is where a stray label
+              // like ChatGPT's "Edit" sits, and its tag/attributes are what a structural rule can key on.
+              var firstTxt = '';
+              try {
+                var all = ael.querySelectorAll('*');
+                for (var k = 0; k < all.length; k++) {
+                  var e = all[k];
+                  var own = '';
+                  for (var c = 0; c < e.childNodes.length; c++) { if (e.childNodes[c].nodeType === 3) own += e.childNodes[c].textContent; }
+                  if (!own.trim()) continue;
+                  var chain = [];
+                  var cur = e;
+                  for (var up = 0; up < 4 && cur && cur !== ael; up++) {
+                    var at = [];
+                    for (var ai = 0; ai < cur.attributes.length; ai++) {
+                      var a = cur.attributes[ai];
+                      if (a.name === 'class') { at.push('.' + String(a.value).trim().split(/\s+/).slice(0,3).join('.').slice(0,44)); }
+                      else if (a.name !== 'style') { at.push(a.name + '=' + String(a.value).slice(0,22)); }
+                    }
+                    chain.push(cur.tagName.toLowerCase() + at.join(''));
+                    cur = cur.parentElement;
+                  }
+                  firstTxt = 'own="' + own.trim().replace(/\s+/g,' ').slice(0,24) + '" ' + chain.join('  <  ');
+                  break;
+                }
+              } catch(e){}
+              var rawTxt = (ael.innerText||'').trim().replace(/\s+/g,' ').slice(0,50);
+              var cleanTxt = cleanAnswerText(ael).replace(/\s+/g,' ').slice(0,50);
+              var nChrome = 0; try { nChrome = ael.querySelectorAll(CHROME_SEL).length; } catch(e){}
+              window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('ANSWER-SHAPE comandi=' + nChrome
+                + ' GREZZO="' + rawTxt + '" PULITO="' + cleanTxt + '" PRIMO-TESTO ' + firstTxt).slice(0,1400) });
+            }
+          } catch(e){}
+        }
         if (window.__ktThinkProbe) thinkCensus();
-        deliver('done', txt, elToMd(getAnswerEl()));
+        // Hand over the chrome-free text; fall back to the raw one if the walk yields nothing,
+        // so a provider whose markup defeats it degrades to today's behaviour instead of silence.
+        deliver('done', sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt, elToMd(getAnswerEl()));
         return;
       }
-      if (Date.now() - t0 > 180000) { clearInterval(iv); deliver(txt ? 'timeout' : 'error', txt, txt ? elToMd(getAnswerEl()) : ''); return; }
+      if (Date.now() - t0 > 180000) { clearInterval(iv); deliver(txt ? 'timeout' : 'error', txt ? (sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt) : txt, txt ? elToMd(getAnswerEl()) : ''); return; }
       if (!sentCensus && polls === 15 && !txt) { sentCensus = true; census(); }
       if (polls % 3 === 0) { window.__ktPush({ b: BID, k: KEY, st: 'progress', len: txt.length }); }
     }
