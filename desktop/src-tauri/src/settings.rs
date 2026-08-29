@@ -161,6 +161,53 @@ pub fn exists(app: &AppHandle) -> bool {
     settings_path(app).map(|p| p.exists()).unwrap_or(false)
 }
 
+/// Same config directory `app_config_dir()` resolves to, computed WITHOUT an AppHandle.
+fn config_dir_early() -> Option<PathBuf> {
+    #[cfg(windows)]
+    {
+        std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join(IDENTIFIER))
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::env::var_os("HOME")
+            .map(|h| PathBuf::from(h).join("Library").join("Application Support").join(IDENTIFIER))
+    }
+    #[cfg(all(not(windows), not(target_os = "macos")))]
+    {
+        std::env::var_os("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config")))
+            .map(|c| c.join(IDENTIFIER))
+    }
+}
+
+/// Bundle identifier, i.e. the config folder name (see `tauri.conf.json`).
+const IDENTIFIER: &str = "com.kotodama.app";
+
+/// Load the settings BEFORE Tauri exists, for the in-memory state that is created ahead of
+/// `setup()`.
+///
+/// Without this the state starts out as `Settings::default()` and only becomes the real thing
+/// inside `setup()` -- while the webview is already free to call `get_settings`. Whoever reads in
+/// that window gets the DEFAULTS, believes them, and writes them back over the stored choice on its
+/// next save. Measured on "always on top": switched off from the tray, then after a restart the
+/// tray (built after the load) showed it off correctly while the window stayed on top and the
+/// Settings panel showed it on -- the frontend had read the default and persisted it back. A
+/// setting must never be readable before it has been loaded.
+pub fn load_early() -> Settings {
+    let path = config_dir_early().map(|d| d.join("settings.json"));
+    let out = path
+        .clone()
+        .and_then(|p| fs::read_to_string(p).ok())
+        .and_then(|s| serde_json::from_str::<Settings>(&s).ok());
+    crate::debug::log(format!(
+        "settings load_early: path={path:?} letto={} always_on_top={:?}",
+        out.is_some(),
+        out.as_ref().map(|s| s.always_on_top)
+    ));
+    out.unwrap_or_default()
+}
+
 /// Load the settings; on error or missing file returns the defaults.
 pub fn load(app: &AppHandle) -> Settings {
     settings_path(app)
@@ -201,6 +248,7 @@ pub fn migrate_platform_hotkeys(s: &mut Settings) -> bool {
 
 /// Save the settings to disk.
 pub fn save(app: &AppHandle, s: &Settings) -> Result<(), String> {
+    crate::debug::log(format!("settings SAVE: always_on_top={}", s.always_on_top));
     let path = settings_path(app)?;
     let json = serde_json::to_string_pretty(s).map_err(|e| e.to_string())?;
     let _guard = io_lock().lock().unwrap();

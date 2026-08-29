@@ -1206,7 +1206,7 @@ pub fn run() {
         .manage(AppState {
             last_self_copy: Mutex::new(None),
             last_seen: Mutex::new(None),
-            settings: Mutex::new(Settings::default()),
+            settings: Mutex::new(settings::load_early()), // from disk NOW: see settings::load_early
             autostart_item: Mutex::new(None),
             always_on_top_item: Mutex::new(None),
             open_item: Mutex::new(None),
@@ -1243,6 +1243,7 @@ pub fn run() {
             // explicit choice.
             let fresh_install = !settings::exists(&handle);
             let mut loaded = settings::load(&handle);
+            debug::log(format!("settings da setup: always_on_top={}", loaded.always_on_top));
             // macOS only: an install that still carries the Ctrl+Alt shortcuts inherited from the
             // Windows defaults is moved onto Ctrl+Cmd once, and persisted right away so the move
             // survives even if the user never opens Settings again.
