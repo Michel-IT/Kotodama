@@ -2222,9 +2222,14 @@
     // the first send: otherwise the harvest could not tell the new answer from the previous one.
     window.__ktAutoWarm = function(key){
       try {
-        const bid='warm-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
-        inlinePending[bid]=true;   // swallow the answer (no card)
-        ktDispatchKey(bid, key, 'Qual e il numero che ti ho appena detto? Rispondi solo con il numero.', null, false);
+        // Goes through the REAL path -- type, then send -- instead of dispatching straight to the
+        // provider. The pre-warm is triggered by the input event and the new-chat/continue split is
+        // decided inside ktDoSend, so a harness that bypasses both cannot catch a continuity
+        // regression. It did not: a pre-warm that moved the tab OFF the conversation being
+        // continued passed this test 8 times out of 8 and was found by the user instead.
+        ktInput.value = 'Qual e il numero che ti ho appena detto? Rispondi solo con il numero.';
+        ktInput.dispatchEvent(new Event('input', { bubbles: true }));
+        setTimeout(function(){ ktDoSend(); }, 1500);
       } catch(e){ console.error('autowarm', e); }
     };
     /* --- INLINE transform (per-recipe hotkey pressed in another app) --- */
@@ -2978,7 +2983,19 @@
       ktPrewarmed = true;
       try { invoke('kotodama_prewarm', { keys: [...ktLoadSel()] }); } catch(e){}
     }
-    ktInput.addEventListener('input', ()=>{ if(ktInput.value.trim().length) ktPrewarm(); });
+    ktInput.addEventListener('input', ()=>{
+      if(!ktInput.value.trim().length) return;
+      // ONLY when the next send would open a new conversation anyway. Pre-warming navigates the
+      // provider tab to a fresh chat: doing that while a conversation is in progress moves the tab
+      // OFF the thread the next message is meant to continue, and the provider then answers with no
+      // context -- reported by the user, and confirmed by ChatGPT itself in the transcript ("in
+      // questa chat temporanea pero' non vedo la conversazione precedente"). `ktStarted` is exactly
+      // the flag ktDoSend uses to tell a continuation from a first message, so it decides here too.
+      // Conservative on purpose: if ANY selected provider is mid-conversation, nothing is warmed.
+      // A slower send costs a second; a lost thread costs the answer.
+      for(const k of ktLoadSel()){ if(ktStarted[k]) return; }
+      ktPrewarm();
+    });
     document.getElementById('ktSend').addEventListener('click', ktDoSend);
     document.getElementById('ktNew').addEventListener('click', ()=>{ ktPrewarmed=false; ktPrewarm(); ktNewConversation(); });
     document.getElementById('ktBackBar').addEventListener('click', closeKotodama);
