@@ -2220,6 +2220,15 @@
     // depends ONLY on the synthetic Enter / send-button click inside the composer, so this is the
     // only way to tell from the logs whether a provider changed its composer. Different text from
     // the first send: otherwise the harvest could not tell the new answer from the previous one.
+    // DEBUG ONLY (KOTO_WINSEQ): flips "always on top" through the SAME path the Settings panel
+    // uses, so the window-state matrix exercises the real handler rather than a shortcut that
+    // would not reproduce what the user does.
+    window.__winseqTop = function(on){
+      try {
+        currentSettings.always_on_top = !!on;
+        persistSettings(currentSettings);
+      } catch(e){ console.error('winseqTop', e); }
+    };
     window.__ktAutoWarm = function(key){
       try {
         // Goes through the REAL path -- type, then send -- instead of dispatching straight to the

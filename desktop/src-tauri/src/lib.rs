@@ -174,10 +174,25 @@ fn bring_to_front(w: &tauri::Window) {
 #[cfg(windows)]
 fn win_show(hwnd_raw: isize, show: bool) {
     use windows::Win32::Foundation::HWND;
-    use windows::Win32::UI::WindowsAndMessaging::{ShowWindow, SW_HIDE, SW_SHOW};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        IsIconic, ShowWindow, SW_HIDE, SW_RESTORE, SW_SHOW,
+    };
     unsafe {
         let hwnd = HWND(hwnd_raw as *mut core::ffi::c_void);
-        let _ = ShowWindow(hwnd, if show { SW_SHOW } else { SW_HIDE });
+        if !show {
+            let _ = ShowWindow(hwnd, SW_HIDE);
+            return;
+        }
+        // A MINIMIZED window needs SW_RESTORE, not SW_SHOW: SW_SHOW displays the window in its
+        // current state, and for a minimized one that state IS minimized -- so it stays down and
+        // the user sees nothing happen. Measured on the whole window matrix: after "minimize",
+        // every reopen from the tray came back `minimized=true`, three times out of three,
+        // whatever "always on top" was set to (which is why that switch was a red herring: the
+        // trigger is the minimize, not the switch).
+        // SW_RESTORE only where it is needed: applied to a MAXIMIZED window it would un-maximize
+        // it, and reopening a maximized window must give it back maximized.
+        let cmd = if IsIconic(hwnd).as_bool() { SW_RESTORE } else { SW_SHOW };
+        let _ = ShowWindow(hwnd, cmd);
     }
 }
 
@@ -343,6 +358,24 @@ fn inline_restore_window(app: &AppHandle) {
             });
         }
     }
+}
+
+/// One-line snapshot of what the window ACTUALLY is right now. `is_visible()` alone is not enough:
+/// a window can be visible and still invisible to the user because it sits off-screen (the inline
+/// transform parks it at 32000,32000) or behind everything. Position and size are what tell those
+/// apart, so they are part of the line.
+fn win_state_line(w: &tauri::Window) -> String {
+    let pos = w.outer_position().ok().map(|p| (p.x, p.y));
+    let size = w.outer_size().ok().map(|s| (s.width, s.height));
+    format!(
+        "visible={:?} minimized={:?} maximized={:?} focused={:?} pos={:?} size={:?}",
+        w.is_visible().unwrap_or(false),
+        w.is_minimized().unwrap_or(false),
+        w.is_maximized().unwrap_or(false),
+        w.is_focused().unwrap_or(false),
+        pos,
+        size
+    )
 }
 
 /// Hide the window to the tray. Windows: SW_HIDE (so the next SW_SHOW lands on the CURRENT desktop);
@@ -1350,6 +1383,67 @@ pub fn run() {
                             });
                         });
                     }
+                }
+                // KOTO_WINSEQ=1 (debug only): drives the WHOLE window-state matrix and logs the
+                // real state after each step. "The window disappears" covers several different
+                // states -- hidden (SW_HIDE), minimized, moved off-screen, or merely behind another
+                // window -- and only a measurement tells them apart. Each step reports
+                // visible/minimized/maximized/topmost plus position and size, so a regression shows
+                // up as a concrete line instead of a report that cannot be reproduced by eye.
+                if debug::enabled() && std::env::var("KOTO_WINSEQ").is_ok() {
+                    let h2 = handle.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_secs(12));
+                        // (label, action) -- actions go through the app's OWN controls wherever the
+                        // user would use them, so the test covers the real handlers, not a shortcut.
+                        let steps: Vec<(&str, &str)> = vec![
+                            ("maximize", "document.getElementById('winMax').click()"),
+                            ("restore-from-maximized", "document.getElementById('winMax').click()"),
+                            ("minimize", "document.getElementById('winMin').click()"),
+                            ("show-from-tray", ""),
+                            ("always-on-top ON", "__winseqTop(true)"),
+                            ("maximize (top on)", "document.getElementById('winMax').click()"),
+                            ("restore (top on)", "document.getElementById('winMax').click()"),
+                            ("minimize (top on)", "document.getElementById('winMin').click()"),
+                            ("show-from-tray (top on)", ""),
+                            ("always-on-top OFF", "__winseqTop(false)"),
+                            ("maximize (top off)", "document.getElementById('winMax').click()"),
+                            ("restore (top off)", "document.getElementById('winMax').click()"),
+                            ("minimize (top off)", "document.getElementById('winMin').click()"),
+                            ("show-from-tray (top off)", ""),
+                            ("close-to-tray", "document.getElementById('winClose').click()"),
+                            ("show-from-tray (after close)", ""),
+                            // The case the minimize fix could have broken: SW_RESTORE on a
+                            // MAXIMIZED window would un-maximize it, so a window closed to the tray
+                            // while maximized must come back maximized, not shrunk.
+                            ("maximize again", "document.getElementById('winMax').click()"),
+                            ("close-to-tray while maximized", "document.getElementById('winClose').click()"),
+                            ("show-from-tray (was maximized)", ""),
+                        ];
+                        for (label, js) in steps {
+                            let h3 = h2.clone();
+                            let js_owned = js.to_string();
+                            let _ = h2.run_on_main_thread(move || {
+                                if let Some(w) = h3.get_window("main") {
+                                    if js_owned.is_empty() {
+                                        bring_to_front(&w); // what the tray icon does
+                                    } else if let Some(wv) = h3.get_webview_window("main") {
+                                        let _ = wv.eval(&js_owned);
+                                    }
+                                }
+                            });
+                            std::thread::sleep(std::time::Duration::from_millis(2500));
+                            let h4 = h2.clone();
+                            let lbl = label.to_string();
+                            let _ = h2.run_on_main_thread(move || {
+                                if let Some(w) = h4.get_window("main") {
+                                    debug::log(format!("WINSEQ [{lbl}] -> {}", win_state_line(&w)));
+                                }
+                            });
+                            std::thread::sleep(std::time::Duration::from_millis(700));
+                        }
+                        debug::log("WINSEQ: done".to_string());
+                    });
                 }
                 if debug::enabled() && std::env::var("KOTODAMA_TEST_OOPS").is_ok() {
                     let main_test = main.clone();
