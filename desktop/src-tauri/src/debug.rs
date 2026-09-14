@@ -22,3 +22,24 @@ pub fn log(msg: impl AsRef<str>) {
         eprintln!("[KDBG] {}", msg.as_ref());
     }
 }
+
+/// Seconds since the Unix epoch, to place a diagnostic line in time.
+pub fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// Debug only: a panic on any thread is written to the log with its time before the default handler
+/// runs, so a crash leaves a trace even when stderr is not being watched.
+pub fn install_panic_hook() {
+    if !enabled() {
+        return;
+    }
+    let default = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        log(format!("PANIC unix={} {info}", unix_now()));
+        default(info);
+    }));
+}

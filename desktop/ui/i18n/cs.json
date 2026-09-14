@@ -252,5 +252,7 @@
   "ktSideExpand": "Rozbalit boční panel",
   "setLowPower": "Úspora prostředků",
   "setLowPowerHint": "Méně paměti: vykreslování procesorem a pozastavení nečinných poskytovatelů. Vyžaduje restart.",
-  "setLowPowerRestart": "Uloženo. Restartujte Kotodama, aby se úspora prostředků použila."
+  "setLowPowerRestart": "Uloženo. Restartujte Kotodama, aby se úspora prostředků použila.",
+  "ktStopBtn": "Zastavit",
+  "ktCancelled": "Zastaveno"
 }

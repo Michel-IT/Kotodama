@@ -252,5 +252,7 @@
   "ktSideExpand": "Kenar çubuğunu genişlet",
   "setLowPower": "Kaynak tasarrufu",
   "setLowPowerHint": "Daha az bellek: çizim işlemciyle, kullanılmayan sağlayıcılar askıya alınır. Yeniden başlatma gerekir.",
-  "setLowPowerRestart": "Kaydedildi. Kaynak tasarrufunu uygulamak için Kotodama'yı yeniden başlatın."
+  "setLowPowerRestart": "Kaydedildi. Kaynak tasarrufunu uygulamak için Kotodama'yı yeniden başlatın.",
+  "ktStopBtn": "Durdur",
+  "ktCancelled": "Durduruldu"
 }

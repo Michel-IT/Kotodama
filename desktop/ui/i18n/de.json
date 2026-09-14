@@ -252,5 +252,7 @@
   "ktSideExpand": "Seitenleiste erweitern",
   "setLowPower": "Ressourcen sparen",
   "setLowPowerHint": "Weniger Speicher: Zeichnen per CPU und ungenutzte Anbieter angehalten. Neustart erforderlich.",
-  "setLowPowerRestart": "Gespeichert. Starte Kotodama neu, um das Ressourcensparen anzuwenden."
+  "setLowPowerRestart": "Gespeichert. Starte Kotodama neu, um das Ressourcensparen anzuwenden.",
+  "ktStopBtn": "Stopp",
+  "ktCancelled": "Gestoppt"
 }

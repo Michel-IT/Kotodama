@@ -252,5 +252,7 @@
   "ktSideExpand": "Laienda külgriba",
   "setLowPower": "Ressursisääst",
   "setLowPowerHint": "Vähem mälu: joonistamine protsessoriga ja jõudeolekus pakkujad peatatud. Nõuab taaskäivitust.",
-  "setLowPowerRestart": "Salvestatud. Taaskäivita Kotodama, et ressursisääst rakenduks."
+  "setLowPowerRestart": "Salvestatud. Taaskäivita Kotodama, et ressursisääst rakenduks.",
+  "ktStopBtn": "Peata",
+  "ktCancelled": "Peatatud"
 }

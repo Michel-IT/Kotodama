@@ -252,5 +252,7 @@
   "ktSideExpand": "Oldalsáv kibontása",
   "setLowPower": "Erőforrás-takarékosság",
   "setLowPowerHint": "Kevesebb memória: kirajzolás a processzorral, a tétlen szolgáltatók felfüggesztve. Újraindítás szükséges.",
-  "setLowPowerRestart": "Mentve. Indítsa újra a Kotodamát az erőforrás-takarékosság alkalmazásához."
+  "setLowPowerRestart": "Mentve. Indítsa újra a Kotodamát az erőforrás-takarékosság alkalmazásához.",
+  "ktStopBtn": "Leállítás",
+  "ktCancelled": "Leállítva"
 }

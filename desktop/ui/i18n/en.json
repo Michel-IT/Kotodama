@@ -192,6 +192,8 @@
   "ktGenerating": "Generating...",
   "ktTimeout": "Timed out, partial answer",
   "ktError": "No answer received",
+  "ktStopBtn": "Stop",
+  "ktCancelled": "Stopped",
   "ktLogin": "Sign-in required",
   "ktOpenProvider": "Open provider",
   "ktLoginBtn": "Log in",

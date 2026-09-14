@@ -551,10 +551,26 @@ const HARVEST_JS: &str = r##"
   function elToMd(el){
     if (!el) return '';
     function esc(s){ return (s||'').replace(/[*_`]/g, '\\$&'); }
+    // Text as the page SHOWS it: whitespace in the HTML source (indentation, line breaks between tags) is
+    // not content and collapses to one space, unless the element preserves it (white-space: pre*), where a
+    // line break is a real line break. The style is read once per parent element.
+    var wsCache = new Map();
+    function visText(n){
+      var p = n.parentElement, keep = false;
+      if (p) {
+        if (wsCache.has(p)) keep = wsCache.get(p);
+        else { try { keep = /^pre/.test(getComputedStyle(p).whiteSpace); } catch(e){} wsCache.set(p, keep); }
+      }
+      return keep ? n.textContent : n.textContent.replace(/\s+/g, ' ');
+    }
+    var INLINE_TAGS = /^(a|b|strong|i|em|code|span|sup|sub|mark|u|s|small|abbr|time|label)$/;
+    function hasBlock(n){
+      try { return !!n.querySelector('p,div,pre,table,ul,ol,blockquote,h1,h2,h3,h4,h5,h6,li'); } catch(e){ return false; }
+    }
     function inlineMd(node){
       var out = '';
       node.childNodes.forEach(function(n){
-        if (n.nodeType === 3) { out += esc(n.textContent); return; }
+        if (n.nodeType === 3) { out += esc(visText(n)); return; }
         if (n.nodeType !== 1) return;
         var tag = n.tagName.toLowerCase();
         if (tag === 'br') { out += '\n'; return; }
@@ -566,14 +582,28 @@ const HARVEST_JS: &str = r##"
       });
       return out;
     }
+    // Consecutive inline content (text, links, bold, <br>) is gathered into ONE paragraph and flushed when a
+    // block starts. Pushing each piece as its own block split "see the [page](url) ." into three
+    // paragraphs and turned every <br> of a poem into a blank line.
     function blockMd(node, depth){
-      var out = [];
+      var out = [], buf = '';
+      function flush(){
+        var t = buf.replace(/[ \t]*\n[ \t]*/g, '\n').trim();
+        if (t) out.push(t);
+        buf = '';
+      }
       node.childNodes.forEach(function(n){
-        if (n.nodeType === 3) { var t = n.textContent.trim(); if (t) out.push(esc(t)); return; }
+        if (n.nodeType === 3) { buf += esc(visText(n)); return; }
         if (n.nodeType !== 1) return;
         // Same rule as the plain-text path: a control's label is not part of the answer.
         try { if (n.matches && n.matches(CHROME_SEL)) return; } catch(e){}
         var tag = n.tagName.toLowerCase();
+        if (tag === 'br') { buf += '\n'; return; }
+        // Inline content stays in the current paragraph, unless it wraps blocks (custom elements such as
+        // Gemini's wrappers around a table), which must be walked as blocks or the table is flattened.
+        var isBlock = /^(h[1-6]|pre|blockquote|ul|ol|table|p|div)$/.test(tag) || (!INLINE_TAGS.test(tag) && hasBlock(n));
+        if (!isBlock) { buf += inlineMd(n); return; }
+        flush();
         if (/^h[1-6]$/.test(tag)) { out.push('#'.repeat(+tag[1]) + ' ' + inlineMd(n).trim()); return; }
         if (tag === 'pre') {
           var codeEl = n.querySelector('code');
@@ -584,7 +614,9 @@ const HARVEST_JS: &str = r##"
         }
         if (tag === 'blockquote') { out.push(blockMd(n, depth).split('\n').map(function(l){ return '> ' + l; }).join('\n')); return; }
         if (tag === 'ul' || tag === 'ol') {
-          var i = 0;
+          // Real numbers: some providers render every step as its own <ol start="N">, and restarting
+          // the count at 1 turned "1. 2. 3." into "1. 1. 1.".
+          var i = (tag === 'ol' && n.start > 0) ? n.start - 1 : 0;
           n.querySelectorAll(':scope > li').forEach(function(li){
             i++;
             var marker = tag === 'ol' ? (i + '. ') : '- ';
@@ -603,10 +635,9 @@ const HARVEST_JS: &str = r##"
           out.push(lines.join('\n'));
           return;
         }
-        if (tag === 'p' || tag === 'div') { var s = blockMd(n, depth); if (s.trim()) out.push(s); return; }
-        var txt = inlineMd(n).trim();
-        if (txt) out.push(txt);
+        var s = blockMd(n, depth); if (s.trim()) out.push(s);
       });
+      flush();
       return out.join('\n\n');
     }
     try { return blockMd(el, 0).trim(); } catch(e){ return ''; }
@@ -728,6 +759,7 @@ const HARVEST_JS: &str = r##"
   }
   function deliver(st, txt, md){
     if (window.__ktBid !== BID) return;
+    liveStop();   // before clearing __ktBid: the final answer supersedes any pending preview
     window.__ktBid = null;
     txt = txt || '';
     var MAXC = 150000, trunc = 0;
@@ -981,8 +1013,56 @@ const HARVEST_JS: &str = r##"
       window.__ktPush({ b: BID, k: KEY, st: 'diag', d: out.join(' || ').slice(0,1400) });
     } catch(e){}
   }
+  // LIVE PREVIEW: the answer is shown while it is being written, instead of all at once at the end.
+  // Driven by DOM MUTATIONS, not by polling: when the page is not changing, nothing runs and nothing is
+  // sent. The timer below only COALESCES a burst of mutations into one push every LIVE_MS, so a fast
+  // streaming answer cannot flood IPC with a message per token.
+  // IPC ONLY, never __ktPush: its fallback NAVIGATES the page, and a single navigation in the middle of
+  // an answer tears the conversation down (measured on Qwen with a diagnostic probe that did exactly
+  // that). No bridge means no preview; the final answer still arrives through the normal delivery.
+  var LIVE_MS = 150, liveTimer = null, liveLast = '', liveObs = null, liveN = 0, liveMs = 0, liveMax = 0;
+  function liveFlush(){
+    liveTimer = null;
+    if (window.__ktBid !== BID) { liveStop(); return; }
+    try {
+      // Same test the harvest uses, on the same cheap reading: still the PREVIOUS answer means the new one
+      // has not started, and a warm follow-up must not flash the old reply.
+      if (answerTxt() === initialAnswer) return;
+      var t0 = performance.now();
+      var el = getAnswerEl();
+      if (!el) return;
+      var txt = sanitizeAnswer(cleanAnswerText(el));
+      if (!txt || txt === liveLast) return;
+      var md = elToMd(el);
+      var dt = performance.now() - t0;
+      liveN++; liveMs += dt; if (dt > liveMax) liveMax = dt;
+      liveLast = txt;
+      window.__TAURI__.core.invoke('kotodama_push', { b: BID, k: KEY, st: 'partial', d: txt, md: md }).catch(function(){});
+    } catch(e){}
+  }
+  function liveSchedule(){ if (!liveTimer) liveTimer = setTimeout(liveFlush, LIVE_MS); }
+  function liveStart(){
+    if (liveObs || typeof MutationObserver !== 'function') return;
+    if (!(window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function')) return;
+    try {
+      liveObs = new MutationObserver(liveSchedule);
+      liveObs.observe(document.body, { childList: true, subtree: true, characterData: true });
+      liveSchedule();   // the answer can already hold text when the harvest starts
+    } catch(e){ liveObs = null; }
+  }
+  function liveStop(){
+    if (liveTimer) { clearTimeout(liveTimer); liveTimer = null; }
+    if (!liveObs) return;
+    try { liveObs.disconnect(); } catch(e){}
+    liveObs = null;
+    // Cost of the hot path, measured instead of estimated: extraction time per push (debug log only).
+    if (window.__ktDiag && liveN) {
+      try { window.__ktPush({ b: BID, k: KEY, st: 'diag', d: 'LIVE pushes=' + liveN + ' avgMs=' + (liveMs / liveN).toFixed(1) + ' maxMs=' + liveMax.toFixed(1) }); } catch(e){}
+    }
+  }
   function harvest(){
     harvesting = true;
+    liveStart();
     var last = '', stable = 0, polls = 0, sentCensus = false, sawBusy = false;
     // Timing instrumentation (debug only). `sinceLastChange` is the number that matters: how long
     // after the answer STOPPED GROWING we actually handed it over. Guessing it from the wall clock
@@ -1551,6 +1631,16 @@ fn handle_push(
     if st == "sent" {
         debug::log(format!("kotodama SENT key={key} bid={bid} -- no further send allowed"));
         sent_marks().lock().unwrap().insert((bid, key));
+        return;
+    }
+    // Live preview of an answer still being written: straight to the UI, no buffering and no logging
+    // (this is the hot path, several pushes a second per provider). It never finishes a key and never
+    // touches the delivery state; the frontend ignores it once the card holds its final answer.
+    if st == "partial" {
+        let _ = window.emit(
+            "app://kotodama-partial",
+            serde_json::json!({ "broadcastId": bid, "key": key, "text": data.unwrap_or_default(), "md": md.unwrap_or_default() }),
+        );
         return;
     }
     if st == "progress" {

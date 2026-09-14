@@ -252,5 +252,7 @@
   "ktSideExpand": "Vis sidepanel",
   "setLowPower": "Ressourcebesparelse",
   "setLowPowerHint": "Mindre hukommelse: tegning via CPU og inaktive udbydere sat på pause. Kræver genstart.",
-  "setLowPowerRestart": "Gemt. Genstart Kotodama for at anvende ressourcebesparelsen."
+  "setLowPowerRestart": "Gemt. Genstart Kotodama for at anvende ressourcebesparelsen.",
+  "ktStopBtn": "Stop",
+  "ktCancelled": "Stoppet"
 }

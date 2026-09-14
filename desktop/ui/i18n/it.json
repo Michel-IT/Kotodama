@@ -192,6 +192,8 @@
   "ktGenerating": "Generazione...",
   "ktTimeout": "Tempo scaduto, risposta parziale",
   "ktError": "Nessuna risposta ricevuta",
+  "ktStopBtn": "Ferma",
+  "ktCancelled": "Interrotta",
   "ktLogin": "Accesso richiesto",
   "ktOpenProvider": "Apri provider",
   "ktLoginBtn": "Accedi",

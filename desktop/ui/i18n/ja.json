@@ -252,5 +252,7 @@
   "ktSideExpand": "サイドバーを展開する",
   "setLowPower": "リソース節約",
   "setLowPowerHint": "メモリ節約: 描画はCPU、使っていないプロバイダーは一時停止。再起動が必要です。",
-  "setLowPowerRestart": "保存しました。リソース節約を適用するにはKotodamaを再起動してください。"
+  "setLowPowerRestart": "保存しました。リソース節約を適用するにはKotodamaを再起動してください。",
+  "ktStopBtn": "停止",
+  "ktCancelled": "停止しました"
 }

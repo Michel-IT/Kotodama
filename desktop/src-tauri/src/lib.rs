@@ -1186,6 +1186,7 @@ pub(crate) fn read_low_power_pref() -> bool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    debug::install_panic_hook();
     // WebView2 (Windows): ALL webviews of the process must create their environment
     // with the SAME additional browser arguments, otherwise the 2nd webview (the
     // provider child) fails to initialize and stays BLANK. We therefore set the
@@ -1390,6 +1391,36 @@ pub fn run() {
                 // window -- and only a measurement tells them apart. Each step reports
                 // visible/minimized/maximized/topmost plus position and size, so a regression shows
                 // up as a concrete line instead of a report that cannot be reproduced by eye.
+                // KOTO_AUTOCHAT=<text> [+ KOTO_AUTOCHAT_KEYS=a,b] (debug only): a real chat send from the
+                // input box a few seconds after start, so answers render as real cards (layout, live
+                // streaming) instead of being swallowed like the inline auto-test does.
+                if debug::enabled() {
+                    if let Ok(text) = std::env::var("KOTO_AUTOCHAT") {
+                        let keys: Vec<String> = std::env::var("KOTO_AUTOCHAT_KEYS")
+                            .unwrap_or_default()
+                            .split(',')
+                            .map(|k| k.trim().to_string())
+                            .filter(|k| !k.is_empty())
+                            .collect();
+                        let m = main.clone();
+                        std::thread::spawn(move || {
+                            std::thread::sleep(std::time::Duration::from_secs(12));
+                            let t = serde_json::to_string(&text).unwrap_or_else(|_| "\"\"".into());
+                            let k = serde_json::to_string(&keys).unwrap_or_else(|_| "[]".into());
+                            debug::log(format!("AUTOCHAT: sending to {k}"));
+                            // KOTO_AUTOCHAT_RECIPE=key:translate (optional): the recipe used for this send.
+                            let r = serde_json::to_string(&std::env::var("KOTO_AUTOCHAT_RECIPE").unwrap_or_default())
+                                .unwrap_or_else(|_| "\"\"".into());
+                            let _ = m.eval(format!("window.__ktAutoChat && __ktAutoChat({t}, {k}, {r})"));
+                            // KOTO_AUTOCHAT_STOP_MS=<ms>: press Stop that long after the send, to test it.
+                            if let Some(ms) = std::env::var("KOTO_AUTOCHAT_STOP_MS").ok().and_then(|v| v.parse::<u64>().ok()) {
+                                std::thread::sleep(std::time::Duration::from_millis(ms));
+                                debug::log("AUTOCHAT: pressing Stop");
+                                let _ = m.eval("window.__ktAutoStop && __ktAutoStop()");
+                            }
+                        });
+                    }
+                }
                 if debug::enabled() && std::env::var("KOTO_WINSEQ").is_ok() {
                     let h2 = handle.clone();
                     std::thread::spawn(move || {
@@ -1708,6 +1739,19 @@ pub fn run() {
             check_for_update,
             install_update,
         ])
-        .run(tauri::generate_context!())
-        .expect("errore nell'avvio dell'applicazione Tauri");
+        .build(tauri::generate_context!())
+        .expect("errore nell'avvio dell'applicazione Tauri")
+        .run(|_app, event| {
+            // Diagnostics: tells a clean shutdown (these lines appear) from the process being killed or
+            // crashing (the log just stops), which an unexplained exit cannot tell apart otherwise.
+            if debug::enabled() {
+                match &event {
+                    tauri::RunEvent::ExitRequested { code, .. } => {
+                        debug::log(format!("EXIT requested code={code:?} unix={}", debug::unix_now()))
+                    }
+                    tauri::RunEvent::Exit => debug::log(format!("EXIT clean unix={}", debug::unix_now())),
+                    _ => {}
+                }
+            }
+        });
 }

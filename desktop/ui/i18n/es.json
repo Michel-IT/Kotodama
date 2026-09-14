@@ -252,5 +252,7 @@
   "ktSideExpand": "Expandir barra lateral",
   "setLowPower": "Ahorro de recursos",
   "setLowPowerHint": "Menos memoria: dibujado por CPU y proveedores inactivos suspendidos. Requiere reiniciar.",
-  "setLowPowerRestart": "Guardado. Reinicia Kotodama para aplicar el ahorro de recursos."
+  "setLowPowerRestart": "Guardado. Reinicia Kotodama para aplicar el ahorro de recursos.",
+  "ktStopBtn": "Detener",
+  "ktCancelled": "Detenida"
 }

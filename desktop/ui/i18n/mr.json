@@ -252,5 +252,7 @@
   "ktSideExpand": "साइडबार विस्तृत करा",
   "setLowPower": "संसाधन बचत",
   "setLowPowerHint": "कमी मेमरी: CPU ने रेखांकन आणि निष्क्रिय प्रदाते स्थगित. पुन्हा सुरू करणे आवश्यक.",
-  "setLowPowerRestart": "जतन केले. संसाधन बचत लागू करण्यासाठी Kotodama पुन्हा सुरू करा."
+  "setLowPowerRestart": "जतन केले. संसाधन बचत लागू करण्यासाठी Kotodama पुन्हा सुरू करा.",
+  "ktStopBtn": "थांबवा",
+  "ktCancelled": "थांबवले"
 }

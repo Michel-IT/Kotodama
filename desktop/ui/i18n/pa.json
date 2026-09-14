@@ -252,5 +252,7 @@
   "ktSideExpand": "ਸਾਈਡਬਾਰ ਫੈਲਾਓ",
   "setLowPower": "ਸਰੋਤ ਬਚਤ",
   "setLowPowerHint": "ਘੱਟ ਮੈਮਰੀ: CPU ਨਾਲ ਡਰਾਇੰਗ ਅਤੇ ਵਿਹਲੇ ਪ੍ਰਦਾਤਾ ਰੋਕੇ ਗਏ। ਮੁੜ ਚਾਲੂ ਕਰਨਾ ਲੋੜੀਂਦਾ ਹੈ।",
-  "setLowPowerRestart": "ਸੰਭਾਲਿਆ ਗਿਆ। ਸਰੋਤ ਬਚਤ ਲਾਗੂ ਕਰਨ ਲਈ Kotodama ਮੁੜ ਚਾਲੂ ਕਰੋ।"
+  "setLowPowerRestart": "ਸੰਭਾਲਿਆ ਗਿਆ। ਸਰੋਤ ਬਚਤ ਲਾਗੂ ਕਰਨ ਲਈ Kotodama ਮੁੜ ਚਾਲੂ ਕਰੋ।",
+  "ktStopBtn": "ਰੋਕੋ",
+  "ktCancelled": "ਰੋਕਿਆ"
 }

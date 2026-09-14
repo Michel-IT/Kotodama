@@ -252,5 +252,7 @@
   "ktSideExpand": "Fäll ut sidofältet",
   "setLowPower": "Resursbesparing",
   "setLowPowerHint": "Mindre minne: ritning via processorn och inaktiva leverantörer pausade. Kräver omstart.",
-  "setLowPowerRestart": "Sparat. Starta om Kotodama för att tillämpa resursbesparingen."
+  "setLowPowerRestart": "Sparat. Starta om Kotodama för att tillämpa resursbesparingen.",
+  "ktStopBtn": "Stoppa",
+  "ktCancelled": "Stoppad"
 }

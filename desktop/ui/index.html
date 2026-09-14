@@ -100,7 +100,7 @@
       user-select:none; -webkit-user-select:none;   /* no text selection on the UI (e.g. double-click on the providers) */
     }
     /* re-enable selection where it is actually needed */
-    textarea, input, #result, .content, [contenteditable], .kt-card-body { user-select:text; -webkit-user-select:text; }
+    textarea, input, #result, .content, [contenteditable], .kt-user, .kt-card-body { user-select:text; -webkit-user-select:text; }
     /* Themed scrollbar: uses the variables → automatically follows every theme (WebView2/Chromium + Firefox) */
     * { scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
     ::-webkit-scrollbar { width:10px; height:10px; }
@@ -617,7 +617,14 @@
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .kt-sess-title-edit { width:100%; font:inherit; font-weight:600; color:var(--text);
       background:var(--field); border:1px solid var(--accent); border-radius:5px; padding:1px 5px; box-sizing:border-box; }
-    .kt-sess-date { font-size:10.5px; color:var(--text-faint); margin-top:2px; }
+    .kt-sess-sub { display:flex; align-items:center; gap:6px; min-width:0; margin-top:2px; }
+    .kt-sess-date { flex:none; font-size:10.5px; color:var(--text-faint); font-variant-numeric:tabular-nums; }
+    /* Recipe used in the conversation: a small outlined tag, truncated rather than wrapped so every row
+       keeps the same height. */
+    .kt-sess-tag { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+      font-size:10px; line-height:15px; padding:0 6px; border-radius:999px;
+      color:var(--text-dim); border:1px solid var(--border); }
+    .kt-sess.active .kt-sess-tag { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 45%, transparent); }
     .kt-sess-ren, .kt-sess-del { flex:none; width:22px; height:22px; border:none; border-radius:6px;
       background:none; color:var(--text-faint); cursor:pointer; font-size:12px;
       display:grid; place-items:center; opacity:0; transition:opacity .12s; }
@@ -626,7 +633,11 @@
     .kt-sess-del:hover { background:var(--panel-glow); color:#e08585; }
     .kt-sess-del.confirm { opacity:1; background:#5a2323; color:#ffb4b4; font-size:10px; width:auto; padding:0 7px; }
     .kt-empty { text-align:center; color:var(--text-faint); font-size:12.5px; padding:26px 8px; }
-    .kt-main { flex:1; min-width:0; display:flex; flex-direction:column; min-height:0; }
+    /* --kt-col: width of the ONE column shared by the conversation, the recipe bar and the input box, so
+       their edges line up. Set by ktUpdateColumn from the widest turn in view: a single answer reads in a
+       narrow column, a multi-provider row needs room for its columns. */
+    .kt-main { flex:1; min-width:0; display:flex; flex-direction:column; min-height:0; --kt-col:820px;
+      container-type:inline-size; }
     .kt-head { flex:none; display:flex; align-items:center; gap:12px; padding:10px 16px;
       border-bottom:1px solid var(--border-soft); background:var(--bg-1); flex-wrap:wrap; }
     .kt-title { display:flex; align-items:center; gap:8px; flex:none; }
@@ -680,18 +691,57 @@
     .kt-add-all { display:flex; align-items:center; gap:9px; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; }
     .kt-add-all input[type=checkbox] { accent-color:var(--accent); flex:none; }
     .kt-add-actions .btn { font-size:12px; padding:6px 14px; flex:none; }
-    .kt-thread { flex:1; min-height:0; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:14px; }
-    .kt-user { align-self:flex-end; max-width:72%; background:var(--field);
-      border:1px solid var(--accent); border-radius:14px 14px 4px 14px; padding:10px 14px;
-      font-size:13.5px; color:var(--text); white-space:pre-wrap; word-break:break-word; }
-    .kt-grid { display:grid; gap:10px; }   /* grid-template-columns set per-turn in JS (ktSetGridCols) */
-    .kt-card { display:flex; flex-direction:column; background:var(--field); border:1px solid var(--border-soft);
-      border-radius:12px; overflow:hidden; min-height:80px; }
-    .kt-card-head { flex:none; display:flex; align-items:center; gap:8px; padding:8px 12px;
-      border-bottom:1px solid var(--border-soft); background:var(--panel-glow, transparent); }
-    .kt-card-head .ic { width:16px; height:16px; display:grid; place-items:center; color:var(--pc,var(--accent)); flex:none; }
+    /* The side padding CENTRES the column (computed from the available width) while the scroll area
+       stays full width, so the scrollbar keeps to the window edge. */
+    .kt-thread { flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:12px;
+      padding-block:20px; padding-inline:max(20px, calc((100% - var(--kt-col)) / 2)); }
+    /* A question and its answers read as ONE unit: they sit close together, and the space goes BETWEEN
+       turns instead. With a uniform gap the answers looked detached from the message they reply to. */
+    .kt-thread > .kt-umsg:not(:first-child) { margin-top:30px; }
+    .kt-umsg { align-self:flex-end; max-width:78%; display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
+    .kt-user { background:var(--field); border-radius:18px; padding:10px 16px;
+      font-size:14px; line-height:1.5; color:var(--text); white-space:pre-wrap; word-break:break-word; }
+    /* Actions under a message: faint until the message is hovered, so they never compete with the text. */
+    .kt-acts { display:flex; align-items:center; gap:2px; opacity:.45; transition:opacity .15s; }
+    .kt-umsg:hover .kt-acts, .kt-card:hover .kt-acts, .kt-acts:focus-within { opacity:1; }
+    .kt-icon-btn { flex:none; width:28px; height:28px; display:grid; place-items:center; padding:0;
+      border:none; border-radius:8px; background:transparent; color:var(--text-faint); cursor:pointer;
+      transition:color .15s, background .15s; }
+    .kt-icon-btn:hover { color:var(--text); background:var(--field); }
+    .kt-icon-btn:focus-visible, .kt-retry:focus-visible, .kt-send:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .kt-icon-btn svg { width:16px; height:16px; display:block; }
+    .kt-icon-btn.copied { color:var(--accent); }
+    /* --kt-n = answers in THIS turn (ktSetGridCols): N equal columns. When the chat is too narrow for
+       readable columns they fold, the same way for every turn: two columns, then one. */
+    .kt-grid { display:grid; column-gap:32px; row-gap:18px; grid-template-columns:repeat(var(--kt-n, 1), minmax(0, 1fr)); }
+    @container (max-width: 1180px) {
+      .kt-grid:not([data-cols="1"]):not([data-cols="2"]) { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    }
+    @container (max-width: 900px) {
+      .kt-grid { grid-template-columns:minmax(0, 1fr); }
+    }
+    /* No frame around an answer: background, border and rounded box made each reply a separate object
+       next to the message bubble, instead of the continuation of the conversation.
+       Structure: the provider avatar on the left, then EVERYTHING else (name, text, actions) in one
+       column starting at the same x -- a constant hanging indent, like the reference chat UIs.
+       Rows auto / 1fr / auto: in a multi-provider row the grid stretches every cell to the tallest, so
+       the actions of every column still land at the same height. */
+    .kt-card { display:grid; grid-template-columns:28px minmax(0,1fr); grid-template-rows:auto 1fr auto;
+      column-gap:12px; min-width:0; }
+    .kt-card-head { grid-column:1 / -1; grid-row:1; display:grid; grid-template-columns:28px minmax(0,1fr) auto;
+      column-gap:12px; align-items:center; padding:0 0 4px; }
+    .kt-card-head .ic { position:relative; width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
+      color:var(--pc,var(--accent)); background:color-mix(in srgb, var(--pc, var(--accent)) 16%, transparent); }
     .kt-card-head .ic svg { width:16px; height:16px; display:block; }
-    .kt-card-head .nm { font-size:12.5px; font-weight:650; flex:1; min-width:0; }
+    /* Waiting: a ring turning around the avatar, in the provider's colour. It replaces the small spinner
+       in the status text, which is now hidden. */
+    .kt-card.pending .kt-card-head .ic::after { content:""; position:absolute; inset:-3px; border-radius:50%;
+      border:2px solid transparent; border-top-color:var(--pc,var(--accent)); animation:plspin .9s linear infinite; }
+    .kt-card .kt-status .dl-spin { display:none; }
+    @media (prefers-reduced-motion: reduce) {
+      .kt-card.pending .kt-card-head .ic::after { animation:none; border-color:var(--pc,var(--accent)); opacity:.5; }
+    }
+    .kt-card-head .nm { font-size:12.5px; font-weight:650; min-width:0; color:var(--text-dim); }
     .kt-status { font-size:11px; color:var(--text-faint); display:flex; align-items:center; gap:6px; flex:none; }
     .kt-retry { flex:none; width:22px; height:22px; border:1px solid var(--border); border-radius:50%;
       background:var(--field); color:inherit; cursor:pointer; font-size:13px; line-height:1;
@@ -702,8 +752,8 @@
     .kt-card.done .kt-status { color:var(--accent); }
     .kt-card.error .kt-status, .kt-card.cancelled .kt-status { color:#e08585; }
     .kt-card.timeout .kt-status { color:#d8b45a; }
-    .kt-card-body { flex:1; padding:10px 12px; font-size:13px; line-height:1.5;
-      white-space:pre-wrap; word-break:break-word; }
+    .kt-card-body { grid-column:2; grid-row:2; align-self:start; padding:0; font-size:14px; line-height:1.65;
+      color:var(--text); white-space:pre-wrap; word-break:break-word; }
     .kt-card-body.empty { color:var(--text-faint); font-style:italic; }
     /* Rendered Markdown (mdToHtml output, see ktRenderCardBody): the container drops pre-wrap --
        spacing/line-breaks now come from the real block elements, not from preserved whitespace. */
@@ -728,13 +778,14 @@
     .kt-card-body.kt-md pre code { background:none; padding:0; border-radius:0; }
     .kt-card-body.kt-md blockquote { border-left:3px solid var(--border-soft); padding-left:10px;
       color:var(--text-faint); }
-    .kt-card-body.kt-md table { border-collapse:collapse; width:100%; font-size:.95em; }
+    /* table-layout:fixed keeps a wide table inside its column: provider columns are locked to equal widths
+       (minmax(0,1fr)), so an auto-layout table would spill into the neighbouring answer. */
+    .kt-card-body.kt-md table { border-collapse:collapse; width:100%; table-layout:fixed; font-size:.95em; }
     .kt-card-body.kt-md th, .kt-card-body.kt-md td { border:1px solid var(--border-soft);
       padding:5px 8px; text-align:left; }
     .kt-card-body.kt-md th { font-weight:600; background:var(--bg-soft, rgba(127,127,127,.1)); }
     .kt-card-body.kt-md a { color:var(--accent); }
-    .kt-card-foot { flex:none; display:flex; justify-content:flex-end; gap:6px; padding:6px 10px;
-      border-top:1px solid var(--border-soft); }
+    .kt-card-foot { grid-column:2; grid-row:3; display:flex; align-items:center; gap:6px; padding:8px 0 0; }
     .kt-card-foot .btn { font-size:11.5px; padding:4px 10px; }
     /* Barra ricetta attiva sopra il composer: stessa identità visiva di ".sidebar-head"/"Vincoli"
        nella sidebar (etichetta con barretta accento + contenuto sotto). Neutra -> solo testo
@@ -748,7 +799,9 @@
        l'attributo hidden (impostato via JS in ktUpdateRecipeBadge) non nasconde davvero
        l'header quando si torna alla ricetta Neutra dopo averne selezionata un'altra. */
     .kt-recipe-badge-head[hidden] { display:none; }
-    .kt-recipe-badge-row { display:flex; align-items:center; gap:8px; padding:0 16px 10px;
+    .kt-recipe-badge { padding-inline:max(20px, calc((100% - var(--kt-col)) / 2)); }
+    .kt-recipe-badge .kt-recipe-badge-head { padding-inline:0; }
+    .kt-recipe-badge-row { display:flex; align-items:center; gap:8px; padding:0 0 10px;
       font-size:12px; font-weight:600; color:var(--accent); }
     .kt-recipe-badge.kt-recipe-badge-neutral .kt-recipe-badge-row { color:var(--text-faint); font-weight:500; }
     /* Neutra: solo testo informativo, niente riquadro -- nessuno sfondo/bordo che lo faccia
@@ -765,18 +818,21 @@
     /* Salva: sempre nel colore accento del tema (non solo in hover) -- deve saltare all'occhio
        quando c'è qualcosa da salvare, non confondersi con gli altri pulsanti grigi. */
     #ktRecipeBadgeSave, #ktRecipeBadgeSave:hover { color:var(--accent); }
-    .kt-composer { flex:none; display:flex; align-items:flex-end; gap:10px; padding:12px 16px;
-      border-top:1px solid var(--border-soft); background:var(--bg-1); }
+    /* The input is ONE rounded box in the same centred column as the conversation, with the send button
+       inside it: the textarea carries no border of its own, the box does. */
+    .kt-composer { flex:none; padding-block:8px 16px; padding-inline:max(20px, calc((100% - var(--kt-col)) / 2)); }
+    .kt-composer-box { display:flex; align-items:flex-end; gap:8px; padding:6px 6px 6px 16px;
+      background:var(--field); border:1px solid var(--border); border-radius:18px; transition:border-color .15s; }
+    .kt-composer-box:focus-within { border-color:var(--accent); }
     /* No resize:vertical -- it fights the JS auto-grow (ktAutoGrow) that drives height now.
        overflow-y starts hidden: ktAutoGrow flips it to auto ONLY once content truly exceeds
        KT_INPUT_MAX (JS-side threshold check, not left to the browser's own scrollHeight-vs-
        max-height comparison, which showed a false-positive scrollbar as early as line 2 --
        likely a sub-pixel rounding mismatch between scrollHeight and the CSS max-height). */
-    .kt-composer textarea { flex:1; min-height:32px; max-height:200px; overflow-y:hidden;
-      background:var(--field); border:1px solid var(--border); border-radius:12px;
-      color:var(--text); font-size:13.5px; padding:14px 14px; outline:none; font-family:inherit; }
-    .kt-composer textarea:focus { border-color:var(--accent); }
-    .kt-send { flex:none; width:48px; height:48px; font-size:20px; }   /* eredita .send (cerchio gradiente) */
+    .kt-composer textarea { flex:1; min-height:32px; max-height:200px; overflow-y:hidden; resize:none;
+      background:transparent; border:none; border-radius:0; color:var(--text);
+      font-size:14px; line-height:1.5; padding:9px 0; outline:none; font-family:inherit; }
+    .kt-send { flex:none; width:40px; height:40px; font-size:18px; }   /* eredita .send (cerchio gradiente) */
     .modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border-soft); flex:none; }
     .modal-head h2 { font-size:15px; font-weight:650; }
     .modal-head .x { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:18px; }
@@ -1444,7 +1500,7 @@
         </div>
         <div class="kt-chips" id="ktChips"></div>
       </div>
-      <div class="kt-thread" id="ktThread"></div>
+      <div class="kt-thread" id="ktThread" role="log" aria-live="polite"></div>
       <!-- Barra ricetta attiva: testo istruzione modificabile (sostituisce #instruction, spostato
            qui via JS, non più nella sidebar) quando una ricetta non-Neutra è attiva; altrimenti un
            breve testo informativo. Sempre attaccata sopra il composer, stesso stile di ".sidebar-head"
@@ -1460,8 +1516,10 @@
         </div>
       </div>
       <div class="kt-composer">
-        <textarea id="ktInput" rows="1" data-i18n-ph="ktPlaceholder" placeholder="Chiedi a tutti i provider selezionati..."></textarea>
-        <button class="send kt-send" id="ktSend" data-i18n-title="ktSendBtn" title="Invia">→</button>
+        <div class="kt-composer-box">
+          <textarea id="ktInput" rows="1" data-i18n-ph="ktPlaceholder" placeholder="Chiedi a tutti i provider selezionati..."></textarea>
+          <button class="send kt-send" id="ktSend" data-i18n-title="ktSendBtn" title="Invia">→</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1702,6 +1760,7 @@
       document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(t[k]!==undefined) el.placeholder=t[k]; });
       recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]) li.querySelector('.rname').textContent=t.recipeNames[k]; });
       if(ktRecipesEl) ktRecipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]){ li.querySelector('.rname').textContent=t.recipeNames[k]; li.title=t.recipeNames[k]; } });
+      renderKtSessions();   // recipe tags follow the language (every applyLang call runs after the sessions state exists)
       if(typeof ktSideApply==='function') ktSideApply();   // re-translate the collapse toggle's tooltip
       // "open on the fly" tooltip on each provider (Kotodama gets its own meta tooltip)
       providers.querySelectorAll('.prov').forEach(tile=>{
@@ -1907,6 +1966,9 @@
     let ktAllSessions=[];        // [{id,title,created,updated,turns:[{text,answers:{key:{status,text}}}]}]
     let ktSession=null;          // current session (inserted in ktAllSessions at first send)
     let ktLiveId=null;           // session whose provider tabs are "warm" in THIS app run
+    // bid -> Set of keys still waiting for their final answer. Drives the Send/Stop button and survives a
+    // switch of conversation, so a turn still running elsewhere can be stopped and its answers saved.
+    const ktPendingByBid={};
     let ktTurnByBid={};          // broadcast id -> turn object (routes answers into the right turn)
     let ktSaveTimer=null;
     async function ktLoadAll(){
@@ -1926,6 +1988,20 @@
       const d=new Date(ms||Date.now());
       return d.toLocaleDateString(undefined,{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     }
+    // Recipe tag of a conversation: the recipe of its LATEST turn that used one. The recipe is stored as a
+    // reference (turn.recipe = "key:rephrase" / "id:<custom id>") and named at render time, so the tag follows
+    // the app language and a renamed recipe; turn.recipeName is the snapshot used when a custom recipe has
+    // since been deleted. Neutral is the absence of a recipe: no tag. Sessions saved before this existed have
+    // no reference and show no tag.
+    function ktSessionRecipeName(s){
+      const turns=s.turns||[];
+      for(let i=turns.length-1;i>=0;i--){
+        const r=turns[i].recipe; if(!r) continue;
+        if(r==='key:neutral') return '';
+        return recipeNameFor(r)||turns[i].recipeName||'';
+      }
+      return '';
+    }
     function renderKtSessions(){
       const list=document.getElementById('ktSessList'); if(!list) return;
       const q=((ktSearch&&ktSearch.value)||'').trim().toLowerCase();
@@ -1933,16 +2009,17 @@
       const items=ktAllSessions.filter(s=>{
         if(!q) return true;
         if((s.title||'').toLowerCase().includes(q)) return true;
+        if(ktSessionRecipeName(s).toLowerCase().includes(q)) return true;
         return (s.turns||[]).some(t=>(t.text||'').toLowerCase().includes(q)
           || Object.values(t.answers||{}).some(a=>((a&&a.text)||'').toLowerCase().includes(q)));
       });
       if(!items.length){ const e=document.createElement('div'); e.className='kt-empty'; e.textContent=TR.ktNoSessions; list.appendChild(e); return; }
       items.forEach(s=>{
         const row=document.createElement('div'); row.className='kt-sess'+(ktSession&&s.id===ktSession.id?' active':'');
-        const titolo=s.title||'...', data=ktFmtDate(s.updated||s.created);
+        const titolo=s.title||'...', data=ktFmtDate(s.updated||s.created), tag=ktSessionRecipeName(s);
         // Tooltip su TUTTA la riga: da collassata e' l'unico modo di sapere che conversazione sia
         // (si vede solo l'iniziale), da espansa recupera i titoli troncati con l'ellissi.
-        row.title=titolo+' · '+data;
+        row.title=titolo+' · '+data+(tag?' · '+tag:'');
         // Iniziale come icona: le conversazioni non hanno un simbolo proprio, ma l'iniziale le
         // distingue una dall'altra (a differenza di un'icona uguale per tutte). Visibile solo nel
         // rail collassato.
@@ -1950,12 +2027,15 @@
         ico.textContent=(titolo.trim().match(/\p{L}|\p{N}/u)||['·'])[0].toUpperCase();
         const meta=document.createElement('div'); meta.className='kt-sess-meta';
         const tt=document.createElement('div'); tt.className='kt-sess-title'; tt.textContent=titolo;
-        const dd=document.createElement('div'); dd.className='kt-sess-date'; dd.textContent=data;
-        meta.appendChild(tt); meta.appendChild(dd);
+        const sub=document.createElement('div'); sub.className='kt-sess-sub';
+        const dd=document.createElement('span'); dd.className='kt-sess-date'; dd.textContent=data;
+        sub.appendChild(dd);
+        if(tag){ const tg=document.createElement('span'); tg.className='kt-sess-tag'; tg.textContent=tag; sub.appendChild(tg); }
+        meta.appendChild(tt); meta.appendChild(sub);
         row.appendChild(ico);
         const ren=document.createElement('button'); ren.className='kt-sess-ren'; ren.textContent='✎'; ren.title=TR.rename;
         ren.addEventListener('click', ev=>{ ev.stopPropagation(); startRenameSession(s, tt); });
-        const del=document.createElement('button'); del.className='kt-sess-del'; del.textContent='✕';
+        const del=document.createElement('button'); del.className='kt-sess-del'; del.textContent='✕'; del.title=TR.delete||''; del.setAttribute('aria-label', TR.delete||'');
         del.addEventListener('click', ev=>{
           ev.stopPropagation();
           if(!del.classList.contains('confirm')){                       // 1° click: chiede conferma inline
@@ -2000,15 +2080,20 @@
     // provider answer can legitimately contain literal "<script>" as explanatory text). Covers
     // exactly what elToMd() produces: headings, fenced code, tables, blockquotes, lists,
     // bold/italic/inline-code/links. Not a full CommonMark implementation by design.
-    function mdEscHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    // Quotes too: the output is also placed inside attribute values (href, class) and provider text is
+    // untrusted. A link like https://x"onmouseover="... would otherwise break out of the attribute and run
+    // script in the main window, which can reach every Tauri command.
+    function mdEscHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
     function mdInline(raw){
       const codes=[];
       let s=(raw||'').replace(/`([^`]*)`/g,(m,c)=>{ codes.push(c); return ' C'+(codes.length-1)+' '; });
       s=mdEscHtml(s);
       s=s.replace(/\[([^\]]*)\]\(([^)\s]*)[^)]*\)/g,(m,txt,href)=>{
         href=(href||'').trim();
+        // Already HTML-escaped with the rest of the line (quotes included): escaping it again turned every
+        // & of a query string into &amp;amp; and broke the URL.
         const safe=/^(https?:|mailto:)/i.test(href) ? href : '#';
-        return '<a href="'+mdEscHtml(safe)+'" target="_blank" rel="noopener noreferrer">'+txt+'</a>';
+        return '<a href="'+safe+'" target="_blank" rel="noopener noreferrer">'+txt+'</a>';
       });
       s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
       s=s.replace(/\*([^*]+)\*/g,'<em>$1</em>');
@@ -2025,7 +2110,7 @@
         if(!line.trim()){ i++; continue; }
         const fence=line.match(/^```(\S*)\s*$/);
         if(fence){
-          const lang=fence[1]||''; const buf=[]; i++;
+          const lang=(fence[1]||'').replace(/[^\w+#.-]/g,''); const buf=[]; i++;
           while(i<lines.length && !/^```\s*$/.test(lines[i])){ buf.push(lines[i]); i++; }
           i++;
           out.push('<pre><code'+(lang?' class="language-'+mdEscHtml(lang)+'"':'')+'>'+mdEscHtml(buf.join('\n'))+'</code></pre>');
@@ -2055,18 +2140,66 @@
           continue;
         }
         if(/^\s*\d+\.\s+/.test(line)){
-          const items=[]; while(i<lines.length && /^\s*\d+\.\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*\d+\.\s+/,'')); i++; }
-          out.push('<ol>'+items.map(it=>'<li>'+mdInline(it)+'</li>').join('')+'</ol>');
+          // Keeps the first number (start=) and lets blank lines sit between items: a list split by blank
+          // lines stays ONE list instead of several lists that each restart at 1.
+          const start=parseInt(line.trim(),10)||1;
+          const items=[];
+          while(i<lines.length){
+            if(/^\s*\d+\.\s+/.test(lines[i])){ items.push(lines[i].replace(/^\s*\d+\.\s+/,'')); i++; continue; }
+            let j=i; while(j<lines.length && !lines[j].trim()) j++;
+            if(j>i && j<lines.length && /^\s*\d+\.\s+/.test(lines[j])){ i=j; continue; }
+            break;
+          }
+          out.push('<ol'+(start>1?' start="'+start+'"':'')+'>'+items.map(it=>'<li>'+mdInline(it)+'</li>').join('')+'</ol>');
           continue;
         }
         const buf=[line]; i++;
         while(i<lines.length && lines[i].trim() && !/^(```|#{1,6}\s|\s*[-*]\s|\s*\d+\.\s|\s*>|\s*\|.*\|\s*$)/.test(lines[i])){ buf.push(lines[i]); i++; }
-        out.push('<p>'+mdInline(buf.join(' '))+'</p>');
+        // A single line break inside a paragraph is a real one (verses, addresses): elToMd emits it only
+        // for a <br> or preserved whitespace, never for source formatting.
+        out.push('<p>'+buf.map(mdInline).join('<br>')+'</p>');
       }
       return out.join('\n');
     }
     // Populates a card body from a saved/live answer: renders `md` (Markdown) when present,
     // falling back to plain text for the legacy nav-sentinel delivery path (never carries `md`).
+    /* ---- Chat actions: ONE definition of the copy button, used by live answers, saved turns, retries and
+       the user's own messages. It used to be built and wired in three places, each with its own copy of
+       the label and feedback handling. ---- */
+    const KT_ICON_COPY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
+    const KT_ICON_CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+    // getText is read at CLICK time: the button can exist before its text does (a card still streaming)
+    // and it always copies the final answer, never a stale preview.
+    function ktCopyBtn(getText){
+      const b=document.createElement('button');
+      b.type='button'; b.className='kt-icon-btn kt-copy'; b.innerHTML=KT_ICON_COPY;
+      b.title=TR.copy||''; b.setAttribute('aria-label', TR.copy||'');
+      b.addEventListener('click', async()=>{
+        const t=getText(); if(!t) return;
+        await writeClipboard(t);
+        b.innerHTML=KT_ICON_CHECK; b.classList.add('copied'); b.title=TR.copied||'';
+        clearTimeout(b._ktReset);
+        b._ktReset=setTimeout(()=>{ b.innerHTML=KT_ICON_COPY; b.classList.remove('copied'); b.title=TR.copy||''; }, 1500);
+      });
+      return b;
+    }
+    function ktActs(...btns){ const a=document.createElement('span'); a.className='kt-acts'; btns.forEach(x=>a.appendChild(x)); return a; }
+    // The user's message: the bubble plus its faint actions. Built in one place for live and saved turns.
+    function ktUserMsg(text){
+      const m=document.createElement('div'); m.className='kt-umsg';
+      const u=document.createElement('div'); u.className='kt-user'; u.textContent=text;
+      m.appendChild(u); m.appendChild(ktActs(ktCopyBtn(()=>text)));
+      return m;
+    }
+    // Width of the shared column (--kt-col in the CSS), taken from the WIDEST turn in the thread: every
+    // turn, the recipe bar and the input box then share the same edges instead of each sizing itself.
+    let ktMaxCols=1;
+    function ktUpdateColumn(cols){
+      if(cols>ktMaxCols) ktMaxCols=cols;
+      const px = ktMaxCols<=1 ? 820 : Math.max(820, ktMaxCols*440 + (ktMaxCols-1)*32);
+      const host=ktThread.parentElement; if(host) host.style.setProperty('--kt-col', px+'px');
+    }
+    function ktResetColumn(){ ktMaxCols=1; ktUpdateColumn(1); }
     function ktRenderCardBody(body, text, md){
       if(md && md.trim()){ body.classList.add('kt-md'); body.innerHTML=mdToHtml(md); }
       else { body.classList.remove('kt-md'); body.textContent=text; }
@@ -2074,8 +2207,7 @@
     // Rebuilds one SAVED turn in the thread (final cards, no spinners). Failed cards get
     // the ⟳ retry too: they are registered under a synthetic bid so ktRetryKey can reuse them.
     function ktRenderSavedTurn(turn){
-      const u=document.createElement('div'); u.className='kt-user'; u.textContent=turn.text||'';
-      ktThread.appendChild(u);
+      ktThread.appendChild(ktUserMsg(turn.text||''));
       const grid=document.createElement('div'); grid.className='kt-grid';
       ktSetGridCols(grid, Object.keys(turn.answers||{}).length);
       const svBid='sv'+(ktSeq++);
@@ -2083,15 +2215,21 @@
       Object.keys(turn.answers||{}).forEach(key=>{
         const p=PROVIDERS[key]; if(!p) return;
         const a=turn.answers[key]||{};
+        if(a.status==='pending'){
+          // Still running (the user switched conversation and came back): a live card under the running
+          // broadcast, so its preview and answer land here instead of showing a failure.
+          const liveBid=Object.keys(ktPendingByBid).find(b=>ktTurnByBid[b]===turn && ktPendingByBid[b].has(key));
+          if(liveBid){ ktPendingCard(grid, liveBid, key); return; }
+        }
         const st=(!a.status||a.status==='pending')?'error':a.status;   // app chiusa a metà -> errore
         const bits=ktTileBits(key);
         const card=document.createElement('div');
-        card.className='kt-card '+(st==='done'?'done':(st==='timeout'?'timeout':'error'));
+        card.className='kt-card '+ktStatusClass(st);
         if(bits.color) card.style.setProperty('--pc', bits.color);
         card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
           +`<span class="kt-status"><span class="kt-st-txt"></span></span></div>`
           +`<div class="kt-card-body"></div>`
-          +`<div class="kt-card-foot" hidden><button class="btn kt-copy"></button></div>`;
+          +`<div class="kt-card-foot" hidden></div>`;
         card.querySelector('.nm').textContent=p.name;
         card.querySelector('.kt-st-txt').textContent=ktStatusLabel(st);
         const body=card.querySelector('.kt-card-body');
@@ -2099,8 +2237,7 @@
         if(text){
           ktRenderCardBody(body, text, a.md);
           const foot=card.querySelector('.kt-card-foot'); foot.hidden=false;
-          const cp=foot.querySelector('.kt-copy'); cp.textContent=TR.copy;
-          cp.addEventListener('click', async()=>{ await writeClipboard(text); cp.textContent=TR.copied; setTimeout(()=>{ cp.textContent=TR.copy; },1500); });
+          foot.appendChild(ktActs(ktCopyBtn(()=>text)));
         } else {
           body.classList.add('empty'); body.textContent=ktStatusLabel(st);
           // Same as ktOnAnswer: offer to open the provider tab when there's no text to show
@@ -2109,7 +2246,7 @@
           const btn=document.createElement('button'); btn.className='btn';
           btn.textContent = st==='login' ? (TR.ktLoginBtn||TR.ktOpenProvider) : TR.ktOpenProvider;
           btn.addEventListener('click', ()=>{ closeKotodama(); openProviderRealPage(key, st==='login'); });
-          foot.hidden=false; foot.prepend(btn);
+          if(st!=='cancelled'){ foot.hidden=false; foot.prepend(btn); }
           const cp=foot.querySelector('.kt-copy'); if(cp) cp.remove();
         }
         if(st!=='done'){
@@ -2132,7 +2269,7 @@
     function ktLoadSession(id){
       const s=ktAllSessions.find(x=>x.id===id); if(!s) return;
       ktSession=s;
-      ktThread.innerHTML=''; ktCards={}; ktTurnByBid={};
+      ktResetColumn(); ktThread.innerHTML=''; ktCards={};
       (s.turns||[]).forEach(ktRenderSavedTurn);
       ktThread.scrollTop=ktThread.scrollHeight;
       // Tab provider "calde" solo per la sessione live di QUESTO run: le altre ripartono
@@ -2229,6 +2366,23 @@
         persistSettings(currentSettings);
       } catch(e){ console.error('winseqTop', e); }
     };
+    // DEBUG ONLY (KOTO_AUTOCHAT): opens the chat and sends `text` to `keys` through the REAL path, the same
+    // openKotodama -> ktDoSend a person triggers, so the answer renders as real cards and the layout and
+    // the live streaming can be checked on screen. The selection override lives in memory only and is
+    // restored at once (ktDoSend reads the keys synchronously, before its first await), so the user's
+    // saved provider selection is never touched.
+    // Optional `recipe` ("key:translate" / "id:<custom id>") is applied the same temporary way.
+    window.__ktAutoChat = function(text, keys, recipe){
+      try {
+        const saved=ktSel, savedRecipe=activeRecipe;
+        if(Array.isArray(keys) && keys.length) ktSel=new Set(keys);
+        if(recipe){ const i=recipe.indexOf(':'); activeRecipe = recipe.slice(0,i)==='key' ? {kind:'key', key:recipe.slice(i+1)} : {kind:'id', id:recipe.slice(i+1)}; }
+        openKotodama(text, true);
+        ktSel=saved; activeRecipe=savedRecipe;
+      } catch(e){ console.error('autochat', e); }
+    };
+    // DEBUG ONLY (KOTO_AUTOCHAT_STOP_MS): the same action as pressing the Stop button.
+    window.__ktAutoStop = function(){ document.getElementById('ktSend').click(); };
     window.__ktAutoWarm = function(key){
       try {
         // Goes through the REAL path -- type, then send -- instead of dispatching straight to the
@@ -2324,13 +2478,14 @@
       ktCards[`${bid}:${key}`]=ref;
       ktTurnByBid[bid]=turn;
       // reset the card UI to pending
+      ktMarkPending(bid, key);
       ref.card.classList.remove('done','error','timeout','cancelled');
       ref.card.classList.add('pending');
       ref.body.classList.add('empty'); ref.body.textContent='';
       ref.foot.hidden=true;
-      ref.foot.querySelectorAll('button').forEach(b=>b.remove());
-      const cp=document.createElement('button'); cp.className='btn kt-copy'; cp.textContent=TR.copy;
-      ref.foot.appendChild(cp);
+      ref.foot.innerHTML='';
+      ref.foot.appendChild(ktActs(ktCopyBtn(()=>ref.text)));
+      ref.liveLen=0; ref.maxLen=0; ref.liveText=''; ref.liveMd='';   // a retry streams from scratch: forget the previous attempt's preview
       const stEl=ref.card.querySelector('.kt-status');
       const rb=stEl&&stEl.querySelector('.kt-retry'); if(rb) rb.remove();
       if(stEl && !stEl.querySelector('.dl-spin')){ const sp=document.createElement('span'); sp.className='dl-spin'; stEl.prepend(sp); ref.spin=sp; }
@@ -2340,7 +2495,7 @@
       ktPersist();
       const freshFlag=!ktStarted[key];
       ktStarted[key]=true;
-      try{ await ktDispatchKey(bid, key, turn.text, turn, freshFlag); }
+      try{ await ktDispatchKey(bid, key, turn.sendText||turn.text, turn, freshFlag); }
       catch(e){ toast(`${TR.openError}: ${e}`); }
     }
     function ktRealKeys(){ return Object.keys(PROVIDERS).filter(k=>PROVIDERS[k].base && PROVIDERS[k].mode!=='manual'); }
@@ -2652,7 +2807,7 @@
     const KT_ONLY = true;
     function closeKotodama(){ if(KT_ONLY) return; body.classList.remove('kotodama-open'); }
     function ktNewConversation(){
-      ktStarted={}; ktThread.innerHTML=''; ktCards={}; ktTurnByBid={};
+      ktStarted={}; ktResetColumn(); ktThread.innerHTML=''; ktCards={};
       ktSession={ id:'s'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
                   title:'', created:Date.now(), updated:Date.now(), turns:[] };
       renderKtSessions();   // persisted only at the first send
@@ -2664,53 +2819,102 @@
       if(st==='done') return '✓';
       if(st==='timeout') return t.ktTimeout;
       if(st==='login') return t.ktLogin;
-      return t.ktError;   // error | sendfail | cancelled
+      if(st==='cancelled') return t.ktCancelled;
+      return t.ktError;   // error | sendfail
     }
+    function ktIsFinal(ref){ const c=ref.card.classList; return c.contains('done')||c.contains('error')||c.contains('timeout')||c.contains('cancelled'); }
+    function ktStatusClass(st){ return st==='done'||st==='timeout'||st==='cancelled' ? st : 'error'; }
     // The window is always divided into exactly N equal columns (N = cards in THIS turn) --
     // not a minimum-width-driven wrap (grid-auto-fit/-fill both reflow once cards no longer fit
     // a fixed min-width, which is not what's wanted here).
-    function ktSetGridCols(grid, n){ grid.style.gridTemplateColumns = 'repeat('+Math.max(1,n)+', 1fr)'; }
+    // minmax(0,1fr), not 1fr: plain 1fr has an implicit minimum of the content width, so one answer with a
+    // long code line widened its column and squeezed the others. Every column must stay the same width.
+    function ktSetGridCols(grid, n){ n=Math.max(1,n); grid.style.setProperty('--kt-n', n); grid.dataset.cols=n; ktUpdateColumn(n); }
+    // A card waiting for its answer, registered under `bid` so progress, previews and the answer find it.
+    // Shared by a new turn and by a running turn shown again after a switch of conversation.
+    function ktPendingCard(grid, bid, key){
+      const p=PROVIDERS[key], bits=ktTileBits(key);
+      const card=document.createElement('div'); card.className='kt-card pending';
+      if(bits.color) card.style.setProperty('--pc', bits.color);
+      card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
+        +`<span class="kt-status"><span class="dl-spin"></span><span class="kt-st-txt"></span></span></div>`
+        +`<div class="kt-card-body empty"></div>`
+        +`<div class="kt-card-foot" hidden></div>`;
+      card.querySelector('.nm').textContent=p.name;
+      card.querySelector('.kt-st-txt').textContent=ktStatusLabel('pending');
+      grid.appendChild(card);
+      const ref={ card, body:card.querySelector('.kt-card-body'),
+        st:card.querySelector('.kt-st-txt'), spin:card.querySelector('.dl-spin'),
+        foot:card.querySelector('.kt-card-foot'), text:'' };
+      ref.foot.appendChild(ktActs(ktCopyBtn(()=>ref.text)));
+      ktCards[`${bid}:${key}`]=ref;
+    }
     function ktAppendTurn(bid, text, keys){
-      const u=document.createElement('div'); u.className='kt-user'; u.textContent=text;
-      ktThread.appendChild(u);
+      ktThread.appendChild(ktUserMsg(text));
       const grid=document.createElement('div'); grid.className='kt-grid';
       ktSetGridCols(grid, keys.length);
-      keys.forEach(key=>{
-        const p=PROVIDERS[key], bits=ktTileBits(key);
-        const card=document.createElement('div'); card.className='kt-card pending';
-        if(bits.color) card.style.setProperty('--pc', bits.color);
-        card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
-          +`<span class="kt-status"><span class="dl-spin"></span><span class="kt-st-txt"></span></span></div>`
-          +`<div class="kt-card-body empty"></div>`
-          +`<div class="kt-card-foot" hidden><button class="btn kt-copy" data-i18n="copy"></button></div>`;
-        card.querySelector('.nm').textContent=p.name;
-        card.querySelector('.kt-st-txt').textContent=ktStatusLabel('pending');
-        card.querySelector('.kt-copy').textContent=TR.copy;
-        grid.appendChild(card);
-        ktCards[`${bid}:${key}`]={ card, body:card.querySelector('.kt-card-body'),
-          st:card.querySelector('.kt-st-txt'), spin:card.querySelector('.dl-spin'),
-          foot:card.querySelector('.kt-card-foot'), text:'' };
-      });
+      keys.forEach(key=>ktPendingCard(grid, bid, key));
       ktThread.appendChild(grid);
       ktThread.scrollTop=ktThread.scrollHeight;
     }
+    function ktIsBusy(){ return Object.keys(ktPendingByBid).length>0; }
+    function ktMarkPending(bid, key){ (ktPendingByBid[bid] ||= new Set()).add(key); ktSyncSendBtn(); }
+    function ktClearPending(bid, key){
+      const set=ktPendingByBid[bid]; if(!set) return;
+      set.delete(key); if(!set.size) delete ktPendingByBid[bid];
+      ktSyncSendBtn();
+    }
+    // One button, two roles: Send when idle, Stop while any answer is still coming.
+    function ktSyncSendBtn(){
+      const b=document.getElementById('ktSend'); if(!b) return;
+      const busy=ktIsBusy();
+      b.classList.toggle('stop', busy);
+      b.textContent = busy ? '■' : '→';
+      const label = busy ? TR.ktStopBtn : TR.ktSendBtn;
+      b.title=label||''; b.setAttribute('aria-label', label||'');
+    }
+    // Stop: Rust cancels what it already dispatched; keys it never received (Stop pressed while the send
+    // loop was still dispatching) are closed here, and the loop stops dispatching (ktStoppedBids).
+    // Without the local close the button would stay on Stop forever.
+    const ktStoppedBids=new Set();
+    async function ktStopAll(){
+      if(!TAURI) return;
+      for(const bid of Object.keys(ktPendingByBid)){
+        ktStoppedBids.add(bid);
+        try{ await invoke('kotodama_cancel',{broadcastId:bid}); }catch(e){}
+        [...(ktPendingByBid[bid]||[])].forEach(key=>ktOnAnswer({broadcastId:bid, key, status:'cancelled', text:''}));
+      }
+    }
     function ktOnAnswer(d){
       if(inlineOnAnswer(d)) return;   // inline transform: paste-back, no cards/sessions
-      const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
       const st=d.status||'error';
       if(st==='pending') return;                       // card already rendered as pending
-      // session bookkeeping: store the final answer and persist
+      // Stopped or failed mid-stream with nothing delivered: keep what the user already watched being written
+      // (the live preview) as the answer, instead of wiping it for an empty status.
+      const live=ktCards[`${d.broadcastId}:${d.key}`];
+      if(st!=='done' && !(d.text||'').trim() && live && live.liveText && !ktIsFinal(live)){
+        d={ ...d, text:live.liveText, md:live.liveMd||'' };
+      }
+      // A stopped key already saved as cancelled: a late confirmation must not rewrite it.
+      if(st==='cancelled' && !(ktPendingByBid[d.broadcastId]||new Set()).has(d.key) && ktStoppedBids.has(d.broadcastId)) return;
+      ktClearPending(d.broadcastId, d.key);
+      // Session bookkeeping BEFORE looking for the card: the user may have switched to another conversation
+      // while this one was answering, and the answer must still be saved in the conversation it belongs to.
       const turn=ktTurnByBid[d.broadcastId];
       if(turn && turn.answers && turn.answers[d.key]){
         turn.answers[d.key]={ status:st, text:(d.text||'').trim(), md:d.md||'' };
-        if(ktSession){ ktSession.updated=Date.now(); }
+        const owner=ktAllSessions.find(x=>(x.turns||[]).includes(turn));
+        if(owner) owner.updated=Date.now();
         ktPersist(); renderKtSessions();
       }
       // A real answer = proof of an active login there: remember it so future "chiedi a tutti"
       // chats default to it too (see ktLoadSel). No-op on the Rust side if already known.
       if(st==='done' && TAURI) invoke('mark_provider_known',{key:d.key}).catch(()=>{});
+      const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
+      // Stop closes a card locally and Rust may confirm it a moment later: render a card only once.
+      if(!ref.card.classList.contains('pending') && st==='cancelled') return;
       ref.card.classList.remove('pending');
-      ref.card.classList.add(st==='done'?'done':(st==='timeout'?'timeout':'error'));
+      ref.card.classList.add(ktStatusClass(st));
       if(ref.spin) ref.spin.remove();
       ref.st.textContent=ktStatusLabel(st)+((d.truncated&&st!=='error')?` ${TR.ktTruncated}`:'');
       // failed/partial card: browser-style ⟳ retry icon right of the status text -- EXCEPT for
@@ -2738,18 +2942,40 @@
         const btn=document.createElement('button'); btn.className='btn';
         btn.textContent = st==='login' ? (t.ktLoginBtn||t.ktOpenProvider) : t.ktOpenProvider;
         btn.addEventListener('click', ()=>{ closeKotodama(); openProviderRealPage(k, st==='login'); });
-        ref.foot.hidden=false; ref.foot.prepend(btn);
+        if(st!=='cancelled'){ ref.foot.hidden=false; ref.foot.prepend(btn); }
         const cp=ref.foot.querySelector('.kt-copy'); if(cp) cp.remove();
       }
-      const cp=ref.foot.querySelector('.kt-copy');
-      if(cp) cp.addEventListener('click', async()=>{ await writeClipboard(ref.text); cp.textContent=TR.copied; setTimeout(()=>{ cp.textContent=TR.copy; }, 1500); });
+    }
+    // Live preview (app://kotodama-partial): the answer rendered while it is being written. It is never
+    // final -- no status change and no ref.text, so Copy and the saved session keep using the delivered
+    // answer -- and it is dropped once the card holds its final status, because a preview can still be
+    // in flight when the answer lands.
+    function ktOnPartial(d){
+      if(inlinePending[d.broadcastId]) return;   // inline transform pastes the final text only
+      const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
+      if(ktIsFinal(ref)) return;
+      const text=d.text||''; if(!text) return;
+      // Monotonic, like the progress counter: when the provider page navigates mid-stream the harvest is
+      // re-injected and starts again from a shorter reading, which would make the text jump backwards.
+      if(text.length<(ref.liveLen||0)) return;
+      if(text===ref.liveText && (d.md||'')===(ref.liveMd||'')) return;
+      // Re-rendering replaces the DOM, which would cancel a selection the user is making in this card.
+      const sel=window.getSelection();
+      if(sel && !sel.isCollapsed && sel.anchorNode && ref.body.contains(sel.anchorNode)) return;
+      ref.liveLen=text.length; ref.liveText=text; ref.liveMd=d.md||'';
+      // Follow the stream only when the reader is already at the bottom: someone who scrolled up to read
+      // an earlier part must not be pulled away from it.
+      const atBottom = ktThread.scrollHeight - ktThread.scrollTop - ktThread.clientHeight < 48;
+      ref.body.classList.remove('empty');
+      ktRenderCardBody(ref.body, text, d.md);
+      if(atBottom) ktThread.scrollTop=ktThread.scrollHeight;
     }
     function ktOnProgress(d){
       // inline transform: forward the heartbeat to the processing toast (receiving + size)
       if(inlinePending[d.broadcastId]){ inlineToastStage('work', d.len||0); return; }
       const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
       // a stale heartbeat (duplicate in-page script) must never overwrite a FINAL status
-      if(ref.card.classList.contains('done')||ref.card.classList.contains('error')||ref.card.classList.contains('timeout')) return;
+      if(ktIsFinal(ref)) return;
       // MONOTONIC counter. The raw count can go backwards with nothing wrong: when the provider's
       // page navigates mid-stream (ChatGPT rewrites ?q= into &prompt= on its own, emitting several
       // page_finished events) the harvest is re-injected into the new document and restarts from
@@ -2761,6 +2987,9 @@
       ref.st.textContent=ktStatusLabel('streaming', shown>=1000?`${(shown/1000).toFixed(1)}k`:String(shown));
     }
     async function ktDoSend(){
+      // While answers are still coming the button is Stop: a new message would be typed into provider pages
+      // that are still generating.
+      if(ktIsBusy()){ ktStopAll(); return; }
       const t=TR, text=ktInput.value.trim();
       const keys=[...ktLoadSel()];
       if(!text) return;
@@ -2776,9 +3005,12 @@
       if(!ktSession) ktNewConversation();
       const bid='b'+(ktSeq++)+'-'+Math.random().toString(36).slice(2,8);
       ktAppendTurn(bid, text, keys);
-      ktInput.value=''; ktAutoGrow();
+      keys.forEach(k=>ktMarkPending(bid, k));
+      ktInput.value=''; ktAutoGrow(); ktInput.focus();
       // session bookkeeping: append the turn, title from the first message, persist
-      const turn={ text, answers:{} }; keys.forEach(k=>{ turn.answers[k]={status:'pending', text:''}; });
+      const recipeRef = activeRecipe.kind==='key' ? 'key:'+activeRecipe.key : 'id:'+activeRecipe.id;
+      const turn={ text, answers:{}, recipe:recipeRef, recipeName:recipeNameFor(recipeRef) };
+      keys.forEach(k=>{ turn.answers[k]={status:'pending', text:''}; });
       const hadTurns=ktSession.turns.length>0;
       if(!ktSession.title) ktSession.title=text.replace(/\s+/g,' ').slice(0,48);
       ktSession.turns.push(turn); ktSession.updated=Date.now();
@@ -2813,14 +3045,15 @@
         }
         if(respSel.selectedIndex===1) sendText+='\n\n'+t.answerOnlyText;
       }
+      if(sendText!==text) turn.sendText=sendText;   // a retry resends exactly this (recipe + constraints)
       // The pre-warmed page is being consumed by this very send: re-arm, so the NEXT message
       // pre-warms again on its first keystroke.
       ktPrewarmed = false;
       try{
         // Per-key dispatch (same bid -> Rust merges): warm tabs continue their session with
         // plain text; fresh ones get the per-provider context preamble when history exists.
-        for(const k of warm)  await ktDispatchKey(bid, k, sendText, turn, false);
-        for(const k of fresh) await ktDispatchKey(bid, k, sendText, turn, true);
+        for(const k of warm){  if(ktStoppedBids.has(bid)) break; await ktDispatchKey(bid, k, sendText, turn, false); }
+        for(const k of fresh){ if(ktStoppedBids.has(bid)) break; await ktDispatchKey(bid, k, sendText, turn, true); }
       }catch(e){ toast(`${t.openError}: ${e}`); }
     }
     /* ===================== KOTODAMA SIDE TABS (Cronologia / Ricette) ===================== */
@@ -2931,6 +3164,7 @@
       ktSyncRecipeActive();
       ktUpdateRecipeBadge();
       renderDefaultRecipeStar();   // re-apply the ★ on the freshly rebuilt custom <li>s
+      renderKtSessions();          // recipe tags in the history carry custom recipe names
     }
     if(ktRecipesEl){
       ktRecipesEl.addEventListener('click', e=>{
@@ -3009,7 +3243,7 @@
     document.getElementById('ktNew').addEventListener('click', ()=>{ ktPrewarmed=false; ktPrewarm(); ktNewConversation(); });
     document.getElementById('ktBackBar').addEventListener('click', closeKotodama);
     // Enter sends; Shift+Enter (or Ctrl/Cmd+Enter) inserts a newline. IME composition is left alone.
-    ktInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.isComposing){ e.preventDefault(); ktDoSend(); } });
+    ktInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.isComposing){ e.preventDefault(); if(!ktIsBusy()) ktDoSend(); } });
     if(ktSearch) ktSearch.addEventListener('input', renderKtSessions);
 
     /* ===================== CLAUDE LOGIN WARNING BANNER ===================== */
@@ -3814,6 +4048,14 @@
       // Kotodama meta-chat: per-provider answers and progress heartbeats.
       listen('app://kotodama-answer', e=>{ ktOnAnswer(e.payload||{}); });
       listen('app://kotodama-progress', e=>{ ktOnProgress(e.payload||{}); });
+      listen('app://kotodama-partial', e=>{ ktOnPartial(e.payload||{}); });
+      // Links inside answers open in the system browser, never as a popup inside the app window.
+      ktThread.addEventListener('click', e=>{
+        const a=e.target.closest && e.target.closest('a[href]'); if(!a) return;
+        e.preventDefault();
+        const url=a.getAttribute('href')||'';
+        if(/^(https?:|mailto:)/i.test(url)) invoke('open_url',{url}).catch(()=>{});
+      });
       // A provider's known/authenticated state changed (login-wall found or a real answer
       // succeeded, see Rust `set_provider_known`): keep the local snapshot + chip visibility in
       // sync immediately, instead of only after the next app restart.
