@@ -562,6 +562,32 @@ const ATTACH_JS: &str = r##"
 })();
 "##;
 
+/// The sites where a provider page can deliver results: exactly the hosts `capabilities/provider-push.json` lets
+/// call `kotodama_push` (a test keeps the two lists equal). Anywhere else -- a sign-in page on accounts.google.com
+/// or accounts.x.ai -- the IPC call is refused and the script falls back to its navigation sentinel, and every
+/// such navigation cancels the page's own. Measured symptom (15/09/2026): signing in with Google on Gemini or
+/// Grok while a message was waiting loaded forever, because the waiting send/harvest was injected into the
+/// Google page. So Kotodama's scripts run only on these hosts; a send waits until the page is back.
+const PROVIDER_HOSTS: &[&str] = &[
+    "chatgpt.com",
+    "claude.ai",
+    "grok.com",
+    "gemini.google.com",
+    "www.perplexity.ai",
+    "chat.qwen.ai",
+    "chat.deepseek.com",
+    "chat.z.ai",
+    "chat.mistral.ai",
+    "poe.com",
+    "www.kimi.com",
+    "www.meta.ai",
+    "copilot.com",
+    "www.copilot.com",
+];
+fn on_provider_site(url: Option<&Url>) -> bool {
+    url.and_then(|u| u.host_str()).map(|h| PROVIDER_HOSTS.contains(&h)).unwrap_or(false)
+}
+
 fn sent_marks() -> &'static Mutex<HashSet<(String, String)>> {
     static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(HashSet::new()))
@@ -2991,6 +3017,12 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
             return;
         }
     }
+    // Off the provider's own site (a sign-in step on another domain): nothing of ours runs here. A queued send or
+    // an owed harvest stays as it is and resumes on the page-load that brings the tab back.
+    if !on_provider_site(webview.url().ok().as_ref()) {
+        debug::log(format!("kotodama page_finished key={key}: off the provider site, sends and harvests held"));
+        return;
+    }
     let inj = pending_injections().lock().unwrap().remove(key);
     if let Some(inj) = inj {
         debug::log(format!("kotodama inject (on load) key={key} bid={}", inj.broadcast_id));
@@ -3114,6 +3146,18 @@ pub async fn kotodama_broadcast(
         browser::resume_provider(&window, key, true);
         let label = browser::provider_label(key);
         let existing = window.get_webview(&label);
+        // The tab is on another site, typically the user signing in: neither type into that page nor navigate it away
+        // (that would throw the sign-in away). Queue the send; it runs when the page is back on the provider's site.
+        if let Some(webview) = &existing {
+            if !on_provider_site(webview.url().ok().as_ref()) {
+                debug::log(format!("kotodama send key={key} held: the tab is off the provider site"));
+                pending_injections().lock().unwrap().insert(
+                    key.clone(),
+                    PendingInjection { broadcast_id: broadcast_id.clone(), text: text.clone(), fresh: new_chat, temp: new_chat && temp_for(key) },
+                );
+                continue;
+            }
+        }
         if let (Some(webview), false) = (&existing, new_chat) {
             // Warm follow-up: inject straight into the loaded page (keeps the conversation).
             match build_inject_js(&broadcast_id, key, &text, false, false) {
@@ -3220,6 +3264,16 @@ pub async fn kotodama_broadcast(
             let bid = broadcast_id.clone();
             std::thread::spawn(move || {
                 std::thread::sleep(std::time::Duration::from_secs(8));
+                // Same rule as on_page_finished: a tab that went to a sign-in page keeps its send queued for the
+                // page-load that brings it back (measured: this fallback injected into accounts.x.ai).
+                let off_site = win
+                    .get_webview(&browser::provider_label(&key))
+                    .map(|w| !on_provider_site(w.url().ok().as_ref()))
+                    .unwrap_or(false);
+                if off_site {
+                    debug::log(format!("kotodama inject (fallback 8s) key={key} held: off the provider site"));
+                    return;
+                }
                 let inj = {
                     let mut p = pending_injections().lock().unwrap();
                     match p.get(&key) {
@@ -3307,4 +3361,34 @@ pub fn kotodama_cancel(window: Window, broadcast_id: String) -> Result<(), Strin
         finish_key(&window, &broadcast_id, &key, "cancelled", "", false, "");
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod provider_hosts_tests {
+    /// PROVIDER_HOSTS and the IPC grant must name the same hosts: a host missing from either side is a provider
+    /// whose results can never arrive, or a page where our scripts would run without being able to deliver.
+    #[test]
+    fn hosts_match_capability() {
+        let raw = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/capabilities/provider-push.json")).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&raw).unwrap();
+        let mut cap: Vec<String> = v["remote"]["urls"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|u| u.as_str().unwrap().trim_start_matches("https://").trim_end_matches("/*").to_string())
+            .collect();
+        let mut ours: Vec<String> = super::PROVIDER_HOSTS.iter().map(|h| h.to_string()).collect();
+        cap.sort();
+        ours.sort();
+        assert_eq!(ours, cap);
+    }
+
+    #[test]
+    fn sign_in_pages_are_off_site() {
+        let u = |s: &str| s.parse::<tauri::Url>().unwrap();
+        assert!(super::on_provider_site(Some(&u("https://gemini.google.com/app"))));
+        assert!(!super::on_provider_site(Some(&u("https://accounts.google.com/v3/signin/identifier"))));
+        assert!(!super::on_provider_site(Some(&u("https://accounts.x.ai/sign-in"))));
+        assert!(!super::on_provider_site(None));
+    }
 }

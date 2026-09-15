@@ -1469,6 +1469,23 @@ pub fn run() {
                                     let _ = m5.eval("window.__ktAutoRegen && __ktAutoRegen()");
                                 });
                             }
+                            // KOTO_AUTOCHAT_NAV=<key>|<url>|<s>: navigate that provider page elsewhere that long after the
+                            // send, as a user following a sign-in link would (the page leaves the provider's own site).
+                            // Several steps separated by ';'.
+                            for spec in std::env::var("KOTO_AUTOCHAT_NAV").unwrap_or_default().split(';').filter(|x| !x.is_empty()) {
+                                let parts: Vec<String> = spec.split('|').map(str::to_string).collect();
+                                if let [key, url, secs] = parts.as_slice() {
+                                    let (key, url, secs) = (key.clone(), url.clone(), secs.parse::<u64>().unwrap_or(5));
+                                    let app = m.app_handle().clone();
+                                    std::thread::spawn(move || {
+                                        std::thread::sleep(std::time::Duration::from_secs(secs));
+                                        debug::log(format!("AUTOCHAT: navigating {key} to {url}"));
+                                        if let (Some(wv), Ok(u)) = (app.get_webview(&browser::provider_label(&key)), url.parse::<tauri::Url>()) {
+                                            let _ = wv.navigate(u);
+                                        }
+                                    });
+                                }
+                            }
                             // KOTO_AUTOCHAT_READ_S=<s>: press every visible read-aloud button that long after the send.
                             if let Some(secs) = std::env::var("KOTO_AUTOCHAT_READ_S").ok().and_then(|v| v.parse::<u64>().ok()) {
                                 let m4 = m.clone();
