@@ -183,7 +183,7 @@ fn set_conv(window: &Window, key: &str, bid: Option<&str>) {
     if changed {
         let _ = window.emit(
             "app://kotodama-conv",
-            serde_json::json!({ "key": key, "broadcastId": bid, "tts": crate::audio::tts_url_pattern(key).is_some() }),
+            serde_json::json!({ "key": key, "broadcastId": bid, "tts": crate::audio::tts_url_pattern(key).is_some(), "regen": regen_button(key).is_some() }),
         );
     }
 }
@@ -242,10 +242,77 @@ pub fn kotodama_read_aloud(window: Window, broadcast_id: String, key: String, mo
         serde_json::to_string(pattern).map_err(|e| e.to_string())?,
         serde_json::to_string(sel).map_err(|e| e.to_string())?,
         serde_json::to_string(path).map_err(|e| e.to_string())?,
-    ) + TTS_JS;
+    ) + FIND_ACTION_JS + TTS_JS;
     debug::log(format!("kotodama READ-ALOUD key={key} bid={broadcast_id} mode={mode} req={req}"));
     wv.eval(&js).map_err(|e| e.to_string())?;
     Ok(req)
+}
+
+/// The provider's own "regenerate" control under the last answer, by structure only: (CSS selector, start of the
+/// icon's SVG path when the button has no stable attribute, menu item to pick when the button opens a menu).
+/// Captured with KOTO_ACTIONPROBE, 15/09/2026. Gemini's button opens "longer / shorter / again": the plain
+/// regenerate is the menu item with the refresh icon.
+fn regen_button(key: &str) -> Option<(&'static str, &'static str, &'static str)> {
+    match key {
+        "anthropic" => Some(("[data-testid=\"action-bar-retry\"]", "", "")),
+        "grok" => Some(("", "M4 20V15H4.31241", "")),
+        "deepseek" => Some(("", "M7.92136 0.349152", "")),
+        "gemini" => Some(("mat-icon[fonticon=\"refresh\"]", "", "[data-test-id=\"regenerate-option\"] mat-icon[fonticon=\"refresh\"]")),
+        "zai" => Some(("", "M17.0441 10.7439", "")),
+        "mistral" => Some(("", "M12.2432 1C18.2069", "")),
+        _ => None,
+    }
+}
+
+/// Presses the provider's regenerate button on the answer its page still ends with (`old_bid`) and harvests the new
+/// answer as broadcast `new_bid`. The harvest is the normal warm one: it snapshots the current answer first and
+/// waits for a different one, so the old text is never delivered as the new answer. The send is marked as done up
+/// front (there is nothing to type), which keeps a re-injection after a navigation from sending anything.
+#[tauri::command]
+pub fn kotodama_regenerate(window: Window, old_bid: String, new_bid: String, key: String, text: String) -> Result<(), String> {
+    let (sel, path, item) = regen_button(&key).ok_or("unsupported")?;
+    if conv_bids().lock().unwrap().get(&key) != Some(&old_bid) {
+        return Err("gone".into());
+    }
+    let wv = window.get_webview(&browser::provider_label(&key)).ok_or("gone")?;
+    browser::resume_provider(&window, &key, true);
+    broadcasts()
+        .lock()
+        .unwrap()
+        .entry(new_bid.clone())
+        .or_insert_with(|| Broadcast { pending: HashSet::new(), started: Instant::now() })
+        .pending
+        .insert(key.clone());
+    sent_marks().lock().unwrap().insert((new_bid.clone(), key.clone()));
+    set_conv(&window, &key, None);
+    let _ = window.emit(
+        "app://kotodama-answer",
+        serde_json::json!({ "broadcastId": new_bid, "key": key, "status": "pending", "text": "" }),
+    );
+    let (ans, busy) = selectors_for(&key);
+    let prelude = format!(
+        "var __apb_text = {}; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = false; var __kt_fast = {fast}; var __kt_sent = true; var __kt_regen = true; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktNetUrl = {net_url}; var __kt_regen_sel = {}; var __kt_regen_path = {}; var __kt_regen_item = {};",
+        serde_json::to_string(&text).map_err(|e| e.to_string())?,
+        serde_json::to_string(&new_bid).map_err(|e| e.to_string())?,
+        serde_json::to_string(&key).map_err(|e| e.to_string())?,
+        serde_json::to_string(ans).map_err(|e| e.to_string())?,
+        serde_json::to_string(busy).map_err(|e| e.to_string())?,
+        serde_json::to_string(sel).map_err(|e| e.to_string())?,
+        serde_json::to_string(path).map_err(|e| e.to_string())?,
+        serde_json::to_string(item).map_err(|e| e.to_string())?,
+        fast = fast_done_for(&key),
+        diag = crate::debug::enabled(),
+        net_url = net_url_js(&key),
+    );
+    // Order matters: the harvest snapshots the answer on screen BEFORE the click replaces it.
+    let js = prelude + PUSH_HELPER_JS + SR_HIDE_JS + RESPONSE_ADOPT_JS + net_probe_js() + STREAM_WATCH_JS + HARVEST_JS + FIND_ACTION_JS + REGEN_CLICK_JS;
+    debug::log(format!("kotodama REGENERATE key={key} old={old_bid} new={new_bid}"));
+    if wv.eval(&js).is_err() {
+        finish_key(&window, &new_bid, &key, "error", "", false, "");
+        return Ok(());
+    }
+    active_harvests().lock().unwrap().insert(key.clone(), (new_bid, text));
+    Ok(())
 }
 
 /// A saved audio's bytes, base64, for the UI to play from a Blob (no file protocol scope to open).
@@ -1050,6 +1117,54 @@ const STREAM_WATCH_JS: &str = r##"
 })();
 "##;
 
+/// Finds a provider's action control under the LAST answer: the last match of a CSS selector (resolved to its
+/// button), or the button whose icon path starts with a given prefix. Structure only, never the visible label.
+const FIND_ACTION_JS: &str = r##"
+if (!window.__ktFindAction) {
+  window.__ktFindAction = function(sel, path){
+    try {
+      if (sel) { var l = document.querySelectorAll(sel); return l.length ? l[l.length - 1].closest('button, [role="button"]') : null; }
+      if (path) {
+        var ps = document.querySelectorAll('svg path');
+        for (var i = ps.length - 1; i >= 0; i--) {
+          if ((ps[i].getAttribute('d') || '').indexOf(path) === 0) return ps[i].closest('button, [role="button"]');
+        }
+      }
+    } catch(e){}
+    return null;
+  };
+}
+"##;
+
+/// Regenerate in the provider page, after HARVEST_JS has taken its snapshot: marks the send instant for the stream
+/// watcher and presses the button (then the menu item, when the button opens a menu). No button or no item: the
+/// harvest is ended with an error at once instead of waiting out its budget.
+const REGEN_CLICK_JS: &str = r##"
+(function(){
+  var BID = __kt_bid, KEY = __kt_key;
+  function fail(why){
+    try { if (window.__ktDiag) window.__ktPush({ b: BID, k: KEY, st: 'diag', d: 'REGEN ' + why }); } catch(e){}
+    window.__ktBid = null;
+    window.__ktPush({ b: BID, k: KEY, st: 'error', s: 0, n: 1, d: '' });
+  }
+  var b = window.__ktFindAction(__kt_regen_sel, __kt_regen_path);
+  if (!b) { fail('no button'); return; }
+  if (!__kt_regen_item) { try { window.__ktSentAt = Date.now(); } catch(e){} b.click(); return; }
+  b.click();
+  var t0 = Date.now();
+  (function pick(){
+    var it = null;
+    try { var l = document.querySelectorAll(__kt_regen_item); it = l.length ? l[l.length - 1] : null; } catch(e){}
+    if (!it) { if (Date.now() - t0 < 3000) { setTimeout(pick, 100); } else { fail('no menu item'); } return; }
+    // The item's own button: a click on a wrapper element does not reach the handler inside it.
+    var host = it.closest('[role="menuitem"], button') || it.parentElement;
+    var target = (host && host.tagName !== 'BUTTON' && host.querySelector('button')) || host || it;
+    try { window.__ktSentAt = Date.now(); } catch(e){}
+    target.click();
+  })();
+})();
+"##;
+
 /// Read aloud in the provider page. Installs (once) a WebSocket hook that forwards the binary frames of the NEXT
 /// speech socket (URL pattern from Rust) after our click, then presses the provider's own read-aloud button.
 /// Only sockets opened within 15 s of our click are taken: a page's own later playback is not recorded.
@@ -1060,18 +1175,7 @@ const TTS_JS: &str = r##"
   function send(obj){
     try { window.__TAURI__.core.invoke('kotodama_push', { b: BID, k: KEY, st: 'audio', d: JSON.stringify(obj) }).catch(function(){}); } catch(e){}
   }
-  function findButton(){
-    try {
-      if (__kt_tts_sel) { var l = document.querySelectorAll(__kt_tts_sel); return l.length ? l[l.length - 1] : null; }
-      if (__kt_tts_path) {
-        var ps = document.querySelectorAll('svg path');
-        for (var i = ps.length - 1; i >= 0; i--) {
-          if ((ps[i].getAttribute('d') || '').indexOf(__kt_tts_path) === 0) return ps[i].closest('button, [role="button"]');
-        }
-      }
-    } catch(e){}
-    return null;
-  }
+  function findButton(){ return window.__ktFindAction(__kt_tts_sel, __kt_tts_path); }
   if (!window.__ktTtsHook && window.WebSocket) {
     window.__ktTtsHook = true;
     var OWS = window.WebSocket;
@@ -1126,6 +1230,9 @@ const HARVEST_JS: &str = r##"
   var FAST_DONE = __kt_fast;   // trust the provider's own "generating" marker, see below
   // Set by Rust on a re-injection after the page navigated: this message is already out.
   var KNOWN_SENT = (typeof __kt_sent !== 'undefined') && !!__kt_sent;
+  // Set by kotodama_regenerate, consumed here: the global outlives this script, a later send must not inherit it.
+  var REGEN = (typeof __kt_regen !== 'undefined') && !!__kt_regen;
+  try { __kt_regen = false; } catch(e){}
   // The prompt we just sent (from the fill script): never harvest our own message back
   // (the generic selector chain can match the USER bubble on providers without a
   // dedicated assistant selector).
@@ -1811,6 +1918,9 @@ const HARVEST_JS: &str = r##"
         if (svg) {
           var use = svg.querySelector('use'); var path = svg.querySelector('path');
           sig = use ? ('use=' + (use.getAttribute('href') || use.getAttribute('xlink:href') || '')) : (path ? ('d=' + (path.getAttribute('d') || '').slice(0, 24)) : 'svg');
+        } else {
+          var mi = b.querySelector('mat-icon');
+          if (mi) sig = 'mat-icon=' + (mi.getAttribute('fonticon') || mi.getAttribute('data-mat-icon-name') || (mi.textContent || '').trim()).slice(0, 30);
         }
         out.push('[' + Math.round(r.left - ar.left) + ',' + Math.round(r.top - ar.bottom) + '] testid=' + (b.getAttribute('data-testid') || '-')
           + ' aria=' + (b.getAttribute('aria-label') || '-').slice(0, 30) + ' cls=' + String(b.className || '').slice(0, 40) + ' ' + sig);
@@ -1923,7 +2033,9 @@ const HARVEST_JS: &str = r##"
       if (window.__ktBid !== BID) { clearInterval(iv); return; }
       polls++;
       var txt = answerTxt();
-      if (txt === initialAnswer) txt = '';   // still showing the previous answer, new one not in DOM yet
+      // Still showing the previous answer, new one not in DOM yet. Except after a regenerate whose stream has
+      // closed: the provider did answer again, and an identical wording is still the new answer.
+      if (txt === initialAnswer && !(REGEN && streamEnded)) txt = '';
       // Text on a page that has no composer, never took our message and never streamed is not an answer
       // (Copilot's welcome notice): ignore it, so the setup block below gets its chance.
       if (txt && !KNOWN_SENT && !window.__ktEnterPressed && !window.__ktStreamEver && composerVal() === null) txt = '';

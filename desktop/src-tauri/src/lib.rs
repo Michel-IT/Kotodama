@@ -1460,6 +1460,15 @@ pub fn run() {
                                     let _ = m3.eval(format!("window.__ktAutoTab && __ktAutoTab({t})"));
                                 });
                             }
+                            // KOTO_AUTOCHAT_REGEN_S=<s>: press every visible regenerate button that long after the send.
+                            if let Some(secs) = std::env::var("KOTO_AUTOCHAT_REGEN_S").ok().and_then(|v| v.parse::<u64>().ok()) {
+                                let m5 = m.clone();
+                                std::thread::spawn(move || {
+                                    std::thread::sleep(std::time::Duration::from_secs(secs));
+                                    debug::log("AUTOCHAT: pressing regenerate");
+                                    let _ = m5.eval("window.__ktAutoRegen && __ktAutoRegen()");
+                                });
+                            }
                             // KOTO_AUTOCHAT_READ_S=<s>: press every visible read-aloud button that long after the send.
                             if let Some(secs) = std::env::var("KOTO_AUTOCHAT_READ_S").ok().and_then(|v| v.parse::<u64>().ok()) {
                                 let m4 = m.clone();
@@ -1760,6 +1769,7 @@ pub fn run() {
             kotodama::kotodama_set_attachments,
             kotodama::kotodama_file_info,
             kotodama::kotodama_read_aloud,
+            kotodama::kotodama_regenerate,
             kotodama::kotodama_audio_load,
             kotodama::kotodama_audio_delete,
             running_elevated,

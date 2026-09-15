@@ -815,6 +815,10 @@
     .kt-audio-bar > i { display:block; height:100%; width:0; background:var(--accent); }
     .kt-audio-len { font-size:12px; text-align:right; color:var(--text-faint); font-variant-numeric:tabular-nums; }
     .kt-icon-btn.on { color:var(--accent); }
+    .kt-vers { display:flex; align-items:center; gap:0; margin-left:4px; }
+    .kt-vers .kt-icon-btn { width:24px; }
+    .kt-vers .kt-icon-btn:disabled { opacity:.35; cursor:default; background:none; }
+    .kt-vers-n { min-width:30px; text-align:center; font-size:12px; color:var(--text-faint); font-variant-numeric:tabular-nums; }
     .kt-icon-btn.kt-busy { color:var(--accent); animation:ktAudioPulse 1.2s ease-in-out infinite; }
     @keyframes ktAudioPulse { 50% { opacity:.4; } }
     .kt-time { font-variant-numeric:tabular-nums; color:var(--text-faint); cursor:default; }
@@ -2195,7 +2199,7 @@
             setTimeout(()=>{ del.classList.remove('confirm'); del.textContent='✕'; }, 2500);
             return;
           }
-          const files=(s.turns||[]).flatMap(tr=>Object.values(tr.answers||{}).flatMap(a=>(a.audio||[]).map(x=>x.file)));
+          const files=(s.turns||[]).flatMap(tr=>Object.values(tr.answers||{}).flatMap(a=>[...(a.prev||[]), a].flatMap(v=>(v.audio||[]).map(x=>x.file))));
           if(files.length && TAURI) invoke('kotodama_audio_delete',{ files }).catch(()=>{});
           ktAllSessions=ktAllSessions.filter(x=>x.id!==s.id);
           if(ktSession&&ktSession.id===s.id) ktNewConversation();
@@ -2329,7 +2333,8 @@
       b.type='button'; b.className='kt-icon-btn kt-copy'; b.innerHTML=KT_ICON_COPY;
       b.title=TR.copy||''; b.setAttribute('aria-label', TR.copy||'');
       b.addEventListener('click', async()=>{
-        const t=getText(); if(!t) return;
+        const card=b.closest('.kt-card');
+        const t=(card && card._ktViewText!=null) ? card._ktViewText : getText(); if(!t) return;
         await writeClipboard(t);
         b.innerHTML=KT_ICON_CHECK; b.classList.add('copied'); b.title=TR.copied||'';
         clearTimeout(b._ktReset);
@@ -2569,6 +2574,9 @@
       } catch(e){ console.error('autocontinue', e); }
     };
     // DEBUG ONLY (KOTO_AUTOCHAT_TAB): switches every turn of the open conversation to one tab, for screenshots.
+    window.__ktAutoRegen = function(){
+      try { ktThread.querySelectorAll('.kt-regen').forEach(b=>{ if(!b.hidden) b.click(); }); } catch(e){}
+    };
     window.__ktAutoRead = function(){
       try { ktThread.querySelectorAll('.kt-read').forEach(b=>{ if(!b.hidden) b.click(); }); } catch(e){}
     };
@@ -2684,7 +2692,7 @@
       const rb=stEl&&stEl.querySelector('.kt-retry'); if(rb) rb.remove();
       if(stEl && !stEl.querySelector('.dl-spin')){ const sp=document.createElement('span'); sp.className='dl-spin'; stEl.prepend(sp); ref.spin=sp; }
       ref.st.textContent=ktStatusLabel('pending');
-      { const old=(turn.answers[key]||{}).audio||[]; if(old.length) invoke('kotodama_audio_delete',{ files:old.map(x=>x.file) }).catch(()=>{}); }
+      { const a=turn.answers[key]||{}; const old=[...(a.prev||[]), a].flatMap(v=>(v.audio||[]).map(x=>x.file)); if(old.length) invoke('kotodama_audio_delete',{ files:old }).catch(()=>{}); }
       turn.answers[key]={status:'pending', text:''};
       if(ktSession) ktSession.updated=Date.now();
       ktPersist();
@@ -3157,17 +3165,21 @@
     const KT_ICON_STOP='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>';
     const KT_ICON_PLAY='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>';
     const KT_ICON_PAUSE='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="5.5" width="3.5" height="13" rx="1"/><rect x="13.5" y="5.5" width="3.5" height="13" rx="1"/></svg>';
-    const ktConv={};        // key -> {bid, tts}: the answer each provider page still ends with
+    const KT_ICON_REGEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>';
+    const KT_ICON_PREV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"/></svg>';
+    const KT_ICON_NEXT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg>';
+    const ktConv={};        // key -> {bid, tts, regen}: the answer each provider page still ends with
     const ktReadState={};   // key -> {bid, state:'loading'|'playing', openAt, timer}: a read aloud in progress
     function ktFmtClock(ms){ const t=Math.max(0, Math.round((ms||0)/1000)); return Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); }
     function ktTurnAudios(turn){
       const out=[];
-      for(const [key, a] of Object.entries(turn.answers||{})) for(const x of (a.audio||[])) out.push({ key, file:x.file, ms:x.ms });
+      for(const [key, a] of Object.entries(turn.answers||{})) for(const v of [...(a.prev||[]), a]) for(const x of (v.audio||[])) out.push({ key, file:x.file, ms:x.ms });
       return out;
     }
     function ktSyncReadBtn(b){
       const { bid, key }=b.dataset, c=ktConv[key], rs=ktReadState[key];
-      b.hidden=!(bid && c && c.tts && c.bid===bid);
+      const card=b.closest('.kt-card');
+      b.hidden=!(bid && c && c.tts && c.bid===bid) || !!(card && card._ktView!=null);
       const mine=!!(rs && rs.bid===bid), playing=mine && rs.state==='playing';
       b.classList.toggle('kt-busy', mine && rs.state==='loading');
       b.classList.toggle('on', playing);
@@ -3175,7 +3187,11 @@
       const label = playing ? TR.ktReadStop : TR.ktReadAloud;
       b.title=label||''; b.setAttribute('aria-label', label||'');
     }
-    function ktSyncReadBtns(){ ktThread.querySelectorAll('.kt-read').forEach(ktSyncReadBtn); }
+    function ktSyncRegenBtn(b){
+      const { bid, key }=b.dataset, c=ktConv[key], card=b.closest('.kt-card');
+      b.hidden=!(bid && c && c.regen && c.bid===bid) || !!(card && card._ktView!=null);
+    }
+    function ktSyncReadBtns(){ ktThread.querySelectorAll('.kt-read').forEach(ktSyncReadBtn); ktThread.querySelectorAll('.kt-regen').forEach(ktSyncRegenBtn); }
     function ktClearRead(key){ const rs=ktReadState[key]; if(rs){ clearTimeout(rs.timer); delete ktReadState[key]; } }
     async function ktReadAloud(bid, key){
       if(!TAURI) return;
@@ -3192,7 +3208,7 @@
       }
     }
     function ktOnConv(d){
-      if(d.broadcastId) ktConv[d.key]={ bid:d.broadcastId, tts:!!d.tts };
+      if(d.broadcastId) ktConv[d.key]={ bid:d.broadcastId, tts:!!d.tts, regen:!!d.regen };
       else { delete ktConv[d.key]; ktClearRead(d.key); }
       ktSyncReadBtns();
     }
@@ -3258,18 +3274,93 @@
         const card=dom.grid.querySelector(`.kt-card[data-key="${key}"]`); if(!card) continue;
         const acts=card.querySelector('.kt-card-foot .kt-acts'); if(!acts) continue;
         const done=a.status==='done' && !!(a.text||'').trim();
+        const prev=a.prev||[];
+        if(card._ktView!=null && card._ktView>=prev.length) card._ktView=null;
+        const shown=card._ktView!=null ? prev[card._ktView] : a;
+        const bid=bids.find(b=>ktConv[key] && ktConv[key].bid===b) || '';
+        // Fixed order whatever arrives first: copy, read aloud, play, regenerate, versions.
+        const slot=(cls, make)=>{ let el=acts.querySelector('.'+cls); if(!el){ el=make(); acts.appendChild(el); } return el; };
         let rb=acts.querySelector('.kt-read');
         if(done){
-          const bid=bids.find(b=>ktConv[key] && ktConv[key].bid===b) || (rb && rb.dataset.bid) || '';
-          if(!rb){ rb=document.createElement('button'); rb.type='button'; rb.className='kt-icon-btn kt-read'; rb.dataset.key=key;
-            rb.addEventListener('click', ()=>ktReadAloud(rb.dataset.bid, key)); acts.appendChild(rb); }
-          rb.dataset.bid=bid; ktSyncReadBtn(rb);
+          rb=slot('kt-read', ()=>{ const x=document.createElement('button'); x.type='button'; x.className='kt-icon-btn kt-read'; x.dataset.key=key;
+            x.addEventListener('click', ()=>ktReadAloud(x.dataset.bid, key)); return x; });
+          rb.dataset.bid=bid||rb.dataset.bid||''; ktSyncReadBtn(rb);
         } else if(rb) rb.remove();
-        const last=(a.audio||[]).slice(-1)[0];
+        const last=((shown && shown.audio)||[]).slice(-1)[0];
         let pb=acts.querySelector('.kt-play');
-        if(last){ if(!pb){ pb=ktPlayBtn(last.file); acts.appendChild(pb); } pb.dataset.audio=last.file; }
+        if(last){ pb=slot('kt-play', ()=>ktPlayBtn(last.file)); pb.dataset.audio=last.file; }
         else if(pb) pb.remove();
+        let gb=acts.querySelector('.kt-regen');
+        if(done){
+          gb=slot('kt-regen', ()=>{ const x=document.createElement('button'); x.type='button'; x.className='kt-icon-btn kt-regen'; x.dataset.key=key;
+            x.innerHTML=KT_ICON_REGEN; x.title=TR.ktRegenerate||''; x.setAttribute('aria-label', TR.ktRegenerate||'');
+            x.addEventListener('click', ()=>ktRegenerate(turn, x.dataset.bid, key)); return x; });
+          gb.dataset.bid=bid||gb.dataset.bid||''; ktSyncRegenBtn(gb);
+        } else if(gb) gb.remove();
+        let vs=acts.querySelector('.kt-vers');
+        if(prev.length && done){
+          vs=slot('kt-vers', ()=>{
+            const x=document.createElement('span'); x.className='kt-vers';
+            x.innerHTML=`<button type="button" class="kt-icon-btn kt-vp">${KT_ICON_PREV}</button><span class="kt-vers-n"></span><button type="button" class="kt-icon-btn kt-vn">${KT_ICON_NEXT}</button>`;
+            const bp=x.querySelector('.kt-vp'), bn=x.querySelector('.kt-vn');
+            bp.title=TR.ktVersionPrev||''; bp.setAttribute('aria-label', TR.ktVersionPrev||'');
+            bn.title=TR.ktVersionNext||''; bn.setAttribute('aria-label', TR.ktVersionNext||'');
+            bp.addEventListener('click', ()=>ktShowVersion(turn, key, card, -1));
+            bn.addEventListener('click', ()=>ktShowVersion(turn, key, card, +1));
+            return x;
+          });
+          const total=prev.length+1, idx=card._ktView!=null ? card._ktView : prev.length;
+          vs.querySelector('.kt-vers-n').textContent=`${idx+1}/${total}`;
+          vs.querySelector('.kt-vp').disabled = idx===0;
+          vs.querySelector('.kt-vn').disabled = idx===total-1;
+        } else if(vs) vs.remove();
+        ['kt-read','kt-play','kt-regen','kt-vers'].forEach(c=>{ const el=acts.querySelector('.'+c); if(el) acts.appendChild(el); });
       }
+    }
+    /* ---- Regenerate: the provider's own button, on the answer its page still shows. The answer being replaced
+       is kept as a previous version of the card (arrows to go back to it), with its text, sources and audio. A
+       regeneration that produces nothing gives the previous answer back instead of an empty card. ---- */
+    function ktShowVersion(turn, key, card, step){
+      const a=(turn.answers||{})[key]; if(!a) return;
+      const prev=a.prev||[], total=prev.length+1;
+      const idx=Math.max(0, Math.min(total-1, (card._ktView!=null ? card._ktView : prev.length)+step));
+      card._ktView = idx===prev.length ? null : idx;
+      const v = card._ktView==null ? a : prev[idx];
+      card._ktViewText = card._ktView==null ? null : (v.text||'');
+      const body=card.querySelector('.kt-card-body');
+      if(body) ktRenderCardBody(body, (v.text||'').trim(), v.md);
+      ktShowTiming(card.querySelector('.kt-status'), v.firstMs!=null ? { firstMs:v.firstMs, totalMs:v.totalMs } : null);
+      ktEnsureAnswerAudio(turn); ktSyncPlayBtns();
+    }
+    async function ktRegenerate(turn, oldBid, key){
+      if(!TAURI || !turn || !oldBid) return;
+      const ref=ktCards[`${oldBid}:${key}`] || (()=>{ const dom=ktTurnDom.get(turn); const card=dom && dom.grid.querySelector(`.kt-card[data-key="${key}"]`); if(!card) return null;
+        return { card, body:card.querySelector('.kt-card-body'), st:card.querySelector('.kt-st-txt'), spin:null, foot:card.querySelector('.kt-card-foot'), text:(turn.answers[key]||{}).text||'' }; })();
+      const cur=turn.answers[key]; if(!ref || !cur) return;
+      ktAudioEl.pause(); ktClearRead(key);
+      const bid='b'+(ktSeq++)+'-g'+Math.random().toString(36).slice(2,6);
+      const { prev:oldPrev, ...keep }=cur;
+      const prev=[...(oldPrev||[]), keep];
+      delete ktCards[`${oldBid}:${key}`];
+      ktCards[`${bid}:${key}`]=ref;
+      ktTurnByBid[bid]=turn;
+      ktMarkPending(bid, key);
+      ref.card._ktView=null; ref.card._ktViewText=null;
+      ref.card.classList.remove('done','error','timeout','cancelled');
+      ref.card.classList.add('pending');
+      ref.body.classList.add('empty'); ref.body.textContent='';
+      ref.foot.hidden=true; ref.foot.innerHTML='';
+      ref.foot.appendChild(ktActs(ktCopyBtn(()=>ref.text)));
+      ref.liveLen=0; ref.maxLen=0; ref.liveText=''; ref.liveMd=''; ref.text='';
+      ref.createdAt=Date.now(); ref.sentAt=Date.now(); ref.firstAt=0; ref.doneAt=0;
+      const stEl=ref.card.querySelector('.kt-status');
+      ktShowTiming(stEl, null);
+      if(stEl && !stEl.querySelector('.dl-spin')){ const sp=document.createElement('span'); sp.className='dl-spin'; stEl.prepend(sp); ref.spin=sp; }
+      ref.st.textContent=ktStatusLabel('pending');
+      turn.answers[key]={ status:'pending', text:'', prev };
+      ktPersist();
+      try{ await invoke('kotodama_regenerate',{ oldBid, newBid:bid, key, text:turn.text||'' }); }
+      catch(e){ ktOnAnswer({ broadcastId:bid, key, status:'error', text:'' }); }
     }
     /* ---- Turn tabs (Answers | Links | Images). Collected from the whole turn: the user's own message, every
        answer's Markdown, and the sources providers send over the network (app://kotodama-extras). A link that
@@ -3549,11 +3640,23 @@
       // Session bookkeeping BEFORE looking for the card: the user may have switched to another conversation
       // while this one was answering, and the answer must still be saved in the conversation it belongs to.
       const turn=ktTurnByBid[d.broadcastId];
+      let restored=null;
       if(turn && turn.answers && turn.answers[d.key]){
         const ex=ktPendingExtras[`${d.broadcastId}:${d.key}`]; delete ktPendingExtras[`${d.broadcastId}:${d.key}`];
-        turn.answers[d.key]={ status:st, text:(d.text||'').trim(), md:d.md||'' };
-        if(ex && ex.sources && ex.sources.length) turn.answers[d.key].sources=ex.sources;
-        if(ex && ex.reasoning) turn.answers[d.key].reasoning=ex.reasoning;
+        const prev=[...(turn.answers[d.key].prev||[])];
+        if(st!=='done' && !(d.text||'').trim() && prev.length){
+          // A regeneration that produced nothing: the answer it was meant to replace comes back.
+          restored=prev.pop();
+          turn.answers[d.key]={ ...restored };
+          if(prev.length) turn.answers[d.key].prev=prev;
+          if(st!=='cancelled') toast(TR.ktRegenFailed||'');
+          d={ ...d, status:'done', text:restored.text||'', md:restored.md||'' };
+        } else {
+          turn.answers[d.key]={ status:st, text:(d.text||'').trim(), md:d.md||'' };
+          if(prev.length) turn.answers[d.key].prev=prev;
+          if(ex && ex.sources && ex.sources.length) turn.answers[d.key].sources=ex.sources;
+          if(ex && ex.reasoning) turn.answers[d.key].reasoning=ex.reasoning;
+        }
         ktRefreshTurnTabs(turn);
         const owner=ktAllSessions.find(x=>(x.turns||[]).includes(turn));
         if(owner) owner.updated=Date.now();
@@ -3563,6 +3666,18 @@
       // chats default to it too (see ktLoadSel). No-op on the Rust side if already known.
       if(st==='done' && TAURI) invoke('mark_provider_known',{key:d.key}).catch(()=>{});
       const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
+      if(restored){
+        // Back to the previous answer as it was, timing included, not a new "done" measured from the click.
+        ref.card.classList.remove('pending','blocked'); ref.card.classList.add('done');
+        if(ref.spin){ ref.spin.remove(); ref.spin=null; }
+        ref.st.textContent=ktStatusLabel('done');
+        ktShowTiming(ref.card.querySelector('.kt-status'), restored.firstMs!=null ? { firstMs:restored.firstMs, totalMs:restored.totalMs } : null);
+        ref.text=(restored.text||'').trim();
+        ref.body.classList.remove('empty'); ktRenderCardBody(ref.body, ref.text, restored.md);
+        ref.foot.hidden=false;
+        if(turn) ktRefreshTurnTabs(turn);
+        return;
+      }
       if(!ktIsFinal(ref)){
         ref.doneAt=Date.now();
         if((d.text||'').trim()) ktMarkFirst(ref);   // answer delivered in one go, without a preview

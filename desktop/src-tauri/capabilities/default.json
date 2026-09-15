@@ -19,6 +19,7 @@
     "allow-kotodama-set-attachments",
     "allow-kotodama-file-info",
     "allow-kotodama-read-aloud",
+    "allow-kotodama-regenerate",
     "allow-kotodama-audio-load",
     "allow-kotodama-audio-delete",
     "allow-running-elevated",
