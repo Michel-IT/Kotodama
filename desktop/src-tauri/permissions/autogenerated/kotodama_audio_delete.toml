@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kotodama-audio-delete"
+description = "Enables the kotodama_audio_delete command without any pre-configured scope."
+commands.allow = ["kotodama_audio_delete"]
+
+[[permission]]
+identifier = "deny-kotodama-audio-delete"
+description = "Denies the kotodama_audio_delete command without any pre-configured scope."
+commands.deny = ["kotodama_audio_delete"]

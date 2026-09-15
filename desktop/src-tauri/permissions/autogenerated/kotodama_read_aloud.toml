@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kotodama-read-aloud"
+description = "Enables the kotodama_read_aloud command without any pre-configured scope."
+commands.allow = ["kotodama_read_aloud"]
+
+[[permission]]
+identifier = "deny-kotodama-read-aloud"
+description = "Denies the kotodama_read_aloud command without any pre-configured scope."
+commands.deny = ["kotodama_read_aloud"]

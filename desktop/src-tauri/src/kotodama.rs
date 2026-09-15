@@ -124,6 +124,377 @@ fn blocked_marks() -> &'static Mutex<HashSet<(String, String)>> {
     static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(HashSet::new()))
 }
+/// Network readers per (broadcast, provider), one per answer request the page made (netread.rs).
+type NetReaders = HashMap<String, Box<dyn crate::netread::Reader>>;
+fn net_readers() -> &'static Mutex<HashMap<(String, String), NetReaders>> {
+    static S: OnceLock<Mutex<HashMap<(String, String), NetReaders>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashMap::new()))
+}
+/// JS literal for `window.__ktNetUrl`: the provider's answer endpoint pattern, or null (reading from the
+/// network off for this provider, or disabled with KOTO_NO_NETREAD to compare against the DOM).
+fn net_url_js(key: &str) -> String {
+    if std::env::var("KOTO_NO_NETREAD").is_ok() {
+        return "null".into();
+    }
+    crate::netread::url_pattern(key)
+        .and_then(|p| serde_json::to_string(p).ok())
+        .unwrap_or_else(|| "null".into())
+}
+/// The complete answer read from the network for this provider, if any reader saw its end with text.
+fn net_answer(bid: &str, key: &str) -> Option<crate::netread::NetAnswer> {
+    let map = net_readers().lock().unwrap();
+    let readers = map.get(&(bid.to_string(), key.to_string()))?;
+    readers
+        .values()
+        .map(|r| r.answer())
+        .filter(|a| a.done && !a.text.trim().is_empty())
+        .max_by_key(|a| a.text.len())
+        .cloned()
+}
+/// Files the user attached to a message, per broadcast, ready to be handed to each provider page.
+#[derive(Clone, serde::Serialize)]
+struct Attachment {
+    name: String,
+    mime: String,
+    b64: String,
+}
+fn attachments() -> &'static Mutex<HashMap<String, Vec<Attachment>>> {
+    static S: OnceLock<Mutex<HashMap<String, Vec<Attachment>>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashMap::new()))
+}
+// ---- Read aloud (audio.rs): the provider's own voice for the answer its page still shows. ----
+/// The conversation each provider page shows right now, as the broadcast whose answer is the LAST one in it.
+/// Set when an answer is delivered, dropped as soon as the page moves on (a new send, a pre-warm navigation).
+/// Read aloud only works on that answer: the provider's button reads what is on its page.
+fn conv_bids() -> &'static Mutex<HashMap<String, String>> {
+    static C: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+    C.get_or_init(|| Mutex::new(HashMap::new()))
+}
+fn set_conv(window: &Window, key: &str, bid: Option<&str>) {
+    let changed = {
+        let mut m = conv_bids().lock().unwrap();
+        let before = m.get(key).cloned();
+        match bid {
+            Some(b) => m.insert(key.to_string(), b.to_string()),
+            None => m.remove(key),
+        };
+        before.as_deref() != bid
+    };
+    if changed {
+        let _ = window.emit(
+            "app://kotodama-conv",
+            serde_json::json!({ "key": key, "broadcastId": bid, "tts": crate::audio::tts_url_pattern(key).is_some() }),
+        );
+    }
+}
+/// One read-aloud request per provider: the speech socket's packets, until it closes.
+struct AudioCap {
+    bid: String,
+    req: String,
+    packets: Vec<Vec<u8>>,
+    bytes: usize,
+}
+fn audio_caps() -> &'static Mutex<HashMap<String, AudioCap>> {
+    static A: OnceLock<Mutex<HashMap<String, AudioCap>>> = OnceLock::new();
+    A.get_or_init(|| Mutex::new(HashMap::new()))
+}
+/// About 30 minutes of speech at the bitrates captured (26-32 kb/s). A longer stream stops being recorded.
+const AUDIO_MAX_BYTES: usize = 8 * 1024 * 1024;
+
+fn audio_dir(window: &Window) -> Result<std::path::PathBuf, String> {
+    let dir = window.app_handle().path().app_config_dir().map_err(|e| e.to_string())?.join("kotodama-audio");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir)
+}
+/// A saved audio is addressed by its bare file name, never a path: nothing outside the audio folder is reachable.
+fn audio_file_ok(name: &str) -> bool {
+    name.ends_with(".ogg") && !name.contains("..") && name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+}
+
+/// Presses the provider's read-aloud button (`mode` "play") or presses it again to stop ("stop"). The answer
+/// must still be the last one on the provider page, otherwise its button would read another message.
+/// Returns the request id the `app://kotodama-audio` events carry.
+#[tauri::command]
+pub fn kotodama_read_aloud(window: Window, broadcast_id: String, key: String, mode: String) -> Result<String, String> {
+    let pattern = crate::audio::tts_url_pattern(&key).ok_or("unsupported")?;
+    if conv_bids().lock().unwrap().get(&key) != Some(&broadcast_id) {
+        return Err("gone".into());
+    }
+    let wv = window.get_webview(&browser::provider_label(&key)).ok_or("gone")?;
+    browser::resume_provider(&window, &key, true);
+    let req = if mode == "stop" {
+        audio_caps().lock().unwrap().get(&key).map(|c| c.req.clone()).unwrap_or_default()
+    } else {
+        let req = format!("a{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0));
+        audio_caps().lock().unwrap().insert(
+            key.clone(),
+            AudioCap { bid: broadcast_id.clone(), req: req.clone(), packets: Vec::new(), bytes: 0 },
+        );
+        req
+    };
+    let (sel, path) = crate::audio::tts_button(&key);
+    let js = format!(
+        "var __kt_bid = {}; var __kt_key = {}; var __kt_req = {}; var __kt_mode = {}; var __kt_tts_url = {}; var __kt_tts_sel = {}; var __kt_tts_path = {};",
+        serde_json::to_string(&broadcast_id).map_err(|e| e.to_string())?,
+        serde_json::to_string(&key).map_err(|e| e.to_string())?,
+        serde_json::to_string(&req).map_err(|e| e.to_string())?,
+        serde_json::to_string(&mode).map_err(|e| e.to_string())?,
+        serde_json::to_string(pattern).map_err(|e| e.to_string())?,
+        serde_json::to_string(sel).map_err(|e| e.to_string())?,
+        serde_json::to_string(path).map_err(|e| e.to_string())?,
+    ) + TTS_JS;
+    debug::log(format!("kotodama READ-ALOUD key={key} bid={broadcast_id} mode={mode} req={req}"));
+    wv.eval(&js).map_err(|e| e.to_string())?;
+    Ok(req)
+}
+
+/// A saved audio's bytes, base64, for the UI to play from a Blob (no file protocol scope to open).
+#[tauri::command]
+pub fn kotodama_audio_load(window: Window, file: String) -> Result<String, String> {
+    if !audio_file_ok(&file) {
+        return Err("bad name".into());
+    }
+    let bytes = std::fs::read(audio_dir(&window)?.join(&file)).map_err(|e| e.to_string())?;
+    Ok(base64_encode(&bytes))
+}
+
+/// Removes saved audios (a deleted conversation). Missing files are not an error.
+#[tauri::command]
+pub fn kotodama_audio_delete(window: Window, files: Vec<String>) -> Result<(), String> {
+    let dir = audio_dir(&window)?;
+    for f in files.iter().filter(|f| audio_file_ok(f)) {
+        let _ = std::fs::remove_file(dir.join(f));
+    }
+    Ok(())
+}
+
+/// One message from TTS_JS: the socket opened, a batch of frames, the end, or why nothing played.
+fn handle_audio_push(window: &Window, key: &str, raw: &str) {
+    let Ok(v) = serde_json::from_str::<serde_json::Value>(raw) else { return };
+    let req = v.get("r").and_then(|x| x.as_str()).unwrap_or("");
+    let ev = v.get("ev").and_then(|x| x.as_str()).unwrap_or("");
+    let emit = |bid: &str, state: &str, extra: serde_json::Value| {
+        let mut o = serde_json::json!({ "broadcastId": bid, "key": key, "req": req, "state": state });
+        if let (Some(m), Some(e)) = (o.as_object_mut(), extra.as_object()) {
+            m.extend(e.clone());
+        }
+        let _ = window.emit("app://kotodama-audio", o);
+    };
+    let mut caps = audio_caps().lock().unwrap();
+    let Some(cap) = caps.get_mut(key).filter(|c| c.req == req) else { return };
+    browser::touch_provider(key); // speaking is activity: the page must not be suspended mid-sentence
+    match ev {
+        "open" => emit(&cap.bid.clone(), "playing", serde_json::json!({})),
+        "frames" => {
+            let skip = crate::audio::frame_prefix(key);
+            for f in v.get("f").and_then(|x| x.as_array()).into_iter().flatten() {
+                let Some(bytes) = f.as_str().and_then(crate::audio::base64_decode) else { continue };
+                if bytes.len() <= skip || cap.bytes + bytes.len() > AUDIO_MAX_BYTES {
+                    continue;
+                }
+                cap.bytes += bytes.len();
+                cap.packets.push(bytes[skip..].to_vec());
+            }
+        }
+        "stopped" => emit(&cap.bid.clone(), "stopped", serde_json::json!({})),
+        "end" | "nobutton" | "noaudio" => {
+            let cap = caps.remove(key).unwrap();
+            drop(caps);
+            if ev != "end" {
+                debug::log(format!("kotodama READ-ALOUD key={key} {ev}"));
+                emit(&cap.bid, if ev == "nobutton" { "unavailable" } else { "error" }, serde_json::json!({}));
+                return;
+            }
+            let serial = req.bytes().fold(0u32, |h, b| h.wrapping_mul(31).wrapping_add(b as u32));
+            let Some((ogg, ms)) = crate::audio::ogg_opus(&cap.packets, serial) else {
+                emit(&cap.bid, "error", serde_json::json!({}));
+                return;
+            };
+            let safe = |s: &str| s.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '-').collect::<String>();
+            let file = format!("{}-{}-{}.ogg", safe(&cap.bid), safe(key), safe(req));
+            match audio_dir(window).and_then(|d| std::fs::write(d.join(&file), &ogg).map_err(|e| e.to_string())) {
+                Ok(()) => {
+                    debug::log(format!("kotodama READ-ALOUD key={key} saved {file} packets={} ms={ms} bytes={}", cap.packets.len(), ogg.len()));
+                    emit(&cap.bid, "saved", serde_json::json!({ "file": file, "ms": ms }));
+                }
+                Err(e) => {
+                    debug::log(format!("kotodama READ-ALOUD key={key} save failed: {e}"));
+                    emit(&cap.bid, "error", serde_json::json!({}));
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+const ATTACH_MAX_FILES: usize = 5;
+const ATTACH_MAX_BYTES: u64 = 10 * 1024 * 1024;
+
+fn mime_for(name: &str) -> &'static str {
+    let ext = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+    match ext.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "pdf" => "application/pdf",
+        "txt" | "md" | "csv" | "log" => "text/plain",
+        "json" => "application/json",
+        "doc" => "application/msword",
+        "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        _ => "application/octet-stream",
+    }
+}
+
+fn base64_encode(bytes: &[u8]) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for c in bytes.chunks(3) {
+        let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
+        out.push(T[(n >> 18 & 63) as usize] as char);
+        out.push(T[(n >> 12 & 63) as usize] as char);
+        out.push(if c.len() > 1 { T[(n >> 6 & 63) as usize] as char } else { '=' });
+        out.push(if c.len() > 2 { T[(n & 63) as usize] as char } else { '=' });
+    }
+    out
+}
+
+/// A file the UI wants to attach: a path (dropped from the file manager) or inline base64 data (pasted).
+#[derive(serde::Deserialize)]
+pub struct AttachmentIn {
+    name: String,
+    path: Option<String>,
+    data: Option<String>,
+    mime: Option<String>,
+}
+
+/// What the UI shows for a dropped path before sending: name, size and whether it can be attached.
+#[derive(serde::Serialize)]
+pub struct FileInfo {
+    path: String,
+    name: String,
+    size: u64,
+    ok: bool,
+}
+
+#[tauri::command]
+pub fn kotodama_file_info(paths: Vec<String>) -> Vec<FileInfo> {
+    paths
+        .into_iter()
+        .map(|p| {
+            let meta = std::fs::metadata(&p).ok();
+            let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+            let is_file = meta.map(|m| m.is_file()).unwrap_or(false);
+            let name = std::path::Path::new(&p).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            FileInfo { ok: is_file && size <= ATTACH_MAX_BYTES, path: p, name, size }
+        })
+        .collect()
+}
+
+/// Stores the attachments of one message (by broadcast id) before its dispatch: every provider injection of
+/// that broadcast receives them. Files are read here, not in the page, so the provider never sees a path.
+#[tauri::command]
+pub fn kotodama_set_attachments(broadcast_id: String, files: Vec<AttachmentIn>) -> Result<usize, String> {
+    let mut out = Vec::new();
+    for f in files.into_iter().take(ATTACH_MAX_FILES) {
+        let b64 = if let Some(p) = &f.path {
+            let meta = std::fs::metadata(p).map_err(|e| e.to_string())?;
+            if !meta.is_file() || meta.len() > ATTACH_MAX_BYTES {
+                continue;
+            }
+            base64_encode(&std::fs::read(p).map_err(|e| e.to_string())?)
+        } else if let Some(d) = f.data {
+            if d.len() as u64 > ATTACH_MAX_BYTES * 4 / 3 + 4 {
+                continue;
+            }
+            d
+        } else {
+            continue;
+        };
+        let mime = f.mime.filter(|m| !m.is_empty()).unwrap_or_else(|| mime_for(&f.name).to_string());
+        out.push(Attachment { name: f.name, mime, b64 });
+    }
+    let n = out.len();
+    if n > 0 {
+        attachments().lock().unwrap().insert(broadcast_id, out);
+    }
+    Ok(n)
+}
+
+/// JS prefix handing the broadcast's attachments to the page (empty when there are none).
+fn attach_js(broadcast_id: &str) -> String {
+    let Some(files) = attachments().lock().unwrap().get(broadcast_id).cloned() else { return String::new() };
+    format!("window.__ktFiles = {};", serde_json::to_string(&files).unwrap_or_else(|_| "[]".into())) + ATTACH_JS
+}
+
+/// Hands the attached files to the provider page the way the page itself accepts them: through its own file
+/// input (as if picked in its dialog), or, when it has none, as a drop on its composer. Holds the text fill
+/// until the upload had time to start; the page uploads with its own session as usual.
+const ATTACH_JS: &str = r##"
+(function(){
+  var files = window.__ktFiles;
+  if (!files || !files.length || window.__ktFilesDone === __kt_bid) return;
+  window.__ktHoldAttach = true;
+  function diag(m){ try { if (window.__ktDiag) window.__TAURI__.core.invoke('kotodama_push', { b: __kt_bid, k: __kt_key, st: 'diag', d: 'ATTACH ' + m }).catch(function(){}); } catch(e){} }
+  function toFiles(){
+    return files.map(function(f){
+      var bin = atob(f.b64), u = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      return new File([u], f.name, { type: f.mime || 'application/octet-stream' });
+    });
+  }
+  function composer(){
+    var sels = ['textarea:not([readonly])', '[contenteditable="true"]', 'div[role="textbox"]'];
+    for (var i = 0; i < sels.length; i++) { var e = document.querySelectorAll(sels[i]); for (var j = e.length - 1; j >= 0; j--) if (e[j].offsetParent !== null) return e[j]; }
+    return null;
+  }
+  function fileInput(){
+    var ins = document.querySelectorAll('input[type="file"]:not([disabled])'), best = null;
+    for (var i = 0; i < ins.length; i++) {
+      var acc = (ins[i].getAttribute('accept') || '').toLowerCase();
+      // Prefer a general input (no accept, or accepting images and documents) over one dedicated to e.g. audio.
+      if (!acc || /image|\*|pdf|text/.test(acc)) { best = ins[i]; if (!acc || acc.indexOf('*') >= 0) break; }
+    }
+    return best || ins[0] || null;
+  }
+  var t0 = Date.now();
+  var iv = setInterval(function(){
+    if (window.__ktBid && window.__ktBid !== __kt_bid) { clearInterval(iv); window.__ktHoldAttach = false; return; }
+    var c = composer();
+    if (!c) { if (Date.now() - t0 > 20000) { clearInterval(iv); window.__ktHoldAttach = false; diag('no composer, text sent without files'); } return; }
+    clearInterval(iv);
+    var list = toFiles(), dt = new DataTransfer();
+    list.forEach(function(f){ dt.items.add(f); });
+    var input = fileInput(), how = 'none';
+    try {
+      if (input) {
+        input.files = dt.files;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        how = 'input';
+      } else {
+        // No file input on the page (captured on Gemini: its input only exists after opening the upload menu).
+        // A paste into the composer is what the editor handles for files; a drop is the last resort.
+        c.focus();
+        var pasted = c.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
+        if (pasted) {
+          ['dragenter', 'dragover', 'drop'].forEach(function(t){ c.dispatchEvent(new DragEvent(t, { bubbles: true, cancelable: true, dataTransfer: dt })); });
+          how = 'drop';
+        } else {
+          how = 'paste';
+        }
+      }
+    } catch(e) { how = 'error ' + e; }
+    window.__ktFilesDone = __kt_bid;
+    diag('files=' + list.length + ' via ' + how);
+    // Time for the page to take the files and start uploading before the text goes in and Enter is pressed.
+    setTimeout(function(){ window.__ktHoldAttach = false; }, 3000 + 1500 * list.length);
+  }, 400);
+})();
+"##;
+
 fn sent_marks() -> &'static Mutex<HashSet<(String, String)>> {
     static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(HashSet::new()))
@@ -347,7 +718,9 @@ const NET_PROBE_JS: &str = r##"
     } catch(e){}
   }
   var seq = 0;
-  var PER_REQ = 400000, PER_CHUNK = 16000;
+  // Large enough to keep whole answer streams (Perplexity sends ~100 KB snapshots): these captures become
+  // the fixtures the network readers are tested against.
+  var PER_REQ = 4000000, PER_CHUNK = 400000;
   function short(u){ try { return String(u).slice(0, 300); } catch(e){ return ''; } }
   // Tauri's invoke() is itself a fetch to ipc.localhost: observing it would capture every record we send,
   // again and again (measured: 16k records for one answer).
@@ -383,6 +756,13 @@ const NET_PROBE_JS: &str = r##"
         if (!armed()) return res;
         var ct = ''; try { ct = res.headers.get('content-type') || ''; } catch(e){}
         cap({ kind: 'fetch', id: id, ev: 'open', method: method, url: short(url), status: res.status, ct: ct });
+        if (/audio|mpeg|ogg|opus|aac|wav/i.test(ct) && res.body && res.body.tee) {
+          try {
+            var ap = res.body.tee(), ar = ap[0].getReader(), abytes = 0, achunks = 0, at0 = Date.now();
+            (function apump(){ ar.read().then(function(r){ if (r.done) { cap({ kind: 'fetch', id: id, ev: 'audio-end', ct: ct, bytes: abytes, chunks: achunks, ms: Date.now() - at0 }); return; } achunks++; abytes += r.value.length; apump(); }); })();
+            return (window.__ktAdoptBody ? window.__ktAdoptBody(res, ap[1]) : res);
+          } catch(e) { return res; }
+        }
         if (!/event-stream|ndjson|octet-stream|stream|json|text\/plain/i.test(ct) || !res.body || !res.body.tee) return res;
         try {
           var pair = res.body.tee();
@@ -513,6 +893,26 @@ const STREAM_WATCH_JS: &str = r##"
   // on Perplexity (15/09/2026): the answer stream stays open while a short related-queries stream opens and
   // closes next to it, and firing on that close harvested the page 1s into the answer ("2:02 AM").
   function ended(){ try { if ((window.__ktStreamOpen || 0) > 0) return; if (window.__ktStreamEnd) window.__ktStreamEnd(); } catch(e){} }
+  // ---- Network reading (netread.rs): copies of the ANSWER stream only, forwarded in small batches. The URL
+  // pattern comes from Rust per provider (__ktNetUrl); every other request of the page is ignored. IPC only.
+  var NET_URL = null;
+  try { if (window.__ktNetUrl) NET_URL = new RegExp(window.__ktNetUrl); } catch(e){}
+  var netSeq = 0, netQueue = {}, netTimer = null;
+  function netWanted(u){ return !!(NET_URL && window.__ktSentAt && NET_URL.test(String(u || ''))); }
+  function netFlush(){
+    netTimer = null;
+    var ids = Object.keys(netQueue);
+    for (var i = 0; i < ids.length; i++) {
+      var q = netQueue[ids[i]]; delete netQueue[ids[i]];
+      try { window.__TAURI__.core.invoke('kotodama_push', { b: __kt_bid, k: __kt_key, st: 'net', d: JSON.stringify({ id: ids[i], url: q.url, data: q.data, end: q.end }) }).catch(function(){}); } catch(e){}
+    }
+  }
+  function netSend(id, url, data, end){
+    var q = netQueue[id] || (netQueue[id] = { url: String(url || ''), data: '', end: false });
+    if (data) q.data += data;
+    if (end) { q.end = true; if (netTimer) clearTimeout(netTimer); netFlush(); return; }
+    if (!netTimer) netTimer = setTimeout(netFlush, 60);
+  }
   try {
     var of = window.fetch;
     if (typeof of !== 'function') return;
@@ -520,12 +920,16 @@ const STREAM_WATCH_JS: &str = r##"
       var p = of.apply(this, arguments);
       try {
         if (!window.__ktSentAt) return p;              // nothing sent yet: not our stream
+        var reqUrl = ''; try { reqUrl = (input && typeof input === 'object' && 'url' in input) ? input.url : String(input || ''); } catch(e){}
         try { noteCaptcha((input && typeof input === 'object' && 'url' in input) ? input.url : input); } catch(e){}
         return p.then(function(res){
           try {
             // The page's own API refused the session (captured on Kimi signed out: 401 on its member
             // endpoints). One of the signals that make a visible login control mean "signed out".
             if (res.status === 401) { try { window.__ktAuthFail = Date.now(); } catch(e){} }
+            // 429 after our send: the provider's own rate limit refused the message (captured on Mistral: "Messages
+            // limit reached" over the composer). A limit, not a window to close and not a sign-in.
+            if (res.status === 429) { try { window.__ktRateLimited = Date.now(); } catch(e){} }
             var ct = (res.headers && res.headers.get('content-type')) || '';
             if (!STREAMY.test(ct) || !res.body || typeof res.body.tee !== 'function') return res;
             var pair = res.body.tee();
@@ -541,9 +945,14 @@ const STREAM_WATCH_JS: &str = r##"
             // that gap the first counter is legitimately zero while the send was plainly fine.
             try { window.__ktStreamOpen = (window.__ktStreamOpen || 0) + 1; } catch(e){}
             try { window.__ktStreamEver = (window.__ktStreamEver || 0) + 1; } catch(e){}
-            function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} ended(); }
+            var fwd = netWanted(reqUrl), nid = fwd ? 'f' + (++netSeq) : '', dec = fwd ? new TextDecoder() : null;
+            function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} if (fwd) { try { netSend(nid, reqUrl, dec.decode(), true); } catch(e){} } ended(); }
             (function pump(){
-              mine.read().then(function(r){ if (r.done) { closed(); return; } pump(); }, function(){ closed(); });
+              mine.read().then(function(r){
+                if (r.done) { closed(); return; }
+                if (fwd) { try { netSend(nid, reqUrl, dec.decode(r.value, { stream: true }), false); } catch(e){} }
+                pump();
+              }, function(){ closed(); });
             })();
             return window.__ktAdoptBody(res, pair[1]);
           } catch(e) { return res; }
@@ -576,10 +985,15 @@ const STREAM_WATCH_JS: &str = r##"
       try {
         noteCaptcha(xhr.__ktUrl);
         if (window.__ktSentAt) {
-          var counted = false;
+          var counted = false, xfwd = netWanted(xhr.__ktUrl), xid = xfwd ? 'x' + (++netSeq) : '', xseen = 0;
           xhr.addEventListener('readystatechange', function(){
             try {
+              if (xfwd && xhr.readyState >= 3 && (xhr.responseType === '' || xhr.responseType === 'text')) {
+                var all = xhr.responseText || '';
+                if (all.length > xseen || xhr.readyState === 4) { var part = all.slice(xseen); xseen = all.length; netSend(xid, xhr.__ktUrl, part, xhr.readyState === 4); }
+              }
               if (xhr.readyState === 2 && xhr.status === 401) { try { window.__ktAuthFail = Date.now(); } catch(e){} }
+              if (xhr.readyState === 2 && xhr.status === 429) { try { window.__ktRateLimited = Date.now(); } catch(e){} }
               if (xhr.readyState === 2 && !counted) {
                 var ct = xhr.getResponseHeader('content-type') || '';
                 if (STREAMY.test(ct) || STREAM_URL.test(xhr.__ktUrl || '')) { counted = true; opened(); }
@@ -600,9 +1014,11 @@ const STREAM_WATCH_JS: &str = r##"
         try {
           // Message-level protocol markers of a response lifecycle on a long-lived socket (Grok): the socket
           // itself stays open between answers, so only these events say "started" and "finished".
+          var wid = 'w' + (++netSeq);
           ws.addEventListener('message', function(ev){
             try {
               if (!window.__ktSentAt || typeof ev.data !== 'string') return;
+              if (netWanted(u)) netSend(wid, u, ev.data, false);
               if (ev.data.indexOf('"type":"response.created"') >= 0) opened();
               if (ev.data.indexOf('"type":"response.done"') >= 0) closedOne();
             } catch(e){}
@@ -631,6 +1047,76 @@ const STREAM_WATCH_JS: &str = r##"
       try { window.EventSource.prototype = OES.prototype; } catch(e){}
     }
   } catch(e){}
+})();
+"##;
+
+/// Read aloud in the provider page. Installs (once) a WebSocket hook that forwards the binary frames of the NEXT
+/// speech socket (URL pattern from Rust) after our click, then presses the provider's own read-aloud button.
+/// Only sockets opened within 15 s of our click are taken: a page's own later playback is not recorded.
+/// Frames go base64 in batches every 200 ms, in arrival order (Blob reads are chained), over IPC only.
+const TTS_JS: &str = r##"
+(function(){
+  var KEY = __kt_key, BID = __kt_bid, REQ = __kt_req;
+  function send(obj){
+    try { window.__TAURI__.core.invoke('kotodama_push', { b: BID, k: KEY, st: 'audio', d: JSON.stringify(obj) }).catch(function(){}); } catch(e){}
+  }
+  function findButton(){
+    try {
+      if (__kt_tts_sel) { var l = document.querySelectorAll(__kt_tts_sel); return l.length ? l[l.length - 1] : null; }
+      if (__kt_tts_path) {
+        var ps = document.querySelectorAll('svg path');
+        for (var i = ps.length - 1; i >= 0; i--) {
+          if ((ps[i].getAttribute('d') || '').indexOf(__kt_tts_path) === 0) return ps[i].closest('button, [role="button"]');
+        }
+      }
+    } catch(e){}
+    return null;
+  }
+  if (!window.__ktTtsHook && window.WebSocket) {
+    window.__ktTtsHook = true;
+    var OWS = window.WebSocket;
+    var W = function(u, pr){
+      var ws = (pr === undefined) ? new OWS(u) : new OWS(u, pr);
+      try {
+        var t = window.__ktTts;
+        if (t && !t.claimed && Date.now() < t.until && t.re.test(String(u || ''))) {
+          t.claimed = true;
+          var req = t.req, q = [], timer = null, chain = Promise.resolve();
+          var flush = function(){ timer = null; if (q.length) { t.send({ r: req, ev: 'frames', f: q }); q = []; } };
+          var take = function(buf){
+            var u8 = new Uint8Array(buf), s = '';
+            for (var i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+            q.push(btoa(s));
+            if (!timer) timer = setTimeout(flush, 200);
+          };
+          t.send({ r: req, ev: 'open' });
+          ws.addEventListener('message', function(ev){
+            var d = ev.data;
+            if (d instanceof ArrayBuffer) chain = chain.then(function(){ take(d); });
+            else if (typeof Blob !== 'undefined' && d instanceof Blob) chain = chain.then(function(){ return d.arrayBuffer().then(take); });
+          });
+          ws.addEventListener('close', function(ev){
+            chain = chain.then(function(){ if (timer) clearTimeout(timer); flush(); t.send({ r: req, ev: 'end', code: ev.code }); });
+          });
+        }
+      } catch(e){}
+      return ws;
+    };
+    W.prototype = OWS.prototype;
+    ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'].forEach(function(k){ try { W[k] = OWS[k]; } catch(e){} });
+    window.WebSocket = W;
+  }
+  var b = findButton();
+  if (__kt_mode === 'stop') {
+    if (b) b.click();
+    send({ r: REQ, ev: 'stopped' });
+    return;
+  }
+  if (!b) { send({ r: REQ, ev: 'nobutton' }); return; }
+  var t = { req: REQ, re: new RegExp(__kt_tts_url), until: Date.now() + 15000, claimed: false, send: send };
+  window.__ktTts = t;
+  b.click();
+  setTimeout(function(){ if (!t.claimed) send({ r: REQ, ev: 'noaudio' }); }, 15000);
 })();
 "##;
 
@@ -1075,7 +1561,10 @@ const HARVEST_JS: &str = r##"
     // A loaded page that offers no composer at all and never took our message: a welcome, consent or setup
     // screen that needs a click from the user. Measured on Copilot: no editable element anywhere, no dialog,
     // only its privacy notice -- which was then delivered as the "answer".
-    if (!window.__ktEnterPressed && document.readyState === 'complete' && composerVal() === null) {
+    // Not while the page may still be loading: cold pages next to many others take well over 10s to show a
+    // composer (measured on Grok: a false "setup" block, then an automatic retry that broke the answer).
+    if (!KNOWN_SENT && !window.__ktEnterPressed && document.readyState === 'complete' && composerVal() === null
+        && (window.performance ? performance.now() : 0) > 20000) {
       noComposerTicks++;
       // A welcome page offering "sign in" is a missing login, and the fix the user needs is the login page
       // (captured on Copilot signed out: "Welcome to Copilot" + Sign in, no composer).
@@ -1303,6 +1792,31 @@ const HARVEST_JS: &str = r##"
       out.push('btnsComposer=' + bl.join(','));
     } catch(e){}
     window.__ktPush({ b: BID, k: KEY, st: 'diag', d: out.join(' || ').slice(0,1400) });
+  }
+  // DISCOVERY probe (debug only, KOTO_ACTIONPROBE=1): the action buttons under the last answer (copy, read
+  // aloud, regenerate...), described by structure only: data-testid, aria-label, svg icon signature, position.
+  // Used to find each provider's read-aloud and regenerate controls without matching visible text.
+  function actionCensus(){
+    try {
+      var ael = getAnswerEl(); if (!ael) return;
+      var ar = ael.getBoundingClientRect();
+      var all = document.querySelectorAll('button, [role="button"]'), out = [];
+      for (var i = 0; i < all.length && out.length < 25; i++) {
+        var b = all[i], r = b.getBoundingClientRect();
+        if (!r.width || !r.height) continue;
+        // Below the answer's top and within a short distance under its bottom: the answer's own action bar.
+        if (r.top < ar.top || r.top > ar.bottom + 90) continue;
+        if (r.left < ar.left - 60 || r.left > ar.right + 60) continue;
+        var svg = b.querySelector('svg'), sig = '';
+        if (svg) {
+          var use = svg.querySelector('use'); var path = svg.querySelector('path');
+          sig = use ? ('use=' + (use.getAttribute('href') || use.getAttribute('xlink:href') || '')) : (path ? ('d=' + (path.getAttribute('d') || '').slice(0, 24)) : 'svg');
+        }
+        out.push('[' + Math.round(r.left - ar.left) + ',' + Math.round(r.top - ar.bottom) + '] testid=' + (b.getAttribute('data-testid') || '-')
+          + ' aria=' + (b.getAttribute('aria-label') || '-').slice(0, 30) + ' cls=' + String(b.className || '').slice(0, 40) + ' ' + sig);
+      }
+      window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('ACTIONS ' + out.join(' || ')).slice(0, 3000) });
+    } catch(e){}
   }
   // DISCOVERY probe (debug only, KOTO_THINKPROBE=1): reasoning models print their thinking in a
   // block that is a SIBLING of the answer, inside the same assistant turn -- so the answer selector
@@ -1559,11 +2073,15 @@ const HARVEST_JS: &str = r##"
           } catch(e){}
         }
         if (window.__ktThinkProbe) thinkCensus();
+        if (window.__ktActionProbe) setTimeout(actionCensus, 2500);   // action bars appear once the answer settled
         // Hand over the chrome-free text; fall back to the raw one if the walk yields nothing,
         // so a provider whose markup defeats it degrades to today's behaviour instead of silence.
         deliver('done', sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt, elToMd(getAnswerEl()));
         return;
       }
+      // The provider refused the message for its usage limit: say so at once (the user can only wait or upgrade,
+      // so this is an outcome, not a block to queue).
+      if (!txt && !window.__ktStreamEver && window.__ktRateLimited) { clearInterval(iv); fdiagArm('EXIT rate-limit'); deliver('limit', ''); return; }
       // Same block handling as the arming loop, for blocks that appear after the message was handed over
       // (measured on Z.ai: the slider puzzle shows about 4s after Enter). Clock frozen while blocked.
       // A page without a composer that never took our message can show text that is not an answer (Copilot's
@@ -1736,13 +2254,15 @@ const TEMP_PROBE_JS: &str = r##"
 fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp: bool) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     let prelude = format!(
-        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0;",
+        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url};",
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
         serde_json::to_string(key).map_err(|e| e.to_string())?,
         serde_json::to_string(ans).map_err(|e| e.to_string())?,
         serde_json::to_string(busy).map_err(|e| e.to_string())?,
         fast = fast_done_for(key),
         diag = crate::debug::enabled(),
+        trusted = browser::needs_trusted_input(key),
+        net_url = net_url_js(key),
     );
     // incognito/temporary trigger (holds the fill until done), only on fresh turns of providers
     // that have an in-page trigger AND the user enabled it for this provider.
@@ -1751,11 +2271,9 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
     // incognito URL/selector); never in production.
     let probe = if fresh && crate::debug::enabled() { TEMP_PROBE_JS } else { "" };
     // Reasoning discovery probe: only sets a flag; the census itself runs at delivery time.
-    let think = if crate::debug::enabled() && std::env::var("KOTO_THINKPROBE").is_ok() {
-        "window.__ktThinkProbe = true;"
-    } else {
-        ""
-    };
+    let think = String::new()
+        + if crate::debug::enabled() && std::env::var("KOTO_THINKPROBE").is_ok() { "window.__ktThinkProbe = true;" } else { "" }
+        + if crate::debug::enabled() && std::env::var("KOTO_ACTIONPROBE").is_ok() { "window.__ktActionProbe = true;" } else { "" };
     // Network discovery probe: BEFORE the fill, or the send request itself is missed.
     let net = if crate::debug::enabled() && std::env::var("KOTO_NETPROBE").is_ok() {
         NET_PROBE_JS
@@ -1765,13 +2283,14 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
     // STREAM_WATCH_JS goes BEFORE the fill: it has to be in place before the send opens the answer's
     // stream, otherwise the one request that matters is the one it misses.
     Ok(prelude
-        + think
+        + &think
         + PUSH_HELPER_JS
         + SR_HIDE_JS
         + RESPONSE_ADOPT_JS
         + net
         + STREAM_WATCH_JS
         + &temp_part
+        + &attach_js(broadcast_id)
         + &browser::fill_js(text, true)?
         + HARVEST_JS
         + probe)
@@ -1795,7 +2314,7 @@ fn build_resume_js(
         // `window.__ktDiag` must be set HERE too: without it, all the fill-loop diagnostics stayed
         // silent in exactly the path where they are needed -- the resume after a navigation (providers
         // whose temporary chat is a click DO navigate).
-        "var __apb_text = {}; var __kt_head = {}; var __apb_send = true; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true; var __kt_fast = {fast}; var __kt_sent = {sent}; window.__ktDiag = {diag}; window.__ktStreamEver = 0;",
+        "var __apb_text = {}; var __kt_head = {}; var __apb_send = true; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true; var __kt_fast = {fast}; var __kt_sent = {sent}; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url};",
         serde_json::to_string(text).map_err(|e| e.to_string())?,
         serde_json::to_string(&head).map_err(|e| e.to_string())?,
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
@@ -1807,6 +2326,8 @@ fn build_resume_js(
         // harvester must never declare "never sent" about a message it knows went out.
         sent = !allow_send,
         diag = crate::debug::enabled(),
+        trusted = browser::needs_trusted_input(key),
+        net_url = net_url_js(key),
     );
     // `allow_send` is decided by Rust from `sent_marks`, NOT by reading the page:
     //  - send not out yet -> inject the fill (the case this resume exists for: pages that navigate
@@ -1830,14 +2351,15 @@ fn build_resume_js(
             + HARVEST_JS);
     }
     let fill = browser::fill_js(text, true)?;
-    Ok(prelude + PUSH_HELPER_JS + SR_HIDE_JS + &fill + HARVEST_JS)
+    Ok(prelude + PUSH_HELPER_JS + SR_HIDE_JS + &attach_js(broadcast_id) + &fill + HARVEST_JS)
 }
 
 /// Marks (bid, key) answered: removes it from the broadcast, emits `app://kotodama-answer`
 /// and, when the broadcast empties, `app://kotodama-finished`. Duplicate calls are no-ops.
 fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, truncated: bool, md: &str) {
-    // An outcome ends any block on this provider for this broadcast.
+    // An outcome ends any block on this provider for this broadcast, and its network readers.
     blocked_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    net_readers().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     // Total wall-clock from the broadcast being registered to the answer being handed to the UI. Read
     // together with HARVEST-DONE's `sinceLastChangeMs` it splits the wait into "the model was still
     // writing" and "we were still deciding it had finished" -- the second is the only part we control.
@@ -1888,6 +2410,8 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
         // offering/pre-selecting it until a real login (and a successful answer) restores it.
         crate::set_provider_known(&window.app_handle(), key, false);
     }
+    // The provider page now ends with this answer: the one its read-aloud button would read.
+    set_conv(window, key, (status == "done").then_some(bid));
     let _ = window.emit(
         "app://kotodama-answer",
         serde_json::json!({ "broadcastId": bid, "key": key, "status": status, "text": text, "truncated": truncated, "md": md }),
@@ -1955,7 +2479,47 @@ pub fn kotodama_push(
     let mut st = st;
     let mut d = d;
     let mut md = md;
-    if st == "done" && s == Some(0) && se == Some(false) && !already_sent(&b, &k) {
+    // The answer read from the network wins when it is complete: the provider's own Markdown, exact, with
+    // reasoning and sources kept apart. The DOM reading stays the fallback for everything else.
+    let mut from_net = false;
+    if s == Some(0) && matches!(st.as_str(), "done" | "timeout" | "error" | "sendfail") {
+        if crate::debug::enabled() {
+            if let Some(rs) = net_readers().lock().unwrap().get(&(b.clone(), k.clone())) {
+                for (id, r) in rs {
+                    let a = r.answer();
+                    debug::log(format!("kotodama NET state key={k} id={id} done={} text={}B skipped={}", a.done, a.text.len(), a.skipped));
+                }
+            }
+        }
+        // Safety net: a network answer much SHORTER than what the page shows is incomplete (a reader that saw only
+        // part of a multi-request answer -- measured on Claude with web search: 811 B from the network, 1553 B in
+        // the page). Markdown makes the network text longer, never shorter, so below 70% the page wins.
+        let dom_len = d.as_deref().map(str::len).unwrap_or(0);
+        let net = net_answer(&b, &k).filter(|a| {
+            let ok = st != "done" || dom_len == 0 || a.text.len() * 10 >= dom_len * 7;
+            if !ok {
+                debug::log(format!("kotodama NETREAD skipped key={k}: net={}B shorter than dom={dom_len}B", a.text.len()));
+            }
+            ok
+        });
+        if let Some(a) = net {
+            from_net = true;
+            debug::log(format!(
+                "kotodama NETREAD key={k} status={st}->done net={}B dom={}B reasoning={}B sources={} skipped={}",
+                a.text.len(), d.as_deref().map(str::len).unwrap_or(0), a.reasoning.len(), a.sources.len(), a.skipped
+            ));
+            st = "done".to_string();
+            d = Some(a.text.clone());
+            md = Some(a.text.clone());
+            if !a.sources.is_empty() || !a.reasoning.is_empty() {
+                let _ = window.emit(
+                    "app://kotodama-extras",
+                    serde_json::json!({ "broadcastId": b, "key": k, "sources": a.sources, "reasoning": a.reasoning }),
+                );
+            }
+        }
+    }
+    if st == "done" && s == Some(0) && se == Some(false) && !from_net && !already_sent(&b, &k) {
         debug::log(format!("kotodama done REFUSED key={k} bid={b}: never sent, no response stream -> sendfail"));
         st = "sendfail".to_string();
         d = Some(String::new());
@@ -2016,6 +2580,10 @@ fn handle_push(
         }
         return;
     }
+    if st == "audio" {
+        handle_audio_push(window, &key, data.as_deref().unwrap_or_default());
+        return;
+    }
     if st == "diag" {
         // DOM census from a stuck harvest: log-only, this is how provider selectors get tuned.
         debug::log(format!("kotodama DIAG key={key}: {}", data.unwrap_or_default()));
@@ -2025,6 +2593,48 @@ fn handle_push(
     // again, not even if the page navigates and the script is re-injected.
     // A block that needs the user, or its end: not an outcome, the card keeps waiting (see syncBlock in
     // HARVEST_JS). The UI shows it and queues the pages to open.
+    // A batch of the answer stream copied by the page observer: fed to the provider's reader.
+    if st == "net" {
+        let Some(raw) = data else { return };
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(&raw) else { return };
+        let id = v.get("id").and_then(|x| x.as_str()).unwrap_or("").to_string();
+        let url = v.get("url").and_then(|x| x.as_str()).unwrap_or("");
+        let chunk = v.get("data").and_then(|x| x.as_str()).unwrap_or("");
+        let end = v.get("end").and_then(|x| x.as_bool()).unwrap_or(false);
+        let still_pending = broadcasts().lock().unwrap().get(&bid).map(|bc| bc.pending.contains(&key)).unwrap_or(false);
+        if !still_pending {
+            return; // answer already delivered: a long-lived socket keeps sending, nothing to read any more
+        }
+        let mut map = net_readers().lock().unwrap();
+        let readers = map.entry((bid.clone(), key.clone())).or_default();
+        if !readers.contains_key(&id) {
+            match crate::netread::reader_for(&key, url) {
+                Some(r) => {
+                    debug::log(format!("kotodama NET reader key={key} id={id} url={}", url.chars().take(90).collect::<String>()));
+                    readers.insert(id.clone(), r);
+                }
+                None => {
+                    debug::log(format!("kotodama NET no reader key={key} url={}", url.chars().take(90).collect::<String>()));
+                    return;
+                }
+            }
+        }
+        if let Some(r) = readers.get_mut(&id) {
+            if !chunk.is_empty() {
+                r.feed(chunk);
+            }
+            if end {
+                r.end();
+            }
+        }
+        return;
+    }
+    // Genuine input requested by the fill script (see browser::trusted_input).
+    if st == "trusted-fill" || st == "trusted-enter" {
+        debug::log(format!("kotodama {st} key={key}"));
+        browser::trusted_input(window, &key, &st, &data.unwrap_or_default());
+        return;
+    }
     if st == "blocked" || st == "unblocked" {
         let reason = data.unwrap_or_default();
         {
@@ -2220,6 +2830,7 @@ pub fn kotodama_prewarm(window: Window, keys: Vec<String>) {
         match url.parse::<Url>() {
             Ok(parsed) => {
                 if wv.navigate(parsed).is_ok() {
+                    set_conv(&window, &key, None);
                     debug::log(format!("kotodama prewarm START key={key} -> {}", &url[..url.len().min(90)]));
                     // Not ready yet: `on_page_finished` promotes it once the page has actually loaded.
                     prewarming().lock().unwrap().insert(key);
@@ -2358,6 +2969,8 @@ pub async fn kotodama_broadcast(
         }
     }
     for key in &keys {
+        // The page is about to move on from the answer it shows: read aloud is no longer about that answer.
+        set_conv(&window, key, None);
         // One in-flight harvest per provider: kill any previous one (different bid).
         {
             let other_bids: Vec<String> = broadcasts()
@@ -2569,6 +3182,7 @@ pub async fn kotodama_broadcast(
 /// JS loops self-expire on their own timeouts (their deliveries will find nothing here).
 #[tauri::command]
 pub fn kotodama_cancel(window: Window, broadcast_id: String) -> Result<(), String> {
+    attachments().lock().unwrap().remove(&broadcast_id);
     let stuck: Vec<String> = broadcasts()
         .lock()
         .unwrap()

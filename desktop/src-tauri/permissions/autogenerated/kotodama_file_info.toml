@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kotodama-file-info"
+description = "Enables the kotodama_file_info command without any pre-configured scope."
+commands.allow = ["kotodama_file_info"]
+
+[[permission]]
+identifier = "deny-kotodama-file-info"
+description = "Denies the kotodama_file_info command without any pre-configured scope."
+commands.deny = ["kotodama_file_info"]

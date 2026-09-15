@@ -1202,6 +1202,14 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
       try { document.execCommand('selectAll', false, null); document.execCommand('delete', false, null); } catch(e){}
     }
   }
+  // Providers that ignore script-made input (captured on Qwen: text in the field, Enter pressed, field
+  // emptied, and no request ever sent) get the text and the Enter key through the browser's own input
+  // pipeline instead: Rust performs them with the DevTools Input domain, which produces genuine events.
+  // The page decides as always; nothing about the request is made up.
+  var trustedAskedAt = 0;
+  function askTrusted(kind){
+    try { window.__TAURI__.core.invoke('kotodama_push', { b: __kt_bid, k: __kt_key, st: kind, d: kind === 'trusted-fill' ? text : '' }).catch(function(){}); } catch(e){}
+  }
   function fill(el){
     // Re-check the baton HERE, not only at the start of a tick: up to 400ms pass between a newer
     // injection taking the baton and this loop noticing it, and in that window both could write into
@@ -1210,6 +1218,18 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
     // and you?".
     if (window.__ktFillRun !== RUN) return;
     var isText = (el.tagName === 'TEXTAREA' || el.value !== undefined);
+    if (window.__ktTrustedInput) {
+      if (Date.now() - trustedAskedAt < 2500) return;          // one request at a time; retried if it did not land
+      trustedAskedAt = Date.now();
+      try {
+        el.focus();
+        if (isText) { el.setSelectionRange(0, (el.value || '').length); }
+        else { document.execCommand('selectAll', false, null); document.execCommand('delete', false, null); }
+      } catch(e){}
+      fdiag('trusted fill requested');
+      askTrusted('trusted-fill');
+      return;
+    }
     try { el.focus(); } catch(e){}
     if (isText) {
       // Typed the way a person types it: focus, select what is there, and let the editing command
@@ -1260,6 +1280,7 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
   }
   function submitOnce(el){
     try { el.focus(); } catch(e){}                          // Claude/ProseMirror ignores Enter without focus
+    if (window.__ktTrustedInput) { fdiag('trusted enter requested'); askTrusted('trusted-enter'); return; }
     if (el.value === undefined) {
       // pre-filled rich editor: caret at the end + input, so React enables the send button
       try { var rng = document.createRange(); rng.selectNodeContents(el); rng.collapse(false); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rng); } catch (e) {}
@@ -1298,7 +1319,7 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
   var MAX_SUBMITS = 25;
   var iv = setInterval(function(){
     if (window.__ktFillRun !== RUN) { fdiag('exit: superseded by a newer injection'); clearInterval(iv); return; }
-    if (window.__ktHoldFill) { if (ticks === 0) fdiag('waiting: hold is active'); return; }
+    if (window.__ktHoldFill || window.__ktHoldAttach) { if (ticks === 0) fdiag('waiting: hold is active'); return; }
     ticks++;
     if (delivered()) {
       // "Delivered" BEFORE any submit is suspicious: legitimate only for providers that send by
@@ -1499,3 +1520,57 @@ pub fn park_provider<R: Runtime, M: Manager<R>>(manager: &M) {
 }
 
 
+
+/// Genuine input for providers that ignore script-made events: text insertion and the Enter key go
+/// through the browser's own input pipeline (DevTools `Input` domain on WebView2), so the page receives
+/// trusted events exactly as from a keyboard. Windows only; elsewhere the script-made path stays.
+pub(crate) fn trusted_input<R: Runtime>(manager: &impl tauri::Manager<R>, key: &str, kind: &str, text: &str) {
+    #[cfg(windows)]
+    {
+        let Some(wv) = manager.get_webview(&provider_label(key)) else { return };
+        let mut calls: Vec<(&'static str, String)> = Vec::new();
+        match kind {
+            "trusted-fill" => calls.push(("Input.insertText", serde_json::json!({ "text": text }).to_string())),
+            "trusted-enter" => {
+                for t in ["keyDown", "keyUp"] {
+                    let mut ev = serde_json::json!({ "type": t, "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13 });
+                    if t == "keyDown" { ev["text"] = serde_json::json!("\r"); }
+                    calls.push(("Input.dispatchKeyEvent", ev.to_string()));
+                }
+            }
+            _ => return,
+        }
+        let k = key.to_string();
+        let _ = wv.with_webview(move |pw| {
+            use webview2_com::CallDevToolsProtocolMethodCompletedHandler;
+            use windows::core::HSTRING;
+            let controller = pw.controller();
+            let core = match unsafe { controller.CoreWebView2() } {
+                Ok(c) => c,
+                Err(e) => { debug::log(format!("trusted[{k}]: CoreWebView2 KO: {e}")); return; }
+            };
+            for (method, params) in calls {
+                let k2 = k.clone();
+                let handler = CallDevToolsProtocolMethodCompletedHandler::create(Box::new(move |hr, _res| {
+                    if let Err(e) = hr { debug::log(format!("trusted[{k2}]: {method} KO: {e}")); }
+                    Ok(())
+                }));
+                let m = HSTRING::from(method);
+                let p = HSTRING::from(params.as_str());
+                if let Err(e) = unsafe { core.CallDevToolsProtocolMethod(&m, &p, &handler) } {
+                    debug::log(format!("trusted[{k}]: {method} call KO: {e}"));
+                }
+            }
+        });
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (manager, key, kind, text);
+    }
+}
+
+/// Providers whose pages need genuine input (see `trusted_input`). Measured, not guessed: add a key only after
+/// seeing its page drop a script-made send.
+pub(crate) fn needs_trusted_input(key: &str) -> bool {
+    cfg!(windows) && matches!(key, "qwen")
+}

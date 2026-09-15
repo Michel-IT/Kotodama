@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-running-elevated"
+description = "Enables the running_elevated command without any pre-configured scope."
+commands.allow = ["running_elevated"]
+
+[[permission]]
+identifier = "deny-running-elevated"
+description = "Denies the running_elevated command without any pre-configured scope."
+commands.deny = ["running_elevated"]

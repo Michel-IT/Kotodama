@@ -6,10 +6,12 @@
 //! - `toast`    : notification window in the bottom-right corner.
 //! - `settings` : user settings persistence.
 
+mod audio;
 mod browser;
 mod clipboard;
 mod debug;
 mod kotodama;
+mod netread;
 mod settings;
 mod toast;
 
@@ -1427,7 +1429,14 @@ pub fn run() {
                                 let msg = if repeat > 1 { format!("{text} ({})", i + 1) } else { text.clone() };
                                 let t = serde_json::to_string(&msg).unwrap_or_else(|_| "\"\"".into());
                                 debug::log(format!("AUTOCHAT: sending to {k} #{}", i + 1));
-                                let _ = m.eval(format!("window.__ktAutoChat && __ktAutoChat({t}, {k}, {r})"));
+                                if i == 0 {
+                                    // KOTO_AUTOCHAT_FILES=path;path (optional): attachments for the first message.
+                                    let fl: Vec<String> = std::env::var("KOTO_AUTOCHAT_FILES").unwrap_or_default().split(';').filter(|p| !p.is_empty()).map(str::to_string).collect();
+                                    let f = serde_json::to_string(&fl).unwrap_or_else(|_| "[]".into());
+                                    let _ = m.eval(format!("window.__ktAutoChat && __ktAutoChat({t}, {k}, {r}, {f})"));
+                                } else {
+                                    let _ = m.eval(format!("window.__ktAutoContinue && __ktAutoContinue({t}, {k})"));
+                                }
                             }
                             // KOTO_AUTOCHAT_CLOSEVIEW_S=<s>: close the verification queue (and the provider page it
                             // opened) that long after the last send, to look at the chat itself.
@@ -1437,6 +1446,27 @@ pub fn run() {
                                     std::thread::sleep(std::time::Duration::from_secs(secs));
                                     debug::log("AUTOCHAT: closing the verification queue");
                                     let _ = m2.eval("document.getElementById('ktVerifyClose') && document.getElementById('ktVerifyClose').click()");
+                                });
+                            }
+                            // KOTO_AUTOCHAT_TAB=<links|images> + KOTO_AUTOCHAT_TAB_S=<s>: switch the turns to that tab.
+                            if let (Ok(tab), Some(secs)) = (
+                                std::env::var("KOTO_AUTOCHAT_TAB"),
+                                std::env::var("KOTO_AUTOCHAT_TAB_S").ok().and_then(|v| v.parse::<u64>().ok()),
+                            ) {
+                                let m3 = m.clone();
+                                std::thread::spawn(move || {
+                                    std::thread::sleep(std::time::Duration::from_secs(secs));
+                                    let t = serde_json::to_string(&tab).unwrap_or_default();
+                                    let _ = m3.eval(format!("window.__ktAutoTab && __ktAutoTab({t})"));
+                                });
+                            }
+                            // KOTO_AUTOCHAT_READ_S=<s>: press every visible read-aloud button that long after the send.
+                            if let Some(secs) = std::env::var("KOTO_AUTOCHAT_READ_S").ok().and_then(|v| v.parse::<u64>().ok()) {
+                                let m4 = m.clone();
+                                std::thread::spawn(move || {
+                                    std::thread::sleep(std::time::Duration::from_secs(secs));
+                                    debug::log("AUTOCHAT: pressing read aloud");
+                                    let _ = m4.eval("window.__ktAutoRead && __ktAutoRead()");
                                 });
                             }
                             // KOTO_AUTOCHAT_STOP_MS=<ms>: press Stop that long after the send, to test it.
@@ -1727,6 +1757,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             browser::show_provider_tab,
             kotodama::kotodama_broadcast,
+            kotodama::kotodama_set_attachments,
+            kotodama::kotodama_file_info,
+            kotodama::kotodama_read_aloud,
+            kotodama::kotodama_audio_load,
+            kotodama::kotodama_audio_delete,
+            running_elevated,
             kotodama::kotodama_prewarm,
             kotodama::kotodama_push,
             kotodama::provider_login_probe,
@@ -1781,4 +1817,25 @@ pub fn run() {
                 }
             }
         });
+}
+
+/// Is Kotodama running with administrator rights? Windows does not deliver a drag from the file manager (a
+/// normal-user process) to an elevated window: the drop zone would look alive and receive nothing, so the UI
+/// says so instead. The Windows folder is writable only to administrators, which answers without a system API.
+#[tauri::command]
+fn running_elevated() -> bool {
+    #[cfg(windows)]
+    {
+        let dir = std::env::var_os("SystemRoot").map(std::path::PathBuf::from).unwrap_or_else(|| "C:\\Windows".into());
+        let probe = dir.join(".kotodama_elevation_probe");
+        if std::fs::write(&probe, b"x").is_ok() {
+            let _ = std::fs::remove_file(&probe);
+            return true;
+        }
+        false
+    }
+    #[cfg(not(windows))]
+    {
+        false
+    }
 }

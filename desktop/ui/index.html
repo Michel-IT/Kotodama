@@ -756,6 +756,67 @@
     .kt-status .dl-spin { width:12px; height:12px; border-width:2px; }
     .kt-card.done .kt-status { color:var(--accent); }
     .kt-card.blocked .kt-status { color:var(--accent); }
+    /* Turn tabs: Answers | Links | Images, shown only when the turn has links or images. Same column as the
+       answers; the lists are uniform rows / a uniform grid whatever provider the item came from. */
+    /* The scroll area and the prompt rail share this box; the rail floats on the right edge, outside the
+       centred column, so it never covers text. */
+    .kt-thread-wrap { flex:1; min-height:0; position:relative; display:flex; flex-direction:column; }
+    .kt-rail { position:absolute; right:8px; top:50%; transform:translateY(-50%); z-index:5; display:flex; flex-direction:column;
+      align-items:center; gap:4px; padding:6px 4px; border-radius:12px; background:color-mix(in srgb, var(--bg-1) 80%, transparent); }
+    .kt-rail[hidden] { display:none; }
+    .kt-rail-marks { display:flex; flex-direction:column; gap:7px; max-height:50vh; overflow-y:auto; padding:2px 4px; scrollbar-width:none; }
+    .kt-rail-marks::-webkit-scrollbar { display:none; }
+    .kt-rail-mark { flex:none; width:16px; height:4px; padding:0; border:none; border-radius:2px; cursor:pointer;
+      background:var(--text-faint); opacity:.45; transition:opacity .15s, width .15s, background .15s; }
+    .kt-rail-mark:hover { opacity:1; width:22px; }
+    .kt-rail-mark.active { background:var(--accent); opacity:1; width:22px; }
+    .kt-rail-mark:focus-visible, .kt-rail-arrow:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .kt-rail-arrow { width:22px; height:18px; padding:0; border:none; background:none; color:var(--text-faint); cursor:pointer; font-size:14px; line-height:1; }
+    .kt-rail-arrow:hover { color:var(--text); }
+    .kt-rail-tip { position:absolute; right:44px; z-index:6; max-width:280px; padding:6px 10px; border-radius:10px; font-size:12px;
+      line-height:1.4; color:var(--text); background:var(--bg-1); border:1px solid var(--border); box-shadow:0 4px 14px rgba(0,0,0,.25);
+      pointer-events:none; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
+    .kt-rail-tip[hidden] { display:none; }
+    .kt-turn-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border-soft); margin:2px 0 4px; }
+    .kt-turn-tabs[hidden], .kt-grid[hidden], .kt-links[hidden], .kt-images[hidden], .kt-audios[hidden], .kt-tab[hidden], .kt-icon-btn[hidden] { display:none; }
+    .kt-tab { display:flex; align-items:center; gap:6px; padding:6px 12px; border:none; background:none; cursor:pointer;
+      color:var(--text-faint); font:inherit; font-size:12.5px; font-weight:600; border-bottom:2px solid transparent; margin-bottom:-1px; }
+    .kt-tab:hover { color:var(--text); }
+    .kt-tab.active { color:var(--text); border-bottom-color:var(--accent); }
+    .kt-tab:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .kt-tab-n { font-variant-numeric:tabular-nums; color:var(--text-faint); font-weight:500; }
+    .kt-tab-n:empty { display:none; }
+    .kt-links { display:grid; grid-template-columns:minmax(0,1fr); gap:6px; }
+    .kt-link { display:grid; grid-template-columns:28px minmax(0,1fr) auto; column-gap:12px; align-items:center;
+      padding:8px 10px; border:1px solid var(--border-soft); border-radius:12px; background:none; color:var(--text);
+      font:inherit; text-align:left; cursor:pointer; }
+    .kt-link:hover { background:var(--field); }
+    .kt-link-ic { width:28px; height:28px; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:700;
+      color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent); }
+    .kt-link-t { min-width:0; }
+    .kt-link-title { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kt-link-dom { font-size:11.5px; color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kt-link-by { display:flex; gap:3px; }
+    .kt-by { width:18px; height:18px; border-radius:50%; display:grid; place-items:center; font-size:9px; font-weight:700;
+      color:var(--pc, var(--accent)); background:color-mix(in srgb, var(--pc, var(--accent)) 16%, transparent); }
+    .kt-by svg { width:11px; height:11px; }
+    .kt-images { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+    .kt-img { position:relative; aspect-ratio:4/3; max-width:100%; border:1px solid var(--border-soft); border-radius:12px;
+      overflow:hidden; padding:0; background:var(--field); cursor:pointer; }
+    .kt-img img { width:100%; height:100%; object-fit:cover; display:block; }
+    .kt-img:focus-visible, .kt-link:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .kt-audios { display:grid; grid-template-columns:minmax(0,1fr); gap:6px; }
+    .kt-audio { display:grid; grid-template-columns:28px minmax(0,1fr) 56px 28px; column-gap:12px; align-items:center;
+      padding:8px 10px; border:1px solid var(--border-soft); border-radius:12px; }
+    .kt-audio .kt-by { width:28px; height:28px; }
+    .kt-audio .kt-by svg { width:15px; height:15px; }
+    .kt-audio-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kt-audio-bar { height:3px; margin-top:6px; border-radius:2px; background:var(--border-soft); overflow:hidden; }
+    .kt-audio-bar > i { display:block; height:100%; width:0; background:var(--accent); }
+    .kt-audio-len { font-size:12px; text-align:right; color:var(--text-faint); font-variant-numeric:tabular-nums; }
+    .kt-icon-btn.on { color:var(--accent); }
+    .kt-icon-btn.kt-busy { color:var(--accent); animation:ktAudioPulse 1.2s ease-in-out infinite; }
+    @keyframes ktAudioPulse { 50% { opacity:.4; } }
     .kt-time { font-variant-numeric:tabular-nums; color:var(--text-faint); cursor:default; }
     .kt-card.error .kt-status, .kt-card.cancelled .kt-status { color:#e08585; }
     .kt-card.timeout .kt-status { color:#d8b45a; }
@@ -831,6 +892,19 @@
     .kt-composer-box { display:flex; align-items:flex-end; gap:8px; padding:6px 6px 6px 16px;
       background:var(--field); border:1px solid var(--border); border-radius:18px; transition:border-color .15s; }
     .kt-composer-box:focus-within { border-color:var(--accent); }
+    /* Files being dragged over the window: the input box is where they land. */
+    .kt-composer-box.kt-dragging { border-color:var(--accent); border-style:dashed; background:color-mix(in srgb, var(--accent) 8%, var(--field)); }
+    .kt-attach-row { display:flex; flex-wrap:wrap; gap:6px; padding:0 0 8px; }
+    .kt-attach-row[hidden], .kt-elev-note[hidden] { display:none; }
+    .kt-chipf { display:inline-flex; align-items:center; gap:6px; max-width:260px; padding:4px 6px 4px 10px; border-radius:999px;
+      border:1px solid var(--border); background:var(--field); font-size:12px; color:var(--text); }
+    .kt-chipf-n { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .kt-chipf-s { flex:none; color:var(--text-faint); font-variant-numeric:tabular-nums; }
+    .kt-chipf-x { flex:none; width:18px; height:18px; border:none; border-radius:50%; background:none; color:var(--text-faint); cursor:pointer; padding:0; }
+    .kt-chipf-x:hover { color:var(--text); background:var(--border-soft); }
+    .kt-elev-note { font-size:11.5px; color:var(--text-faint); padding:0 0 6px; }
+    .kt-umsg-files { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:4px; }
+    .kt-umsg-files .kt-chipf { padding:3px 10px; }
     /* No resize:vertical -- it fights the JS auto-grow (ktAutoGrow) that drives height now.
        overflow-y starts hidden: ktAutoGrow flips it to auto ONLY once content truly exceeds
        KT_INPUT_MAX (JS-side threshold check, not left to the browser's own scrollHeight-vs-
@@ -1514,7 +1588,16 @@
         </div>
         <div class="kt-chips" id="ktChips"></div>
       </div>
-      <div class="kt-thread" id="ktThread" role="log" aria-live="polite"></div>
+      <div class="kt-thread-wrap">
+        <div class="kt-thread" id="ktThread" role="log" aria-live="polite"></div>
+        <!-- Prompt rail: one mark per message sent in this conversation; click to jump to it. -->
+        <nav class="kt-rail" id="ktRail" hidden data-i18n-title="ktRailTitle">
+          <button class="kt-rail-arrow" id="ktRailUp" type="button">&#8963;</button>
+          <div class="kt-rail-marks" id="ktRailMarks"></div>
+          <button class="kt-rail-arrow" id="ktRailDown" type="button">&#8964;</button>
+        </nav>
+        <div class="kt-rail-tip" id="ktRailTip" hidden></div>
+      </div>
       <!-- Barra ricetta attiva: testo istruzione modificabile (sostituisce #instruction, spostato
            qui via JS, non più nella sidebar) quando una ricetta non-Neutra è attiva; altrimenti un
            breve testo informativo. Sempre attaccata sopra il composer, stesso stile di ".sidebar-head"
@@ -1530,6 +1613,8 @@
         </div>
       </div>
       <div class="kt-composer">
+        <div class="kt-attach-row" id="ktAttachRow" hidden></div>
+        <div class="kt-elev-note" id="ktElevNote" hidden data-i18n="ktElevatedDrop"></div>
         <div class="kt-composer-box">
           <textarea id="ktInput" rows="1" data-i18n-ph="ktPlaceholder" placeholder="Chiedi a tutti i provider selezionati..."></textarea>
           <button class="send kt-send" id="ktSend" data-i18n-title="ktSendBtn" title="Invia">→</button>
@@ -1956,6 +2041,59 @@
     const ktView=document.getElementById('kotodamaView');
     const ktChipsEl=document.getElementById('ktChips');
     const ktThread=document.getElementById('ktThread');
+    /* ---- Prompt rail: a mark per user message, evenly spaced, the one in view highlighted (IntersectionObserver,
+       no timers), preview on hover, click or arrows to jump. Hidden below two messages. ---- */
+    const ktRail=document.getElementById('ktRail'), ktRailMarks=document.getElementById('ktRailMarks'), ktRailTip=document.getElementById('ktRailTip');
+    let ktRailObs=null, ktRailMsgs=[], ktRailActive=-1, ktRailRAF=0;
+    function ktRailSchedule(){ cancelAnimationFrame(ktRailRAF); ktRailRAF=requestAnimationFrame(ktRailRebuild); }
+    function ktRailRebuild(){
+      ktRailMsgs=[...ktThread.querySelectorAll(':scope > .kt-umsg')];
+      if(ktRailObs){ ktRailObs.disconnect(); ktRailObs=null; }
+      ktRailMarks.innerHTML='';
+      ktRail.hidden = ktRailMsgs.length<2;
+      if(ktRail.hidden){ ktRailTip.hidden=true; return; }
+      ktRailMsgs.forEach((m, i)=>{
+        const b=document.createElement('button'); b.type='button'; b.className='kt-rail-mark';
+        const txt=((m.querySelector('.kt-user')||{}).textContent||'').replace(/\s+/g,' ').trim();
+        b.setAttribute('aria-label', txt.slice(0,120));
+        b.addEventListener('click', ()=>ktRailJump(i));
+        b.addEventListener('mouseenter', ()=>{
+          ktRailTip.textContent=txt.slice(0,160);
+          ktRailTip.hidden=false;
+          const wrap=ktRail.parentElement.getBoundingClientRect(), r=b.getBoundingClientRect();
+          ktRailTip.style.top=Math.max(4, r.top-wrap.top-10)+'px';
+        });
+        b.addEventListener('mouseleave', ()=>{ ktRailTip.hidden=true; });
+        ktRailMarks.appendChild(b);
+      });
+      // "In view" = the last message whose top has passed the upper part of the scroll area.
+      const seen=new Map();
+      ktRailObs=new IntersectionObserver(entries=>{
+        entries.forEach(e=>seen.set(e.target, e.isIntersecting));
+        let idx=-1;
+        ktRailMsgs.forEach((m, i)=>{ if(seen.get(m)) idx = idx<0 ? i : idx; });
+        if(idx<0){
+          // Nothing intersecting (a long answer fills the view): the last message above the viewport.
+          const top=ktThread.getBoundingClientRect().top;
+          ktRailMsgs.forEach((m, i)=>{ if(m.getBoundingClientRect().top < top) idx=i; });
+        }
+        ktRailSetActive(idx);
+      }, { root:ktThread, threshold:0 });
+      ktRailMsgs.forEach(m=>ktRailObs.observe(m));
+    }
+    function ktRailSetActive(idx){
+      if(idx===ktRailActive) return;
+      ktRailActive=idx;
+      [...ktRailMarks.children].forEach((b, i)=>b.classList.toggle('active', i===idx));
+      const a=ktRailMarks.children[idx]; if(a) a.scrollIntoView({ block:'nearest' });
+    }
+    function ktRailJump(i){
+      const m=ktRailMsgs[Math.max(0, Math.min(ktRailMsgs.length-1, i))]; if(!m) return;
+      ktThread.scrollTo({ top: m.offsetTop - ktThread.offsetTop - 12, behavior:'smooth' });
+      ktRailSetActive(i);
+    }
+    document.getElementById('ktRailUp').addEventListener('click', ()=>ktRailJump((ktRailActive<0?ktRailMsgs.length:ktRailActive)-1));
+    document.getElementById('ktRailDown').addEventListener('click', ()=>ktRailJump((ktRailActive<0?-1:ktRailActive)+1));
     const ktInput=document.getElementById('ktInput');
     const ktSearch=document.getElementById('ktSearch');
     // Auto-grow: grows with content up to KT_INPUT_MAX_H, then scrolls -- overflow-y is only
@@ -2057,6 +2195,8 @@
             setTimeout(()=>{ del.classList.remove('confirm'); del.textContent='✕'; }, 2500);
             return;
           }
+          const files=(s.turns||[]).flatMap(tr=>Object.values(tr.answers||{}).flatMap(a=>(a.audio||[]).map(x=>x.file)));
+          if(files.length && TAURI) invoke('kotodama_audio_delete',{ files }).catch(()=>{});
           ktAllSessions=ktAllSessions.filter(x=>x.id!==s.id);
           if(ktSession&&ktSession.id===s.id) ktNewConversation();
           ktPersist(); renderKtSessions();
@@ -2199,8 +2339,13 @@
     }
     function ktActs(...btns){ const a=document.createElement('span'); a.className='kt-acts'; btns.forEach(x=>a.appendChild(x)); return a; }
     // The user's message: the bubble plus its faint actions. Built in one place for live and saved turns.
-    function ktUserMsg(text){
+    function ktUserMsg(text, files){
       const m=document.createElement('div'); m.className='kt-umsg';
+      if(files && files.length){
+        const fl=document.createElement('div'); fl.className='kt-umsg-files';
+        files.forEach(n=>{ const c=document.createElement('span'); c.className='kt-chipf'; const t=document.createElement('span'); t.className='kt-chipf-n'; t.textContent=n; c.appendChild(t); fl.appendChild(c); });
+        m.appendChild(fl);
+      }
       const u=document.createElement('div'); u.className='kt-user'; u.textContent=text;
       m.appendChild(u); m.appendChild(ktActs(ktCopyBtn(()=>text)));
       return m;
@@ -2221,7 +2366,7 @@
     // Rebuilds one SAVED turn in the thread (final cards, no spinners). Failed cards get
     // the ⟳ retry too: they are registered under a synthetic bid so ktRetryKey can reuse them.
     function ktRenderSavedTurn(turn){
-      ktThread.appendChild(ktUserMsg(turn.text||''));
+      ktThread.appendChild(ktUserMsg(turn.text||'', turn.files));
       const grid=document.createElement('div'); grid.className='kt-grid';
       ktSetGridCols(grid, Object.keys(turn.answers||{}).length);
       const svBid='sv'+(ktSeq++);
@@ -2238,7 +2383,7 @@
         const st=(!a.status||a.status==='pending')?'error':a.status;   // app chiusa a metà -> errore
         const bits=ktTileBits(key);
         const card=document.createElement('div');
-        card.className='kt-card '+ktStatusClass(st);
+        card.className='kt-card '+ktStatusClass(st); card.dataset.key=key;
         if(bits.color) card.style.setProperty('--pc', bits.color);
         card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
           +`<span class="kt-status"><span class="kt-st-txt"></span></span></div>`
@@ -2280,6 +2425,7 @@
       });
       if(anyRetry) ktTurnByBid[svBid]=turn;
       ktThread.appendChild(grid);
+      ktMountTurnTabs(turn, grid);
     }
     function ktLoadSession(id){
       const s=ktAllSessions.find(x=>x.id===id); if(!s) return;
@@ -2287,6 +2433,7 @@
       ktResetColumn(); ktThread.innerHTML=''; ktCards={};
       (s.turns||[]).forEach(ktRenderSavedTurn);
       ktThread.scrollTop=ktThread.scrollHeight;
+      ktRailSchedule();
       // Tab provider "calde" solo per la sessione live di QUESTO run: le altre ripartono
       // fresh (con reinvio del contesto per-provider al prossimo messaggio).
       if(ktLiveId!==id) ktStarted={};
@@ -2387,8 +2534,13 @@
     // restored at once (ktDoSend reads the keys synchronously, before its first await), so the user's
     // saved provider selection is never touched.
     // Optional `recipe` ("key:translate" / "id:<custom id>") is applied the same temporary way.
-    window.__ktAutoChat = function(text, keys, recipe){
+    window.__ktAutoChat = async function(text, keys, recipe, files){
       try {
+        // Optional files (KOTO_AUTOCHAT_FILES): attached through the same path a drop takes.
+        if(Array.isArray(files) && files.length){
+          const info=await invoke('kotodama_file_info',{ paths:files });
+          ktAddAttach(info.map(x=>({ name:x.name, size:x.size, path:x.path, ok:x.ok })));
+        }
         const saved=ktSel, savedRecipe=activeRecipe;
         if(Array.isArray(keys) && keys.length) ktSel=new Set(keys);
         if(recipe){ const i=recipe.indexOf(':'); activeRecipe = recipe.slice(0,i)==='key' ? {kind:'key', key:recipe.slice(i+1)} : {kind:'id', id:recipe.slice(i+1)}; }
@@ -2403,6 +2555,25 @@
     window.__ktAutoPrewarm = function(keys){
       try { const saved=ktSel; if(Array.isArray(keys)&&keys.length) ktSel=new Set(keys); ktPrewarmed=false; ktPrewarm(); ktSel=saved; }
       catch(e){ console.error('autoprewarm', e); }
+    };
+    // DEBUG ONLY (KOTO_AUTOCHAT_REPEAT): the next message in the SAME conversation, typed in the input box and sent
+    // through ktDoSend like a person continuing the chat (the first message opens a new conversation).
+    window.__ktAutoContinue = async function(text, keys){
+      try {
+        const saved=ktSel;
+        if(Array.isArray(keys) && keys.length) ktSel=new Set(keys);
+        ktInput.value=text; ktAutoGrow();
+        const p=ktDoSend();
+        ktSel=saved;
+        await p;
+      } catch(e){ console.error('autocontinue', e); }
+    };
+    // DEBUG ONLY (KOTO_AUTOCHAT_TAB): switches every turn of the open conversation to one tab, for screenshots.
+    window.__ktAutoRead = function(){
+      try { ktThread.querySelectorAll('.kt-read').forEach(b=>{ if(!b.hidden) b.click(); }); } catch(e){}
+    };
+    window.__ktAutoTab = function(tab){
+      try { ktThread.querySelectorAll('.kt-turn-tabs').forEach(bar=>{ const b=bar.querySelector(`.kt-tab[data-tab="${tab}"]`); if(b && !b.hidden) b.click(); }); } catch(e){}
     };
     window.__ktAutoWarm = function(key){
       try {
@@ -2513,6 +2684,7 @@
       const rb=stEl&&stEl.querySelector('.kt-retry'); if(rb) rb.remove();
       if(stEl && !stEl.querySelector('.dl-spin')){ const sp=document.createElement('span'); sp.className='dl-spin'; stEl.prepend(sp); ref.spin=sp; }
       ref.st.textContent=ktStatusLabel('pending');
+      { const old=(turn.answers[key]||{}).audio||[]; if(old.length) invoke('kotodama_audio_delete',{ files:old.map(x=>x.file) }).catch(()=>{}); }
       turn.answers[key]={status:'pending', text:''};
       if(ktSession) ktSession.updated=Date.now();
       ktPersist();
@@ -2830,7 +3002,7 @@
     const KT_ONLY = true;
     function closeKotodama(){ if(KT_ONLY) return; body.classList.remove('kotodama-open'); }
     function ktNewConversation(){
-      ktStarted={}; ktResetColumn(); ktThread.innerHTML=''; ktCards={};
+      ktStarted={}; ktResetColumn(); ktThread.innerHTML=''; ktCards={}; ktRailSchedule();
       ktSession={ id:'s'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
                   title:'', created:Date.now(), updated:Date.now(), turns:[] };
       renderKtSessions();   // persisted only at the first send
@@ -2844,6 +3016,7 @@
       if(st==='login') return t.ktLogin;
       if(st==='cancelled') return t.ktCancelled;
       if(st==='captcha') return t.ktCaptchaShort;
+      if(st==='limit') return t.ktLimit;
       return t.ktError;   // error | sendfail
     }
     /* ---- Response timing: sent -> first words (shown next to the check) and sent -> complete (tooltip).
@@ -2975,6 +3148,305 @@
       ktVerifyShowBar();
       if(body.classList.contains('provider-open')){ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); }
     }
+    /* ---- Read aloud: the provider's OWN voice, not a local synthesizer. Rust presses the provider's read-aloud
+       button on the answer its page still shows (app://kotodama-conv says which one, per provider), the page plays
+       it, and the speech stream is saved as a local file (app://kotodama-audio 'saved'). Saved audio stays playable
+       here after the provider page has moved on: the speaker button disappears, the play button and the Audio tab
+       stay. Only audio the user asked for is kept. ---- */
+    const KT_ICON_SPEAK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+    const KT_ICON_STOP='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>';
+    const KT_ICON_PLAY='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>';
+    const KT_ICON_PAUSE='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="5.5" width="3.5" height="13" rx="1"/><rect x="13.5" y="5.5" width="3.5" height="13" rx="1"/></svg>';
+    const ktConv={};        // key -> {bid, tts}: the answer each provider page still ends with
+    const ktReadState={};   // key -> {bid, state:'loading'|'playing', openAt, timer}: a read aloud in progress
+    function ktFmtClock(ms){ const t=Math.max(0, Math.round((ms||0)/1000)); return Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); }
+    function ktTurnAudios(turn){
+      const out=[];
+      for(const [key, a] of Object.entries(turn.answers||{})) for(const x of (a.audio||[])) out.push({ key, file:x.file, ms:x.ms });
+      return out;
+    }
+    function ktSyncReadBtn(b){
+      const { bid, key }=b.dataset, c=ktConv[key], rs=ktReadState[key];
+      b.hidden=!(bid && c && c.tts && c.bid===bid);
+      const mine=!!(rs && rs.bid===bid), playing=mine && rs.state==='playing';
+      b.classList.toggle('kt-busy', mine && rs.state==='loading');
+      b.classList.toggle('on', playing);
+      b.innerHTML = playing ? KT_ICON_STOP : KT_ICON_SPEAK;
+      const label = playing ? TR.ktReadStop : TR.ktReadAloud;
+      b.title=label||''; b.setAttribute('aria-label', label||'');
+    }
+    function ktSyncReadBtns(){ ktThread.querySelectorAll('.kt-read').forEach(ktSyncReadBtn); }
+    function ktClearRead(key){ const rs=ktReadState[key]; if(rs){ clearTimeout(rs.timer); delete ktReadState[key]; } }
+    async function ktReadAloud(bid, key){
+      if(!TAURI) return;
+      const stop=!!(ktReadState[key] && ktReadState[key].bid===bid);
+      if(stop) ktClearRead(key);
+      else { ktAudioEl.pause(); ktClearRead(key); ktReadState[key]={ bid, state:'loading' }; }
+      ktSyncReadBtns();
+      try{ await invoke('kotodama_read_aloud',{ broadcastId:bid, key, mode: stop?'stop':'play' }); }
+      catch(e){
+        ktClearRead(key);
+        if(String(e).includes('gone')) delete ktConv[key];
+        if(!stop) toast(TR.ktAudioUnavailable||'');
+        ktSyncReadBtns();
+      }
+    }
+    function ktOnConv(d){
+      if(d.broadcastId) ktConv[d.key]={ bid:d.broadcastId, tts:!!d.tts };
+      else { delete ktConv[d.key]; ktClearRead(d.key); }
+      ktSyncReadBtns();
+    }
+    function ktOnAudio(d){
+      const rs=ktReadState[d.key], mine=!!(rs && rs.bid===d.broadcastId);
+      if(d.state==='playing'){ if(mine){ rs.state='playing'; rs.openAt=Date.now(); } }
+      else if(d.state==='saved'){
+        const turn=ktTurnByBid[d.broadcastId];
+        if(turn && turn.answers && turn.answers[d.key]){
+          (turn.answers[d.key].audio ||= []).push({ file:d.file, ms:d.ms||0, at:Date.now() });
+          ktPersist(); ktRefreshTurnTabs(turn);
+        }
+        // The whole stream arrives faster than it is spoken: the page keeps talking for the rest of its length.
+        if(mine){
+          clearTimeout(rs.timer); rs.state='playing';
+          const left=(rs.openAt||Date.now())+(d.ms||0)-Date.now();
+          rs.timer=setTimeout(()=>{ if(ktReadState[d.key]===rs){ delete ktReadState[d.key]; ktSyncReadBtns(); } }, Math.max(0, left)+400);
+        }
+      } else {
+        if(mine) ktClearRead(d.key);
+        if(d.state!=='stopped' && mine) toast(TR.ktAudioUnavailable||'');
+      }
+      ktSyncReadBtns();
+    }
+    // One player for every saved audio in the window: starting one stops the other.
+    const ktAudioEl=new Audio();
+    let ktAudioFile='', ktAudioUrl='';
+    async function ktAudioToggle(file){
+      if(ktAudioFile===file && ktAudioUrl){ if(ktAudioEl.paused) ktAudioEl.play().catch(()=>{}); else ktAudioEl.pause(); return; }
+      try{
+        const b64=await invoke('kotodama_audio_load',{ file });
+        const bin=atob(b64), u8=new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+        ktAudioEl.pause();
+        if(ktAudioUrl) URL.revokeObjectURL(ktAudioUrl);
+        ktAudioUrl=URL.createObjectURL(new Blob([u8], { type:'audio/ogg' })); ktAudioFile=file;
+        ktAudioEl.src=ktAudioUrl;
+        await ktAudioEl.play();
+      }catch(e){ toast(TR.ktAudioUnavailable||''); }
+    }
+    function ktPlayBtn(file){
+      const b=document.createElement('button'); b.type='button'; b.className='kt-icon-btn kt-play'; b.dataset.audio=file;
+      b.addEventListener('click', ()=>ktAudioToggle(b.dataset.audio));
+      return b;
+    }
+    function ktSyncPlayBtns(){
+      const cur=ktAudioFile, on=!ktAudioEl.paused, frac=ktAudioEl.duration>0 ? ktAudioEl.currentTime/ktAudioEl.duration : 0;
+      ktThread.querySelectorAll('.kt-play').forEach(b=>{
+        const playing=on && b.dataset.audio===cur;
+        if(b._ktOn!==playing || !b.innerHTML){
+          b._ktOn=playing; b.innerHTML=playing?KT_ICON_PAUSE:KT_ICON_PLAY; b.classList.toggle('on', playing);
+          const label=playing?TR.ktAudioPause:TR.ktAudioPlay; b.title=label||''; b.setAttribute('aria-label', label||'');
+        }
+      });
+      ktThread.querySelectorAll('.kt-audio').forEach(r=>{ const i=r.querySelector('.kt-audio-bar > i'); if(i) i.style.width=(r.dataset.audio===cur ? frac*100 : 0)+'%'; });
+    }
+    ['play','pause','ended','timeupdate','emptied'].forEach(ev=>ktAudioEl.addEventListener(ev, ktSyncPlayBtns));
+    // The speaker (read aloud) and the play button (latest saved audio) in each answer card's actions.
+    function ktEnsureAnswerAudio(turn){
+      const dom=ktTurnDom.get(turn); if(!dom) return;
+      const bids=Object.keys(ktTurnByBid).filter(b=>ktTurnByBid[b]===turn);
+      for(const [key, a] of Object.entries(turn.answers||{})){
+        const card=dom.grid.querySelector(`.kt-card[data-key="${key}"]`); if(!card) continue;
+        const acts=card.querySelector('.kt-card-foot .kt-acts'); if(!acts) continue;
+        const done=a.status==='done' && !!(a.text||'').trim();
+        let rb=acts.querySelector('.kt-read');
+        if(done){
+          const bid=bids.find(b=>ktConv[key] && ktConv[key].bid===b) || (rb && rb.dataset.bid) || '';
+          if(!rb){ rb=document.createElement('button'); rb.type='button'; rb.className='kt-icon-btn kt-read'; rb.dataset.key=key;
+            rb.addEventListener('click', ()=>ktReadAloud(rb.dataset.bid, key)); acts.appendChild(rb); }
+          rb.dataset.bid=bid; ktSyncReadBtn(rb);
+        } else if(rb) rb.remove();
+        const last=(a.audio||[]).slice(-1)[0];
+        let pb=acts.querySelector('.kt-play');
+        if(last){ if(!pb){ pb=ktPlayBtn(last.file); acts.appendChild(pb); } pb.dataset.audio=last.file; }
+        else if(pb) pb.remove();
+      }
+    }
+    /* ---- Turn tabs (Answers | Links | Images). Collected from the whole turn: the user's own message, every
+       answer's Markdown, and the sources providers send over the network (app://kotodama-extras). A link that
+       points to an image goes to Images, not Links. Order of first appearance; duplicates merged by URL with
+       the providers that cited them. ---- */
+    const ktTurnDom=new WeakMap();
+    const ktPendingExtras={};     // "bid:key" -> {sources, reasoning}, arrives just before the answer itself
+    const KT_IMG_RE=/\.(png|jpe?g|gif|webp|avif|bmp|svg)(\?|#|$)/i;
+    function ktNormUrl(u){ try{ const x=new URL(u); x.hash=''; const t=x.toString(); return t.endsWith('/')?t.slice(0,-1):t; }catch(e){ return ''; } }
+    function ktCollectExtras(turn){
+      const links=new Map(), images=new Map();
+      const add=(map, url, title, key)=>{
+        if(!/^https?:\/\//i.test(url||'')) return;
+        const n=ktNormUrl(url); if(!n) return;
+        const it=map.get(n)||{ url, title:'', by:new Set() };
+        if(!it.title && title) it.title=title;
+        it.by.add(key);
+        map.set(n, it);
+      };
+      const addLink=(url, title, key)=>add(KT_IMG_RE.test(url)?images:links, url, title, key);
+      const scan=(txt, key)=>{
+        if(!txt) return;
+        for(const m of txt.matchAll(/!\[([^\]]*)\]\((https?:[^)\s]+)\)/g)) add(images, m[2], m[1], key);
+        for(const m of txt.matchAll(/(^|[^!])\[([^\]]*)\]\((https?:[^)\s]+)\)/g)) addLink(m[3], m[2], key);
+        for(const m of txt.matchAll(/https?:\/\/[^\s)<>\]"'`]+/g)) addLink(m[0].replace(/[.,;:!?]+$/,''), '', key);
+      };
+      scan(turn.text, '');
+      for(const [key, a] of Object.entries(turn.answers||{})){
+        for(const src of (a.sources||[])){ addLink(src.url, src.title, key); if(src.image) add(images, src.image, src.title, key); }
+        scan(a.md || a.text, key);
+      }
+      return { links:[...links.values()], images:[...images.values()] };
+    }
+    function ktByBadges(by){
+      const wrap=document.createElement('span'); wrap.className='kt-link-by';
+      [...by].forEach(key=>{
+        const b=document.createElement('span'); b.className='kt-by';
+        if(key && PROVIDERS[key]){
+          const bits=ktTileBits(key); b.innerHTML=bits.svg; if(bits.color) b.style.setProperty('--pc', bits.color);
+          b.title=PROVIDERS[key].name;
+        } else { b.textContent='\u2022'; b.title=TR.ktYou||''; }
+        wrap.appendChild(b);
+      });
+      return wrap;
+    }
+    function ktOpenExternal(url){ if(TAURI) invoke('open_url',{url}).catch(()=>{}); }
+    function ktMountTurnTabs(turn, grid){
+      const bar=document.createElement('div'); bar.className='kt-turn-tabs'; bar.hidden=true; bar.setAttribute('role','tablist');
+      const mk=(id, label)=>{
+        const b=document.createElement('button'); b.type='button'; b.className='kt-tab'; b.dataset.tab=id; b.setAttribute('role','tab');
+        b.innerHTML='<span class="kt-tab-l"></span><span class="kt-tab-n"></span>';
+        b.querySelector('.kt-tab-l').textContent=label; bar.appendChild(b); return b;
+      };
+      const tabs={ answers:mk('answers', TR.ktTabAnswers||''), links:mk('links', TR.ktTabLinks||''), images:mk('images', TR.ktTabImages||''), audio:mk('audio', TR.ktTabAudio||'') };
+      const links=document.createElement('div'); links.className='kt-links'; links.hidden=true;
+      const images=document.createElement('div'); images.className='kt-images'; images.hidden=true;
+      const audios=document.createElement('div'); audios.className='kt-audios'; audios.hidden=true;
+      grid.before(bar); grid.after(links); links.after(images); images.after(audios);
+      const dom={ bar, grid, links, images, audios, tabs, active:'answers' };
+      bar.addEventListener('click', e=>{ const b=e.target.closest('.kt-tab'); if(b) ktShowTurnTab(dom, b.dataset.tab); });
+      ktTurnDom.set(turn, dom);
+      ktRefreshTurnTabs(turn);
+    }
+    function ktShowTurnTab(dom, tab){
+      dom.active=tab;
+      for(const [k, b] of Object.entries(dom.tabs)){ const on=k===tab; b.classList.toggle('active', on); b.setAttribute('aria-selected', on?'true':'false'); }
+      dom.grid.hidden = tab!=='answers'; dom.links.hidden = tab!=='links'; dom.images.hidden = tab!=='images'; dom.audios.hidden = tab!=='audio';
+    }
+    function ktRefreshTurnTabs(turn){
+      const dom=ktTurnDom.get(turn); if(!dom) return;
+      const { links, images }=ktCollectExtras(turn);
+      dom.tabs.links.querySelector('.kt-tab-n').textContent = links.length || '';
+      dom.tabs.images.querySelector('.kt-tab-n').textContent = images.length || '';
+      const audios=ktTurnAudios(turn);
+      dom.tabs.audio.querySelector('.kt-tab-n').textContent = audios.length || '';
+      dom.tabs.links.hidden=!links.length; dom.tabs.images.hidden=!images.length; dom.tabs.audio.hidden=!audios.length;
+      dom.bar.hidden = !(links.length || images.length || audios.length);
+      if((dom.active==='links' && !links.length) || (dom.active==='images' && !images.length) || (dom.active==='audio' && !audios.length)) dom.active='answers';
+      dom.audios.innerHTML='';
+      audios.forEach(a=>{
+        const row=document.createElement('div'); row.className='kt-audio'; row.dataset.audio=a.file;
+        row.appendChild(ktByBadges(new Set([a.key])));
+        const mid=document.createElement('div'); mid.style.minWidth='0';
+        mid.innerHTML='<div class="kt-audio-name"></div><div class="kt-audio-bar"><i></i></div>';
+        mid.querySelector('.kt-audio-name').textContent=(PROVIDERS[a.key]||{}).name||a.key;
+        row.appendChild(mid);
+        const len=document.createElement('span'); len.className='kt-audio-len'; len.textContent=ktFmtClock(a.ms);
+        row.appendChild(len);
+        row.appendChild(ktPlayBtn(a.file));
+        dom.audios.appendChild(row);
+      });
+      ktEnsureAnswerAudio(turn);
+      ktSyncPlayBtns();
+      dom.links.innerHTML='';
+      links.forEach(l=>{
+        let host=''; try{ host=new URL(l.url).hostname.replace(/^www\./,''); }catch(e){}
+        const row=document.createElement('button'); row.type='button'; row.className='kt-link'; row.title=l.url;
+        row.innerHTML='<span class="kt-link-ic"></span><span class="kt-link-t"><div class="kt-link-title"></div><div class="kt-link-dom"></div></span>';
+        row.querySelector('.kt-link-ic').textContent=(host[0]||'?').toUpperCase();
+        row.querySelector('.kt-link-title').textContent=l.title || host || l.url;
+        row.querySelector('.kt-link-dom').textContent=host;
+        row.appendChild(ktByBadges(l.by));
+        row.addEventListener('click', ()=>ktOpenExternal(l.url));
+        dom.links.appendChild(row);
+      });
+      dom.images.innerHTML='';
+      images.forEach(im=>{
+        const tile=document.createElement('button'); tile.type='button'; tile.className='kt-img'; tile.title=im.title || im.url;
+        const img=document.createElement('img'); img.loading='lazy'; img.referrerPolicy='no-referrer'; img.alt=im.title||''; img.src=im.url;
+        // An image the page cannot show (expired, behind a login) is removed rather than left as a broken box.
+        img.addEventListener('error', ()=>{ tile.remove(); });
+        tile.appendChild(img);
+        tile.addEventListener('click', ()=>ktOpenExternal(im.url));
+        dom.images.appendChild(tile);
+      });
+      ktShowTurnTab(dom, dom.active);
+    }
+    /* ---- Attachments: files dropped from the file manager (the shell intercepts the drag, so the page gets
+       no HTML drop event: Tauri's onDragDropEvent hands over the paths) or images pasted into the input. At
+       most KT_ATTACH_MAX files of KT_ATTACH_MAX_BYTES each; Rust reads and forwards them at send time. ---- */
+    let ktAttach=[];
+    const KT_ATTACH_MAX=5, KT_ATTACH_MAX_BYTES=10*1024*1024;
+    const ktAttachRow=document.getElementById('ktAttachRow');
+    function ktFmtSize(b){
+      const nf=new Intl.NumberFormat(document.documentElement.lang||undefined,{ maximumFractionDigits:1 });
+      return b>=1048576 ? nf.format(b/1048576)+' MB' : nf.format(Math.max(1, Math.round(b/1024)))+' KB';
+    }
+    function ktRenderAttach(){
+      ktAttachRow.innerHTML='';
+      ktAttachRow.hidden=!ktAttach.length;
+      ktAttach.forEach((f, i)=>{
+        const c=document.createElement('span'); c.className='kt-chipf'; c.title=f.name;
+        c.innerHTML='<span class="kt-chipf-n"></span><span class="kt-chipf-s"></span><button type="button" class="kt-chipf-x">\u2715</button>';
+        c.querySelector('.kt-chipf-n').textContent=f.name;
+        c.querySelector('.kt-chipf-s').textContent=f.size ? ktFmtSize(f.size) : '';
+        const x=c.querySelector('.kt-chipf-x'); x.title=TR.ktAttachRemove||''; x.setAttribute('aria-label', TR.ktAttachRemove||'');
+        x.addEventListener('click', ()=>{ ktAttach.splice(i,1); ktRenderAttach(); ktInput.focus(); });
+        ktAttachRow.appendChild(c);
+      });
+    }
+    function ktAddAttach(list){
+      for(const f of list){
+        if(ktAttach.length>=KT_ATTACH_MAX){ toast(TR.ktAttachTooMany||''); break; }
+        if(f.ok===false || (f.size||0)>KT_ATTACH_MAX_BYTES){ toast((TR.ktAttachTooBig||'')+' '+f.name); continue; }
+        if(ktAttach.some(a=>(f.path && a.path===f.path) || (!f.path && a.name===f.name && a.size===f.size))) continue;
+        ktAttach.push(f);
+      }
+      ktRenderAttach();
+    }
+    if(TAURI && window.__TAURI__.webview && window.__TAURI__.webview.getCurrentWebview){
+      const box=document.querySelector('.kt-composer-box');
+      try{
+        window.__TAURI__.webview.getCurrentWebview().onDragDropEvent(async ev=>{
+          const p=ev.payload||{};
+          if(p.type==='enter' || p.type==='over'){ box.classList.add('kt-dragging'); return; }
+          box.classList.remove('kt-dragging');
+          if(p.type!=='drop' || !(p.paths||[]).length) return;
+          try{
+            const info=await invoke('kotodama_file_info',{ paths:p.paths });
+            ktAddAttach(info.map(x=>({ name:x.name, size:x.size, path:x.path, ok:x.ok })));
+            ktInput.focus();
+          }catch(e){ toast(`${TR.openError}: ${e}`); }
+        });
+      }catch(e){}
+      // Elevated process: Windows will not deliver drags from the file manager, say so instead of a dead drop.
+      invoke('running_elevated').then(v=>{ document.getElementById('ktElevNote').hidden=!v; }).catch(()=>{});
+    }
+    ktInput.addEventListener('paste', e=>{
+      const items=[...((e.clipboardData && e.clipboardData.files) || [])];
+      if(!items.length) return;
+      e.preventDefault();
+      items.forEach(file=>{
+        const r=new FileReader();
+        r.onload=()=>{ const data=String(r.result||'').split(',')[1]||''; ktAddAttach([{ name:file.name||'image.png', size:file.size, data, mime:file.type, ok:true }]); };
+        r.readAsDataURL(file);
+      });
+    });
     function ktIsFinal(ref){ const c=ref.card.classList; return c.contains('done')||c.contains('error')||c.contains('timeout')||c.contains('cancelled'); }
     function ktStatusClass(st){ return st==='done'||st==='timeout'||st==='cancelled' ? st : 'error'; }
     // The window is always divided into exactly N equal columns (N = cards in THIS turn) --
@@ -3003,7 +3475,7 @@
     // Shared by a new turn and by a running turn shown again after a switch of conversation.
     function ktPendingCard(grid, bid, key){
       const p=PROVIDERS[key], bits=ktTileBits(key);
-      const card=document.createElement('div'); card.className='kt-card pending';
+      const card=document.createElement('div'); card.className='kt-card pending'; card.dataset.key=key;
       if(bits.color) card.style.setProperty('--pc', bits.color);
       card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
         +`<span class="kt-status"><span class="dl-spin"></span><span class="kt-st-txt"></span></span></div>`
@@ -3019,13 +3491,15 @@
       ref.createdAt=Date.now();
       ktCards[`${bid}:${key}`]=ref;
     }
-    function ktAppendTurn(bid, text, keys){
-      ktThread.appendChild(ktUserMsg(text));
+    function ktAppendTurn(bid, text, keys, files){
+      ktThread.appendChild(ktUserMsg(text, files));
       const grid=document.createElement('div'); grid.className='kt-grid';
       ktSetGridCols(grid, keys.length);
       keys.forEach(key=>ktPendingCard(grid, bid, key));
       ktThread.appendChild(grid);
       ktThread.scrollTop=ktThread.scrollHeight;
+      ktRailSchedule();
+      return grid;
     }
     // Busy = an answer is actually being produced. Cards waiting on the user (sign-in, human check) do not count:
     // otherwise one provider the user is not logged into kept the button on Stop and no new message could be sent.
@@ -3076,7 +3550,11 @@
       // while this one was answering, and the answer must still be saved in the conversation it belongs to.
       const turn=ktTurnByBid[d.broadcastId];
       if(turn && turn.answers && turn.answers[d.key]){
+        const ex=ktPendingExtras[`${d.broadcastId}:${d.key}`]; delete ktPendingExtras[`${d.broadcastId}:${d.key}`];
         turn.answers[d.key]={ status:st, text:(d.text||'').trim(), md:d.md||'' };
+        if(ex && ex.sources && ex.sources.length) turn.answers[d.key].sources=ex.sources;
+        if(ex && ex.reasoning) turn.answers[d.key].reasoning=ex.reasoning;
+        ktRefreshTurnTabs(turn);
         const owner=ktAllSessions.find(x=>(x.turns||[]).includes(turn));
         if(owner) owner.updated=Date.now();
         ktPersist(); renderKtSessions();
@@ -3189,18 +3667,27 @@
       if(!TAURI){ toast(t.openError); return; }
       if(!ktSession) ktNewConversation();
       const bid='b'+(ktSeq++)+'-'+Math.random().toString(36).slice(2,8);
-      ktAppendTurn(bid, text, keys);
+      // Attachments go with THIS message: handed to Rust under the broadcast id before any provider is
+      // dispatched (every injection of the broadcast picks them up), and the input is cleared of them.
+      const files=ktAttach.splice(0); ktRenderAttach();
+      if(files.length){
+        try{ await invoke('kotodama_set_attachments',{ broadcastId:bid, files:files.map(f=>({ name:f.name, path:f.path||null, data:f.data||null, mime:f.mime||null })) }); }
+        catch(e){ toast(`${t.openError}: ${e}`); }
+      }
+      const turnGrid=ktAppendTurn(bid, text, keys, files.map(f=>f.name));
       keys.forEach(k=>ktMarkPending(bid, k));
       ktInput.value=''; ktAutoGrow(); ktInput.focus();
       // session bookkeeping: append the turn, title from the first message, persist
       const recipeRef = activeRecipe.kind==='key' ? 'key:'+activeRecipe.key : 'id:'+activeRecipe.id;
       const turn={ text, answers:{}, recipe:recipeRef, recipeName:recipeNameFor(recipeRef) };
+      if(files.length) turn.files=files.map(f=>f.name);
       keys.forEach(k=>{ turn.answers[k]={status:'pending', text:''}; });
       const hadTurns=ktSession.turns.length>0;
       if(!ktSession.title) ktSession.title=text.replace(/\s+/g,' ').slice(0,48);
       ktSession.turns.push(turn); ktSession.updated=Date.now();
       if(!ktAllSessions.includes(ktSession)) ktAllSessions.unshift(ktSession);
       ktTurnByBid[bid]=turn;
+      ktMountTurnTabs(turn, turnGrid);
       ktLiveId=ktSession.id;              // these provider tabs now carry THIS conversation
       ktPersist(); renderKtSessions();
       // The moment the request goes out: jump the sidebar to Cronologia so the user sees the
@@ -4244,6 +4731,9 @@
       listen('app://kotodama-sent', e=>{ const d=e.payload||{}; const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(ref && !ref.sentAt) ref.sentAt=Date.now(); });
       listen('app://kotodama-partial', e=>{ ktOnPartial(e.payload||{}); });
       listen('app://kotodama-blocked', e=>{ ktOnBlocked(e.payload||{}); });
+      listen('app://kotodama-conv', e=>{ ktOnConv(e.payload||{}); });
+      listen('app://kotodama-audio', e=>{ ktOnAudio(e.payload||{}); });
+      listen('app://kotodama-extras', e=>{ const d=e.payload||{}; ktPendingExtras[`${d.broadcastId}:${d.key}`]={ sources:d.sources||[], reasoning:d.reasoning||'' }; });
       document.getElementById('ktVerifySkip').addEventListener('click', ()=>{
         if(!ktVerifyActive || ktBlocks.length<2) return;
         const at=ktBlocks.findIndex(b=>b.bid===ktVerifyActive.bid && b.key===ktVerifyActive.key);
