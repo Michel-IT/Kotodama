@@ -118,6 +118,12 @@ const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
 /// fails for the same reason: in the NEW page the message is not there, so it "looks unsent". Marked
 /// by the fill loop at the instant it pressed Enter, read before re-injecting: whoever arrives later
 /// harvests the answer and does NOT send.
+/// (broadcast, provider) pairs currently waiting on the user (human check, sign-in, window over the
+/// composer). The watchdog leaves them alone: the time spent solving a check is not a silent page.
+fn blocked_marks() -> &'static Mutex<HashSet<(String, String)>> {
+    static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashSet::new()))
+}
 fn sent_marks() -> &'static Mutex<HashSet<(String, String)>> {
     static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(HashSet::new()))
@@ -275,6 +281,50 @@ pub(crate) const SR_HIDE_JS: &str = r##"
   } catch(e){}
 })();
 "##;
+/// The discovery probe, only when debugging with `KOTO_NETPROBE` set; empty otherwise.
+fn net_probe_js() -> &'static str {
+    if crate::debug::enabled() && std::env::var("KOTO_NETPROBE").is_ok() {
+        NET_PROBE_JS
+    } else {
+        ""
+    }
+}
+
+/// Hands a streamed response back to the page after we tee'd its body, WITHOUT replacing the Response
+/// object. The earlier `new Response(copy, {status, headers})` looked identical but silently lost
+/// `url`, `redirected`, `type` and `ok` semantics tied to the original request, and a provider page
+/// that reads `res.url` (redirect handling, routing by endpoint) could break because we watched it.
+/// Here the original object is kept and only its body-related members are redirected to an inner
+/// Response built on the page's half of the tee. If redefining fails, the old behaviour is the fallback.
+const RESPONSE_ADOPT_JS: &str = r##"
+(function(){
+  if (window.__ktAdoptBody) return;
+  window.__ktAdoptBody = function adopt(res, stream){
+    var init = { status: res.status, statusText: res.statusText, headers: res.headers };
+    var inner = new Response(stream, init);
+    try {
+      var props = {
+        body: { configurable: true, get: function(){ return inner.body; } },
+        bodyUsed: { configurable: true, get: function(){ return inner.bodyUsed; } },
+        // A clone is a separate object: the inner clone, given the original's request-bound identity.
+        clone: { configurable: true, value: function(){
+          var c = inner.clone();
+          try { Object.defineProperties(c, { url: { value: res.url }, redirected: { value: res.redirected }, type: { value: res.type } }); } catch(e){}
+          return c;
+        } }
+      };
+      ['text', 'json', 'arrayBuffer', 'blob', 'formData', 'bytes'].forEach(function(m){
+        if (typeof inner[m] === 'function') props[m] = { configurable: true, value: function(){ return inner[m](); } };
+      });
+      Object.defineProperties(res, props);
+      return res;
+    } catch(e) {
+      return inner;
+    }
+  };
+})();
+"##;
+
 /// DISCOVERY probe (debug only, `KOTO_NETPROBE=1`): wraps the page's own network APIs to learn how a
 /// provider actually streams its answer, so the harvest can be driven by REAL EVENTS instead of
 /// polling the DOM and inferring the end from text stability (measured: 6s of pure waiting after the
@@ -288,56 +338,154 @@ const NET_PROBE_JS: &str = r##"
 (function(){
   if (window.__ktNetProbe) return;
   window.__ktNetProbe = true;
-  function say(m){ try { if (window.__ktPush) window.__ktPush({ b: __kt_bid, k: __kt_key, st: 'diag', d: 'NET ' + String(m).slice(0,700) }); } catch(e){} }
+  // Records go ONLY over IPC: the navigation fallback of __ktPush would reload the provider page.
+  function cap(rec){
+    try {
+      if (!(window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke)) return;
+      rec.t = window.__ktSentAt ? Date.now() - window.__ktSentAt : -1;
+      window.__TAURI__.core.invoke('kotodama_push', { b: __kt_bid, k: __kt_key, st: 'netcap', d: JSON.stringify(rec) }).catch(function(){});
+    } catch(e){}
+  }
   var seq = 0;
-  // fetch: the modern streaming path. The body is TEE'd so the page keeps its own copy untouched.
+  var PER_REQ = 400000, PER_CHUNK = 16000;
+  function short(u){ try { return String(u).slice(0, 300); } catch(e){ return ''; } }
+  // Tauri's invoke() is itself a fetch to ipc.localhost: observing it would capture every record we send,
+  // again and again (measured: 16k records for one answer).
+  function isIpc(u){ return /^(https?:\/\/)?ipc\.localhost|^ipc:|^tauri:/i.test(String(u || '')); }
+  function text(v){
+    try {
+      if (typeof v === 'string') return v;
+      if (v instanceof ArrayBuffer) v = new Uint8Array(v);
+      if (v && v.buffer instanceof ArrayBuffer) {
+        var t = new TextDecoder('utf-8', { fatal: true });
+        try { return t.decode(v); } catch(e) {
+          var bin = ''; var n = Math.min(v.length, 3000);
+          for (var i = 0; i < n; i++) bin += String.fromCharCode(v[i]);
+          return 'base64:' + btoa(bin);
+        }
+      }
+      return String(v);
+    } catch(e){ return '?'; }
+  }
+  // Streaming chunks are only interesting after our send; before it the page is loading itself.
+  function armed(){ return !!window.__ktSentAt; }
+
+  // fetch: tee the body so the page keeps its own untouched copy.
   try {
     var of = window.fetch;
     window.fetch = function(input, init){
       var id = ++seq;
-      var url = ''; try { url = (typeof input === 'string') ? input : (input && input.url) || ''; } catch(e){}
+      // input can be a string, a URL object or a Request.
+      var url = ''; try { url = (input && typeof input === 'object' && 'url' in input) ? input.url : String(input || ''); } catch(e){}
+      if (isIpc(url)) return of.apply(this, arguments);
       var method = (init && init.method) || (input && input.method) || 'GET';
-      var short = url.replace(/^https?:\/\/[^/]+/, '').slice(0, 110);
       return of.apply(this, arguments).then(function(res){
-        var ct = '';
-        try { ct = res.headers.get('content-type') || ''; } catch(e){}
-        say('#' + id + ' ' + method + ' ' + short + ' -> ' + res.status + ' ct=' + ct);
-        var streamy = /event-stream|x-ndjson|octet-stream/i.test(ct);
-        if (!streamy || !res.body || !res.body.tee) return res;
+        if (!armed()) return res;
+        var ct = ''; try { ct = res.headers.get('content-type') || ''; } catch(e){}
+        cap({ kind: 'fetch', id: id, ev: 'open', method: method, url: short(url), status: res.status, ct: ct });
+        if (!/event-stream|ndjson|octet-stream|stream|json|text\/plain/i.test(ct) || !res.body || !res.body.tee) return res;
         try {
           var pair = res.body.tee();
-          var mine = pair[0].getReader(), chunks = 0, bytes = 0, t0 = Date.now(), first = '';
+          var mine = pair[0].getReader(), bytes = 0, dec = new TextDecoder();
           (function pump(){
             mine.read().then(function(r){
-              if (r.done) {
-                say('#' + id + ' STREAM END chunks=' + chunks + ' bytes=' + bytes + ' ms=' + (Date.now() - t0) + ' first=' + JSON.stringify(first.slice(0,220)));
-                return;
-              }
-              chunks++; bytes += (r.value && r.value.length) || 0;
-              if (chunks <= 2) { try { first += new TextDecoder().decode(r.value); } catch(e){} }
+              if (r.done) { cap({ kind: 'fetch', id: id, ev: 'end', bytes: bytes }); return; }
+              bytes += (r.value && r.value.length) || 0;
+              if (bytes <= PER_REQ) cap({ kind: 'fetch', id: id, ev: 'chunk', data: dec.decode(r.value, { stream: true }).slice(0, PER_CHUNK) });
               pump();
-            }, function(){ say('#' + id + ' STREAM ERROR chunks=' + chunks); });
+            }, function(err){ cap({ kind: 'fetch', id: id, ev: 'error', err: String(err) }); });
           })();
-          return new Response(pair[1], { status: res.status, statusText: res.statusText, headers: res.headers });
-        } catch(e) { say('#' + id + ' tee failed: ' + e); return res; }
+          return (window.__ktAdoptBody ? window.__ktAdoptBody(res, pair[1]) : new Response(pair[1], res));
+        } catch(e) { cap({ kind: 'fetch', id: id, ev: 'teefail', err: String(e) }); return res; }
       });
     };
-  } catch(e) { say('fetch hook failed: ' + e); }
-  // EventSource: the other streaming shape some providers use.
+  } catch(e){}
+
+  // XMLHttpRequest: responseText grows while loading (readyState 3); record the new part each time.
+  try {
+    var XO = XMLHttpRequest.prototype.open, XS = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.open = function(m, u){ try { this.__ktReq = { method: m, url: short(u) }; } catch(e){} return XO.apply(this, arguments); };
+    XMLHttpRequest.prototype.send = function(){
+      var xhr = this;
+      try {
+        if (armed() && !isIpc((xhr.__ktReq || {}).url)) {
+          var id = ++seq, seen = 0, bytes = 0, opened = false;
+          var rq = xhr.__ktReq || {};
+          xhr.addEventListener('readystatechange', function(){
+            try {
+              if (xhr.readyState >= 2 && !opened) { opened = true; cap({ kind: 'xhr', id: id, ev: 'open', method: rq.method, url: rq.url, status: xhr.status, ct: xhr.getResponseHeader('content-type') || '', rtype: xhr.responseType }); }
+              if ((xhr.readyState === 3 || xhr.readyState === 4) && (xhr.responseType === '' || xhr.responseType === 'text')) {
+                var all = xhr.responseText || '';
+                if (all.length > seen) { var part = all.slice(seen); seen = all.length; bytes += part.length; if (bytes <= PER_REQ) cap({ kind: 'xhr', id: id, ev: 'chunk', data: part.slice(0, PER_CHUNK) }); }
+              }
+              if (xhr.readyState === 4) cap({ kind: 'xhr', id: id, ev: 'end', status: xhr.status, bytes: bytes });
+            } catch(e){}
+          });
+        }
+      } catch(e){}
+      return XS.apply(this, arguments);
+    };
+  } catch(e){}
+
+  // WebSocket: every frame after our send, both directions' existence (sent frames only by size).
+  try {
+    var OWS = window.WebSocket;
+    if (OWS) {
+      var W = function(u, pr){
+        var ws = (pr === undefined) ? new OWS(u) : new OWS(u, pr);
+        var id = ++seq, bytes = 0;
+        try {
+          cap({ kind: 'ws', id: id, ev: 'open', url: short(u) });
+          ws.addEventListener('message', function(ev){
+            if (!armed()) return;
+            var d = ev.data;
+            if (typeof Blob !== 'undefined' && d instanceof Blob) {
+              d.arrayBuffer().then(function(b){ bytes += b.byteLength; if (bytes <= PER_REQ) cap({ kind: 'ws', id: id, ev: 'chunk', data: text(b).slice(0, PER_CHUNK) }); });
+              return;
+            }
+            var tx = text(d); bytes += tx.length;
+            if (bytes <= PER_REQ) cap({ kind: 'ws', id: id, ev: 'chunk', data: tx.slice(0, PER_CHUNK) });
+          });
+          ws.addEventListener('close', function(ev){ if (armed()) cap({ kind: 'ws', id: id, ev: 'end', code: ev.code, bytes: bytes }); });
+          var osend = ws.send;
+          ws.send = function(x){ try { if (armed()) cap({ kind: 'ws', id: id, ev: 'sent', data: text(x).slice(0, 2000) }); } catch(e){} return osend.apply(ws, arguments); };
+        } catch(e){}
+        return ws;
+      };
+      W.prototype = OWS.prototype;
+      ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'].forEach(function(k){ try { W[k] = OWS[k]; } catch(e){} });
+      window.WebSocket = W;
+    }
+  } catch(e){}
+
+  // EventSource.
   try {
     var OES = window.EventSource;
     if (OES) {
-      window.EventSource = function(u, c){
-        var id = ++seq;
-        say('#' + id + ' EventSource ' + String(u).replace(/^https?:\/\/[^/]+/, '').slice(0,110));
-        var es = new OES(u, c);
-        es.addEventListener('message', function(ev){ if (id) { say('#' + id + ' ES msg ' + JSON.stringify(String(ev.data).slice(0,160))); id = 0; } });
-        es.addEventListener('error', function(){ say('#' + id + ' ES error/close'); });
+      var E = function(u, c){
+        var es = new OES(u, c), id = ++seq;
+        try {
+          cap({ kind: 'es', id: id, ev: 'open', url: short(u) });
+          es.addEventListener('message', function(ev){ if (armed()) cap({ kind: 'es', id: id, ev: 'chunk', data: String(ev.data).slice(0, PER_CHUNK) }); });
+          es.addEventListener('error', function(){ if (armed()) cap({ kind: 'es', id: id, ev: 'end' }); });
+        } catch(e){}
         return es;
       };
-      window.EventSource.prototype = OES.prototype;
+      E.prototype = OES.prototype;
+      window.EventSource = E;
     }
-  } catch(e) { say('EventSource hook failed: ' + e); }
+  } catch(e){}
+
+  // Workers: a stream opened inside a worker is invisible to the hooks above; at least record that
+  // the page started one after our send, so a provider with no captured stream can be explained.
+  try {
+    ['Worker', 'SharedWorker'].forEach(function(name){
+      var O = window[name]; if (!O) return;
+      var F = function(u, o){ try { if (armed()) cap({ kind: 'worker', ev: 'open', type: name, url: short(u) }); } catch(e){} return (o === undefined) ? new O(u) : new O(u, o); };
+      F.prototype = O.prototype;
+      window[name] = F;
+    });
+  } catch(e){}
 })();
 "##;
 
@@ -361,16 +509,23 @@ const STREAM_WATCH_JS: &str = r##"
   if (window.__ktStreamWatch) return;
   window.__ktStreamWatch = true;
   var STREAMY = /event-stream|x-ndjson|application\/stream/i;
-  function ended(){ try { if (window.__ktStreamEnd) window.__ktStreamEnd(); } catch(e){} }
+  // The answer is over when the LAST stream opened after our send has closed, not the first one. Captured
+  // on Perplexity (15/09/2026): the answer stream stays open while a short related-queries stream opens and
+  // closes next to it, and firing on that close harvested the page 1s into the answer ("2:02 AM").
+  function ended(){ try { if ((window.__ktStreamOpen || 0) > 0) return; if (window.__ktStreamEnd) window.__ktStreamEnd(); } catch(e){} }
   try {
     var of = window.fetch;
     if (typeof of !== 'function') return;
-    window.fetch = function(){
+    window.fetch = function(input){
       var p = of.apply(this, arguments);
       try {
         if (!window.__ktSentAt) return p;              // nothing sent yet: not our stream
+        try { noteCaptcha((input && typeof input === 'object' && 'url' in input) ? input.url : input); } catch(e){}
         return p.then(function(res){
           try {
+            // The page's own API refused the session (captured on Kimi signed out: 401 on its member
+            // endpoints). One of the signals that make a visible login control mean "signed out".
+            if (res.status === 401) { try { window.__ktAuthFail = Date.now(); } catch(e){} }
             var ct = (res.headers && res.headers.get('content-type')) || '';
             if (!STREAMY.test(ct) || !res.body || typeof res.body.tee !== 'function') return res;
             var pair = res.body.tee();
@@ -390,11 +545,75 @@ const STREAM_WATCH_JS: &str = r##"
             (function pump(){
               mine.read().then(function(r){ if (r.done) { closed(); return; } pump(); }, function(){ closed(); });
             })();
-            return new Response(pair[1], { status: res.status, statusText: res.statusText, headers: res.headers });
+            return window.__ktAdoptBody(res, pair[1]);
           } catch(e) { return res; }
         });
       } catch(e) { return p; }
     };
+  } catch(e){}
+  // Same counters and end signal for the transports fetch does not cover (captured live, 15/09/2026):
+  // DeepSeek streams its answer over XMLHttpRequest (text/event-stream), Gemini over XMLHttpRequest with
+  // a JSON content type on StreamGenerate, Grok over a WebSocket opened with the page. Without these the
+  // three providers could only conclude by DOM stability, seconds after the answer was complete.
+  function opened(){
+    try { window.__ktStreamOpen = (window.__ktStreamOpen || 0) + 1; } catch(e){}
+    try { window.__ktStreamEver = (window.__ktStreamEver || 0) + 1; } catch(e){}
+  }
+  function closedOne(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} ended(); }
+  // Streaming endpoints whose content type does not say "stream". Kept to exact answer endpoints: a
+  // generic JSON match would treat every background call as the end of the answer.
+  var STREAM_URL = /\/StreamGenerate\b/;
+  // A human-check service contacted after our send (captured on Z.ai: its puzzle loads over XHR from
+  // *.captcha-*.aliyuncs.com before the message is allowed out). Recorded, not acted on here: the harvest
+  // decides, and only when no answer and no response stream came.
+  var CAPTCHA_URL = /captcha|turnstile|arkoselabs|funcaptcha|hcaptcha/i;
+  function noteCaptcha(u){ try { if (window.__ktSentAt && CAPTCHA_URL.test(String(u || ''))) window.__ktCaptchaAt = window.__ktCaptchaAt || Date.now(); } catch(e){} }
+  try {
+    var XO = XMLHttpRequest.prototype.open, XS = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.open = function(m, u){ try { this.__ktUrl = String(u || ''); } catch(e){} return XO.apply(this, arguments); };
+    XMLHttpRequest.prototype.send = function(){
+      var xhr = this;
+      try {
+        noteCaptcha(xhr.__ktUrl);
+        if (window.__ktSentAt) {
+          var counted = false;
+          xhr.addEventListener('readystatechange', function(){
+            try {
+              if (xhr.readyState === 2 && xhr.status === 401) { try { window.__ktAuthFail = Date.now(); } catch(e){} }
+              if (xhr.readyState === 2 && !counted) {
+                var ct = xhr.getResponseHeader('content-type') || '';
+                if (STREAMY.test(ct) || STREAM_URL.test(xhr.__ktUrl || '')) { counted = true; opened(); }
+              }
+              if (xhr.readyState === 4 && counted) { counted = false; closedOne(); }
+            } catch(e){}
+          });
+        }
+      } catch(e){}
+      return XS.apply(this, arguments);
+    };
+  } catch(e){}
+  try {
+    var OWS = window.WebSocket;
+    if (OWS) {
+      var W = function(u, pr){
+        var ws = (pr === undefined) ? new OWS(u) : new OWS(u, pr);
+        try {
+          // Message-level protocol markers of a response lifecycle on a long-lived socket (Grok): the socket
+          // itself stays open between answers, so only these events say "started" and "finished".
+          ws.addEventListener('message', function(ev){
+            try {
+              if (!window.__ktSentAt || typeof ev.data !== 'string') return;
+              if (ev.data.indexOf('"type":"response.created"') >= 0) opened();
+              if (ev.data.indexOf('"type":"response.done"') >= 0) closedOne();
+            } catch(e){}
+          });
+        } catch(e){}
+        return ws;
+      };
+      W.prototype = OWS.prototype;
+      ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'].forEach(function(k){ try { W[k] = OWS[k]; } catch(e){} });
+      window.WebSocket = W;
+    }
   } catch(e){}
   try {
     var OES = window.EventSource;
@@ -427,9 +646,21 @@ const HARVEST_JS: &str = r##"
   var SENT = (typeof __apb_text === 'string') ? __apb_text.trim() : '';
   window.__ktBid = BID;               // a newer injection overwrites; older loops self-terminate
   var t0 = Date.now();
-  function lastMatch(sel){
+  function lastMatch(sel, outermost){
     if (!sel) return null;
-    try { var els = document.querySelectorAll(sel); return els.length ? els[els.length-1] : null; }
+    try {
+      var els = document.querySelectorAll(sel);
+      if (!outermost) return els.length ? els[els.length-1] : null;
+      // The last match that is not INSIDE another match: a provider's answer selector can also match pieces
+      // of that answer. Measured on Mistral: `[class*="markdown"]` also matched each table cell, and the last
+      // cell ("Dato B") was delivered as the whole answer. Only for the provider's own verified selector:
+      // on the generic fallbacks below an outer match can be the whole conversation list.
+      for (var i = els.length - 1; i >= 0; i--) {
+        var up = els[i].parentElement;
+        if (!up || !up.closest(sel)) return els[i];
+      }
+      return els.length ? els[els.length-1] : null;
+    }
     catch(e){ return null; }
   }
   // A candidate is never valid if it IS the composer/input control itself, or directly wraps/is
@@ -452,7 +683,7 @@ const HARVEST_JS: &str = r##"
     } catch(e){ return false; }
   }
   function getAnswerEl(){
-    var el = lastMatch(ANS_SEL)
+    var el = lastMatch(ANS_SEL, true)
         || lastMatch('[data-message-author-role="assistant"]')
         || lastMatch('[class*="assistant" i]')
         || lastMatch('[class*="answer" i]')
@@ -599,6 +830,17 @@ const HARVEST_JS: &str = r##"
         try { if (n.matches && n.matches(CHROME_SEL)) return; } catch(e){}
         var tag = n.tagName.toLowerCase();
         if (tag === 'br') { buf += '\n'; return; }
+        // Mistral renders tables as an interactive card (sortable headers, no <table> in the painted DOM) and
+        // keeps the real table as HTML in an attribute. Parsed into an inert <template> (no script runs, no
+        // resource loads) and converted like any table; the painted card itself is skipped.
+        var rich = n.getAttribute && n.getAttribute('data-rich-table-inner-html');
+        if (rich) {
+          try {
+            var tpl = document.createElement('template');
+            tpl.innerHTML = rich;
+            if (tpl.content.querySelector('table')) { flush(); var tmd = blockMd(tpl.content, depth); if (tmd.trim()) out.push(tmd); return; }
+          } catch(e){}
+        }
         // Inline content stays in the current paragraph, unless it wraps blocks (custom elements such as
         // Gemini's wrappers around a table), which must be walked as blocks or the table is flattened.
         var isBlock = /^(h[1-6]|pre|blockquote|ul|ol|table|p|div)$/.test(tag) || (!INLINE_TAGS.test(tag) && hasBlock(n));
@@ -724,11 +966,33 @@ const HARVEST_JS: &str = r##"
     } catch(e){}
     return false;
   }
-  function authWallPresent(){
+  function visibleMatch(sel){
     try {
-      if (loginUrlRedirected()) return true;
-      if (document.querySelector('input[type="password"]')) return true;
-      if (document.querySelector('[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]')) return true;
+      var els = document.querySelectorAll(sel);
+      for (var i = 0; i < els.length; i++) {
+        // Size + computed style, not offsetParent: captcha overlays are position:fixed, and a fixed element
+        // has no offsetParent even while it covers the whole page (Z.ai's slider puzzle was missed that way).
+        var r = els[i].getBoundingClientRect(), cs = getComputedStyle(els[i]);
+        if (r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0') return true;
+      }
+    } catch(e){}
+    return false;
+  }
+  // Why the wall was detected, for the debug log: a wrong "sign in" is only fixable when we know which
+  // signal fired.
+  var authWallWhy = '';
+  function authWallPresent(){
+    authWallWhy = '';
+    // A response stream opened after our send means the provider accepted the message from a working
+    // session: whatever login or captcha markup the page carries, this is not a signed-out page.
+    // Captured on Z.ai (15/09/2026): the whole answer arrived on the network and the card said "sign in".
+    if (window.__ktStreamEver) return false;
+    try {
+      if (loginUrlRedirected()) { authWallWhy = 'login-url'; return true; }
+      // VISIBLE only: pages keep hidden password inputs and captcha containers mounted in advance (Z.ai
+      // mounts its captcha host on every page), and their mere presence says nothing about the session.
+      if (visibleMatch('input[type="password"]')) { authWallWhy = 'password'; return true; }
+      if (visibleMatch('[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]')) { authWallWhy = 'captcha'; return true; }
       // Some providers (observed: Meta AI) show NEITHER a password field nor a captcha when
       // signed out -- just a visible "log in"/"sign in" control and no composer anywhere on
       // the page. Matched by testid/id substring (developer-set, language-independent, same
@@ -737,7 +1001,7 @@ const HARVEST_JS: &str = r##"
       // logged in, composer working fine) doesn't false-positive.
       var loginEls = document.querySelectorAll('[data-testid*="login" i], [id*="login-button" i], [data-testid*="sign-in" i], [id*="sign-in-button" i]');
       if (loginEls.length && composerVal() === null) {
-        for (var i=0;i<loginEls.length;i++){ if (loginEls[i].offsetParent !== null) return true; }
+        for (var i=0;i<loginEls.length;i++){ if (loginEls[i].offsetParent !== null) { authWallWhy = 'login-control-no-composer'; return true; } }
       }
       // Grok-specific: its login/signup buttons carry NO testid/id/distinguishing class of their
       // own, and the generic Tailwind wrapper classes around them are NOT deterministic between
@@ -751,11 +1015,73 @@ const HARVEST_JS: &str = r##"
         var els = document.querySelectorAll('button, a');
         for (var gi=0; gi<els.length; gi++){
           var gt = (els[gi].innerText || '').trim();
-          if ((gt === 'Log in' || gt === 'Sign up') && els[gi].offsetParent !== null) return true;
+          if ((gt === 'Log in' || gt === 'Sign up') && els[gi].offsetParent !== null) { authWallWhy = 'grok-login-text'; return true; }
         }
       }
     } catch(e){}
     return false;
+  }
+  /* ---- Blocks that need the user: a human check, a sign-in, a window over the composer. They are NOT an
+     outcome: the card waits ("blocked"), the page is shown to the user, and the moment the block goes away
+     (check solved, signed in, window closed) the send proceeds and the answer arrives as usual. Before
+     this, each of them ended the card, and the user had to retry after fixing it. ---- */
+  var blockPushed = '', blockSince = 0, BLOCK_MAX_MS = 20 * 60 * 1000;
+  // Returns true when the block has lasted too long and the card was closed with it as the outcome.
+  function syncBlock(reason){
+    if (reason !== blockPushed) {
+      blockPushed = reason;
+      blockSince = reason ? Date.now() : 0;
+      fdiagArm((reason ? 'BLOCKED ' + reason : 'UNBLOCKED'));
+      // IPC only: the navigation fallback of __ktPush would reload the very page the user has to act on.
+      try { window.__TAURI__.core.invoke('kotodama_push', { b: BID, k: KEY, st: reason ? 'blocked' : 'unblocked', d: reason || '' }).catch(function(){}); } catch(e){}
+    }
+    if (reason && Date.now() - blockSince > BLOCK_MAX_MS) {
+      deliver(reason === 'login' ? 'login' : (reason === 'captcha' ? 'captcha' : 'error'), '');
+      return true;
+    }
+    return false;
+  }
+  // A dialog sitting on top of the composer: what is painted at the composer's position is not the
+  // composer but something inside a modal. Structure only (role/aria-modal/<dialog>), never its text.
+  function composerCovered(){
+    try {
+      var c = findComposerEl(); if (!c) return false;
+      var r = c.getBoundingClientRect(); if (!r.width || !r.height) return false;
+      var x = r.left + r.width / 2, y = r.top + Math.min(r.height / 2, 20);
+      if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) return false;
+      var top = document.elementFromPoint(x, y); if (!top) return false;
+      if (top === c || c.contains(top) || top.contains(c)) return false;
+      return !!(top.closest && top.closest('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog[open]'));
+    } catch(e){ return false; }
+  }
+  var noComposerTicks = 0;
+  var CAPTCHA_SEL = '[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]';
+  // Only while nothing has come back: once a response stream opened, the provider has the message.
+  function currentBlock(clockTicks){
+    if (window.__ktStreamEver) return '';
+    // Hysteresis: a block, once announced, lasts while its own sign is still on the page. Entering and
+    // leaving on different conditions made Kimi flap blocked/unblocked every couple of seconds.
+    if (blockPushed === 'login' && (loginHintPresent() || authWallPresent())) return 'login';
+    if (blockPushed === 'captcha' && (visibleMatch(CAPTCHA_SEL) || window.__ktCaptchaAt)) return 'captcha';
+    if (blockPushed === 'overlay' && composerCovered()) return 'overlay';
+    if (blockPushed === 'setup' && composerVal() === null) return 'setup';
+    if (authWallPresent()) return authWallWhy === 'captcha' ? 'captcha' : 'login';
+    if (clockTicks > 6 && (visibleMatch(CAPTCHA_SEL) || (window.__ktCaptchaAt && Date.now() - window.__ktCaptchaAt > 15000))) return 'captcha';
+    // Signed out, recognised in seconds instead of minutes: a visible login control AND the page's own
+    // API refusing the session. Either alone is not enough (logged-in pages carry "sign in with another
+    // account" links; a 401 can come from an optional feature).
+    if (window.__ktAuthFail && loginHintPresent()) return 'login';
+    if (clockTicks > 10 && composerCovered()) return 'overlay';
+    // A loaded page that offers no composer at all and never took our message: a welcome, consent or setup
+    // screen that needs a click from the user. Measured on Copilot: no editable element anywhere, no dialog,
+    // only its privacy notice -- which was then delivered as the "answer".
+    if (!window.__ktEnterPressed && document.readyState === 'complete' && composerVal() === null) {
+      noComposerTicks++;
+      // A welcome page offering "sign in" is a missing login, and the fix the user needs is the login page
+      // (captured on Copilot signed out: "Welcome to Copilot" + Sign in, no composer).
+      if (noComposerTicks > 20) return loginHintPresent() ? 'login' : 'setup';
+    } else { noComposerTicks = 0; }
+    return '';
   }
   function deliver(st, txt, md){
     if (window.__ktBid !== BID) return;
@@ -769,7 +1095,11 @@ const HARVEST_JS: &str = r##"
       // Direct IPC: no URL-length or navigation-coalescing constraints -> the whole answer goes
       // in ONE call, no artificial delay. `md` (elToMd() output) travels ONLY on this path -- the
       // chunked nav fallback below never carries it, degrading gracefully to plain text.
-      window.__ktPush({ b: BID, k: KEY, st: st, s: 0, n: 1, tr: !!trunc, d: txt, md: md || '' });
+      // cp: a human-check service was contacted after our send (answered or not), for the per-provider
+      // record of how often checks are asked (see record_human_check in kotodama.rs).
+      // se: a response stream was seen after our send -- evidence the provider received the message, used by
+      // Rust to refuse a "done" for a message that never went out (see kotodama_push).
+      window.__ktPush({ b: BID, k: KEY, st: st, s: 0, n: 1, tr: !!trunc, d: txt, md: md || '', cp: !!window.__ktCaptchaAt, se: !!window.__ktStreamEver });
       return;
     }
     // Fallback (no Tauri bridge in this page): chunk + space sends 200ms apart — rapid successive
@@ -850,7 +1180,13 @@ const HARVEST_JS: &str = r##"
     // A message we KNOW went out and that produced nothing in 180s is a timeout, not a failed send.
     if (Date.now() - armT0 > 180000) { clearInterval(armIv); fdiagArm('EXIT arm-180s hint=' + loginHintPresent() + ' streamEver=' + (window.__ktStreamEver||0) + ' armTries=' + armTries); census(); setTimeout(function(){ deliver(loginHintPresent() ? 'login' : (KNOWN_SENT ? 'timeout' : 'sendfail'), ''); }, 300); return; }
     authCensus();
-    if (authWallPresent()) { clearInterval(armIv); deliver('login',''); return; }
+    // A visible captcha is not a missing login: the session is fine, the provider wants a human check
+    // before it takes this message. Saying "sign in" sent the user to the wrong fix (captured on Z.ai).
+    // Blocked: tell the UI, keep watching, and stop the clocks -- the time the user spends solving a check
+    // or signing in must not run out the budgets below.
+    var blk = currentBlock(armTries);
+    if (syncBlock(blk)) { clearInterval(armIv); return; }
+    if (blk) { armT0 = Date.now(); if (armTries > 40) armTries = 40; return; }
     // Arms the stream watcher as soon as the message is known to be out. Needed because on `?q=`
     // providers the URL itself sends, so our fill script exits without ever pressing Enter and never
     // sets `__ktSentAt` -- which left exactly the fastest providers falling back to text stability
@@ -885,7 +1221,7 @@ const HARVEST_JS: &str = r##"
     // generating always opens one), and a login control is visible. Measured on ChatGPT signed
     // out: zero streams, the "Log in" button on screen, and the user told to sign in after 182
     // seconds -- correct, and three minutes too late.
-    if (armTries > 60 && !window.__ktStreamEver && loginHintPresent()) { clearInterval(armIv); fdiagArm('EXIT arm-login-early'); census(); setTimeout(function(){ deliver('login',''); }, 300); return; }
+    if (armTries > 60 && !window.__ktStreamEver && loginHintPresent()) { if (syncBlock('login')) { clearInterval(armIv); return; } armT0 = Date.now(); armTries = 40; return; }
     if (armTries > 60 && !window.__ktStreamOpen && !window.__ktStreamEver && !KNOWN_SENT) { clearInterval(armIv); census(); setTimeout(function(){ deliver('sendfail',''); }, 300); }
   }, 500);
   // One-shot DOM census when the harvest stays empty: which candidate selectors match
@@ -1074,6 +1410,9 @@ const HARVEST_JS: &str = r##"
       polls++;
       var txt = answerTxt();
       if (txt === initialAnswer) txt = '';   // still showing the previous answer, new one not in DOM yet
+      // Text on a page that has no composer, never took our message and never streamed is not an answer
+      // (Copilot's welcome notice): ignore it, so the setup block below gets its chance.
+      if (txt && !KNOWN_SENT && !window.__ktEnterPressed && !window.__ktStreamEver && composerVal() === null) txt = '';
       var busy = isBusy();
       if (busyVerified()) sawBusy = true;    // the marker exists on this page and we have seen it
       if (txt && txt === last) { stable++; } else { stable = 0; lastChangeAt = Date.now(); }
@@ -1225,6 +1564,14 @@ const HARVEST_JS: &str = r##"
         deliver('done', sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt, elToMd(getAnswerEl()));
         return;
       }
+      // Same block handling as the arming loop, for blocks that appear after the message was handed over
+      // (measured on Z.ai: the slider puzzle shows about 4s after Enter). Clock frozen while blocked.
+      // A page without a composer that never took our message can show text that is not an answer (Copilot's
+      // notice), so for that case the block check runs even with text on the page.
+      var hblk = (txt && (window.__ktEnterPressed || window.__ktStreamEver || composerVal() !== null)) ? '' : currentBlock(polls);
+      if (!hblk && polls > 45 && !txt && !window.__ktStreamEver && loginHintPresent()) hblk = 'login';
+      if (syncBlock(hblk)) { clearInterval(iv); return; }
+      if (hblk) { t0 = Date.now(); return; }
       // Signed out: say so early instead of waiting out the whole budget. Measured: the decision
       // is taken HERE, not in the arming loop (EXIT harvest-180s txtLen=0 hint=true), because the
       // page does carry some text that hands the arming loop over before the answer exists. Three
@@ -1232,11 +1579,7 @@ const HARVEST_JS: &str = r##"
       // no response stream EVER opened (a provider that is generating always opens one), and a
       // login control visible on the page. It only chooses the MESSAGE of an outcome that is
       // already a failure, so it cannot cost a working answer.
-      if (polls > 45 && !txt && !window.__ktStreamEver && loginHintPresent()) {
-        clearInterval(iv); fdiagArm('EXIT harvest-login-early polls=' + polls);
-        deliver('login', '');
-        return;
-      }
+
       if (Date.now() - t0 > 180000) { clearInterval(iv); fdiagArm('EXIT harvest-180s txtLen=' + (txt||'').length + ' hint=' + loginHintPresent()); deliver(txt ? 'timeout' : (loginHintPresent() ? 'login' : 'error'), txt ? (sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt) : txt, txt ? elToMd(getAnswerEl()) : ''); return; }
       if (!sentCensus && polls === 15 && !txt) { sentCensus = true; census(); }
       if (polls % 3 === 0) { window.__ktPush({ b: BID, k: KEY, st: 'progress', len: txt.length }); }
@@ -1425,6 +1768,7 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
         + think
         + PUSH_HELPER_JS
         + SR_HIDE_JS
+        + RESPONSE_ADOPT_JS
         + net
         + STREAM_WATCH_JS
         + &temp_part
@@ -1480,6 +1824,8 @@ fn build_resume_js(
             + PUSH_HELPER_JS
             + SR_HIDE_JS
             + "try { window.__ktSentAt = Date.now(); } catch(e){}\n"
+            + RESPONSE_ADOPT_JS
+            + net_probe_js()
             + STREAM_WATCH_JS
             + HARVEST_JS);
     }
@@ -1490,6 +1836,8 @@ fn build_resume_js(
 /// Marks (bid, key) answered: removes it from the broadcast, emits `app://kotodama-answer`
 /// and, when the broadcast empties, `app://kotodama-finished`. Duplicate calls are no-ops.
 fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, truncated: bool, md: &str) {
+    // An outcome ends any block on this provider for this broadcast.
+    blocked_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     // Total wall-clock from the broadcast being registered to the answer being handed to the UI. Read
     // together with HARVEST-DONE's `sinceLastChangeMs` it splits the wait into "the model was still
     // writing" and "we were still deciding it had finished" -- the second is the only part we control.
@@ -1597,7 +1945,27 @@ pub fn kotodama_push(
     len: Option<usize>,
     tr: Option<bool>,
     md: Option<String>,
+    cp: Option<bool>,
+    se: Option<bool>,
 ) {
+    // A "done" needs evidence that the message reached the provider: our send was marked (the fill pressed
+    // Enter), or a response stream opened (providers that send from the URL never press Enter). Without
+    // either, the text is whatever the page already showed. Measured on Copilot: the field was never found,
+    // nothing was sent, and its privacy notice was delivered as the answer.
+    let mut st = st;
+    let mut d = d;
+    let mut md = md;
+    if st == "done" && s == Some(0) && se == Some(false) && !already_sent(&b, &k) {
+        debug::log(format!("kotodama done REFUSED key={k} bid={b}: never sent, no response stream -> sendfail"));
+        st = "sendfail".to_string();
+        d = Some(String::new());
+        md = Some(String::new());
+    }
+    // One line per delivered answer: was a human check involved. Only the final delivery (s = 0) counts,
+    // never diagnostics or previews.
+    if s == Some(0) && st != "diag" && st != "partial" && st != "progress" {
+        record_human_check(&window, &k, &st, cp.unwrap_or(false) || st == "captcha");
+    }
     if crate::debug::enabled() && (st == "diag" || s == Some(0)) {
         // Log-once-per-delivery confirmation that the direct-IPC path is actually being used (vs.
         // the navigation-sentinel fallback) — useful to know per-provider if this ever needs
@@ -1605,6 +1973,26 @@ pub fn kotodama_push(
         debug::log(format!("kotodama_push (IPC) key={k} st={st}"));
     }
     handle_push(&window, b, k, st, s, n, d, len, tr.unwrap_or(false), md);
+}
+
+/// Appends `{ts, key, status, check}` to `provider-checks.jsonl` in the app config dir: how often each
+/// provider puts a human check in front of our sends. The data to reason about the cause (is it asked to
+/// everyone, or triggered by how the message is sent) instead of guessing. Small and local; never sent
+/// anywhere. Failures are ignored: a statistics line must never affect an answer.
+fn record_human_check(window: &Window, key: &str, status: &str, check: bool) {
+    use std::io::Write;
+    let Ok(dir) = window.app_handle().path().app_config_dir() else { return };
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let line = serde_json::json!({ "ts": ts, "key": key, "status": status, "check": check });
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(dir.join("provider-checks.jsonl")) {
+        let _ = writeln!(f, "{line}");
+    }
 }
 
 /// Shared core for both delivery paths: diag/progress heartbeats emit straight away; chunked
@@ -1621,6 +2009,13 @@ fn handle_push(
     trunc: bool,
     md: Option<String>,
 ) {
+    // Network capture from the discovery probe (KOTO_NETPROBE): one JSON record per line, per provider.
+    if st == "netcap" {
+        if debug::enabled() {
+            debug::netcap(&key, &bid, data.as_deref().unwrap_or_default());
+        }
+        return;
+    }
     if st == "diag" {
         // DOM census from a stuck harvest: log-only, this is how provider selectors get tuned.
         debug::log(format!("kotodama DIAG key={key}: {}", data.unwrap_or_default()));
@@ -1628,8 +2023,30 @@ fn handle_push(
     }
     // The fill loop announces that it pressed Enter. From here on NOBODY may send the same message
     // again, not even if the page navigates and the script is re-injected.
+    // A block that needs the user, or its end: not an outcome, the card keeps waiting (see syncBlock in
+    // HARVEST_JS). The UI shows it and queues the pages to open.
+    if st == "blocked" || st == "unblocked" {
+        let reason = data.unwrap_or_default();
+        {
+            let mut marks = blocked_marks().lock().unwrap();
+            if st == "blocked" {
+                marks.insert((bid.clone(), key.clone()));
+            } else {
+                marks.remove(&(bid.clone(), key.clone()));
+            }
+        }
+        debug::log(format!("kotodama {st} key={key} bid={bid} reason={reason}"));
+        let _ = window.emit(
+            "app://kotodama-blocked",
+            serde_json::json!({ "broadcastId": bid, "key": key, "blocked": st == "blocked", "reason": reason }),
+        );
+        return;
+    }
     if st == "sent" {
         debug::log(format!("kotodama SENT key={key} bid={bid} -- no further send allowed"));
+        // The UI times "sent -> first words" from this instant: the real send in the provider page, so a
+        // cold page still loading does not count against the provider.
+        let _ = window.emit("app://kotodama-sent", serde_json::json!({ "broadcastId": bid, "key": key }));
         sent_marks().lock().unwrap().insert((bid, key));
         return;
     }
@@ -2104,23 +2521,44 @@ pub async fn kotodama_broadcast(
         }
     }
     // Watchdog: whatever is still pending for this bid after 200s becomes an error card
-    // (covers pages that never load, harvest scripts killed by an unload, login walls...).
+    // (covers pages that never load, harvest scripts killed by an unload...). A provider that is
+    // BLOCKED waiting for the user is spared while the block lasts, and gets 200s more once it clears;
+    // 25 minutes is the absolute ceiling (the page script gives up on a block at 20).
     {
         let win = window.clone();
         let bid = broadcast_id.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_secs(200));
-            let stuck: Vec<String> = broadcasts()
-                .lock()
-                .unwrap()
-                .get(&bid)
-                .map(|bc| bc.pending.iter().cloned().collect())
-                .unwrap_or_default();
-            for key in stuck {
-                debug::log(format!("kotodama watchdog: bid={bid} key={key} silent"));
-                pending_injections().lock().unwrap().remove(&key);
-                chunk_bufs().lock().unwrap().remove(&(bid.clone(), key.clone()));
-                finish_key(&win, &bid, &key, "error", "", false, "");
+            let start = Instant::now();
+            let mut deadline: HashMap<String, Instant> = HashMap::new();
+            loop {
+                std::thread::sleep(std::time::Duration::from_secs(5));
+                let pending: Vec<String> = broadcasts()
+                    .lock()
+                    .unwrap()
+                    .get(&bid)
+                    .map(|bc| bc.pending.iter().cloned().collect())
+                    .unwrap_or_default();
+                if pending.is_empty() {
+                    break;
+                }
+                let now = Instant::now();
+                let hard_stop = now.duration_since(start) > std::time::Duration::from_secs(25 * 60);
+                for key in pending {
+                    let blocked = blocked_marks().lock().unwrap().contains(&(bid.clone(), key.clone()));
+                    let due = deadline
+                        .entry(key.clone())
+                        .or_insert(start + std::time::Duration::from_secs(200));
+                    if blocked {
+                        *due = now + std::time::Duration::from_secs(200);
+                    }
+                    if now >= *due || hard_stop {
+                        debug::log(format!("kotodama watchdog: bid={bid} key={key} silent"));
+                        pending_injections().lock().unwrap().remove(&key);
+                        chunk_bufs().lock().unwrap().remove(&(bid.clone(), key.clone()));
+                        blocked_marks().lock().unwrap().remove(&(bid.clone(), key.clone()));
+                        finish_key(&win, &bid, &key, "error", "", false, "");
+                    }
+                }
             }
         });
     }

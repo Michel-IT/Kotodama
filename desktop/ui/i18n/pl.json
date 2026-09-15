@@ -254,5 +254,14 @@
   "setLowPowerHint": "Mniej pamięci: rysowanie przez procesor i wstrzymanie nieużywanych dostawców. Wymaga ponownego uruchomienia.",
   "setLowPowerRestart": "Zapisano. Uruchom Kotodama ponownie, aby zastosować oszczędzanie zasobów.",
   "ktStopBtn": "Zatrzymaj",
-  "ktCancelled": "Zatrzymana"
+  "ktCancelled": "Zatrzymana",
+  "ktCaptcha": "Na stronie dostawcy wymagana jest weryfikacja człowieka",
+  "ktOverlay": "Strona dostawcy wyświetla okno do zamknięcia",
+  "ktSetup": "Strona dostawcy wymaga działania, zanim będzie można pisać",
+  "ktCaptchaShort": "Weryfikacja człowieka",
+  "ktActionShort": "Wymagane działanie",
+  "ktVerifyStep": "Weryfikacja {i} z {n}",
+  "ktSkip": "Pomiń",
+  "ktTimeFirst": "Pierwsze słowa po {s}",
+  "ktTimeTotal": "ukończono w {s}"
 }

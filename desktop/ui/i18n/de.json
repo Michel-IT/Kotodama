@@ -254,5 +254,14 @@
   "setLowPowerHint": "Weniger Speicher: Zeichnen per CPU und ungenutzte Anbieter angehalten. Neustart erforderlich.",
   "setLowPowerRestart": "Gespeichert. Starte Kotodama neu, um das Ressourcensparen anzuwenden.",
   "ktStopBtn": "Stopp",
-  "ktCancelled": "Gestoppt"
+  "ktCancelled": "Gestoppt",
+  "ktCaptcha": "Menschliche Überprüfung auf der Anbieterseite erforderlich",
+  "ktOverlay": "Die Anbieterseite zeigt ein Fenster, das geschlossen werden muss",
+  "ktSetup": "Die Anbieterseite erfordert eine Aktion, bevor du schreiben kannst",
+  "ktCaptchaShort": "Menschliche Prüfung",
+  "ktActionShort": "Aktion erforderlich",
+  "ktVerifyStep": "Prüfung {i} von {n}",
+  "ktSkip": "Überspringen",
+  "ktTimeFirst": "Erste Wörter nach {s}",
+  "ktTimeTotal": "fertig in {s}"
 }

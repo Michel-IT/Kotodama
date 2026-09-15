@@ -254,5 +254,14 @@
   "setLowPowerHint": "Vähemmän muistia: piirto suorittimella ja käyttämättömät palvelut keskeytetään. Vaatii uudelleenkäynnistyksen.",
   "setLowPowerRestart": "Tallennettu. Käynnistä Kotodama uudelleen, jotta resurssien säästö otetaan käyttöön.",
   "ktStopBtn": "Pysäytä",
-  "ktCancelled": "Pysäytetty"
+  "ktCancelled": "Pysäytetty",
+  "ktCaptcha": "Palveluntarjoajan sivulla vaaditaan ihmisen vahvistus",
+  "ktOverlay": "Palveluntarjoajan sivulla on suljettava ikkuna",
+  "ktSetup": "Palveluntarjoajan sivu vaatii toiminnon ennen kuin voit kirjoittaa",
+  "ktCaptchaShort": "Ihmisen vahvistus",
+  "ktActionShort": "Toiminto tarvitaan",
+  "ktVerifyStep": "Vahvistus {i}/{n}",
+  "ktSkip": "Ohita",
+  "ktTimeFirst": "Ensimmäiset sanat {s} kuluttua",
+  "ktTimeTotal": "valmis ajassa {s}"
 }

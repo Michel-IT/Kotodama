@@ -254,5 +254,14 @@
   "setLowPowerHint": "Menys memòria: dibuix per CPU i proveïdors inactius suspesos. Cal reiniciar.",
   "setLowPowerRestart": "Desat. Reinicia Kotodama per aplicar l'estalvi de recursos.",
   "ktStopBtn": "Atura",
-  "ktCancelled": "Aturada"
+  "ktCancelled": "Aturada",
+  "ktCaptcha": "Cal una verificació humana a la pàgina del proveïdor",
+  "ktOverlay": "La pàgina del proveïdor mostra una finestra per tancar",
+  "ktSetup": "La pàgina del proveïdor necessita una acció abans que puguis escriure",
+  "ktCaptchaShort": "Verificació humana",
+  "ktActionShort": "Cal una acció",
+  "ktVerifyStep": "Verificació {i} de {n}",
+  "ktSkip": "Omet",
+  "ktTimeFirst": "Primeres paraules després de {s}",
+  "ktTimeTotal": "completada en {s}"
 }

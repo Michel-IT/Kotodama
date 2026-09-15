@@ -43,3 +43,21 @@ pub fn install_panic_hook() {
         default(info);
     }));
 }
+
+/// Debug only: appends one network-capture record to `<temp>/kotodama-netcap/<key>.jsonl`, wrapped with
+/// the broadcast id. A file per provider, because a capture session is read one provider at a time.
+pub fn netcap(key: &str, bid: &str, record: &str) {
+    if !enabled() {
+        return;
+    }
+    use std::io::Write;
+    let dir = std::env::temp_dir().join("kotodama-netcap");
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    let safe: String = key.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_').collect();
+    let path = dir.join(format!("{safe}.jsonl"));
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+        let _ = writeln!(f, "{{\"bid\":{},\"rec\":{}}}", serde_json::to_string(bid).unwrap_or_default(), record);
+    }
+}

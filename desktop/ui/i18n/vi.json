@@ -254,5 +254,14 @@
   "setLowPowerHint": "Ít bộ nhớ hơn: vẽ bằng CPU và tạm dừng các nhà cung cấp không dùng. Cần khởi động lại.",
   "setLowPowerRestart": "Đã lưu. Khởi động lại Kotodama để áp dụng tiết kiệm tài nguyên.",
   "ktStopBtn": "Dừng",
-  "ktCancelled": "Đã dừng"
+  "ktCancelled": "Đã dừng",
+  "ktCaptcha": "Cần xác minh con người trên trang của nhà cung cấp",
+  "ktOverlay": "Trang của nhà cung cấp đang hiện một cửa sổ cần đóng",
+  "ktSetup": "Trang của nhà cung cấp cần một thao tác trước khi bạn có thể viết",
+  "ktCaptchaShort": "Xác minh con người",
+  "ktActionShort": "Cần thao tác",
+  "ktVerifyStep": "Xác minh {i}/{n}",
+  "ktSkip": "Bỏ qua",
+  "ktTimeFirst": "Những từ đầu tiên sau {s}",
+  "ktTimeTotal": "hoàn tất trong {s}"
 }

@@ -254,5 +254,14 @@
   "setLowPowerHint": "Manj pomnilnika: izrisovanje s procesorjem in nedejavni ponudniki zamrznjeni. Zahteva ponovni zagon.",
   "setLowPowerRestart": "Shranjeno. Znova zaženite Kotodama, da se varčevanje z viri uveljavi.",
   "ktStopBtn": "Ustavi",
-  "ktCancelled": "Ustavljena"
+  "ktCancelled": "Ustavljena",
+  "ktCaptcha": "Na strani ponudnika je potrebno preverjanje, da niste robot",
+  "ktOverlay": "Stran ponudnika prikazuje okno, ki ga je treba zapreti",
+  "ktSetup": "Stran ponudnika zahteva dejanje, preden lahko pišete",
+  "ktCaptchaShort": "Preverjanje",
+  "ktActionShort": "Potrebno dejanje",
+  "ktVerifyStep": "Preverjanje {i} od {n}",
+  "ktSkip": "Preskoči",
+  "ktTimeFirst": "Prve besede po {s}",
+  "ktTimeTotal": "dokončano v {s}"
 }

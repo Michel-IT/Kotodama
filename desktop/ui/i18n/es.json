@@ -254,5 +254,14 @@
   "setLowPowerHint": "Menos memoria: dibujado por CPU y proveedores inactivos suspendidos. Requiere reiniciar.",
   "setLowPowerRestart": "Guardado. Reinicia Kotodama para aplicar el ahorro de recursos.",
   "ktStopBtn": "Detener",
-  "ktCancelled": "Detenida"
+  "ktCancelled": "Detenida",
+  "ktCaptcha": "Se requiere una verificación humana en la página del proveedor",
+  "ktOverlay": "La página del proveedor muestra una ventana que hay que cerrar",
+  "ktSetup": "La página del proveedor necesita una acción antes de que puedas escribir",
+  "ktCaptchaShort": "Verificación humana",
+  "ktActionShort": "Acción necesaria",
+  "ktVerifyStep": "Verificación {i} de {n}",
+  "ktSkip": "Omitir",
+  "ktTimeFirst": "Primeras palabras tras {s}",
+  "ktTimeTotal": "completada en {s}"
 }

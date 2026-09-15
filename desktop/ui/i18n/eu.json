@@ -254,5 +254,14 @@
   "setLowPowerHint": "Memoria gutxiago: CPUz marraztea eta erabiltzen ez diren hornitzaileak eten. Berrabiarazi behar da.",
   "setLowPowerRestart": "Gordeta. Berrabiarazi Kotodama baliabideen aurrezpena aplikatzeko.",
   "ktStopBtn": "Gelditu",
-  "ktCancelled": "Geldita"
+  "ktCancelled": "Geldita",
+  "ktCaptcha": "Giza egiaztapena behar da hornitzailearen orrian",
+  "ktOverlay": "Hornitzailearen orriak itxi beharreko leiho bat erakusten du",
+  "ktSetup": "Hornitzailearen orriak ekintza bat behar du idatzi ahal izan aurretik",
+  "ktCaptchaShort": "Giza egiaztapena",
+  "ktActionShort": "Ekintza behar da",
+  "ktVerifyStep": "{i}. egiaztapena {n}-tik",
+  "ktSkip": "Saltatu",
+  "ktTimeFirst": "Lehen hitzak {s} ondoren",
+  "ktTimeTotal": "{s}-an osatua"
 }

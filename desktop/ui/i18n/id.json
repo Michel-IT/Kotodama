@@ -254,5 +254,14 @@
   "setLowPowerHint": "Memori lebih sedikit: penggambaran oleh CPU dan penyedia menganggur ditangguhkan. Perlu dimulai ulang.",
   "setLowPowerRestart": "Disimpan. Mulai ulang Kotodama untuk menerapkan penghematan sumber daya.",
   "ktStopBtn": "Berhenti",
-  "ktCancelled": "Dihentikan"
+  "ktCancelled": "Dihentikan",
+  "ktCaptcha": "Verifikasi manusia diperlukan di halaman penyedia",
+  "ktOverlay": "Halaman penyedia menampilkan jendela yang perlu ditutup",
+  "ktSetup": "Halaman penyedia memerlukan tindakan sebelum Anda dapat menulis",
+  "ktCaptchaShort": "Verifikasi manusia",
+  "ktActionShort": "Perlu tindakan",
+  "ktVerifyStep": "Verifikasi {i} dari {n}",
+  "ktSkip": "Lewati",
+  "ktTimeFirst": "Kata pertama setelah {s}",
+  "ktTimeTotal": "selesai dalam {s}"
 }

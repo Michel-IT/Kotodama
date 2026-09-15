@@ -254,5 +254,14 @@
   "setLowPowerHint": "Vähem mälu: joonistamine protsessoriga ja jõudeolekus pakkujad peatatud. Nõuab taaskäivitust.",
   "setLowPowerRestart": "Salvestatud. Taaskäivita Kotodama, et ressursisääst rakenduks.",
   "ktStopBtn": "Peata",
-  "ktCancelled": "Peatatud"
+  "ktCancelled": "Peatatud",
+  "ktCaptcha": "Teenusepakkuja lehel on vaja inimkontrolli",
+  "ktOverlay": "Teenusepakkuja lehel on suletav aken",
+  "ktSetup": "Teenusepakkuja leht vajab toimingut, enne kui saad kirjutada",
+  "ktCaptchaShort": "Inimkontroll",
+  "ktActionShort": "Vaja on toimingut",
+  "ktVerifyStep": "Kontroll {i}/{n}",
+  "ktSkip": "Jäta vahele",
+  "ktTimeFirst": "Esimesed sõnad {s} pärast",
+  "ktTimeTotal": "valmis {s}"
 }

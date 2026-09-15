@@ -254,5 +254,14 @@
   "setLowPowerHint": "Méně paměti: vykreslování procesorem a pozastavení nečinných poskytovatelů. Vyžaduje restart.",
   "setLowPowerRestart": "Uloženo. Restartujte Kotodama, aby se úspora prostředků použila.",
   "ktStopBtn": "Zastavit",
-  "ktCancelled": "Zastaveno"
+  "ktCancelled": "Zastaveno",
+  "ktCaptcha": "Na stránce poskytovatele je nutné ověření, že nejste robot",
+  "ktOverlay": "Stránka poskytovatele zobrazuje okno, které je třeba zavřít",
+  "ktSetup": "Stránka poskytovatele vyžaduje akci, než budete moci psát",
+  "ktCaptchaShort": "Ověření",
+  "ktActionShort": "Vyžadována akce",
+  "ktVerifyStep": "Ověření {i} z {n}",
+  "ktSkip": "Přeskočit",
+  "ktTimeFirst": "První slova po {s}",
+  "ktTimeTotal": "dokončeno za {s}"
 }

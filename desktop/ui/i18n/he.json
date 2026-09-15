@@ -254,5 +254,14 @@
   "setLowPowerHint": "פחות זיכרון: ציור במעבד וספקים לא פעילים מושהים. נדרשת הפעלה מחדש.",
   "setLowPowerRestart": "נשמר. הפעל מחדש את Kotodama כדי להחיל את החיסכון במשאבים.",
   "ktStopBtn": "עצור",
-  "ktCancelled": "עוצרת"
+  "ktCancelled": "עוצרת",
+  "ktCaptcha": "נדרש אימות אנושי בדף של הספק",
+  "ktOverlay": "בדף של הספק מוצג חלון שיש לסגור",
+  "ktSetup": "הדף של הספק דורש פעולה לפני שתוכל לכתוב",
+  "ktCaptchaShort": "אימות אנושי",
+  "ktActionShort": "נדרשת פעולה",
+  "ktVerifyStep": "אימות {i} מתוך {n}",
+  "ktSkip": "דלג",
+  "ktTimeFirst": "מילים ראשונות אחרי {s}",
+  "ktTimeTotal": "הושלם תוך {s}"
 }

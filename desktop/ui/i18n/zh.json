@@ -254,5 +254,14 @@
   "setLowPowerHint": "更少内存：由 CPU 绘制，闲置的提供方将被暂停。需要重启。",
   "setLowPowerRestart": "已保存。请重启 Kotodama 以应用资源节省。",
   "ktStopBtn": "停止",
-  "ktCancelled": "已停止"
+  "ktCancelled": "已停止",
+  "ktCaptcha": "需要在服务商页面完成人机验证",
+  "ktOverlay": "服务商页面显示一个需要关闭的窗口",
+  "ktSetup": "服务商页面需要先完成一个操作才能输入",
+  "ktCaptchaShort": "人机验证",
+  "ktActionShort": "需要操作",
+  "ktVerifyStep": "验证 {i} / {n}",
+  "ktSkip": "跳过",
+  "ktTimeFirst": "{s} 后开始回答",
+  "ktTimeTotal": "{s} 内完成"
 }

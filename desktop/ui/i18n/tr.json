@@ -254,5 +254,14 @@
   "setLowPowerHint": "Daha az bellek: çizim işlemciyle, kullanılmayan sağlayıcılar askıya alınır. Yeniden başlatma gerekir.",
   "setLowPowerRestart": "Kaydedildi. Kaynak tasarrufunu uygulamak için Kotodama'yı yeniden başlatın.",
   "ktStopBtn": "Durdur",
-  "ktCancelled": "Durduruldu"
+  "ktCancelled": "Durduruldu",
+  "ktCaptcha": "Sağlayıcı sayfasında insan doğrulaması gerekiyor",
+  "ktOverlay": "Sağlayıcı sayfasında kapatılması gereken bir pencere var",
+  "ktSetup": "Yazabilmeniz için sağlayıcı sayfası bir işlem gerektiriyor",
+  "ktCaptchaShort": "İnsan doğrulaması",
+  "ktActionShort": "İşlem gerekli",
+  "ktVerifyStep": "Doğrulama {i}/{n}",
+  "ktSkip": "Atla",
+  "ktTimeFirst": "{s} sonra ilk kelimeler",
+  "ktTimeTotal": "{s} içinde tamamlandı"
 }

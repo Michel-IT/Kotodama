@@ -254,5 +254,14 @@
   "setLowPowerHint": "Minder geheugen: tekenen via de CPU en ongebruikte providers gepauzeerd. Vereist een herstart.",
   "setLowPowerRestart": "Opgeslagen. Start Kotodama opnieuw om het besparen van resources toe te passen.",
   "ktStopBtn": "Stoppen",
-  "ktCancelled": "Gestopt"
+  "ktCancelled": "Gestopt",
+  "ktCaptcha": "Menselijke verificatie vereist op de pagina van de aanbieder",
+  "ktOverlay": "De pagina van de aanbieder toont een venster dat gesloten moet worden",
+  "ktSetup": "De pagina van de aanbieder vraagt een actie voordat je kunt schrijven",
+  "ktCaptchaShort": "Menselijke verificatie",
+  "ktActionShort": "Actie nodig",
+  "ktVerifyStep": "Controle {i} van {n}",
+  "ktSkip": "Overslaan",
+  "ktTimeFirst": "Eerste woorden na {s}",
+  "ktTimeTotal": "klaar in {s}"
 }

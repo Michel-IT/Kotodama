@@ -1031,6 +1031,25 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
     }
     return best;
   }
+  // Debug census when no composer is found: every editable-looking element with its size and why it was
+  // rejected, plus open shadow roots (a composer inside a shadow root is invisible to querySelectorAll).
+  function composerCensus(){
+    var out = [];
+    try {
+      var els = document.querySelectorAll('textarea, input[type="text"], [contenteditable], [role="textbox"]');
+      for (var i = 0; i < els.length && out.length < 12; i++) {
+        var e = els[i], r = e.getBoundingClientRect(), cs = getComputedStyle(e);
+        out.push(e.tagName + '.' + String(e.className || '').slice(0, 30) + ' ce=' + e.getAttribute('contenteditable')
+          + ' ro=' + !!e.readOnly + ' ah=' + e.getAttribute('aria-hidden') + ' op=' + (e.offsetParent ? 'y' : 'n')
+          + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + ' vis=' + cs.visibility + ' disp=' + cs.display);
+      }
+      var shadows = 0, hosts = [];
+      var all = document.querySelectorAll('*');
+      for (var j = 0; j < all.length; j++) { if (all[j].shadowRoot) { shadows++; if (hosts.length < 6) hosts.push(all[j].tagName.toLowerCase()); } }
+      out.push('shadowRoots=' + shadows + ' [' + hosts.join(',') + '] url=' + location.pathname + ' dialogs=' + document.querySelectorAll('[role="dialog"],[aria-modal="true"],dialog[open]').length);
+    } catch(e){ out.push('err ' + e); }
+    return out.join(' || ').slice(0, 1200);
+  }
   function vis(b){ return b && !b.disabled && b.getAttribute('aria-disabled')!=='true' && b.offsetParent !== null; }
   // Send button, fully LANGUAGE-INDEPENDENT (no per-language strings). Primary send is Enter
   // (universal); this is only the fallback. Uses stable non-linguistic signals:
@@ -1162,6 +1181,27 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
       return getVal(el).replace(/\s+/g,' ').indexOf(probe) !== -1;
     } catch(e){ return false; }
   }
+  // The field holds our message MORE THAN ONCE. Captured on Perplexity (15/09/2026): the request carried
+  // the prompt three times in a row, two runs out of two. Checked on a long stretch of the message and
+  // on the length, so a message that legitimately repeats a short phrase is not mistaken for it.
+  function composerDuplicated(el){
+    try {
+      var norm = text.trim().replace(/\s+/g,' ');
+      if (norm.length < 8) return false;
+      var probe = norm.slice(0, 60), val = getVal(el).replace(/\s+/g,' ');
+      var first = val.indexOf(probe);
+      return first !== -1 && val.indexOf(probe, first + probe.length) !== -1 && val.length >= norm.length * 1.8;
+    } catch(e){ return false; }
+  }
+  function clearComposer(el){
+    try { el.focus(); } catch(e){}
+    if (el.value !== undefined) {
+      try { Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(el, ''); } catch(e){ el.value = ''; }
+      try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch(e){}
+    } else {
+      try { document.execCommand('selectAll', false, null); document.execCommand('delete', false, null); } catch(e){}
+    }
+  }
   function fill(el){
     // Re-check the baton HERE, not only at the start of a tick: up to 400ms pass between a newer
     // injection taking the baton and this loop noticing it, and in that window both could write into
@@ -1206,12 +1246,16 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
         var dt = new DataTransfer(); dt.setData('text/plain', text);
         el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
       } catch (e) {}
-      // verify + fallback
-      if ((el.innerText||'').replace(/\s+/g,' ').indexOf(text.trim().replace(/\s+/g,' ').slice(0,20)) === -1) {
+      // verify + fallback, one frame LATER: editors such as Lexical (Perplexity) apply a paste
+      // asynchronously, so an immediate check finds the field still empty and the fallback inserted the
+      // text again on top of the paste that was about to land -- the triple message seen on Perplexity.
+      setTimeout(function(){
+        if (window.__ktFillRun !== RUN) return;
+        if ((el.innerText||'').replace(/\s+/g,' ').indexOf(text.trim().replace(/\s+/g,' ').slice(0,20)) !== -1) return;
         try { document.execCommand('selectAll', false, null); document.execCommand('insertText', false, text); }
         catch (e) { el.textContent = text; }
         try { el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType:'insertText', data: text })); } catch(e){}
-      }
+      }, 150);
     }
   }
   function submitOnce(el){
@@ -1275,7 +1319,7 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
     }
     var el = pickComposer();
     if (!el) {
-      if (ticks === 1 || ticks === 30) fdiag('no field found at tick ' + ticks);
+      if (ticks === 1 || ticks === 30) { fdiag('no field found at tick ' + ticks); if (window.__ktDiag) fdiag('COMPOSER-CENSUS ' + composerCensus()); }
       if (ticks > 150) { fdiag('exit: field never found'); clearInterval(iv); }
       return;
     }
@@ -1286,6 +1330,12 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
     // "the field holds our text" instead of "the field is not empty": this distinguishes an emptied
     // field from a HALF-filled one (on Grok a single character arrived and the loop never healed it,
     // because it only healed the empty case).
+    // Never press send on a duplicated message: clear it and let the next tick write it once.
+    if (submits === 0 && composerDuplicated(el)) {
+      fdiag('field holds the message more than once: clearing and rewriting');
+      clearComposer(el);
+      return;
+    }
     if (composerHasOurText(el)) {
       sawOurText = true;
       if (!send) { fdiag('exit: paste-only, text in place'); clearInterval(iv); return; }
@@ -1301,6 +1351,9 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
           // Marks the instant the send left, for STREAM_WATCH_JS: only streams opened after this
           // count as the answer's stream (a page can keep telemetry streams open at all times).
           try { window.__ktSentAt = Date.now(); } catch(e){}
+          // Unlike __ktSentAt (also set by the harvester when it sees an answer), this one only means "our fill
+          // pressed Enter": the harvester uses it to tell a page that never offered a composer.
+          try { window.__ktEnterPressed = true; } catch(e){}
         }
         submitOnce(el);
       }

@@ -254,5 +254,14 @@
   "setLowPowerHint": "메모리 절약: CPU 그리기, 사용하지 않는 제공자는 일시 중단. 다시 시작해야 합니다.",
   "setLowPowerRestart": "저장했습니다. 리소스 절약을 적용하려면 Kotodama를 다시 시작하세요.",
   "ktStopBtn": "중지",
-  "ktCancelled": "중지됨"
+  "ktCancelled": "중지됨",
+  "ktCaptcha": "제공업체 페이지에서 사람 확인이 필요합니다",
+  "ktOverlay": "제공업체 페이지에 닫아야 할 창이 있습니다",
+  "ktSetup": "입력하기 전에 제공업체 페이지에서 조치가 필요합니다",
+  "ktCaptchaShort": "사람 확인",
+  "ktActionShort": "조치 필요",
+  "ktVerifyStep": "확인 {i}/{n}",
+  "ktSkip": "건너뛰기",
+  "ktTimeFirst": "{s} 후 첫 단어",
+  "ktTimeTotal": "{s} 만에 완료"
 }

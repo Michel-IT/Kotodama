@@ -254,5 +254,14 @@
   "setLowPowerHint": "Manje memorije: iscrtavanje procesorom i neaktivni provajderi suspendovani. Potrebno je ponovno pokretanje.",
   "setLowPowerRestart": "Sačuvano. Ponovo pokrenite Kotodama da bi se ušteda resursa primenila.",
   "ktStopBtn": "Zaustavi",
-  "ktCancelled": "Zaustavljena"
+  "ktCancelled": "Zaustavljena",
+  "ktCaptcha": "На страници провајдера потребна је провера да нисте робот",
+  "ktOverlay": "Страница провајдера приказује прозор који треба затворити",
+  "ktSetup": "Страница провајдера захтева радњу пре него што можете да пишете",
+  "ktCaptchaShort": "Провера",
+  "ktActionShort": "Потребна радња",
+  "ktVerifyStep": "Провера {i} од {n}",
+  "ktSkip": "Прескочи",
+  "ktTimeFirst": "Прве речи после {s}",
+  "ktTimeTotal": "завршено за {s}"
 }

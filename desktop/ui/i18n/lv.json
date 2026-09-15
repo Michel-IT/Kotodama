@@ -254,5 +254,14 @@
   "setLowPowerHint": "Mazāk atmiņas: zīmēšana ar procesoru un neaktīvie pakalpojumi apturēti. Nepieciešama restartēšana.",
   "setLowPowerRestart": "Saglabāts. Restartējiet Kotodama, lai resursu taupīšana tiktu piemērota.",
   "ktStopBtn": "Apturēt",
-  "ktCancelled": "Apturēta"
+  "ktCancelled": "Apturēta",
+  "ktCaptcha": "Pakalpojuma sniedzēja lapā nepieciešama cilvēka pārbaude",
+  "ktOverlay": "Pakalpojuma sniedzēja lapā redzams logs, kas jāaizver",
+  "ktSetup": "Pakalpojuma sniedzēja lapa prasa darbību, pirms varat rakstīt",
+  "ktCaptchaShort": "Cilvēka pārbaude",
+  "ktActionShort": "Nepieciešama darbība",
+  "ktVerifyStep": "Pārbaude {i} no {n}",
+  "ktSkip": "Izlaist",
+  "ktTimeFirst": "Pirmie vārdi pēc {s}",
+  "ktTimeTotal": "pabeigts {s}"
 }

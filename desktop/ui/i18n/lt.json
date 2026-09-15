@@ -254,5 +254,14 @@
   "setLowPowerHint": "Mažiau atminties: vaizdą atkuria procesorius, nenaudojami teikėjai pristabdomi. Reikia paleisti iš naujo.",
   "setLowPowerRestart": "Išsaugota. Paleiskite Kotodama iš naujo, kad išteklių tausojimas įsigaliotų.",
   "ktStopBtn": "Sustabdyti",
-  "ktCancelled": "Sustabdyta"
+  "ktCancelled": "Sustabdyta",
+  "ktCaptcha": "Teikėjo puslapyje reikia žmogaus patikros",
+  "ktOverlay": "Teikėjo puslapyje rodomas langas, kurį reikia uždaryti",
+  "ktSetup": "Teikėjo puslapis reikalauja veiksmo, kad galėtumėte rašyti",
+  "ktCaptchaShort": "Žmogaus patikra",
+  "ktActionShort": "Reikia veiksmo",
+  "ktVerifyStep": "Patikra {i} iš {n}",
+  "ktSkip": "Praleisti",
+  "ktTimeFirst": "Pirmieji žodžiai po {s}",
+  "ktTimeTotal": "baigta per {s}"
 }

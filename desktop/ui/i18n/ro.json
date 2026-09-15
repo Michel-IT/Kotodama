@@ -254,5 +254,14 @@
   "setLowPowerHint": "Mai puțină memorie: desenare de către procesor și furnizorii inactivi suspendați. Necesită repornire.",
   "setLowPowerRestart": "Salvat. Repornește Kotodama pentru a aplica economia de resurse.",
   "ktStopBtn": "Opriți",
-  "ktCancelled": "Oprită"
+  "ktCancelled": "Oprită",
+  "ktCaptcha": "Pe pagina furnizorului este necesară o verificare umană",
+  "ktOverlay": "Pagina furnizorului afișează o fereastră de închis",
+  "ktSetup": "Pagina furnizorului cere o acțiune înainte să poți scrie",
+  "ktCaptchaShort": "Verificare umană",
+  "ktActionShort": "Acțiune necesară",
+  "ktVerifyStep": "Verificarea {i} din {n}",
+  "ktSkip": "Omite",
+  "ktTimeFirst": "Primele cuvinte după {s}",
+  "ktTimeTotal": "finalizat în {s}"
 }

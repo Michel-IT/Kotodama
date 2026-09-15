@@ -254,5 +254,14 @@
   "setLowPowerHint": "メモリ節約: 描画はCPU、使っていないプロバイダーは一時停止。再起動が必要です。",
   "setLowPowerRestart": "保存しました。リソース節約を適用するにはKotodamaを再起動してください。",
   "ktStopBtn": "停止",
-  "ktCancelled": "停止しました"
+  "ktCancelled": "停止しました",
+  "ktCaptcha": "プロバイダーのページで人間であることの確認が必要です",
+  "ktOverlay": "プロバイダーのページに閉じる必要のあるウィンドウがあります",
+  "ktSetup": "入力する前にプロバイダーのページで操作が必要です",
+  "ktCaptchaShort": "人間の確認",
+  "ktActionShort": "操作が必要",
+  "ktVerifyStep": "確認 {i} / {n}",
+  "ktSkip": "スキップ",
+  "ktTimeFirst": "{s}後に最初の言葉",
+  "ktTimeTotal": "{s}で完了"
 }

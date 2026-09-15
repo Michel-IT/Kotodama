@@ -164,6 +164,18 @@
       font-size:14px; opacity:.8; padding:2px 7px; border-radius:6px; transition:background .15s,opacity .15s;
     }
     .claude-hint .ch-x:hover { opacity:1; background:rgba(255,255,255,.08); }
+    /* Verification queue bar: shown above a provider page opened to solve a block. Same slot as the Claude
+       hint (the provider webview is pushed down by the height of the visible bars). */
+    .kt-verify-bar {
+      position:fixed; top:var(--topbar-h); left:0; right:0; z-index:1211;
+      display:flex; align-items:center; gap:10px; box-sizing:border-box; padding:8px 14px;
+      font-size:13px; line-height:1.35; background:var(--bg-1); color:var(--text);
+      border-bottom:1px solid var(--accent); box-shadow:0 2px 10px rgba(0,0,0,.25);
+    }
+    .kt-verify-bar[hidden] { display:none; }
+    .kt-verify-bar .kv-step { flex:none; font-weight:650; color:var(--accent); font-variant-numeric:tabular-nums; }
+    .kt-verify-bar .kv-msg { flex:1; min-width:0; color:var(--text-dim); }
+    .kt-verify-bar .btn { flex:none; }
 
     .ab-brand { display:flex; align-items:center; gap:9px; padding:0 4px; }
     .spark {
@@ -711,15 +723,8 @@
     .kt-icon-btn:focus-visible, .kt-retry:focus-visible, .kt-send:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
     .kt-icon-btn svg { width:16px; height:16px; display:block; }
     .kt-icon-btn.copied { color:var(--accent); }
-    /* --kt-n = answers in THIS turn (ktSetGridCols): N equal columns. When the chat is too narrow for
-       readable columns they fold, the same way for every turn: two columns, then one. */
-    .kt-grid { display:grid; column-gap:32px; row-gap:18px; grid-template-columns:repeat(var(--kt-n, 1), minmax(0, 1fr)); }
-    @container (max-width: 1180px) {
-      .kt-grid:not([data-cols="1"]):not([data-cols="2"]) { grid-template-columns:repeat(2, minmax(0, 1fr)); }
-    }
-    @container (max-width: 900px) {
-      .kt-grid { grid-template-columns:minmax(0, 1fr); }
-    }
+    /* --kt-fit = columns of THIS turn that fit the available width (ktFitGrid): equal columns, balanced rows. */
+    .kt-grid { display:grid; column-gap:32px; row-gap:18px; grid-template-columns:repeat(var(--kt-fit, 1), minmax(0, 1fr)); }
     /* No frame around an answer: background, border and rounded box made each reply a separate object
        next to the message bubble, instead of the continuation of the conversation.
        Structure: the provider avatar on the left, then EVERYTHING else (name, text, actions) in one
@@ -750,6 +755,8 @@
     .kt-retry:active { transform:rotate(180deg); }
     .kt-status .dl-spin { width:12px; height:12px; border-width:2px; }
     .kt-card.done .kt-status { color:var(--accent); }
+    .kt-card.blocked .kt-status { color:var(--accent); }
+    .kt-time { font-variant-numeric:tabular-nums; color:var(--text-faint); cursor:default; }
     .kt-card.error .kt-status, .kt-card.cancelled .kt-status { color:#e08585; }
     .kt-card.timeout .kt-status { color:#d8b45a; }
     .kt-card-body { grid-column:2; grid-row:2; align-self:start; padding:0; font-size:14px; line-height:1.65;
@@ -1043,6 +1050,13 @@
       <span class="ch-ico">⚠️</span>
       <span class="ch-msg" data-i18n="claudeHintMsg">Per Claude accedi con «Continua con email»: il login Google non funziona nei browser integrati.</span>
       <button class="ch-x" id="claudeHintClose" data-i18n-title="bannerDismiss" title="Non mostrare più">✕</button>
+    </div>
+
+    <div class="kt-verify-bar" id="ktVerifyBar" hidden role="status" aria-live="polite">
+      <span class="kv-step" id="ktVerifyStep"></span>
+      <span class="kv-msg" id="ktVerifyMsg"></span>
+      <button class="btn" id="ktVerifySkip" data-i18n="ktSkip">Skip</button>
+      <button class="btn" id="ktVerifyClose" data-i18n="close">Close</button>
     </div>
 
     <div class="main">
@@ -2232,6 +2246,7 @@
           +`<div class="kt-card-foot" hidden></div>`;
         card.querySelector('.nm').textContent=p.name;
         card.querySelector('.kt-st-txt').textContent=ktStatusLabel(st);
+        if(a.firstMs!=null) ktShowTiming(card.querySelector('.kt-status'), { firstMs:a.firstMs, totalMs:a.totalMs });
         const body=card.querySelector('.kt-card-body');
         const text=((a.text)||'').trim();
         if(text){
@@ -2383,6 +2398,12 @@
     };
     // DEBUG ONLY (KOTO_AUTOCHAT_STOP_MS): the same action as pressing the Stop button.
     window.__ktAutoStop = function(){ document.getElementById('ktSend').click(); };
+    // DEBUG ONLY (KOTO_AUTOCHAT_PREWARM): the pre-warm alone, on the given providers, with no send -- the
+    // same ktPrewarm a keystroke triggers, so a later send hits an already-loaded page.
+    window.__ktAutoPrewarm = function(keys){
+      try { const saved=ktSel; if(Array.isArray(keys)&&keys.length) ktSel=new Set(keys); ktPrewarmed=false; ktPrewarm(); ktSel=saved; }
+      catch(e){ console.error('autoprewarm', e); }
+    };
     window.__ktAutoWarm = function(key){
       try {
         // Goes through the REAL path -- type, then send -- instead of dispatching straight to the
@@ -2485,7 +2506,9 @@
       ref.foot.hidden=true;
       ref.foot.innerHTML='';
       ref.foot.appendChild(ktActs(ktCopyBtn(()=>ref.text)));
-      ref.liveLen=0; ref.maxLen=0; ref.liveText=''; ref.liveMd='';   // a retry streams from scratch: forget the previous attempt's preview
+      ref.liveLen=0; ref.maxLen=0; ref.liveText=''; ref.liveMd='';
+      ref.createdAt=Date.now(); ref.sentAt=0; ref.firstAt=0; ref.doneAt=0;
+      ktShowTiming(ref.card.querySelector('.kt-status'), null);   // a retry streams from scratch: forget the previous attempt's preview
       const stEl=ref.card.querySelector('.kt-status');
       const rb=stEl&&stEl.querySelector('.kt-retry'); if(rb) rb.remove();
       if(stEl && !stEl.querySelector('.dl-spin')){ const sp=document.createElement('span'); sp.className='dl-spin'; stEl.prepend(sp); ref.spin=sp; }
@@ -2820,7 +2843,137 @@
       if(st==='timeout') return t.ktTimeout;
       if(st==='login') return t.ktLogin;
       if(st==='cancelled') return t.ktCancelled;
+      if(st==='captcha') return t.ktCaptchaShort;
       return t.ktError;   // error | sendfail
+    }
+    /* ---- Response timing: sent -> first words (shown next to the check) and sent -> complete (tooltip).
+       "Sent" is the real send in the provider page (app://kotodama-sent); providers that send by URL never
+       report it, and then the card's creation time is the fallback. Kept on the saved turn too. ---- */
+    function ktFmtSeconds(ms){
+      try { return new Intl.NumberFormat(document.documentElement.lang || undefined, { minimumFractionDigits:1, maximumFractionDigits:1 }).format(ms/1000)+' s'; }
+      catch(e){ return (ms/1000).toFixed(1)+' s'; }
+    }
+    function ktMarkFirst(ref){ if(ref && !ref.firstAt) ref.firstAt=Date.now(); }
+    function ktTimingOf(ref){
+      const start=ref.sentAt||ref.createdAt;
+      if(!start || !ref.firstAt) return null;
+      return { firstMs:Math.max(0, ref.firstAt-start), totalMs:ref.doneAt ? Math.max(0, ref.doneAt-start) : null };
+    }
+    // Writes "1,4 s" after the check, with the full breakdown as tooltip. Nothing when no words ever came.
+    function ktShowTiming(stEl, timing){
+      if(!stEl) return;
+      let el=stEl.querySelector('.kt-time');
+      if(!timing || timing.firstMs==null){ if(el) el.remove(); return; }
+      if(!el){ el=document.createElement('span'); el.className='kt-time'; const txt=stEl.querySelector('.kt-st-txt'); if(txt) txt.after(el); else stEl.appendChild(el); }
+      el.textContent=ktFmtSeconds(timing.firstMs);
+      const tip=(TR.ktTimeFirst||'').replace('{s}', ktFmtSeconds(timing.firstMs))
+        + (timing.totalMs!=null ? ' · '+(TR.ktTimeTotal||'').replace('{s}', ktFmtSeconds(timing.totalMs)) : '');
+      el.title=tip; el.setAttribute('aria-label', tip);
+    }
+    /* ---- Blocks and the verification queue (app://kotodama-blocked). A blocked card is still waiting:
+       the provider needs the user (human check, sign-in, a window over its composer). Pages are opened
+       one at a time, oldest block first, only when no other answer is still coming; the queue advances by
+       itself when a block clears, and returns to the chat when it is empty. ---- */
+    const ktBlocks=[];            // [{bid, key, reason, since}] in blocking order
+    let ktVerifyActive=null;      // {bid, key} whose page is open for the user right now
+    let ktVerifyDone=0;           // blocks cleared since the queue started, for "1 of N"
+    let ktVerifyPaused=false;     // the user closed the queue: no automatic opening until a new block
+    // Long form for the card body and the queue bar; short form for the status next to the provider name,
+    // where a sentence overlapped the name in a narrow column.
+    function ktBlockLabel(reason, short){
+      if(reason==='captcha') return short ? TR.ktCaptchaShort : TR.ktCaptcha;
+      if(reason==='login') return TR.ktLogin;
+      if(reason==='setup') return short ? TR.ktActionShort : TR.ktSetup;
+      return short ? TR.ktActionShort : TR.ktOverlay;
+    }
+    function ktOnBlocked(d){
+      const id=`${d.broadcastId}:${d.key}`, ref=ktCards[id];
+      const at=ktBlocks.findIndex(b=>b.bid===d.broadcastId && b.key===d.key);
+      if(d.blocked){
+        if(at<0){ ktBlocks.push({ bid:d.broadcastId, key:d.key, reason:d.reason, since:Date.now() }); ktVerifyPaused=false; }
+        else ktBlocks[at].reason=d.reason;
+        if(ref && !ktIsFinal(ref)){
+          ref.card.classList.add('blocked');
+          ref.st.textContent=ktBlockLabel(d.reason, true);
+          ref.body.classList.add('empty'); ref.body.textContent=ktBlockLabel(d.reason);
+          let ob=ref.foot.querySelector('.kt-open-block');
+          if(!ob){
+            ob=document.createElement('button'); ob.className='btn kt-open-block';
+            ob.addEventListener('click', ()=>ktVerifyOpen(d.broadcastId, d.key, true));
+            ref.foot.prepend(ob);
+          }
+          ob.textContent = d.reason==='login' ? (TR.ktLoginBtn||TR.ktOpenProvider) : TR.ktOpenProvider;
+          ref.foot.hidden=false;
+        }
+      } else {
+        const was=ktBlocks.find(b=>b.bid===d.broadcastId && b.key===d.key);
+        ktClearBlock(d.broadcastId, d.key);
+        // A setup screen cleared: the message never went out (there was nowhere to type it), so it is sent now,
+        // once, through the normal retry path. The other blocks resume by themselves on the page.
+        if(was && was.reason==='setup' && ref && !ktIsFinal(ref)) setTimeout(()=>ktRetryKey(d.broadcastId, d.key), 800);
+      }
+      ktVerifyPump(); ktSyncSendBtn();   // a block starting or ending changes whether an answer is still coming
+    }
+    // A block is over: explicitly (unblocked), or because an answer, a preview or an outcome arrived.
+    function ktClearBlock(bid, key){
+      const at=ktBlocks.findIndex(b=>b.bid===bid && b.key===key);
+      // Only the block the user was looking at counts as "done" for the step counter; others that clear on
+      // their own simply leave the queue.
+      if(at>=0){ ktBlocks.splice(at,1); if(ktVerifyActive && ktVerifyActive.bid===bid && ktVerifyActive.key===key) ktVerifyDone++; }
+      const ref=ktCards[`${bid}:${key}`];
+      if(ref && ref.card.classList.contains('blocked')){
+        ref.card.classList.remove('blocked');
+        const ob=ref.foot.querySelector('.kt-open-block'); if(ob) ob.remove();
+        if(!ktIsFinal(ref)){ ref.st.textContent=ktStatusLabel('pending'); ref.body.textContent=''; }
+      }
+      if(ktVerifyActive && ktVerifyActive.bid===bid && ktVerifyActive.key===key) ktVerifyActive=null;
+    }
+    // Opens the next page when the time is right, or finishes the queue.
+    function ktVerifyPump(){
+      if(ktVerifyActive){ ktVerifyShowBar(); return; }
+      if(!ktBlocks.length){
+        if(ktVerifyDone>0){ ktVerifyFinish(); }
+        return;
+      }
+      if(ktVerifyPaused) return;
+      // Sign-ins are not opened by themselves: a provider the user is not logged into is usually a deliberate
+      // choice (decided with the owner, 15/09). Its card shows "Sign-in required" and the Log in button; only
+      // checks that stand in the way of THIS send (human check, window, setup) open automatically.
+      const autoBlocks=ktBlocks.filter(b=>b.reason!=='login');
+      if(!autoBlocks.length) return;
+      // Never pull the user away while other answers are still arriving: wait until every card of the
+      // running broadcasts is either finished or blocked.
+      if(ktIsBusy()) return;
+      const next=autoBlocks[0];
+      ktVerifyOpen(next.bid, next.key, false);
+    }
+    function ktVerifyOpen(bid, key, byUser){
+      const b=ktBlocks.find(x=>x.bid===bid && x.key===key);
+      if(byUser) ktVerifyPaused=false;
+      // Debug log only (Rust prints diag pushes under KOTODAMA_DEBUG): why the queue opened this page now.
+      try{ if(TAURI) invoke('kotodama_push',{ b:'ui', k:'queue', st:'diag', d:'VERIFY-OPEN '+key+' byUser='+!!byUser+' pending='+JSON.stringify(Object.fromEntries(Object.entries(ktPendingByBid).map(([b,s])=>[b,[...s]])))+' blocks='+JSON.stringify(ktBlocks.map(x=>x.key)) }).catch(()=>{}); }catch(e){}
+      ktVerifyActive={ bid, key };
+      // The page is shown as it is (no reload) so the check waiting on it stays there; a sign-in goes to
+      // the login page, and the page script resumes after it (on_page_finished).
+      openProviderRealPage(key, !!(b && b.reason==='login'));
+      ktVerifyShowBar();
+    }
+    function ktVerifyShowBar(){
+      const bar=document.getElementById('ktVerifyBar'); if(!bar) return;
+      if(!ktVerifyActive){ bar.hidden=true; syncProviderTopExtra(); return; }
+      const b=ktBlocks.find(x=>x.bid===ktVerifyActive.bid && x.key===ktVerifyActive.key);
+      const total=ktVerifyDone+ktBlocks.length, pos=ktVerifyDone+1;
+      const name=(PROVIDERS[ktVerifyActive.key]||{}).name||ktVerifyActive.key;
+      document.getElementById('ktVerifyStep').textContent=(TR.ktVerifyStep||'').replace('{i}', pos).replace('{n}', Math.max(total,pos))+' · '+name;
+      document.getElementById('ktVerifyMsg').textContent=b ? ktBlockLabel(b.reason) : '';
+      document.getElementById('ktVerifySkip').hidden = ktBlocks.length<2;
+      bar.hidden=false;
+      syncProviderTopExtra();
+    }
+    async function ktVerifyFinish(){
+      ktVerifyActive=null; ktVerifyDone=0;
+      ktVerifyShowBar();
+      if(body.classList.contains('provider-open')){ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); }
     }
     function ktIsFinal(ref){ const c=ref.card.classList; return c.contains('done')||c.contains('error')||c.contains('timeout')||c.contains('cancelled'); }
     function ktStatusClass(st){ return st==='done'||st==='timeout'||st==='cancelled' ? st : 'error'; }
@@ -2829,7 +2982,23 @@
     // a fixed min-width, which is not what's wanted here).
     // minmax(0,1fr), not 1fr: plain 1fr has an implicit minimum of the content width, so one answer with a
     // long code line widened its column and squeezed the others. Every column must stay the same width.
-    function ktSetGridCols(grid, n){ n=Math.max(1,n); grid.style.setProperty('--kt-n', n); grid.dataset.cols=n; ktUpdateColumn(n); }
+    function ktSetGridCols(grid, n){ n=Math.max(1,n); grid.dataset.cols=n; ktUpdateColumn(n); ktFitGrid(grid); }
+    // How many columns a turn gets: as many as fit at a readable width (KT_MIN_COL), then balanced so rows are
+    // even -- 4 answers that fit 3 per row become 2x2, 9 become 3x3 -- instead of a full row and a lonely rest.
+    // Recomputed when the chat area is resized. With 9 providers the old rule gave 9 columns of ~110px.
+    const KT_MIN_COL=360, KT_COL_GAP=32;
+    function ktFitGrid(grid){
+      const n=+grid.dataset.cols||1;
+      const cs=getComputedStyle(ktThread);
+      const width=ktThread.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0);
+      const fit=Math.max(1, Math.min(n, Math.floor((width+KT_COL_GAP)/(KT_MIN_COL+KT_COL_GAP))));
+      const rows=Math.ceil(n/fit);
+      grid.style.setProperty('--kt-fit', Math.ceil(n/rows));
+    }
+    if(window.ResizeObserver){
+      let fitRAF=0;
+      new ResizeObserver(()=>{ cancelAnimationFrame(fitRAF); fitRAF=requestAnimationFrame(()=>ktThread.querySelectorAll('.kt-grid').forEach(ktFitGrid)); }).observe(ktThread);
+    }
     // A card waiting for its answer, registered under `bid` so progress, previews and the answer find it.
     // Shared by a new turn and by a running turn shown again after a switch of conversation.
     function ktPendingCard(grid, bid, key){
@@ -2847,6 +3016,7 @@
         st:card.querySelector('.kt-st-txt'), spin:card.querySelector('.dl-spin'),
         foot:card.querySelector('.kt-card-foot'), text:'' };
       ref.foot.appendChild(ktActs(ktCopyBtn(()=>ref.text)));
+      ref.createdAt=Date.now();
       ktCards[`${bid}:${key}`]=ref;
     }
     function ktAppendTurn(bid, text, keys){
@@ -2857,7 +3027,9 @@
       ktThread.appendChild(grid);
       ktThread.scrollTop=ktThread.scrollHeight;
     }
-    function ktIsBusy(){ return Object.keys(ktPendingByBid).length>0; }
+    // Busy = an answer is actually being produced. Cards waiting on the user (sign-in, human check) do not count:
+    // otherwise one provider the user is not logged into kept the button on Stop and no new message could be sent.
+    function ktIsBusy(){ return Object.keys(ktPendingByBid).some(bid=>[...ktPendingByBid[bid]].some(key=>!ktBlocks.some(b=>b.bid===bid && b.key===key))); }
     function ktMarkPending(bid, key){ (ktPendingByBid[bid] ||= new Set()).add(key); ktSyncSendBtn(); }
     function ktClearPending(bid, key){
       const set=ktPendingByBid[bid]; if(!set) return;
@@ -2898,6 +3070,8 @@
       // A stopped key already saved as cancelled: a late confirmation must not rewrite it.
       if(st==='cancelled' && !(ktPendingByBid[d.broadcastId]||new Set()).has(d.key) && ktStoppedBids.has(d.broadcastId)) return;
       ktClearPending(d.broadcastId, d.key);
+      if(ktBlocks.some(b=>b.bid===d.broadcastId && b.key===d.key)){ ktClearBlock(d.broadcastId, d.key); setTimeout(ktVerifyPump, 0); }
+      else if(!ktVerifyActive && ktBlocks.length) setTimeout(ktVerifyPump, 0);   // last busy card done: the queue may start
       // Session bookkeeping BEFORE looking for the card: the user may have switched to another conversation
       // while this one was answering, and the answer must still be saved in the conversation it belongs to.
       const turn=ktTurnByBid[d.broadcastId];
@@ -2911,12 +3085,20 @@
       // chats default to it too (see ktLoadSel). No-op on the Rust side if already known.
       if(st==='done' && TAURI) invoke('mark_provider_known',{key:d.key}).catch(()=>{});
       const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
+      if(!ktIsFinal(ref)){
+        ref.doneAt=Date.now();
+        if((d.text||'').trim()) ktMarkFirst(ref);   // answer delivered in one go, without a preview
+        const tm=ktTimingOf(ref);
+        if(tm && turn && turn.answers && turn.answers[d.key]){ turn.answers[d.key].firstMs=tm.firstMs; turn.answers[d.key].totalMs=tm.totalMs; ktPersist(); }
+      }
       // Stop closes a card locally and Rust may confirm it a moment later: render a card only once.
       if(!ref.card.classList.contains('pending') && st==='cancelled') return;
-      ref.card.classList.remove('pending');
+      ref.card.classList.remove('pending','blocked');
+      { const ob=ref.foot.querySelector('.kt-open-block'); if(ob) ob.remove(); }
       ref.card.classList.add(ktStatusClass(st));
       if(ref.spin) ref.spin.remove();
       ref.st.textContent=ktStatusLabel(st)+((d.truncated&&st!=='error')?` ${TR.ktTruncated}`:'');
+      ktShowTiming(ref.card.querySelector('.kt-status'), ktTimingOf(ref));
       // failed/partial card: browser-style ⟳ retry icon right of the status text -- EXCEPT for
       // 'login': retrying the same send while still logged out would just fail again the same
       // way; the useful action there is the "Accedi" button below, not a retry.
@@ -2935,7 +3117,7 @@
         ref.foot.hidden=false;
       } else {
         ref.body.classList.add('empty');
-        ref.body.textContent=ktStatusLabel(st);
+        ref.body.textContent = st==='captcha' ? TR.ktCaptcha : ktStatusLabel(st);   // the full sentence in the body
         // login/error: offer to open the provider tab to fix it (login, cookies...). Unambiguous
         // "Accedi"/"Log in" label specifically for 'login' -- generic "Apri provider" otherwise.
         const t=TR, k=d.key;
@@ -2963,6 +3145,8 @@
       const sel=window.getSelection();
       if(sel && !sel.isCollapsed && sel.anchorNode && ref.body.contains(sel.anchorNode)) return;
       ref.liveLen=text.length; ref.liveText=text; ref.liveMd=d.md||'';
+      ktMarkFirst(ref);
+      if(ref.card.classList.contains('blocked')){ ktClearBlock(d.broadcastId, d.key); ktVerifyPump(); }
       // Follow the stream only when the reader is already at the bottom: someone who scrolled up to read
       // an earlier part must not be pulled away from it.
       const atBottom = ktThread.scrollHeight - ktThread.scrollTop - ktThread.clientHeight < 48;
@@ -2983,6 +3167,7 @@
       // show the highest value reached.
       const len=d.len||0;
       if(len>(ref.maxLen||0)) ref.maxLen=len;
+      if(len>0) ktMarkFirst(ref);
       const shown=ref.maxLen||0;
       ref.st.textContent=ktStatusLabel('streaming', shown>=1000?`${(shown/1000).toFixed(1)}k`:String(shown));
     }
@@ -3255,7 +3440,15 @@
     async function setClaudeHint(show){
       if(show && localStorage.getItem(CLAUDE_HINT_KEY)==='1') show=false; // "don't show again"
       claudeHint.hidden=!show;
-      const px=show?(claudeHint.offsetHeight||0):0;
+      await syncProviderTopExtra();
+    }
+    // The provider page is pushed down by the bars shown above it (Claude hint, verification queue). The
+    // verification bar sits below the hint when both are visible.
+    async function syncProviderTopExtra(){
+      const hintH = claudeHint.hidden ? 0 : (claudeHint.offsetHeight||0);
+      const vb=document.getElementById('ktVerifyBar');
+      if(vb){ vb.style.top = `calc(var(--topbar-h) + ${hintH}px)`; }
+      const px = hintH + ((vb && !vb.hidden) ? (vb.offsetHeight||0) : 0);
       if(TAURI){ try{ await invoke('set_provider_top_extra',{px}); }catch(e){} }
     }
     claudeHintClose.addEventListener('click', ()=>{ localStorage.setItem(CLAUDE_HINT_KEY,'1'); setClaudeHint(false); });
@@ -4048,7 +4241,16 @@
       // Kotodama meta-chat: per-provider answers and progress heartbeats.
       listen('app://kotodama-answer', e=>{ ktOnAnswer(e.payload||{}); });
       listen('app://kotodama-progress', e=>{ ktOnProgress(e.payload||{}); });
+      listen('app://kotodama-sent', e=>{ const d=e.payload||{}; const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(ref && !ref.sentAt) ref.sentAt=Date.now(); });
       listen('app://kotodama-partial', e=>{ ktOnPartial(e.payload||{}); });
+      listen('app://kotodama-blocked', e=>{ ktOnBlocked(e.payload||{}); });
+      document.getElementById('ktVerifySkip').addEventListener('click', ()=>{
+        if(!ktVerifyActive || ktBlocks.length<2) return;
+        const at=ktBlocks.findIndex(b=>b.bid===ktVerifyActive.bid && b.key===ktVerifyActive.key);
+        if(at>=0) ktBlocks.push(ktBlocks.splice(at,1)[0]);
+        ktVerifyActive=null; ktVerifyPump();
+      });
+      document.getElementById('ktVerifyClose').addEventListener('click', ()=>{ ktVerifyPaused=true; ktVerifyDone=0; ktVerifyFinish(); });
       // Links inside answers open in the system browser, never as a popup inside the app window.
       ktThread.addEventListener('click', e=>{
         const a=e.target.closest && e.target.closest('a[href]'); if(!a) return;

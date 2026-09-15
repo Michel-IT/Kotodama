@@ -254,5 +254,14 @@
   "setLowPowerHint": "Mindre minne: tegning via prosessoren og inaktive leverandører satt på pause. Krever omstart.",
   "setLowPowerRestart": "Lagret. Start Kotodama på nytt for å bruke ressurssparingen.",
   "ktStopBtn": "Stopp",
-  "ktCancelled": "Stoppet"
+  "ktCancelled": "Stoppet",
+  "ktCaptcha": "Menneskelig bekreftelse kreves på leverandørens side",
+  "ktOverlay": "Leverandørens side viser et vindu som må lukkes",
+  "ktSetup": "Leverandørens side krever en handling før du kan skrive",
+  "ktCaptchaShort": "Menneskelig bekreftelse",
+  "ktActionShort": "Handling nødvendig",
+  "ktVerifyStep": "Bekreftelse {i} av {n}",
+  "ktSkip": "Hopp over",
+  "ktTimeFirst": "Første ord etter {s}",
+  "ktTimeTotal": "ferdig på {s}"
 }

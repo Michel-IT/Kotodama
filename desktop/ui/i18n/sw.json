@@ -254,5 +254,14 @@
   "setLowPowerHint": "Kumbukumbu kidogo: uchoraji kwa CPU na watoa huduma wasiotumika wamesitishwa. Inahitaji kuanzishwa upya.",
   "setLowPowerRestart": "Imehifadhiwa. Anzisha Kotodama upya ili kutumia kuhifadhi rasilimali.",
   "ktStopBtn": "Simamisha",
-  "ktCancelled": "Imesimamishwa"
+  "ktCancelled": "Imesimamishwa",
+  "ktCaptcha": "Uthibitisho wa binadamu unahitajika kwenye ukurasa wa mtoa huduma",
+  "ktOverlay": "Ukurasa wa mtoa huduma unaonyesha dirisha la kufunga",
+  "ktSetup": "Ukurasa wa mtoa huduma unahitaji hatua kabla hujaandika",
+  "ktCaptchaShort": "Uthibitisho wa binadamu",
+  "ktActionShort": "Hatua inahitajika",
+  "ktVerifyStep": "Uthibitisho {i} kati ya {n}",
+  "ktSkip": "Ruka",
+  "ktTimeFirst": "Maneno ya kwanza baada ya {s}",
+  "ktTimeTotal": "imekamilika kwa {s}"
 }

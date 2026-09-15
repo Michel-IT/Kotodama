@@ -254,5 +254,14 @@
   "setLowPowerHint": "Kevesebb memória: kirajzolás a processzorral, a tétlen szolgáltatók felfüggesztve. Újraindítás szükséges.",
   "setLowPowerRestart": "Mentve. Indítsa újra a Kotodamát az erőforrás-takarékosság alkalmazásához.",
   "ktStopBtn": "Leállítás",
-  "ktCancelled": "Leállítva"
+  "ktCancelled": "Leállítva",
+  "ktCaptcha": "Emberi ellenőrzés szükséges a szolgáltató oldalán",
+  "ktOverlay": "A szolgáltató oldalán egy bezárandó ablak látható",
+  "ktSetup": "A szolgáltató oldala műveletet kér, mielőtt írhatnál",
+  "ktCaptchaShort": "Emberi ellenőrzés",
+  "ktActionShort": "Művelet szükséges",
+  "ktVerifyStep": "{i}/{n}. ellenőrzés",
+  "ktSkip": "Kihagyás",
+  "ktTimeFirst": "Első szavak {s} után",
+  "ktTimeTotal": "kész {s} alatt"
 }

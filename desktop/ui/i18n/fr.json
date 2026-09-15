@@ -254,5 +254,14 @@
   "setLowPowerHint": "Moins de mémoire : rendu par le processeur et fournisseurs inactifs suspendus. Nécessite un redémarrage.",
   "setLowPowerRestart": "Enregistré. Redémarrez Kotodama pour appliquer l'économie de ressources.",
   "ktStopBtn": "Arrêter",
-  "ktCancelled": "Interrompue"
+  "ktCancelled": "Interrompue",
+  "ktCaptcha": "Vérification humaine requise sur la page du fournisseur",
+  "ktOverlay": "La page du fournisseur affiche une fenêtre à fermer",
+  "ktSetup": "La page du fournisseur demande une action avant que vous puissiez écrire",
+  "ktCaptchaShort": "Vérification humaine",
+  "ktActionShort": "Action requise",
+  "ktVerifyStep": "Vérification {i} sur {n}",
+  "ktSkip": "Passer",
+  "ktTimeFirst": "Premiers mots après {s}",
+  "ktTimeTotal": "terminée en {s}"
 }

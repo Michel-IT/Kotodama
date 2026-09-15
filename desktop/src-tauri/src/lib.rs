@@ -1404,14 +1404,41 @@ pub fn run() {
                             .collect();
                         let m = main.clone();
                         std::thread::spawn(move || {
+                            let env_u64 = |name: &str, def: u64| std::env::var(name).ok().and_then(|v| v.parse::<u64>().ok()).unwrap_or(def);
                             std::thread::sleep(std::time::Duration::from_secs(12));
-                            let t = serde_json::to_string(&text).unwrap_or_else(|_| "\"\"".into());
                             let k = serde_json::to_string(&keys).unwrap_or_else(|_| "[]".into());
-                            debug::log(format!("AUTOCHAT: sending to {k}"));
+                            // KOTO_AUTOCHAT_PREWARM=1: load the provider pages first (the real pre-warm path) and send
+                            // only after KOTO_AUTOCHAT_WAIT_S, to compare a warm page with a freshly loaded one.
+                            if std::env::var("KOTO_AUTOCHAT_PREWARM").is_ok() {
+                                let _ = m.eval(format!("window.__ktAutoPrewarm && __ktAutoPrewarm({k})"));
+                                debug::log("AUTOCHAT: pre-warming");
+                            }
+                            std::thread::sleep(std::time::Duration::from_secs(env_u64("KOTO_AUTOCHAT_WAIT_S", 0)));
                             // KOTO_AUTOCHAT_RECIPE=key:translate (optional): the recipe used for this send.
                             let r = serde_json::to_string(&std::env::var("KOTO_AUTOCHAT_RECIPE").unwrap_or_default())
                                 .unwrap_or_else(|_| "\"\"".into());
-                            let _ = m.eval(format!("window.__ktAutoChat && __ktAutoChat({t}, {k}, {r})"));
+                            // KOTO_AUTOCHAT_REPEAT=n + KOTO_AUTOCHAT_EVERY_S=s: n sends in the same session, s seconds
+                            // apart, each numbered so the provider does not see the same text twice.
+                            let repeat = env_u64("KOTO_AUTOCHAT_REPEAT", 1).max(1);
+                            for i in 0..repeat {
+                                if i > 0 {
+                                    std::thread::sleep(std::time::Duration::from_secs(env_u64("KOTO_AUTOCHAT_EVERY_S", 90)));
+                                }
+                                let msg = if repeat > 1 { format!("{text} ({})", i + 1) } else { text.clone() };
+                                let t = serde_json::to_string(&msg).unwrap_or_else(|_| "\"\"".into());
+                                debug::log(format!("AUTOCHAT: sending to {k} #{}", i + 1));
+                                let _ = m.eval(format!("window.__ktAutoChat && __ktAutoChat({t}, {k}, {r})"));
+                            }
+                            // KOTO_AUTOCHAT_CLOSEVIEW_S=<s>: close the verification queue (and the provider page it
+                            // opened) that long after the last send, to look at the chat itself.
+                            if let Some(secs) = std::env::var("KOTO_AUTOCHAT_CLOSEVIEW_S").ok().and_then(|v| v.parse::<u64>().ok()) {
+                                let m2 = m.clone();
+                                std::thread::spawn(move || {
+                                    std::thread::sleep(std::time::Duration::from_secs(secs));
+                                    debug::log("AUTOCHAT: closing the verification queue");
+                                    let _ = m2.eval("document.getElementById('ktVerifyClose') && document.getElementById('ktVerifyClose').click()");
+                                });
+                            }
                             // KOTO_AUTOCHAT_STOP_MS=<ms>: press Stop that long after the send, to test it.
                             if let Some(ms) = std::env::var("KOTO_AUTOCHAT_STOP_MS").ok().and_then(|v| v.parse::<u64>().ok()) {
                                 std::thread::sleep(std::time::Duration::from_millis(ms));
