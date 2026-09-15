@@ -137,7 +137,8 @@
     "errorNoAnswer": "ഉത്തരം ലഭിച്ചില്ല",
     "stageConnect": "കണക്റ്റ് ചെയ്യുന്നു...",
     "stageWork": "ഉത്തരം എത്തുന്നു",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "ഈ വിൻഡോ അഡ്മിനിസ്ട്രേറ്ററായി പ്രവർത്തിക്കുന്നു: Kotodama-യ്ക്ക് ഇതിൽ നിന്ന് പകർത്താനാവില്ല"
   },
   "rename": "പുനർനാമകരണം",
   "edit": "എഡിറ്റ് ചെയ്യുക",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "നീക്കം ചെയ്യുക",
   "ktAttachTooBig": "ഫയൽ വളരെ വലുതാണ് (പരമാവധി 10 MB):",
   "ktAttachTooMany": "ഒരു സന്ദേശത്തിൽ പരമാവധി 5 ഫയലുകൾ",
-  "ktElevatedDrop": "Kotodama അഡ്മിനിസ്ട്രേറ്ററായി പ്രവർത്തിക്കുന്നു: ഫയൽ എക്സ്പ്ലോററിൽ നിന്ന് ഫയലുകൾ വലിച്ചിടാൻ Windows അനുവദിക്കുന്നില്ല. ചിത്രങ്ങൾ ഒട്ടിക്കുക അല്ലെങ്കിൽ സാധാരണ രീതിയിൽ വീണ്ടും തുടങ്ങുക.",
   "ktRailTitle": "ഈ സംഭാഷണത്തിലെ സന്ദേശങ്ങൾ",
   "ktTabAnswers": "ഉത്തരങ്ങൾ",
   "ktTabLinks": "ലിങ്കുകൾ",

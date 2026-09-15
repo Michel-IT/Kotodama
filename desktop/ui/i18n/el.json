@@ -145,7 +145,8 @@
     "errorNoAnswer": "Δεν ελήφθη απάντηση",
     "stageConnect": "Σύνδεση...",
     "stageWork": "Λήψη απάντησης",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Αυτό το παράθυρο εκτελείται ως διαχειριστής: το Kotodama δεν μπορεί να αντιγράψει από αυτό"
   },
   "neutralHint": "Το αντιγραμμένο κείμενο στέλνεται ως έχει στον προεπιλεγμένο πάροχο.",
   "setRecipe": "Προεπιλεγμένη συνταγή",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Αφαίρεση",
   "ktAttachTooBig": "Πολύ μεγάλο αρχείο (έως 10 MB):",
   "ktAttachTooMany": "Έως 5 αρχεία ανά μήνυμα",
-  "ktElevatedDrop": "Το Kotodama εκτελείται ως διαχειριστής: τα Windows δεν επιτρέπουν σύρσιμο αρχείων από την Εξερεύνηση. Επικολλήστε εικόνες ή επανεκκινήστε κανονικά.",
   "ktRailTitle": "Μηνύματα αυτής της συνομιλίας",
   "ktTabAnswers": "Απαντήσεις",
   "ktTabLinks": "Σύνδεσμοι",

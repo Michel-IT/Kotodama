@@ -145,7 +145,8 @@
     "errorNoAnswer": "Tidak ada jawaban diterima",
     "stageConnect": "Menghubungkan...",
     "stageWork": "Menerima jawaban",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Jendela ini berjalan sebagai administrator: Kotodama tidak dapat menyalin darinya"
   },
   "neutralHint": "Teks yang disalin dikirim apa adanya ke penyedia default.",
   "setRecipe": "Resep default",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Hapus",
   "ktAttachTooBig": "File terlalu besar (maks 10 MB):",
   "ktAttachTooMany": "Maksimal 5 file per pesan",
-  "ktElevatedDrop": "Kotodama berjalan sebagai administrator: Windows tidak mengizinkan menyeret file dari File Explorer. Tempel gambar atau jalankan ulang secara normal.",
   "ktRailTitle": "Pesan dalam percakapan ini",
   "ktTabAnswers": "Jawaban",
   "ktTabLinks": "Tautan",

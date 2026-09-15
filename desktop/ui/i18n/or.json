@@ -137,7 +137,8 @@
     "errorNoAnswer": "କୌଣସି ଉତ୍ତର ମିଳିଲା ନାହିଁ",
     "stageConnect": "ସଂଯୋଗ କରୁଛି...",
     "stageWork": "ଉତ୍ତର ଆସୁଛି",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "ଏହି ୱିଣ୍ଡୋ ପ୍ରଶାସକ ଭାବରେ ଚାଲୁଛି: Kotodama ଏଥିରୁ କପି କରିପାରିବ ନାହିଁ"
   },
   "rename": "ନାମ ବଦଳାନ୍ତୁ",
   "edit": "ସମ୍ପାଦନା",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "ହଟାନ୍ତୁ",
   "ktAttachTooBig": "ଫାଇଲ୍ ବହୁତ ବଡ଼ (ସର୍ବାଧିକ 10 MB):",
   "ktAttachTooMany": "ପ୍ରତି ବାର୍ତ୍ତାରେ ସର୍ବାଧିକ 5 ଫାଇଲ୍",
-  "ktElevatedDrop": "Kotodama ପ୍ରଶାସକ ଭାବରେ ଚାଲୁଛି: Windows ଫାଇଲ୍ ଏକ୍ସପ୍ଲୋରରରୁ ଫାଇଲ୍ ଟାଣିବାକୁ ଦିଏ ନାହିଁ। ଚିତ୍ର ପେଷ୍ଟ କରନ୍ତୁ କିମ୍ବା ସାଧାରଣ ଭାବରେ ପୁଣି ଆରମ୍ଭ କରନ୍ତୁ।",
   "ktRailTitle": "ଏହି ବାର୍ତ୍ତାଳାପର ବାର୍ତ୍ତା",
   "ktTabAnswers": "ଉତ୍ତର",
   "ktTabLinks": "ଲିଙ୍କ",

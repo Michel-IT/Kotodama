@@ -145,7 +145,8 @@
     "errorNoAnswer": "Yanıt alınamadı",
     "stageConnect": "Bağlanıyor...",
     "stageWork": "Yanıt alınıyor",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Bu pencere yönetici olarak çalışıyor: Kotodama buradan kopyalayamaz"
   },
   "neutralHint": "Kopyalanan metin olduğu gibi varsayılan sağlayıcıya gönderilir.",
   "setRecipe": "Varsayılan tarif",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Kaldır",
   "ktAttachTooBig": "Dosya çok büyük (en fazla 10 MB):",
   "ktAttachTooMany": "Mesaj başına en fazla 5 dosya",
-  "ktElevatedDrop": "Kotodama yönetici olarak çalışıyor: Windows, Dosya Gezgini'nden dosya sürüklemeye izin vermez. Görselleri yapıştırın veya normal şekilde yeniden başlatın.",
   "ktRailTitle": "Bu sohbetteki mesajlar",
   "ktTabAnswers": "Yanıtlar",
   "ktTabLinks": "Bağlantılar",

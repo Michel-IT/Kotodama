@@ -145,7 +145,8 @@
     "errorNoAnswer": "응답을 받지 못했습니다",
     "stageConnect": "연결 중...",
     "stageWork": "응답 수신 중",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "이 창은 관리자 권한으로 실행 중이라 Kotodama가 복사할 수 없습니다"
   },
   "neutralHint": "복사한 텍스트가 그대로 기본 제공자에게 전송됩니다.",
   "setRecipe": "기본 레시피",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "제거",
   "ktAttachTooBig": "파일이 너무 큽니다(최대 10MB):",
   "ktAttachTooMany": "메시지당 최대 5개 파일",
-  "ktElevatedDrop": "Kotodama가 관리자 권한으로 실행 중입니다. Windows에서는 파일 탐색기에서 파일을 끌어올 수 없습니다. 이미지를 붙여넣거나 일반 모드로 다시 시작하세요.",
   "ktRailTitle": "이 대화의 메시지",
   "ktTabAnswers": "답변",
   "ktTabLinks": "링크",

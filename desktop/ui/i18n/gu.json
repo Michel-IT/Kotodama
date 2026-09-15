@@ -145,7 +145,8 @@
     "errorNoAnswer": "કોઈ જવાબ મળ્યો નથી",
     "stageConnect": "કનેક્ટ થઈ રહ્યું છે...",
     "stageWork": "જવાબ આવી રહ્યો છે",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "આ વિન્ડો એડમિનિસ્ટ્રેટર તરીકે ચાલે છે: Kotodama તેમાંથી કૉપિ કરી શકતું નથી"
   },
   "neutralHint": "કૉપિ કરેલો ટેક્સ્ટ જેમ છે તેમ ડિફૉલ્ટ પ્રોવાઇડરને મોકલાય છે.",
   "setRecipe": "ડિફૉલ્ટ રેસિપી",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "દૂર કરો",
   "ktAttachTooBig": "ફાઇલ ખૂબ મોટી છે (મહત્તમ 10 MB):",
   "ktAttachTooMany": "દરેક સંદેશમાં વધુમાં વધુ 5 ફાઇલ",
-  "ktElevatedDrop": "Kotodama એડમિનિસ્ટ્રેટર તરીકે ચાલે છે: Windows ફાઇલ એક્સપ્લોરરમાંથી ફાઇલો ખેંચવા દેતું નથી. છબીઓ પેસ્ટ કરો અથવા સામાન્ય રીતે ફરી શરૂ કરો.",
   "ktRailTitle": "આ વાતચીતના સંદેશા",
   "ktTabAnswers": "જવાબો",
   "ktTabLinks": "લિંક્સ",

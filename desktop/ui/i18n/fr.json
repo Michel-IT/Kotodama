@@ -145,7 +145,8 @@
     "errorNoAnswer": "Aucune réponse reçue",
     "stageConnect": "Connexion...",
     "stageWork": "Réception de la réponse",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Cette fenêtre s'exécute en administrateur : Kotodama ne peut pas y copier"
   },
   "neutralHint": "Le texte copié est envoyé tel quel au fournisseur par défaut.",
   "setRecipe": "Recette par défaut",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Retirer",
   "ktAttachTooBig": "Fichier trop volumineux (10 Mo max) :",
   "ktAttachTooMany": "5 fichiers maximum par message",
-  "ktElevatedDrop": "Kotodama est lancé en administrateur : Windows n'autorise pas le glisser-déposer depuis l'Explorateur. Collez les images ou relancez-le normalement.",
   "ktRailTitle": "Messages de cette conversation",
   "ktTabAnswers": "Réponses",
   "ktTabLinks": "Liens",

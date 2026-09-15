@@ -145,7 +145,8 @@
     "errorNoAnswer": "Не е получен отговор",
     "stageConnect": "Свързване...",
     "stageWork": "Отговорът пристига",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Този прозорец работи като администратор: Kotodama не може да копира от него"
   },
   "neutralHint": "Копираният текст се изпраща както е до доставчика по подразбиране.",
   "setRecipe": "Рецепта по подразбиране",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Премахни",
   "ktAttachTooBig": "Файлът е твърде голям (макс. 10 MB):",
   "ktAttachTooMany": "Най-много 5 файла на съобщение",
-  "ktElevatedDrop": "Kotodama работи като администратор: Windows не позволява плъзгане на файлове в него от File Explorer. Поставете изображения или го рестартирайте нормално.",
   "ktRailTitle": "Съобщения в този разговор",
   "ktTabAnswers": "Отговори",
   "ktTabLinks": "Връзки",

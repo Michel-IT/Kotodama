@@ -137,7 +137,8 @@
     "errorNoAnswer": "Відповіді не отримано",
     "stageConnect": "З'єднання...",
     "stageWork": "Отримання відповіді",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Це вікно запущено від імені адміністратора: Kotodama не може з нього копіювати"
   },
   "rename": "Перейменувати",
   "edit": "Редагувати",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Видалити",
   "ktAttachTooBig": "Файл завеликий (макс. 10 МБ):",
   "ktAttachTooMany": "Не більше 5 файлів у повідомленні",
-  "ktElevatedDrop": "Kotodama запущено від імені адміністратора: Windows не дозволяє перетягувати файли з Провідника. Вставте зображення або перезапустіть звичайним способом.",
   "ktRailTitle": "Повідомлення в цій розмові",
   "ktTabAnswers": "Відповіді",
   "ktTabLinks": "Посилання",

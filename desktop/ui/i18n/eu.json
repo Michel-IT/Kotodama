@@ -145,7 +145,8 @@
     "errorNoAnswer": "Ez da erantzunik jaso",
     "stageConnect": "Konektatzen...",
     "stageWork": "Erantzuna iristen ari da",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Leiho hau administratzaile gisa dabil: Kotodamak ezin du bertatik kopiatu"
   },
   "neutralHint": "Kopiatutako testua dagoen bezala bidaltzen da hornitzaile lehenetsira.",
   "setRecipe": "Errezeta lehenetsia",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Kendu",
   "ktAttachTooBig": "Fitxategi handiegia (gehienez 10 MB):",
   "ktAttachTooMany": "Gehienez 5 fitxategi mezuko",
-  "ktElevatedDrop": "Kotodama administratzaile gisa ari da: Windowsek ez du uzten fitxategiak arakatzailetik arrastatzen. Itsatsi irudiak edo berrabiarazi normal.",
   "ktRailTitle": "Elkarrizketa honetako mezuak",
   "ktTabAnswers": "Erantzunak",
   "ktTabLinks": "Estekak",

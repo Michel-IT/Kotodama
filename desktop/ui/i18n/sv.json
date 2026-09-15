@@ -145,7 +145,8 @@
     "errorNoAnswer": "Inget svar mottaget",
     "stageConnect": "Ansluter...",
     "stageWork": "Tar emot svaret",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Det här fönstret körs som administratör: Kotodama kan inte kopiera från det"
   },
   "neutralHint": "Den kopierade texten skickas som den är till standardleverantören.",
   "setRecipe": "Standardrecept",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Ta bort",
   "ktAttachTooBig": "Filen är för stor (max 10 MB):",
   "ktAttachTooMany": "Högst 5 filer per meddelande",
-  "ktElevatedDrop": "Kotodama körs som administratör: Windows tillåter inte att filer dras in från Utforskaren. Klistra in bilder eller starta om normalt.",
   "ktRailTitle": "Meddelanden i den här konversationen",
   "ktTabAnswers": "Svar",
   "ktTabLinks": "Länkar",

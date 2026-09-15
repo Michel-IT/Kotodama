@@ -145,7 +145,8 @@
     "errorNoAnswer": "Nije primljen odgovor",
     "stageConnect": "Povezivanje...",
     "stageWork": "Odgovor stiže",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Овај прозор ради као администратор: Kotodama не може да копира из њега"
   },
   "neutralHint": "Копирани текст се шаље непромењен подразумеваном провајдеру.",
   "setRecipe": "Подразумевани рецепт",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Уклони",
   "ktAttachTooBig": "Датотека је превелика (највише 10 MB):",
   "ktAttachTooMany": "Највише 5 датотека по поруци",
-  "ktElevatedDrop": "Kotodama ради као администратор: Windows не дозвољава превлачење датотека из Истраживача. Налепите слике или покрените нормално.",
   "ktRailTitle": "Поруке у овом разговору",
   "ktTabAnswers": "Одговори",
   "ktTabLinks": "Везе",

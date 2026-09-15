@@ -145,7 +145,8 @@
     "errorNoAnswer": "Atsakymas negautas",
     "stageConnect": "Jungiamasi...",
     "stageWork": "Atsakymas gaunamas",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Šis langas veikia kaip administratorius: Kotodama negali iš jo kopijuoti"
   },
   "neutralHint": "Nukopijuotas tekstas siunčiamas toks, koks yra, į numatytąjį provaiderį.",
   "setRecipe": "Numatytasis receptas",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Pašalinti",
   "ktAttachTooBig": "Failas per didelis (daugiausia 10 MB):",
   "ktAttachTooMany": "Daugiausia 5 failai žinutėje",
-  "ktElevatedDrop": "Kotodama veikia kaip administratorius: Windows neleidžia vilkti failų iš naršyklės. Įklijuokite paveikslėlius arba paleiskite įprastai.",
   "ktRailTitle": "Šio pokalbio žinutės",
   "ktTabAnswers": "Atsakymai",
   "ktTabLinks": "Nuorodos",

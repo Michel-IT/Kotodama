@@ -145,7 +145,8 @@
     "errorNoAnswer": "No s'ha rebut cap resposta",
     "stageConnect": "Connectant...",
     "stageWork": "La resposta està arribant",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Aquesta finestra s'executa com a administrador: Kotodama no en pot copiar"
   },
   "neutralHint": "El text copiat s'envia tal qual al proveïdor predeterminat.",
   "setRecipe": "Recepta predeterminada",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Elimina",
   "ktAttachTooBig": "Fitxer massa gran (màx. 10 MB):",
   "ktAttachTooMany": "Com a màxim 5 fitxers per missatge",
-  "ktElevatedDrop": "Kotodama s'executa com a administrador: Windows no permet arrossegar-hi fitxers des de l'Explorador. Enganxa imatges o reinicia'l normalment.",
   "ktRailTitle": "Missatges d'aquesta conversa",
   "ktTabAnswers": "Respostes",
   "ktTabLinks": "Enllaços",

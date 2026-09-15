@@ -145,7 +145,8 @@
     "errorNoAnswer": "回答がありません",
     "stageConnect": "接続中...",
     "stageWork": "回答を受信中",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "このウィンドウは管理者として実行中のため、Kotodama はコピーできません"
   },
   "neutralHint": "コピーしたテキストがそのままデフォルトのプロバイダーに送信されます。",
   "setRecipe": "デフォルトのレシピ",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "削除",
   "ktAttachTooBig": "ファイルが大きすぎます(最大 10 MB):",
   "ktAttachTooMany": "1 メッセージにつき最大 5 ファイル",
-  "ktElevatedDrop": "Kotodama は管理者として実行中です。Windows ではエクスプローラーからファイルをドラッグできません。画像を貼り付けるか、通常どおり再起動してください。",
   "ktRailTitle": "この会話のメッセージ",
   "ktTabAnswers": "回答",
   "ktTabLinks": "リンク",

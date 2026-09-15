@@ -145,7 +145,8 @@
     "errorNoAnswer": "Vastust ei saadud",
     "stageConnect": "Ühendan...",
     "stageWork": "Vastus saabub",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "See aken töötab administraatorina: Kotodama ei saa sealt kopeerida"
   },
   "neutralHint": "Kopeeritud tekst saadetakse muutmata kujul vaikepakkujale.",
   "setRecipe": "Vaikeretsept",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Eemalda",
   "ktAttachTooBig": "Fail on liiga suur (max 10 MB):",
   "ktAttachTooMany": "Kuni 5 faili sõnumi kohta",
-  "ktElevatedDrop": "Kotodama töötab administraatorina: Windows ei luba faile Explorerist sinna lohistada. Kleebi pildid või käivita tavaliselt uuesti.",
   "ktRailTitle": "Selle vestluse sõnumid",
   "ktTabAnswers": "Vastused",
   "ktTabLinks": "Lingid",

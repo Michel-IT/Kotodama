@@ -145,7 +145,8 @@
     "errorNoAnswer": "کوئی جواب موصول نہیں ہوا",
     "stageConnect": "منسلک ہو رہا ہے...",
     "stageWork": "جواب آ رہا ہے",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "یہ ونڈو ایڈمنسٹریٹر کے طور پر چل رہی ہے: Kotodama اس سے کاپی نہیں کر سکتا"
   },
   "neutralHint": "کاپی کیا گیا متن ویسے ہی ڈیفالٹ پرووائیڈر کو بھیجا جاتا ہے۔",
   "setRecipe": "ڈیفالٹ ریسیپی",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "ہٹائیں",
   "ktAttachTooBig": "فائل بہت بڑی ہے (زیادہ سے زیادہ 10 MB):",
   "ktAttachTooMany": "فی پیغام زیادہ سے زیادہ 5 فائلیں",
-  "ktElevatedDrop": "Kotodama ایڈمنسٹریٹر کے طور پر چل رہا ہے: Windows فائل ایکسپلورر سے فائلیں گھسیٹنے نہیں دیتا۔ تصاویر پیسٹ کریں یا عام طریقے سے دوبارہ چلائیں۔",
   "ktRailTitle": "اس گفتگو کے پیغامات",
   "ktTabAnswers": "جوابات",
   "ktTabLinks": "لنکس",

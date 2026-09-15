@@ -137,7 +137,8 @@
     "errorNoAnswer": "ಯಾವುದೇ ಉತ್ತರ ಸಿಗಲಿಲ್ಲ",
     "stageConnect": "ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ...",
     "stageWork": "ಉತ್ತರ ಬರುತ್ತಿದೆ",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "ಈ ವಿಂಡೋ ನಿರ್ವಾಹಕರಾಗಿ ಚಾಲನೆಯಲ್ಲಿದೆ: Kotodama ಇದರಿಂದ ನಕಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ"
   },
   "rename": "ಮರುಹೆಸರಿಸಿ",
   "edit": "ಸಂಪಾದಿಸಿ",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "ತೆಗೆದುಹಾಕಿ",
   "ktAttachTooBig": "ಫೈಲ್ ತುಂಬಾ ದೊಡ್ಡದು (ಗರಿಷ್ಠ 10 MB):",
   "ktAttachTooMany": "ಪ್ರತಿ ಸಂದೇಶಕ್ಕೆ ಗರಿಷ್ಠ 5 ಫೈಲ್‌ಗಳು",
-  "ktElevatedDrop": "Kotodama ನಿರ್ವಾಹಕರಾಗಿ ಚಾಲನೆಯಲ್ಲಿದೆ: Windows ಫೈಲ್ ಎಕ್ಸ್‌ಪ್ಲೋರರ್‌ನಿಂದ ಫೈಲ್ ಎಳೆಯಲು ಬಿಡುವುದಿಲ್ಲ. ಚಿತ್ರಗಳನ್ನು ಅಂಟಿಸಿ ಅಥವಾ ಸಾಮಾನ್ಯವಾಗಿ ಮರುಪ್ರಾರಂಭಿಸಿ.",
   "ktRailTitle": "ಈ ಸಂಭಾಷಣೆಯ ಸಂದೇಶಗಳು",
   "ktTabAnswers": "ಉತ್ತರಗಳು",
   "ktTabLinks": "ಲಿಂಕ್‌ಗಳು",

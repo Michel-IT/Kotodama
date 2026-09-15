@@ -145,7 +145,8 @@
     "errorNoAnswer": "Ei vastausta",
     "stageConnect": "Yhdistetään...",
     "stageWork": "Vastaanotetaan vastausta",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Tämä ikkuna toimii järjestelmänvalvojana: Kotodama ei voi kopioida siitä"
   },
   "neutralHint": "Kopioitu teksti lähetetään sellaisenaan oletuspalveluun.",
   "setRecipe": "Oletusresepti",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Poista",
   "ktAttachTooBig": "Tiedosto on liian suuri (enintään 10 Mt):",
   "ktAttachTooMany": "Enintään 5 tiedostoa viestiä kohden",
-  "ktElevatedDrop": "Kotodama toimii järjestelmänvalvojana: Windows ei salli tiedostojen vetämistä Resurssienhallinnasta. Liitä kuvat tai käynnistä normaalisti.",
   "ktRailTitle": "Tämän keskustelun viestit",
   "ktTabAnswers": "Vastaukset",
   "ktTabLinks": "Linkit",

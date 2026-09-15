@@ -145,7 +145,8 @@
     "errorNoAnswer": "לא התקבלה תשובה",
     "stageConnect": "מתחבר...",
     "stageWork": "מקבל את התשובה",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "החלון הזה פועל כמנהל: Kotodama לא יכול להעתיק ממנו"
   },
   "neutralHint": "הטקסט שהועתק נשלח כפי שהוא לספק ברירת המחדל.",
   "setRecipe": "מתכון ברירת מחדל",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "הסרה",
   "ktAttachTooBig": "הקובץ גדול מדי (עד 10MB):",
   "ktAttachTooMany": "עד 5 קבצים בהודעה",
-  "ktElevatedDrop": "Kotodama פועל כמנהל: Windows לא מאפשר לגרור אליו קבצים מסייר הקבצים. הדבק תמונות או הפעל מחדש כרגיל.",
   "ktRailTitle": "הודעות בשיחה זו",
   "ktTabAnswers": "תשובות",
   "ktTabLinks": "קישורים",

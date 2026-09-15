@@ -180,6 +180,7 @@
     "errorEmpty": "Niente da copiare",
     "errorNoAnswer": "Nessuna risposta ricevuta",
     "errorAccessibility": "Consenti l'Accessibilità a Kotodama",
+    "errorElevated": "Questa finestra è aperta come amministratore: Kotodama non può copiarne il testo",
     "stageConnect": "Connessione...",
     "stageWork": "Risposta in arrivo"
   },
@@ -208,7 +209,6 @@
   "ktAttachRemove": "Rimuovi",
   "ktAttachTooBig": "File troppo grande (max 10 MB):",
   "ktAttachTooMany": "Al massimo 5 file per messaggio",
-  "ktElevatedDrop": "Kotodama è avviata come amministratore: Windows non permette di trascinarci file da Esplora risorse. Incolla le immagini oppure riavviala normalmente.",
   "ktRailTitle": "Messaggi di questa conversazione",
   "ktTabAnswers": "Risposte",
   "ktTabLinks": "Link",

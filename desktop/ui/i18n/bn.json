@@ -145,7 +145,8 @@
     "errorNoAnswer": "কোনো উত্তর পাওয়া যায়নি",
     "stageConnect": "সংযোগ করা হচ্ছে...",
     "stageWork": "উত্তর আসছে",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "এই উইন্ডোটি অ্যাডমিনিস্ট্রেটর হিসেবে চলছে: Kotodama এখান থেকে কপি করতে পারে না"
   },
   "neutralHint": "কপি করা টেক্সট যেমন আছে তেমনই ডিফল্ট প্রোভাইডারে পাঠানো হয়।",
   "setRecipe": "ডিফল্ট রেসিপি",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "সরান",
   "ktAttachTooBig": "ফাইল খুব বড় (সর্বোচ্চ 10 MB):",
   "ktAttachTooMany": "প্রতি বার্তায় সর্বোচ্চ 5টি ফাইল",
-  "ktElevatedDrop": "Kotodama অ্যাডমিনিস্ট্রেটর হিসেবে চলছে: Windows ফাইল এক্সপ্লোরার থেকে ফাইল টেনে আনতে দেয় না। ছবি পেস্ট করুন অথবা স্বাভাবিকভাবে আবার চালু করুন।",
   "ktRailTitle": "এই কথোপকথনের বার্তা",
   "ktTabAnswers": "উত্তর",
   "ktTabLinks": "লিংক",

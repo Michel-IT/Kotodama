@@ -145,7 +145,8 @@
     "errorNoAnswer": "Nem érkezett válasz",
     "stageConnect": "Csatlakozás...",
     "stageWork": "Válasz fogadása",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Ez az ablak rendszergazdaként fut: a Kotodama nem tud belőle másolni"
   },
   "neutralHint": "A másolt szöveg változtatás nélkül megy az alapértelmezett szolgáltatónak.",
   "setRecipe": "Alapértelmezett recept",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Eltávolítás",
   "ktAttachTooBig": "Túl nagy fájl (max. 10 MB):",
   "ktAttachTooMany": "Üzenetenként legfeljebb 5 fájl",
-  "ktElevatedDrop": "A Kotodama rendszergazdaként fut: a Windows nem engedi a fájlok áthúzását a Fájlkezelőből. Illessz be képeket vagy indítsd újra normálisan.",
   "ktRailTitle": "A beszélgetés üzenetei",
   "ktTabAnswers": "Válaszok",
   "ktTabLinks": "Linkek",

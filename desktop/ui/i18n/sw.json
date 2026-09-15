@@ -145,7 +145,8 @@
     "errorNoAnswer": "Hakuna jibu lililopokelewa",
     "stageConnect": "Inaunganisha...",
     "stageWork": "Inapokea jibu",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Dirisha hili linaendeshwa kama msimamizi: Kotodama haiwezi kunakili kutoka humo"
   },
   "neutralHint": "Maandishi yaliyonakiliwa hutumwa kama yalivyo kwa mtoa huduma chaguo-msingi.",
   "setRecipe": "Kichocheo chaguo-msingi",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Ondoa",
   "ktAttachTooBig": "Faili ni kubwa mno (kiwango cha juu 10 MB):",
   "ktAttachTooMany": "Faili 5 zaidi kwa kila ujumbe",
-  "ktElevatedDrop": "Kotodama inaendeshwa kama msimamizi: Windows hairuhusu kuburuta faili kutoka File Explorer. Bandika picha au iwashe upya kawaida.",
   "ktRailTitle": "Ujumbe katika mazungumzo haya",
   "ktTabAnswers": "Majibu",
   "ktTabLinks": "Viungo",

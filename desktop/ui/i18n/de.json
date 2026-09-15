@@ -145,7 +145,8 @@
     "errorNoAnswer": "Keine Antwort erhalten",
     "stageConnect": "Verbindung wird hergestellt...",
     "stageWork": "Antwort wird empfangen",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Dieses Fenster läuft als Administrator: Kotodama kann daraus nicht kopieren"
   },
   "neutralHint": "Der kopierte Text wird unverändert an den Standardanbieter gesendet.",
   "setRecipe": "Standardrezept",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Entfernen",
   "ktAttachTooBig": "Datei zu groß (max. 10 MB):",
   "ktAttachTooMany": "Höchstens 5 Dateien pro Nachricht",
-  "ktElevatedDrop": "Kotodama läuft als Administrator: Windows erlaubt kein Hineinziehen von Dateien aus dem Explorer. Füge Bilder ein oder starte normal neu.",
   "ktRailTitle": "Nachrichten in dieser Unterhaltung",
   "ktTabAnswers": "Antworten",
   "ktTabLinks": "Links",

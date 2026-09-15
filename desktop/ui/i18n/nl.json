@@ -145,7 +145,8 @@
     "errorNoAnswer": "Geen antwoord ontvangen",
     "stageConnect": "Verbinden...",
     "stageWork": "Antwoord ontvangen",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Dit venster draait als beheerder: Kotodama kan er niet uit kopiëren"
   },
   "neutralHint": "De gekopieerde tekst wordt ongewijzigd naar de standaardprovider gestuurd.",
   "setRecipe": "Standaardrecept",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Verwijderen",
   "ktAttachTooBig": "Bestand te groot (max. 10 MB):",
   "ktAttachTooMany": "Maximaal 5 bestanden per bericht",
-  "ktElevatedDrop": "Kotodama draait als beheerder: Windows staat niet toe bestanden vanuit Verkenner te slepen. Plak afbeeldingen of start normaal opnieuw.",
   "ktRailTitle": "Berichten in dit gesprek",
   "ktTabAnswers": "Antwoorden",
   "ktTabLinks": "Links",

@@ -145,7 +145,8 @@
     "errorNoAnswer": "कोणतेही उत्तर मिळाले नाही",
     "stageConnect": "जोडत आहे...",
     "stageWork": "उत्तर येत आहे",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "ही विंडो प्रशासक म्हणून चालू आहे: Kotodama येथून कॉपी करू शकत नाही"
   },
   "neutralHint": "कॉपी केलेला मजकूर जसाच्या तसा डीफॉल्ट प्रोव्हायडरला पाठवला जातो.",
   "setRecipe": "डीफॉल्ट रेसिपी",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "काढा",
   "ktAttachTooBig": "फाइल खूप मोठी आहे (कमाल 10 MB):",
   "ktAttachTooMany": "प्रत्येक संदेशात जास्तीत जास्त 5 फाइल",
-  "ktElevatedDrop": "Kotodama प्रशासक म्हणून चालू आहे: Windows फाइल एक्सप्लोररमधून फाइल ओढू देत नाही. प्रतिमा पेस्ट करा किंवा सामान्यपणे पुन्हा सुरू करा.",
   "ktRailTitle": "या संभाषणातील संदेश",
   "ktTabAnswers": "उत्तरे",
   "ktTabLinks": "दुवे",

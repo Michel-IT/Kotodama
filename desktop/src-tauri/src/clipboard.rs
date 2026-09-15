@@ -45,7 +45,8 @@ fn on_update(app: &AppHandle) {
     let Ok(text) = clipboard.read_text() else {
         return;
     };
-    if text.trim().is_empty() {
+    // The inline transform's probe value (see lib.rs): ours, never something the user copied.
+    if text.trim().is_empty() || text.contains("__kotodama_inline_empty__") {
         return;
     }
 

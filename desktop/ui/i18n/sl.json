@@ -145,7 +145,8 @@
     "errorNoAnswer": "Odgovor ni prejet",
     "stageConnect": "Povezovanje...",
     "stageWork": "Odgovor prihaja",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "To okno se izvaja kot skrbnik: Kotodama iz njega ne more kopirati"
   },
   "neutralHint": "Kopirano besedilo se nespremenjeno pošlje privzetemu ponudniku.",
   "setRecipe": "Privzeti recept",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Odstrani",
   "ktAttachTooBig": "Datoteka je prevelika (največ 10 MB):",
   "ktAttachTooMany": "Največ 5 datotek na sporočilo",
-  "ktElevatedDrop": "Kotodama se izvaja kot skrbnik: Windows ne dovoli vlečenja datotek iz Raziskovalca. Prilepite slike ali jo zaženite normalno.",
   "ktRailTitle": "Sporočila v tem pogovoru",
   "ktTabAnswers": "Odgovori",
   "ktTabLinks": "Povezave",

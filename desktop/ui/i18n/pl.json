@@ -137,7 +137,8 @@
     "errorNoAnswer": "Nie otrzymano odpowiedzi",
     "stageConnect": "Łączenie...",
     "stageWork": "Odbieranie odpowiedzi",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "To okno działa jako administrator: Kotodama nie może z niego kopiować"
   },
   "rename": "Zmień nazwę",
   "edit": "Edytuj",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Usuń",
   "ktAttachTooBig": "Plik jest za duży (maks. 10 MB):",
   "ktAttachTooMany": "Maksymalnie 5 plików na wiadomość",
-  "ktElevatedDrop": "Kotodama działa jako administrator: Windows nie pozwala przeciągać do niej plików z Eksploratora. Wklej obrazy lub uruchom ponownie normalnie.",
   "ktRailTitle": "Wiadomości w tej rozmowie",
   "ktTabAnswers": "Odpowiedzi",
   "ktTabLinks": "Linki",

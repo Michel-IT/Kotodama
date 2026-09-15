@@ -145,7 +145,8 @@
     "errorNoAnswer": "Không nhận được câu trả lời",
     "stageConnect": "Đang kết nối...",
     "stageWork": "Đang nhận câu trả lời",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Cửa sổ này chạy với quyền quản trị: Kotodama không thể sao chép từ đó"
   },
   "neutralHint": "Văn bản đã sao chép được gửi nguyên trạng đến nhà cung cấp mặc định.",
   "setRecipe": "Công thức mặc định",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Xóa",
   "ktAttachTooBig": "Tệp quá lớn (tối đa 10 MB):",
   "ktAttachTooMany": "Tối đa 5 tệp mỗi tin nhắn",
-  "ktElevatedDrop": "Kotodama đang chạy với quyền quản trị: Windows không cho kéo tệp từ File Explorer. Hãy dán ảnh hoặc khởi động lại bình thường.",
   "ktRailTitle": "Tin nhắn trong cuộc trò chuyện này",
   "ktTabAnswers": "Câu trả lời",
   "ktTabLinks": "Liên kết",

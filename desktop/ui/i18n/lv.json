@@ -145,7 +145,8 @@
     "errorNoAnswer": "Atbilde nav saņemta",
     "stageConnect": "Savienojas...",
     "stageWork": "Atbilde tiek saņemta",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Šis logs darbojas kā administrators: Kotodama nevar no tā kopēt"
   },
   "neutralHint": "Kopētais teksts tiek nosūtīts tāds, kāds ir, uz noklusējuma nodrošinātāju.",
   "setRecipe": "Noklusējuma recepte",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Noņemt",
   "ktAttachTooBig": "Fails ir pārāk liels (maks. 10 MB):",
   "ktAttachTooMany": "Ne vairāk kā 5 faili ziņā",
-  "ktElevatedDrop": "Kotodama darbojas kā administrators: Windows neļauj ievilkt failus no Pārlūka. Ielīmējiet attēlus vai palaidiet parasti.",
   "ktRailTitle": "Šīs sarunas ziņas",
   "ktTabAnswers": "Atbildes",
   "ktTabLinks": "Saites",

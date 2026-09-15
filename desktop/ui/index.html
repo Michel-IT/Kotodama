@@ -899,14 +899,13 @@
     /* Files being dragged over the window: the input box is where they land. */
     .kt-composer-box.kt-dragging { border-color:var(--accent); border-style:dashed; background:color-mix(in srgb, var(--accent) 8%, var(--field)); }
     .kt-attach-row { display:flex; flex-wrap:wrap; gap:6px; padding:0 0 8px; }
-    .kt-attach-row[hidden], .kt-elev-note[hidden] { display:none; }
+    .kt-attach-row[hidden] { display:none; }
     .kt-chipf { display:inline-flex; align-items:center; gap:6px; max-width:260px; padding:4px 6px 4px 10px; border-radius:999px;
       border:1px solid var(--border); background:var(--field); font-size:12px; color:var(--text); }
     .kt-chipf-n { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
     .kt-chipf-s { flex:none; color:var(--text-faint); font-variant-numeric:tabular-nums; }
     .kt-chipf-x { flex:none; width:18px; height:18px; border:none; border-radius:50%; background:none; color:var(--text-faint); cursor:pointer; padding:0; }
     .kt-chipf-x:hover { color:var(--text); background:var(--border-soft); }
-    .kt-elev-note { font-size:11.5px; color:var(--text-faint); padding:0 0 6px; }
     .kt-umsg-files { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:4px; }
     .kt-umsg-files .kt-chipf { padding:3px 10px; }
     /* No resize:vertical -- it fights the JS auto-grow (ktAutoGrow) that drives height now.
@@ -1618,7 +1617,6 @@
       </div>
       <div class="kt-composer">
         <div class="kt-attach-row" id="ktAttachRow" hidden></div>
-        <div class="kt-elev-note" id="ktElevNote" hidden data-i18n="ktElevatedDrop"></div>
         <div class="kt-composer-box">
           <textarea id="ktInput" rows="1" data-i18n-ph="ktPlaceholder" placeholder="Chiedi a tutti i provider selezionati..."></textarea>
           <button class="send kt-send" id="ktSend" data-i18n-title="ktSendBtn" title="Invia">→</button>
@@ -3525,19 +3523,41 @@
           }catch(e){ toast(`${TR.openError}: ${e}`); }
         });
       }catch(e){}
-      // Elevated process: Windows will not deliver drags from the file manager, say so instead of a dead drop.
-      invoke('running_elevated').then(v=>{ document.getElementById('ktElevNote').hidden=!v; }).catch(()=>{});
+    }
+    // Files the page itself receives (a paste, or an HTML drop): read in the page, no path involved.
+    function ktAddBrowserFiles(files){
+      files.forEach(file=>{
+        if((file.size||0)>KT_ATTACH_MAX_BYTES){ ktAddAttach([{ name:file.name, size:file.size, ok:false }]); return; }
+        const r=new FileReader();
+        r.onload=()=>{ const data=String(r.result||'').split(',')[1]||''; ktAddAttach([{ name:file.name||'image.png', size:file.size, data, mime:file.type, ok:true }]); };
+        r.readAsDataURL(file);
+      });
     }
     ktInput.addEventListener('paste', e=>{
       const items=[...((e.clipboardData && e.clipboardData.files) || [])];
       if(!items.length) return;
       e.preventDefault();
-      items.forEach(file=>{
-        const r=new FileReader();
-        r.onload=()=>{ const data=String(r.result||'').split(',')[1]||''; ktAddAttach([{ name:file.name||'image.png', size:file.size, data, mime:file.type, ok:true }]); };
-        r.readAsDataURL(file);
-      });
+      ktAddBrowserFiles(items);
     });
+    // HTML drop on the chat. Normally the shell intercepts drags and they arrive through onDragDropEvent above; this
+    // path is for when that interception cannot see the drag: Kotodama running as administrator, where Windows blocks
+    // the drag to our window but not to the page, whose WebView2 processes run as the normal user (verified 15/09/2026).
+    {
+      const zone=document.querySelector('.kt-composer-box')?.closest('.kt-composer')?.parentElement || document.body;
+      zone.addEventListener('dragover', e=>{
+        if(![...(e.dataTransfer?.types||[])].includes('Files')) return;
+        e.preventDefault(); e.dataTransfer.dropEffect='copy';
+        document.querySelector('.kt-composer-box')?.classList.add('kt-dragging');
+      });
+      zone.addEventListener('dragleave', e=>{ if(e.target===zone) document.querySelector('.kt-composer-box')?.classList.remove('kt-dragging'); });
+      zone.addEventListener('drop', e=>{
+        const files=[...(e.dataTransfer?.files||[])];
+        document.querySelector('.kt-composer-box')?.classList.remove('kt-dragging');
+        if(!files.length) return;
+        e.preventDefault();
+        ktAddBrowserFiles(files); ktInput.focus();
+      });
+    }
     function ktIsFinal(ref){ const c=ref.card.classList; return c.contains('done')||c.contains('error')||c.contains('timeout')||c.contains('cancelled'); }
     function ktStatusClass(st){ return st==='done'||st==='timeout'||st==='cancelled' ? st : 'error'; }
     // The window is always divided into exactly N equal columns (N = cards in THIS turn) --

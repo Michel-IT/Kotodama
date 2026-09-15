@@ -180,6 +180,7 @@
     "errorEmpty": "Nothing to copy",
     "errorNoAnswer": "No answer received",
     "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "This window runs as administrator: Kotodama cannot copy from it",
     "stageConnect": "Connecting...",
     "stageWork": "Receiving the answer"
   },
@@ -208,7 +209,6 @@
   "ktAttachRemove": "Remove",
   "ktAttachTooBig": "File too large (max 10 MB):",
   "ktAttachTooMany": "At most 5 files per message",
-  "ktElevatedDrop": "Kotodama is running as administrator: Windows does not allow dragging files into it from File Explorer. Paste images instead, or restart it normally.",
   "ktRailTitle": "Messages in this conversation",
   "ktTabAnswers": "Answers",
   "ktTabLinks": "Links",

@@ -137,7 +137,8 @@
     "errorNoAnswer": "پاسخی دریافت نشد",
     "stageConnect": "در حال اتصال...",
     "stageWork": "پاسخ در حال دریافت",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "این پنجره با دسترسی مدیر اجرا می‌شود: Kotodama نمی‌تواند از آن کپی کند"
   },
   "rename": "تغییر نام",
   "edit": "ویرایش",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "حذف",
   "ktAttachTooBig": "فایل خیلی بزرگ است (حداکثر 10 مگابایت):",
   "ktAttachTooMany": "حداکثر 5 فایل در هر پیام",
-  "ktElevatedDrop": "Kotodama با دسترسی مدیر اجرا شده است: Windows اجازه کشیدن فایل از File Explorer را نمی‌دهد. تصاویر را جای‌گذاری کنید یا عادی اجرا کنید.",
   "ktRailTitle": "پیام‌های این گفتگو",
   "ktTabAnswers": "پاسخ‌ها",
   "ktTabLinks": "پیوندها",

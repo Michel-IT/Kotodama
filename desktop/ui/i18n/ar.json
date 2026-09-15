@@ -145,7 +145,8 @@
     "errorNoAnswer": "لم يتم تلقي أي إجابة",
     "stageConnect": "جارٍ الاتصال...",
     "stageWork": "جارٍ استلام الإجابة",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "هذه النافذة تعمل كمسؤول: لا يستطيع Kotodama النسخ منها"
   },
   "neutralHint": "يُرسَل النص المنسوخ كما هو إلى المزوّد الافتراضي.",
   "setRecipe": "الوصفة الافتراضية",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "إزالة",
   "ktAttachTooBig": "الملف كبير جدًا (الحد 10 ميغابايت):",
   "ktAttachTooMany": "5 ملفات كحد أقصى لكل رسالة",
-  "ktElevatedDrop": "يعمل Kotodama كمسؤول: لا يسمح Windows بسحب الملفات إليه من مستكشف الملفات. الصق الصور بدلًا من ذلك أو أعد تشغيله بشكل عادي.",
   "ktRailTitle": "رسائل هذه المحادثة",
   "ktTabAnswers": "الإجابات",
   "ktTabLinks": "الروابط",

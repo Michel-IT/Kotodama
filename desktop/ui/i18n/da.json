@@ -145,7 +145,8 @@
     "errorNoAnswer": "Intet svar modtaget",
     "stageConnect": "Forbinder...",
     "stageWork": "Modtager svaret",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Dette vindue kører som administrator: Kotodama kan ikke kopiere fra det"
   },
   "neutralHint": "Den kopierede tekst sendes som den er til standardudbyderen.",
   "setRecipe": "Standardopskrift",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Fjern",
   "ktAttachTooBig": "Filen er for stor (maks. 10 MB):",
   "ktAttachTooMany": "Højst 5 filer pr. besked",
-  "ktElevatedDrop": "Kotodama kører som administrator: Windows tillader ikke at trække filer ind fra Stifinder. Indsæt billeder, eller genstart normalt.",
   "ktRailTitle": "Beskeder i denne samtale",
   "ktTabAnswers": "Svar",
   "ktTabLinks": "Links",

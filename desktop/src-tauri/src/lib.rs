@@ -800,6 +800,19 @@ fn inline_transform(app: AppHandle, recipe: String) {
                 debug::log(format!("inline_transform: foreground hwnd={:?} pid={pid} title={title:?}", hwnd.0));
             }
         }
+        // A window running as administrator does not accept synthetic input from a normal process (Windows UIPI):
+        // the Ctrl+C would be silently dropped and the user told "nothing to copy" about a selection that is there.
+        // Measured 15/09/2026 on VS Code started as administrator. Say what is actually wrong, and leave the
+        // clipboard untouched.
+        #[cfg(windows)]
+        if foreground_blocks_input() {
+            debug::log("inline_transform: foreground window is elevated, Kotodama is not -> input would be dropped");
+            let st = app.state::<AppState>();
+            if st.inline_notify.load(Ordering::SeqCst) { toast::show_state(&app, "error", "elevated"); }
+            st.inline_busy.store(false, Ordering::SeqCst);
+            st.inline_suppress_toast.store(false, Ordering::SeqCst);
+            return;
+        }
         let before = app.state::<Clipboard>().read_text().unwrap_or_default();
         // Write a SENTINEL before copying, and check the clipboard against IT (not against
         // `before`): comparing "did it change" is wrong when the user copies text that happens to
@@ -834,7 +847,8 @@ fn inline_transform(app: AppHandle, recipe: String) {
         }
         if !fresh {
             // nothing was copied: put back whatever the clipboard had before, don't leave our
-            // sentinel behind.
+            // sentinel behind. Marked as our own write, so the clipboard monitor does not announce it.
+            *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(before.clone());
             let _ = app.state::<Clipboard>().write_text(before.clone());
         }
         debug::log(format!(
@@ -849,6 +863,9 @@ fn inline_transform(app: AppHandle, recipe: String) {
             let st = app.state::<AppState>();
             if st.inline_notify.load(Ordering::SeqCst) { toast::show_state(&app, "error", "empty"); }
             st.inline_busy.store(false, Ordering::SeqCst);
+            // The monitor's events for our own sentinel/restore writes arrive late: releasing the suppression at
+            // once let one through and the "you copied" toast showed the sentinel text.
+            std::thread::sleep(std::time::Duration::from_millis(600));
             st.inline_suppress_toast.store(false, Ordering::SeqCst);
             return;
         }
@@ -1789,7 +1806,6 @@ pub fn run() {
             kotodama::kotodama_regenerate,
             kotodama::kotodama_audio_load,
             kotodama::kotodama_audio_delete,
-            running_elevated,
             kotodama::kotodama_prewarm,
             kotodama::kotodama_push,
             kotodama::provider_login_probe,
@@ -1846,10 +1862,49 @@ pub fn run() {
         });
 }
 
-/// Is Kotodama running with administrator rights? Windows does not deliver a drag from the file manager (a
-/// normal-user process) to an elevated window: the drop zone would look alive and receive nothing, so the UI
-/// says so instead. The Windows folder is writable only to administrators, which answers without a system API.
-#[tauri::command]
+/// Windows: the window in the foreground belongs to a process running as administrator while Kotodama is not. Its
+/// integrity level is higher, so synthetic keystrokes from us never reach it (UIPI). False when unknown.
+#[cfg(windows)]
+fn foreground_blocks_input() -> bool {
+    use windows::Win32::Foundation::{CloseHandle, HANDLE};
+    use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
+    use windows::Win32::System::Threading::{OpenProcess, OpenProcessToken, PROCESS_QUERY_LIMITED_INFORMATION};
+    use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
+    if running_elevated() {
+        return false;
+    }
+    unsafe {
+        let mut pid = 0u32;
+        GetWindowThreadProcessId(GetForegroundWindow(), Some(&mut pid));
+        if pid == 0 {
+            return false;
+        }
+        let Ok(process) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else { return false };
+        let mut token = HANDLE::default();
+        let mut elevated = false;
+        if OpenProcessToken(process, TOKEN_QUERY, &mut token).is_ok() {
+            let mut info = TOKEN_ELEVATION::default();
+            let mut len = 0u32;
+            if GetTokenInformation(
+                token,
+                TokenElevation,
+                Some(&mut info as *mut _ as *mut core::ffi::c_void),
+                std::mem::size_of::<TOKEN_ELEVATION>() as u32,
+                &mut len,
+            )
+            .is_ok()
+            {
+                elevated = info.TokenIsElevated != 0;
+            }
+            let _ = CloseHandle(token);
+        }
+        let _ = CloseHandle(process);
+        elevated
+    }
+}
+
+/// Is Kotodama running with administrator rights? The Windows folder is writable only to administrators, which
+/// answers without a system API.
 fn running_elevated() -> bool {
     #[cfg(windows)]
     {

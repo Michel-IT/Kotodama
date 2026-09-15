@@ -145,7 +145,8 @@
     "errorNoAnswer": "Žádná odpověď",
     "stageConnect": "Připojování...",
     "stageWork": "Přijímání odpovědi",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Toto okno běží jako správce: Kotodama z něj nemůže kopírovat"
   },
   "neutralHint": "Zkopírovaný text se odešle tak, jak je, výchozímu poskytovateli.",
   "setRecipe": "Výchozí recept",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Odebrat",
   "ktAttachTooBig": "Soubor je příliš velký (max. 10 MB):",
   "ktAttachTooMany": "Nejvýše 5 souborů na zprávu",
-  "ktElevatedDrop": "Kotodama běží jako správce: Windows nedovolí přetáhnout do něj soubory z Průzkumníka. Vložte obrázky nebo jej spusťte normálně.",
   "ktRailTitle": "Zprávy v této konverzaci",
   "ktTabAnswers": "Odpovědi",
   "ktTabLinks": "Odkazy",

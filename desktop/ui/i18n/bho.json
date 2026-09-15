@@ -137,7 +137,8 @@
     "errorNoAnswer": "कवनो जवाब ना मिलल",
     "stageConnect": "जुड़ल जा रहल बा...",
     "stageWork": "जवाब आ रहल बा",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "ई विंडो प्रशासक के रूप में चलत बा: Kotodama एहसे कॉपी ना कर सकेला"
   },
   "rename": "नाम बदलीं",
   "edit": "संपादित करीं",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "हटाईं",
   "ktAttachTooBig": "फाइल बहुत बड़ बा (अधिकतम 10 MB):",
   "ktAttachTooMany": "एक संदेश में अधिकतम 5 फाइल",
-  "ktElevatedDrop": "Kotodama प्रशासक के रूप में चलत बा: Windows फाइल एक्सप्लोरर से फाइल खींचे ना देला। तस्वीर पेस्ट करीं या सामान्य रूप से फेर चालू करीं।",
   "ktRailTitle": "एह बातचीत के संदेश",
   "ktTabAnswers": "जवाब",
   "ktTabLinks": "लिंक",

@@ -145,7 +145,8 @@
     "errorNoAnswer": "कोई उत्तर नहीं मिला",
     "stageConnect": "कनेक्ट हो रहा है...",
     "stageWork": "उत्तर आ रहा है",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "यह विंडो व्यवस्थापक के रूप में चल रही है: Kotodama इससे कॉपी नहीं कर सकता"
   },
   "neutralHint": "कॉपी किया गया टेक्स्ट ज्यों का त्यों डिफ़ॉल्ट प्रोवाइडर को भेजा जाता है।",
   "setRecipe": "डिफ़ॉल्ट रेसिपी",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "हटाएँ",
   "ktAttachTooBig": "फ़ाइल बहुत बड़ी है (अधिकतम 10 MB):",
   "ktAttachTooMany": "प्रति संदेश अधिकतम 5 फ़ाइलें",
-  "ktElevatedDrop": "Kotodama व्यवस्थापक के रूप में चल रहा है: Windows फ़ाइल एक्सप्लोरर से फ़ाइलें खींचने नहीं देता। छवियाँ पेस्ट करें या सामान्य रूप से फिर शुरू करें।",
   "ktRailTitle": "इस बातचीत के संदेश",
   "ktTabAnswers": "जवाब",
   "ktTabLinks": "लिंक",

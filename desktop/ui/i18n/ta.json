@@ -145,7 +145,8 @@
     "errorNoAnswer": "பதில் எதுவும் வரவில்லை",
     "stageConnect": "இணைக்கிறது...",
     "stageWork": "பதில் வந்துகொண்டிருக்கிறது",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "இந்த சாளரம் நிர்வாகியாக இயங்குகிறது: Kotodama இதிலிருந்து நகலெடுக்க முடியாது"
   },
   "neutralHint": "நகலெடுத்த உரை அப்படியே இயல்புநிலை வழங்குநருக்கு அனுப்பப்படும்.",
   "setRecipe": "இயல்புநிலை செய்முறை",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "அகற்று",
   "ktAttachTooBig": "கோப்பு மிகப் பெரியது (அதிகபட்சம் 10 MB):",
   "ktAttachTooMany": "ஒரு செய்திக்கு அதிகபட்சம் 5 கோப்புகள்",
-  "ktElevatedDrop": "Kotodama நிர்வாகியாக இயங்குகிறது: கோப்பு எக்ஸ்ப்ளோரரிலிருந்து கோப்புகளை இழுக்க Windows அனுமதிக்காது. படங்களை ஒட்டவும் அல்லது சாதாரணமாக மீண்டும் தொடங்கவும்.",
   "ktRailTitle": "இந்த உரையாடலின் செய்திகள்",
   "ktTabAnswers": "பதில்கள்",
   "ktTabLinks": "இணைப்புகள்",

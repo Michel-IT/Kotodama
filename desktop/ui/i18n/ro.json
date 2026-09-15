@@ -145,7 +145,8 @@
     "errorNoAnswer": "Niciun răspuns primit",
     "stageConnect": "Se conectează...",
     "stageWork": "Se primește răspunsul",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Această fereastră rulează ca administrator: Kotodama nu poate copia din ea"
   },
   "neutralHint": "Textul copiat este trimis ca atare către furnizorul implicit.",
   "setRecipe": "Rețetă implicită",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Elimină",
   "ktAttachTooBig": "Fișier prea mare (max. 10 MB):",
   "ktAttachTooMany": "Cel mult 5 fișiere pe mesaj",
-  "ktElevatedDrop": "Kotodama rulează ca administrator: Windows nu permite tragerea fișierelor din Explorer. Lipește imagini sau repornește normal.",
   "ktRailTitle": "Mesajele acestei conversații",
   "ktTabAnswers": "Răspunsuri",
   "ktTabLinks": "Linkuri",

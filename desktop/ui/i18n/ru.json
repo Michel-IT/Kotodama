@@ -145,7 +145,8 @@
     "errorNoAnswer": "Ответ не получен",
     "stageConnect": "Подключение...",
     "stageWork": "Получение ответа",
-    "errorAccessibility": "Allow Accessibility for Kotodama"
+    "errorAccessibility": "Allow Accessibility for Kotodama",
+    "errorElevated": "Это окно запущено от имени администратора: Kotodama не может из него копировать"
   },
   "neutralHint": "Скопированный текст отправляется как есть провайдеру по умолчанию.",
   "setRecipe": "Рецепт по умолчанию",
@@ -269,7 +270,6 @@
   "ktAttachRemove": "Удалить",
   "ktAttachTooBig": "Файл слишком большой (макс. 10 МБ):",
   "ktAttachTooMany": "Не более 5 файлов в сообщении",
-  "ktElevatedDrop": "Kotodama запущена от имени администратора: Windows не разрешает перетаскивать в неё файлы из Проводника. Вставьте изображения или перезапустите обычным способом.",
   "ktRailTitle": "Сообщения в этом разговоре",
   "ktTabAnswers": "Ответы",
   "ktTabLinks": "Ссылки",
