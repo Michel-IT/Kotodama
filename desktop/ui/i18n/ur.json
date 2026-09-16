@@ -87,6 +87,11 @@
   "setMonitorHint": "جب آپ متن کاپی کرتے ہیں تو اطلاع دکھاتا ہے۔",
   "setAutostart": "لاگ اِن پر شروع کریں",
   "setGesture": "ڈبل رائٹ کلک",
+  "setAdmin": "ایڈمنسٹریٹر کے طور پر شروع کریں",
+  "setAdminHint": "ایڈمنسٹریٹر کے طور پر کھلی ونڈوز میں کام کرنے کے لیے ضروری۔ Windows تصدیق مانگتا ہے۔",
+  "setAdminOn": "Kotodama ایڈمنسٹریٹر کے طور پر شروع ہوگا",
+  "setAdminOff": "Kotodama عام پروگرام کے طور پر شروع ہوگا",
+  "setAdminFailed": "Windows نے تبدیلی کی اجازت نہیں دی",
   "setGestureHint": "دو تیز رائٹ کلک کسی بھی پروگرام میں ترکیبوں کا مینو کھولتے ہیں۔",
   "setAutostartHint": "لاگ اِن پر ٹرے میں چھوٹا ہو کر شروع ہوتا ہے۔",
   "save": "محفوظ کریں",
@@ -151,7 +156,8 @@
     "stageConnect": "منسلک ہو رہا ہے...",
     "stageWork": "جواب آ رہا ہے",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "یہ ونڈو ایڈمنسٹریٹر کے طور پر چل رہی ہے: Kotodama اس سے کاپی نہیں کر سکتا"
+    "errorElevated": "یہ ونڈو ایڈمنسٹریٹر کے طور پر چل رہی ہے: Kotodama اس سے کاپی نہیں کر سکتا",
+    "restartAdmin": "ایڈمنسٹریٹر کے طور پر دوبارہ شروع کریں"
   },
   "neutralHint": "کاپی کیا گیا متن ویسے ہی ڈیفالٹ پرووائیڈر کو بھیجا جاتا ہے۔",
   "setRecipe": "ڈیفالٹ ریسیپی",

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-admin-start-state"
+description = "Enables the admin_start_state command without any pre-configured scope."
+commands.allow = ["admin_start_state"]
+
+[[permission]]
+identifier = "deny-admin-start-state"
+description = "Denies the admin_start_state command without any pre-configured scope."
+commands.deny = ["admin_start_state"]

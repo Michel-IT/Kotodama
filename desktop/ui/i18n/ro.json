@@ -95,6 +95,11 @@
   "setMonitorHint": "Afișează notificarea când copiezi text.",
   "setAutostart": "Pornește la autentificare",
   "setGesture": "Dublu clic dreapta",
+  "setAdmin": "Pornește ca administrator",
+  "setAdminHint": "Necesar pentru a lucra în ferestre deschise ca administrator. Windows cere confirmare.",
+  "setAdminOn": "Kotodama va porni ca administrator",
+  "setAdminOff": "Kotodama va porni ca program normal",
+  "setAdminFailed": "Windows nu a permis modificarea",
   "setGestureHint": "Două clicuri dreapta rapide deschid meniul de rețete în orice program.",
   "setAutostartHint": "Pornește minimizat în bara de sistem la autentificare.",
   "save": "Salvează",
@@ -151,7 +156,8 @@
     "stageConnect": "Se conectează...",
     "stageWork": "Se primește răspunsul",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Această fereastră rulează ca administrator: Kotodama nu poate copia din ea"
+    "errorElevated": "Această fereastră rulează ca administrator: Kotodama nu poate copia din ea",
+    "restartAdmin": "Repornește ca administrator"
   },
   "neutralHint": "Textul copiat este trimis ca atare către furnizorul implicit.",
   "setRecipe": "Rețetă implicită",

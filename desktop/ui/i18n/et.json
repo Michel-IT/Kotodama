@@ -95,6 +95,11 @@
   "setMonitorHint": "Näitab teavitust, kui kopeerite teksti.",
   "setAutostart": "Käivita sisselogimisel",
   "setGesture": "Topeltparemklõps",
+  "setAdmin": "Käivita administraatorina",
+  "setAdminHint": "Vajalik administraatorina avatud akendes töötamiseks. Windows küsib kinnitust.",
+  "setAdminOn": "Kotodama käivitub administraatorina",
+  "setAdminOff": "Kotodama käivitub tavalise programmina",
+  "setAdminFailed": "Windows ei lubanud muudatust",
   "setGestureHint": "Kaks kiiret paremklõpsu avavad retseptimenüü igas programmis.",
   "setAutostartHint": "Käivitub sisselogimisel minimeerituna salves.",
   "save": "Salvesta",
@@ -151,7 +156,8 @@
     "stageConnect": "Ühendan...",
     "stageWork": "Vastus saabub",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "See aken töötab administraatorina: Kotodama ei saa sealt kopeerida"
+    "errorElevated": "See aken töötab administraatorina: Kotodama ei saa sealt kopeerida",
+    "restartAdmin": "Taaskäivita administraatorina"
   },
   "neutralHint": "Kopeeritud tekst saadetakse muutmata kujul vaikepakkujale.",
   "setRecipe": "Vaikeretsept",

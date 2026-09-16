@@ -95,6 +95,11 @@
   "setMonitorHint": "Prikaže obvestilo, ko kopirate besedilo.",
   "setAutostart": "Zaženi ob prijavi",
   "setGesture": "Dvojni desni klik",
+  "setAdmin": "Zaženi kot skrbnik",
+  "setAdminHint": "Potrebno za delo v oknih, odprtih kot skrbnik. Windows zahteva potrditev.",
+  "setAdminOn": "Kotodama se bo zagnal kot skrbnik",
+  "setAdminOff": "Kotodama se bo zagnal kot običajen program",
+  "setAdminFailed": "Windows ni dovolil spremembe",
   "setGestureHint": "Dva hitra desna klika odpreta meni receptov v katerem koli programu.",
   "setAutostartHint": "Ob prijavi se zažene pomanjšan v sistemski vrstici.",
   "save": "Shrani",
@@ -151,7 +156,8 @@
     "stageConnect": "Povezovanje...",
     "stageWork": "Odgovor prihaja",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "To okno se izvaja kot skrbnik: Kotodama iz njega ne more kopirati"
+    "errorElevated": "To okno se izvaja kot skrbnik: Kotodama iz njega ne more kopirati",
+    "restartAdmin": "Znova zaženi kot skrbnik"
   },
   "neutralHint": "Kopirano besedilo se nespremenjeno pošlje privzetemu ponudniku.",
   "setRecipe": "Privzeti recept",

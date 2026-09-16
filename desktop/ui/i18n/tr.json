@@ -95,6 +95,11 @@
   "setMonitorHint": "Metin kopyaladığınızda bildirimi gösterir.",
   "setAutostart": "Oturum açılışında başlat",
   "setGesture": "Çift sağ tıklama",
+  "setAdmin": "Yönetici olarak başlat",
+  "setAdminHint": "Yönetici olarak açılan pencerelerde çalışmak için gerekli. Windows onay ister.",
+  "setAdminOn": "Kotodama yönetici olarak başlayacak",
+  "setAdminOff": "Kotodama normal program olarak başlayacak",
+  "setAdminFailed": "Windows değişikliğe izin vermedi",
   "setGestureHint": "İki hızlı sağ tıklama, herhangi bir programda tarif menüsünü açar.",
   "setAutostartHint": "Oturum açıldığında tepside simge durumunda başlar.",
   "save": "Kaydet",
@@ -151,7 +156,8 @@
     "stageConnect": "Bağlanıyor...",
     "stageWork": "Yanıt alınıyor",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Bu pencere yönetici olarak çalışıyor: Kotodama buradan kopyalayamaz"
+    "errorElevated": "Bu pencere yönetici olarak çalışıyor: Kotodama buradan kopyalayamaz",
+    "restartAdmin": "Yönetici olarak yeniden başlat"
   },
   "neutralHint": "Kopyalanan metin olduğu gibi varsayılan sağlayıcıya gönderilir.",
   "setRecipe": "Varsayılan tarif",

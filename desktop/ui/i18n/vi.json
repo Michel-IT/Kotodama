@@ -95,6 +95,11 @@
   "setMonitorHint": "Hiển thị thông báo khi bạn sao chép văn bản.",
   "setAutostart": "Khởi động cùng hệ thống",
   "setGesture": "Nhấp chuột phải hai lần",
+  "setAdmin": "Khởi động với quyền quản trị",
+  "setAdminHint": "Cần thiết để làm việc trong các cửa sổ mở với quyền quản trị. Windows sẽ hỏi xác nhận.",
+  "setAdminOn": "Kotodama sẽ khởi động với quyền quản trị",
+  "setAdminOff": "Kotodama sẽ khởi động như chương trình thường",
+  "setAdminFailed": "Windows không cho phép thay đổi",
   "setGestureHint": "Hai lần nhấp chuột phải nhanh sẽ mở menu công thức trong bất kỳ chương trình nào.",
   "setAutostartHint": "Khởi động thu nhỏ trong khay khi đăng nhập.",
   "save": "Lưu",
@@ -151,7 +156,8 @@
     "stageConnect": "Đang kết nối...",
     "stageWork": "Đang nhận câu trả lời",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Cửa sổ này chạy với quyền quản trị: Kotodama không thể sao chép từ đó"
+    "errorElevated": "Cửa sổ này chạy với quyền quản trị: Kotodama không thể sao chép từ đó",
+    "restartAdmin": "Khởi động lại với quyền quản trị"
   },
   "neutralHint": "Văn bản đã sao chép được gửi nguyên trạng đến nhà cung cấp mặc định.",
   "setRecipe": "Công thức mặc định",

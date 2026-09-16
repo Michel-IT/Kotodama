@@ -95,6 +95,11 @@
   "setMonitorHint": "מציג התראה כשאתה מעתיק טקסט.",
   "setAutostart": "הפעל בהתחברות",
   "setGesture": "לחיצה ימנית כפולה",
+  "setAdmin": "הפעלה כמנהל",
+  "setAdminHint": "נדרש כדי לעבוד בחלונות שנפתחו כמנהל. Windows מבקש אישור.",
+  "setAdminOn": "Kotodama יופעל כמנהל",
+  "setAdminOff": "Kotodama יופעל כתוכנה רגילה",
+  "setAdminFailed": "Windows לא אישר את השינוי",
   "setGestureHint": "שתי לחיצות ימניות מהירות פותחות את תפריט המתכונים בכל תוכנה.",
   "setAutostartHint": "מופעל ממוזער במגש בעת ההתחברות.",
   "save": "שמור",
@@ -151,7 +156,8 @@
     "stageConnect": "מתחבר...",
     "stageWork": "מקבל את התשובה",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "החלון הזה פועל כמנהל: Kotodama לא יכול להעתיק ממנו"
+    "errorElevated": "החלון הזה פועל כמנהל: Kotodama לא יכול להעתיק ממנו",
+    "restartAdmin": "הפעלה מחדש כמנהל"
   },
   "neutralHint": "הטקסט שהועתק נשלח כפי שהוא לספק ברירת המחדל.",
   "setRecipe": "מתכון ברירת מחדל",

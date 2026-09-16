@@ -95,6 +95,11 @@
   "setMonitorHint": "Näyttää ilmoituksen, kun kopioit tekstiä.",
   "setAutostart": "Käynnistä kirjautuessa",
   "setGesture": "Kaksoisnapsautus oikealla",
+  "setAdmin": "Käynnistä järjestelmänvalvojana",
+  "setAdminHint": "Tarvitaan järjestelmänvalvojana avatuissa ikkunoissa työskentelyyn. Windows pyytää vahvistuksen.",
+  "setAdminOn": "Kotodama käynnistyy järjestelmänvalvojana",
+  "setAdminOff": "Kotodama käynnistyy tavallisena ohjelmana",
+  "setAdminFailed": "Windows ei sallinut muutosta",
   "setGestureHint": "Kaksi nopeaa oikeaa napsautusta avaa reseptivalikon missä tahansa ohjelmassa.",
   "setAutostartHint": "Käynnistyy pienennettynä ilmaisinalueelle kirjautuessa.",
   "save": "Tallenna",
@@ -151,7 +156,8 @@
     "stageConnect": "Yhdistetään...",
     "stageWork": "Vastaanotetaan vastausta",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Tämä ikkuna toimii järjestelmänvalvojana: Kotodama ei voi kopioida siitä"
+    "errorElevated": "Tämä ikkuna toimii järjestelmänvalvojana: Kotodama ei voi kopioida siitä",
+    "restartAdmin": "Käynnistä uudelleen järjestelmänvalvojana"
   },
   "neutralHint": "Kopioitu teksti lähetetään sellaisenaan oletuspalveluun.",
   "setRecipe": "Oletusresepti",

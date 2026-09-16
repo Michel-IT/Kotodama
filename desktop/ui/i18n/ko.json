@@ -95,6 +95,11 @@
   "setMonitorHint": "텍스트를 복사하면 알림을 표시합니다.",
   "setAutostart": "로그인 시 시작",
   "setGesture": "오른쪽 버튼 두 번",
+  "setAdmin": "관리자 권한으로 시작",
+  "setAdminHint": "관리자 권한으로 열린 창에서 작업하려면 필요합니다. Windows가 확인을 요청합니다.",
+  "setAdminOn": "Kotodama가 관리자 권한으로 시작됩니다",
+  "setAdminOff": "Kotodama가 일반 프로그램으로 시작됩니다",
+  "setAdminFailed": "Windows가 변경을 허용하지 않았습니다",
   "setGestureHint": "오른쪽 버튼을 빠르게 두 번 누르면 어떤 프로그램에서도 레시피 메뉴가 열립니다.",
   "setAutostartHint": "로그인 시 트레이에 최소화되어 시작됩니다.",
   "save": "저장",
@@ -151,7 +156,8 @@
     "stageConnect": "연결 중...",
     "stageWork": "응답 수신 중",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "이 창은 관리자 권한으로 실행 중이라 Kotodama가 복사할 수 없습니다"
+    "errorElevated": "이 창은 관리자 권한으로 실행 중이라 Kotodama가 복사할 수 없습니다",
+    "restartAdmin": "관리자 권한으로 다시 시작"
   },
   "neutralHint": "복사한 텍스트가 그대로 기본 제공자에게 전송됩니다.",
   "setRecipe": "기본 레시피",

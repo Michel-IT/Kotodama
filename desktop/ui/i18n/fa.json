@@ -87,6 +87,11 @@
   "setMonitorHint": "هنگام کپی متن اعلان نشان می‌دهد.",
   "setAutostart": "اجرا هنگام ورود",
   "setGesture": "دوبار کلیک راست",
+  "setAdmin": "اجرا به‌عنوان مدیر",
+  "setAdminHint": "برای کار در پنجره‌هایی که با دسترسی مدیر باز شده‌اند لازم است. Windows تأیید می‌خواهد.",
+  "setAdminOn": "Kotodama به‌عنوان مدیر اجرا می‌شود",
+  "setAdminOff": "Kotodama به‌عنوان برنامه عادی اجرا می‌شود",
+  "setAdminFailed": "Windows اجازه تغییر نداد",
   "setGestureHint": "دو کلیک راست سریع منوی دستور‌ها را در هر برنامه‌ای باز می‌کند.",
   "setAutostartHint": "هنگام ورود به‌صورت کوچک‌شده در سینی اجرا می‌شود.",
   "save": "ذخیره",
@@ -143,7 +148,8 @@
     "stageConnect": "در حال اتصال...",
     "stageWork": "پاسخ در حال دریافت",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "این پنجره با دسترسی مدیر اجرا می‌شود: Kotodama نمی‌تواند از آن کپی کند"
+    "errorElevated": "این پنجره با دسترسی مدیر اجرا می‌شود: Kotodama نمی‌تواند از آن کپی کند",
+    "restartAdmin": "راه‌اندازی دوباره به‌عنوان مدیر"
   },
   "rename": "تغییر نام",
   "edit": "ویرایش",

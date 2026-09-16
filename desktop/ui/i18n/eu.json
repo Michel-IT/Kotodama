@@ -95,6 +95,11 @@
   "setMonitorHint": "Jakinarazpena erakusten du testua kopiatzean.",
   "setAutostart": "Abiarazi saioa hastean",
   "setGesture": "Eskuineko klik bikoitza",
+  "setAdmin": "Abiarazi administratzaile gisa",
+  "setAdminHint": "Administratzaile gisa irekitako leihoetan lan egiteko beharrezkoa. Windowsek berrespena eskatzen du.",
+  "setAdminOn": "Kotodama administratzaile gisa abiaraziko da",
+  "setAdminOff": "Kotodama programa arrunt gisa abiaraziko da",
+  "setAdminFailed": "Windowsek ez du aldaketa onartu",
   "setGestureHint": "Eskuineko bi klik azkarrek errezeten menua irekitzen dute edozein programatan.",
   "setAutostartHint": "Minimizatuta abiarazten da erretiluan saioa hastean.",
   "save": "Gorde",
@@ -151,7 +156,8 @@
     "stageConnect": "Konektatzen...",
     "stageWork": "Erantzuna iristen ari da",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Leiho hau administratzaile gisa dabil: Kotodamak ezin du bertatik kopiatu"
+    "errorElevated": "Leiho hau administratzaile gisa dabil: Kotodamak ezin du bertatik kopiatu",
+    "restartAdmin": "Berrabiarazi administratzaile gisa"
   },
   "neutralHint": "Kopiatutako testua dagoen bezala bidaltzen da hornitzaile lehenetsira.",
   "setRecipe": "Errezeta lehenetsia",

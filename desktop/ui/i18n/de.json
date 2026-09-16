@@ -95,6 +95,11 @@
   "setMonitorHint": "Zeigt die Benachrichtigung beim Kopieren von Text.",
   "setAutostart": "Mit System starten",
   "setGesture": "Doppelter Rechtsklick",
+  "setAdmin": "Als Administrator starten",
+  "setAdminHint": "Nötig, um in Fenstern zu arbeiten, die als Administrator laufen. Windows fragt nach.",
+  "setAdminOn": "Kotodama startet als Administrator",
+  "setAdminOff": "Kotodama startet als normales Programm",
+  "setAdminFailed": "Windows hat die Änderung nicht erlaubt",
   "setGestureHint": "Zwei schnelle Rechtsklicks öffnen das Rezeptmenü in jedem Programm.",
   "setAutostartHint": "Startet minimiert im Infobereich beim Login.",
   "save": "Speichern",
@@ -151,7 +156,8 @@
     "stageConnect": "Verbindung wird hergestellt...",
     "stageWork": "Antwort wird empfangen",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Dieses Fenster läuft als Administrator: Kotodama kann daraus nicht kopieren"
+    "errorElevated": "Dieses Fenster läuft als Administrator: Kotodama kann daraus nicht kopieren",
+    "restartAdmin": "Als Administrator neu starten"
   },
   "neutralHint": "Der kopierte Text wird unverändert an den Standardanbieter gesendet.",
   "setRecipe": "Standardrezept",

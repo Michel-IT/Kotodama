@@ -95,6 +95,11 @@
   "setMonitorHint": "ਜਦੋਂ ਤੁਸੀਂ ਪਾਠ ਕਾਪੀ ਕਰਦੇ ਹੋ ਤਾਂ ਸੂਚਨਾ ਦਿਖਾਉਂਦਾ ਹੈ।",
   "setAutostart": "ਲਾਗਇਨ 'ਤੇ ਚਾਲੂ ਕਰੋ",
   "setGesture": "ਡਬਲ ਸੱਜਾ ਕਲਿੱਕ",
+  "setAdmin": "ਪ੍ਰਬੰਧਕ ਵਜੋਂ ਸ਼ੁਰੂ ਕਰੋ",
+  "setAdminHint": "ਪ੍ਰਬੰਧਕ ਵਜੋਂ ਖੁੱਲ੍ਹੀਆਂ ਵਿੰਡੋਜ਼ ਵਿੱਚ ਕੰਮ ਕਰਨ ਲਈ ਲੋੜੀਂਦਾ। Windows ਪੁਸ਼ਟੀ ਮੰਗਦਾ ਹੈ।",
+  "setAdminOn": "Kotodama ਪ੍ਰਬੰਧਕ ਵਜੋਂ ਸ਼ੁਰੂ ਹੋਵੇਗਾ",
+  "setAdminOff": "Kotodama ਆਮ ਪ੍ਰੋਗਰਾਮ ਵਜੋਂ ਸ਼ੁਰੂ ਹੋਵੇਗਾ",
+  "setAdminFailed": "Windows ਨੇ ਤਬਦੀਲੀ ਦੀ ਇਜਾਜ਼ਤ ਨਹੀਂ ਦਿੱਤੀ",
   "setGestureHint": "ਦੋ ਤੇਜ਼ ਸੱਜੇ ਕਲਿੱਕ ਕਿਸੇ ਵੀ ਪ੍ਰੋਗਰਾਮ ਵਿੱਚ ਰੈਸਿਪੀ ਮੀਨੂ ਖੋਲ੍ਹਦੇ ਹਨ।",
   "setAutostartHint": "ਲਾਗਇਨ 'ਤੇ ਟ੍ਰੇ ਵਿੱਚ ਛੋਟਾ ਹੋ ਕੇ ਚਾਲੂ ਹੁੰਦਾ ਹੈ।",
   "save": "ਸੰਭਾਲੋ",
@@ -151,7 +156,8 @@
     "stageConnect": "ਕਨੈਕਟ ਹੋ ਰਿਹਾ ਹੈ...",
     "stageWork": "ਜਵਾਬ ਆ ਰਿਹਾ ਹੈ",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "ਇਹ ਵਿੰਡੋ ਪ੍ਰਬੰਧਕ ਵਜੋਂ ਚੱਲ ਰਹੀ ਹੈ: Kotodama ਇਸ ਤੋਂ ਕਾਪੀ ਨਹੀਂ ਕਰ ਸਕਦਾ"
+    "errorElevated": "ਇਹ ਵਿੰਡੋ ਪ੍ਰਬੰਧਕ ਵਜੋਂ ਚੱਲ ਰਹੀ ਹੈ: Kotodama ਇਸ ਤੋਂ ਕਾਪੀ ਨਹੀਂ ਕਰ ਸਕਦਾ",
+    "restartAdmin": "ਪ੍ਰਬੰਧਕ ਵਜੋਂ ਮੁੜ ਚਾਲੂ ਕਰੋ"
   },
   "neutralHint": "ਕਾਪੀ ਕੀਤਾ ਟੈਕਸਟ ਉਵੇਂ ਹੀ ਡਿਫਾਲਟ ਪ੍ਰੋਵਾਈਡਰ ਨੂੰ ਭੇਜਿਆ ਜਾਂਦਾ ਹੈ।",
   "setRecipe": "ਡਿਫਾਲਟ ਰੈਸਿਪੀ",

@@ -95,6 +95,11 @@
   "setMonitorHint": "复制文本时显示通知。",
   "setAutostart": "开机启动",
   "setGesture": "双击右键",
+  "setAdmin": "以管理员身份启动",
+  "setAdminHint": "在以管理员身份打开的窗口中使用时需要。Windows 会要求确认。",
+  "setAdminOn": "Kotodama 将以管理员身份启动",
+  "setAdminOff": "Kotodama 将以普通程序启动",
+  "setAdminFailed": "Windows 未允许此更改",
   "setGestureHint": "快速右击两次可在任何程序中打开配方菜单。",
   "setAutostartHint": "登录时以最小化方式在托盘启动。",
   "save": "保存",
@@ -151,7 +156,8 @@
     "stageConnect": "连接中...",
     "stageWork": "正在接收回答",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "此窗口以管理员身份运行:Kotodama 无法从中复制"
+    "errorElevated": "此窗口以管理员身份运行:Kotodama 无法从中复制",
+    "restartAdmin": "以管理员身份重启"
   },
   "neutralHint": "复制的文本将原样发送至默认提供商。",
   "setRecipe": "默认配方",

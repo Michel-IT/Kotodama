@@ -1412,6 +1412,15 @@
             <div class="setting">
               <div class="row">
                 <div>
+                  <label data-i18n="setAdmin">Avvia come amministratore</label>
+                  <div class="sub" data-i18n="setAdminHint">Serve per lavorare anche nelle finestre aperte come amministratore. Windows chiede conferma.</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="setAdmin"><span class="slider"></span></label>
+              </div>
+            </div>
+            <div class="setting">
+              <div class="row">
+                <div>
                   <label data-i18n="setGesture">Doppio tasto destro</label>
                   <div class="sub" data-i18n="setGestureHint">Due clic destri veloci aprono il menu delle ricette in qualunque programma.</div>
                 </div>
@@ -1779,6 +1788,8 @@
       setAutostart:'Start on login', setAutostartHint:'Starts minimized in the tray at login.',
       setGesture:'Double right-click', setGestureHint:'Two quick right-clicks open the recipe menu in any program.',
       rhColMenu:'Menu', rhMenuTitle:'Show this recipe in the double right-click menu', trayRestart:'Restart',
+      setAdmin:'Start as administrator', setAdminHint:'Needed to work inside windows opened as administrator. Windows asks for confirmation.',
+      setAdminOn:'Kotodama will start as administrator', setAdminOff:'Kotodama will start as a normal program', setAdminFailed:'Windows did not allow the change',
       setAlwaysOnTop:'Always on top', setAlwaysOnTopHint:'Kotodama stays above other windows.',
       setLowPower:'Resource saving', setLowPowerHint:'Less memory: CPU drawing and idle providers suspended. Requires a restart.',
       setLowPowerRestart:'Saved. Restart Kotodama to apply resource saving.',
@@ -4376,6 +4387,19 @@
     const setAutostart=document.getElementById('setAutostart');
     const setAlwaysOnTop=document.getElementById('setAlwaysOnTop');
     const setLowPower=document.getElementById('setLowPower');
+    const setGesture=document.getElementById('setGesture');
+    const setAdmin=document.getElementById('setAdmin');
+    /* Running as administrator is NOT a saved setting: it lives in Windows (a logon task with the highest
+       privileges plus the "run as administrator" flag on the executable). The switch reads the real state and
+       asks Windows to change it, so it can never claim something the system does not actually do. */
+    if(setAdmin){
+      setAdmin.addEventListener('change', async()=>{
+        const want=setAdmin.checked;
+        if(!TAURI){ setAdmin.checked=!want; return; }
+        try{ await invoke('set_admin_start',{ on:want }); toast(want ? (TR.setAdminOn||'') : (TR.setAdminOff||'')); }
+        catch(e){ setAdmin.checked=!want; toast(TR.setAdminFailed||''); }
+      });
+    }
     let capturedHotkey=DEFAULT_SETTINGS.hotkey;
 
     function keyLabel(part){
@@ -4501,6 +4525,7 @@
       capturedRecipeMenu={ ...(currentSettings.recipe_menu||{}) };
       rhGlobalNotify.checked=!!currentSettings.monitor_enabled;
       setGesture.checked=currentSettings.gesture_menu!==false;
+      if(setAdmin && TAURI) invoke('admin_start_state').then(v=>{ setAdmin.checked=!!v; }).catch(()=>{});
       buildShortcutRows();
       setAutostart.checked=!!currentSettings.autostart;
       setAlwaysOnTop.checked=!!currentSettings.always_on_top;

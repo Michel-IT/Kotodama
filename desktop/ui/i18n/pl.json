@@ -87,6 +87,11 @@
   "setMonitorHint": "Pokazuje powiadomienie, gdy kopiujesz tekst.",
   "setAutostart": "Uruchom przy logowaniu",
   "setGesture": "Podwójne kliknięcie prawym",
+  "setAdmin": "Uruchamiaj jako administrator",
+  "setAdminHint": "Potrzebne do pracy w oknach otwartych jako administrator. Windows prosi o potwierdzenie.",
+  "setAdminOn": "Kotodama uruchomi się jako administrator",
+  "setAdminOff": "Kotodama uruchomi się jako zwykły program",
+  "setAdminFailed": "Windows nie zezwolił na zmianę",
   "setGestureHint": "Dwa szybkie kliknięcia prawym przyciskiem otwierają menu przepisów w dowolnym programie.",
   "setAutostartHint": "Uruchamia się zminimalizowany w zasobniku przy logowaniu.",
   "save": "Zapisz",
@@ -143,7 +148,8 @@
     "stageConnect": "Łączenie...",
     "stageWork": "Odbieranie odpowiedzi",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "To okno działa jako administrator: Kotodama nie może z niego kopiować"
+    "errorElevated": "To okno działa jako administrator: Kotodama nie może z niego kopiować",
+    "restartAdmin": "Uruchom ponownie jako administrator"
   },
   "rename": "Zmień nazwę",
   "edit": "Edytuj",

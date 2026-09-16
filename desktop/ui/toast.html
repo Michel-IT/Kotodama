@@ -147,6 +147,7 @@
     <div class="foot">
       <div class="keys" id="keys"></div>
       <button class="open" id="open">Apri</button>
+      <button class="open" id="asAdmin" hidden>Riavvia come amministratore</button>
     </div>
   </div>
 
@@ -162,6 +163,7 @@
       processing: 'Working on it...', done: 'Pasted', errorEmpty: 'Nothing to copy', errorNoAnswer: 'No answer received',
       errorAccessibility: 'Allow Accessibility for Kotodama',
       errorElevated: 'This window runs as administrator: Kotodama cannot copy from it',
+      restartAdmin: 'Restart as administrator',
       stageConnect: 'Connecting...', stageWork: 'Receiving the answer' };
     let STR = STR_EN;
     let curMode = 'copy', curLabel = '', curProv = null;
@@ -196,6 +198,11 @@
       else t.textContent = STR.title;
       // "Open" alone: it opens the HOME (builder), no provider name anymore
       document.getElementById('open').textContent = STR.open;
+      const aa = document.getElementById('asAdmin');
+      aa.textContent = STR.restartAdmin || '';
+      // Offered exactly where it helps: the transform just failed because the window belongs to an elevated program.
+      aa.hidden = !(curMode === 'error' && curLabel === 'elevated');
+      document.getElementById('open').hidden = !aa.hidden;
     }
     renderStrings();
 
@@ -296,6 +303,9 @@
 
     document.getElementById('open').addEventListener('click', () => {
       if (invoke) invoke('accept_clipboard').catch(() => {});
+    });
+    document.getElementById('asAdmin').addEventListener('click', () => {
+      if (invoke) invoke('restart_as_admin').catch(() => {});
     });
     document.getElementById('close').addEventListener('click', () => {
       if (invoke) invoke('hide_toast').catch(() => {});

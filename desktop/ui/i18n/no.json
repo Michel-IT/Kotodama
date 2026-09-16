@@ -95,6 +95,11 @@
   "setMonitorHint": "Viser varselet når du kopierer tekst.",
   "setAutostart": "Start ved pålogging",
   "setGesture": "Dobbelt høyreklikk",
+  "setAdmin": "Start som administrator",
+  "setAdminHint": "Nødvendig for å jobbe i vinduer som er åpnet som administrator. Windows ber om bekreftelse.",
+  "setAdminOn": "Kotodama starter som administrator",
+  "setAdminOff": "Kotodama starter som et vanlig program",
+  "setAdminFailed": "Windows tillot ikke endringen",
   "setGestureHint": "To raske høyreklikk åpner oppskriftsmenyen i ethvert program.",
   "setAutostartHint": "Starter minimert i systemstatusfeltet ved pålogging.",
   "save": "Lagre",
@@ -151,7 +156,8 @@
     "stageConnect": "Kobler til...",
     "stageWork": "Mottar svaret",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Dette vinduet kjører som administrator: Kotodama kan ikke kopiere fra det"
+    "errorElevated": "Dette vinduet kjører som administrator: Kotodama kan ikke kopiere fra det",
+    "restartAdmin": "Start på nytt som administrator"
   },
   "neutralHint": "Den kopierte teksten sendes som den er til standardleverandøren.",
   "setRecipe": "Standardoppskrift",

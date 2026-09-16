@@ -95,6 +95,11 @@
   "setMonitorHint": "Rāda paziņojumu, kad kopējat tekstu.",
   "setAutostart": "Palaist pierakstoties",
   "setGesture": "Dubultklikšķis ar labo pogu",
+  "setAdmin": "Palaist kā administratoram",
+  "setAdminHint": "Nepieciešams darbam logos, kas atvērti kā administratoram. Windows prasa apstiprinājumu.",
+  "setAdminOn": "Kotodama tiks palaists kā administratoram",
+  "setAdminOff": "Kotodama tiks palaists kā parasta programma",
+  "setAdminFailed": "Windows neatļāva izmaiņas",
   "setGestureHint": "Divi ātri labie klikšķi atver recepšu izvēlni jebkurā programmā.",
   "setAutostartHint": "Pierakstoties tiek palaists minimizēts sistēmas teknē.",
   "save": "Saglabāt",
@@ -151,7 +156,8 @@
     "stageConnect": "Savienojas...",
     "stageWork": "Atbilde tiek saņemta",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Šis logs darbojas kā administrators: Kotodama nevar no tā kopēt"
+    "errorElevated": "Šis logs darbojas kā administrators: Kotodama nevar no tā kopēt",
+    "restartAdmin": "Restartēt kā administratoram"
   },
   "neutralHint": "Kopētais teksts tiek nosūtīts tāds, kāds ir, uz noklusējuma nodrošinātāju.",
   "setRecipe": "Noklusējuma recepte",

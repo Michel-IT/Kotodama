@@ -95,6 +95,11 @@
   "setMonitorHint": "Toont de melding wanneer je tekst kopieert.",
   "setAutostart": "Starten bij inloggen",
   "setGesture": "Dubbele rechtermuisklik",
+  "setAdmin": "Starten als beheerder",
+  "setAdminHint": "Nodig om te werken in vensters die als beheerder zijn geopend. Windows vraagt om bevestiging.",
+  "setAdminOn": "Kotodama start als beheerder",
+  "setAdminOff": "Kotodama start als gewoon programma",
+  "setAdminFailed": "Windows stond de wijziging niet toe",
   "setGestureHint": "Twee snelle rechtermuisklikken openen het receptenmenu in elk programma.",
   "setAutostartHint": "Start geminimaliseerd in het systeemvak bij inloggen.",
   "save": "Opslaan",
@@ -151,7 +156,8 @@
     "stageConnect": "Verbinden...",
     "stageWork": "Antwoord ontvangen",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Dit venster draait als beheerder: Kotodama kan er niet uit kopiëren"
+    "errorElevated": "Dit venster draait als beheerder: Kotodama kan er niet uit kopiëren",
+    "restartAdmin": "Opnieuw starten als beheerder"
   },
   "neutralHint": "De gekopieerde tekst wordt ongewijzigd naar de standaardprovider gestuurd.",
   "setRecipe": "Standaardrecept",

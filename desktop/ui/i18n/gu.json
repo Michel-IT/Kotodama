@@ -95,6 +95,11 @@
   "setMonitorHint": "તમે લખાણ કૉપિ કરો ત્યારે સૂચના બતાવે છે.",
   "setAutostart": "લૉગિન પર શરૂ કરો",
   "setGesture": "ડબલ રાઇટ ક્લિક",
+  "setAdmin": "એડમિનિસ્ટ્રેટર તરીકે શરૂ કરો",
+  "setAdminHint": "એડમિનિસ્ટ્રેટર તરીકે ખૂલેલી વિન્ડોમાં કામ કરવા જરૂરી. Windows પુષ્ટિ માંગે છે.",
+  "setAdminOn": "Kotodama એડમિનિસ્ટ્રેટર તરીકે શરૂ થશે",
+  "setAdminOff": "Kotodama સામાન્ય પ્રોગ્રામ તરીકે શરૂ થશે",
+  "setAdminFailed": "Windows એ ફેરફારની મંજૂરી આપી નથી",
   "setGestureHint": "બે ઝડપી જમણી ક્લિક કોઈપણ પ્રોગ્રામમાં રેસિપી મેનૂ ખોલે છે.",
   "setAutostartHint": "લૉગિન પર ટ્રેમાં નાનું થઈને શરૂ થાય છે.",
   "save": "સાચવો",
@@ -151,7 +156,8 @@
     "stageConnect": "કનેક્ટ થઈ રહ્યું છે...",
     "stageWork": "જવાબ આવી રહ્યો છે",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "આ વિન્ડો એડમિનિસ્ટ્રેટર તરીકે ચાલે છે: Kotodama તેમાંથી કૉપિ કરી શકતું નથી"
+    "errorElevated": "આ વિન્ડો એડમિનિસ્ટ્રેટર તરીકે ચાલે છે: Kotodama તેમાંથી કૉપિ કરી શકતું નથી",
+    "restartAdmin": "એડમિનિસ્ટ્રેટર તરીકે ફરી શરૂ કરો"
   },
   "neutralHint": "કૉપિ કરેલો ટેક્સ્ટ જેમ છે તેમ ડિફૉલ્ટ પ્રોવાઇડરને મોકલાય છે.",
   "setRecipe": "ડિફૉલ્ટ રેસિપી",

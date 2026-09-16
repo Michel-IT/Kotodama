@@ -95,6 +95,11 @@
   "setMonitorHint": "يعرض الإشعار عند نسخ نص.",
   "setAutostart": "التشغيل مع النظام",
   "setGesture": "نقر مزدوج بالزر الأيمن",
+  "setAdmin": "التشغيل كمسؤول",
+  "setAdminHint": "ضروري للعمل داخل النوافذ المفتوحة كمسؤول. يطلب Windows التأكيد.",
+  "setAdminOn": "سيبدأ Kotodama كمسؤول",
+  "setAdminOff": "سيبدأ Kotodama كبرنامج عادي",
+  "setAdminFailed": "لم يسمح Windows بالتغيير",
   "setGestureHint": "نقرتان سريعتان بالزر الأيمن تفتحان قائمة الوصفات في أي برنامج.",
   "setAutostartHint": "يبدأ مُصغّرًا في شريط النظام عند تسجيل الدخول.",
   "save": "حفظ",
@@ -151,7 +156,8 @@
     "stageConnect": "جارٍ الاتصال...",
     "stageWork": "جارٍ استلام الإجابة",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "هذه النافذة تعمل كمسؤول: لا يستطيع Kotodama النسخ منها"
+    "errorElevated": "هذه النافذة تعمل كمسؤول: لا يستطيع Kotodama النسخ منها",
+    "restartAdmin": "إعادة التشغيل كمسؤول"
   },
   "neutralHint": "يُرسَل النص المنسوخ كما هو إلى المزوّد الافتراضي.",
   "setRecipe": "الوصفة الافتراضية",

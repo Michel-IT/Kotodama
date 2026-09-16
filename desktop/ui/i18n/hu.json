@@ -95,6 +95,11 @@
   "setMonitorHint": "Értesítést jelenít meg, amikor szöveget másolsz.",
   "setAutostart": "Indítás bejelentkezéskor",
   "setGesture": "Dupla jobb kattintás",
+  "setAdmin": "Indítás rendszergazdaként",
+  "setAdminHint": "Szükséges a rendszergazdaként megnyitott ablakokban való munkához. A Windows megerősítést kér.",
+  "setAdminOn": "A Kotodama rendszergazdaként indul",
+  "setAdminOff": "A Kotodama normál programként indul",
+  "setAdminFailed": "A Windows nem engedélyezte a változtatást",
   "setGestureHint": "Két gyors jobb kattintás bármely programban megnyitja a receptek menüjét.",
   "setAutostartHint": "Kis méretben indul a tálcán bejelentkezéskor.",
   "save": "Mentés",
@@ -151,7 +156,8 @@
     "stageConnect": "Csatlakozás...",
     "stageWork": "Válasz fogadása",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Ez az ablak rendszergazdaként fut: a Kotodama nem tud belőle másolni"
+    "errorElevated": "Ez az ablak rendszergazdaként fut: a Kotodama nem tud belőle másolni",
+    "restartAdmin": "Újraindítás rendszergazdaként"
   },
   "neutralHint": "A másolt szöveg változtatás nélkül megy az alapértelmezett szolgáltatónak.",
   "setRecipe": "Alapértelmezett recept",

@@ -6,6 +6,15 @@
   <!-- The 1x1 transparent window that owns the double right-click menu: a popup menu belongs to a window, and
        this one exists only to be that owner under the cursor. It must draw nothing at all. -->
   <style>html,body{margin:0;padding:0;width:100%;height:100%;background:transparent;overflow:hidden}</style>
+  <script>
+    /* Same as the app's own windows: no browser menu, no devtools shortcuts. Even a window this small must not
+       offer "Save as" or "Print" on a right-click. */
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    document.addEventListener('keydown', function(e){
+      var k = (e.key || '').toUpperCase();
+      if (k === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'I' || k === 'J' || k === 'C'))) e.preventDefault();
+    });
+  </script>
 </head>
 <body></body>
 </html>

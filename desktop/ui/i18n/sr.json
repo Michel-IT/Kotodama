@@ -95,6 +95,11 @@
   "setMonitorHint": "Приказује обавештење када копираш текст.",
   "setAutostart": "Покрени при пријави",
   "setGesture": "Двоструки десни клик",
+  "setAdmin": "Покрени као администратор",
+  "setAdminHint": "Потребно за рад у прозорима отвореним као администратор. Windows тражи потврду.",
+  "setAdminOn": "Kotodama ће се покретати као администратор",
+  "setAdminOff": "Kotodama ће се покретати као обичан програм",
+  "setAdminFailed": "Windows није дозволио промену",
   "setGestureHint": "Два брза десна клика отварају мени рецепата у било ком програму.",
   "setAutostartHint": "Покреће се умањен у траци при пријави.",
   "save": "Сачувај",
@@ -151,7 +156,8 @@
     "stageConnect": "Povezivanje...",
     "stageWork": "Odgovor stiže",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Овај прозор ради као администратор: Kotodama не може да копира из њега"
+    "errorElevated": "Овај прозор ради као администратор: Kotodama не може да копира из њега",
+    "restartAdmin": "Поново покрени као администратор"
   },
   "neutralHint": "Копирани текст се шаље непромењен подразумеваном провајдеру.",
   "setRecipe": "Подразумевани рецепт",

@@ -17,7 +17,7 @@ fn main() {
         "set_tray_labels", "get_recipes", "save_recipes", "get_fields", "save_fields",
         "check_for_update", "install_update",
         "quit_app", "restart_app",
-        "kotodama_set_attachments", "kotodama_file_info", "kotodama_read_aloud", "kotodama_regenerate", "kotodama_audio_load", "kotodama_audio_export", "kotodama_audio_delete",
+        "kotodama_set_attachments", "kotodama_file_info", "kotodama_read_aloud", "kotodama_regenerate", "kotodama_audio_load", "kotodama_audio_export", "admin_start_state", "set_admin_start", "restart_as_admin", "kotodama_audio_delete",
     ];
     let attrs = tauri_build::Attributes::new()
         .app_manifest(tauri_build::AppManifest::new().commands(commands));

@@ -87,6 +87,11 @@
   "setMonitorHint": "तुम्ही मजकूर कॉपी केल्यावर सूचना दाखवते.",
   "setAutostart": "लॉगिनवर सुरू करा",
   "setGesture": "डबल राइट क्लिक",
+  "setAdmin": "प्रशासक म्हणून सुरू करा",
+  "setAdminHint": "प्रशासक म्हणून उघडलेल्या विंडोमध्ये काम करण्यासाठी आवश्यक. Windows पुष्टी मागते.",
+  "setAdminOn": "Kotodama प्रशासक म्हणून सुरू होईल",
+  "setAdminOff": "Kotodama सामान्य प्रोग्राम म्हणून सुरू होईल",
+  "setAdminFailed": "Windows ने बदलाला परवानगी दिली नाही",
   "setGestureHint": "दोन जलद उजव्या क्लिकने कोणत्याही प्रोग्राममध्ये रेसिपी मेनू उघडतो.",
   "setAutostartHint": "लॉगिनवर ट्रेमध्ये लहान करून सुरू होते.",
   "save": "जतन करा",
@@ -151,7 +156,8 @@
     "stageConnect": "जोडत आहे...",
     "stageWork": "उत्तर येत आहे",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "ही विंडो प्रशासक म्हणून चालू आहे: Kotodama येथून कॉपी करू शकत नाही"
+    "errorElevated": "ही विंडो प्रशासक म्हणून चालू आहे: Kotodama येथून कॉपी करू शकत नाही",
+    "restartAdmin": "प्रशासक म्हणून पुन्हा सुरू करा"
   },
   "neutralHint": "कॉपी केलेला मजकूर जसाच्या तसा डीफॉल्ट प्रोव्हायडरला पाठवला जातो.",
   "setRecipe": "डीफॉल्ट रेसिपी",

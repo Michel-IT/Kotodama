@@ -87,6 +87,11 @@
   "setMonitorHint": "Huonyesha arifa unaponakili maandishi.",
   "setAutostart": "Anza wakati wa kuingia",
   "setGesture": "Kubofya kulia mara mbili",
+  "setAdmin": "Anzisha kama msimamizi",
+  "setAdminHint": "Inahitajika kufanya kazi ndani ya madirisha yaliyofunguliwa kama msimamizi. Windows huomba uthibitisho.",
+  "setAdminOn": "Kotodama itaanza kama msimamizi",
+  "setAdminOff": "Kotodama itaanza kama programu ya kawaida",
+  "setAdminFailed": "Windows haikuruhusu mabadiliko",
   "setGestureHint": "Mibofyo miwili ya haraka ya kulia hufungua menyu ya mapishi katika programu yoyote.",
   "setAutostartHint": "Huanza ikiwa imepunguzwa kwenye treya wakati wa kuingia.",
   "save": "Hifadhi",
@@ -151,7 +156,8 @@
     "stageConnect": "Inaunganisha...",
     "stageWork": "Inapokea jibu",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Dirisha hili linaendeshwa kama msimamizi: Kotodama haiwezi kunakili kutoka humo"
+    "errorElevated": "Dirisha hili linaendeshwa kama msimamizi: Kotodama haiwezi kunakili kutoka humo",
+    "restartAdmin": "Anzisha upya kama msimamizi"
   },
   "neutralHint": "Maandishi yaliyonakiliwa hutumwa kama yalivyo kwa mtoa huduma chaguo-msingi.",
   "setRecipe": "Kichocheo chaguo-msingi",

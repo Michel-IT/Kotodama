@@ -87,6 +87,11 @@
   "setMonitorHint": "रउआ पाठ कॉपी करीं त सूचना देखावेला।",
   "setAutostart": "लॉगिन पर शुरू करीं",
   "setGesture": "डबल राइट क्लिक",
+  "setAdmin": "प्रशासक के रूप में चालू करीं",
+  "setAdminHint": "प्रशासक के रूप में खुलल विंडो में काम करे खातिर जरूरी बा. Windows पुष्टि मांगेला.",
+  "setAdminOn": "Kotodama प्रशासक के रूप में चालू होई",
+  "setAdminOff": "Kotodama सामान्य प्रोग्राम के रूप में चालू होई",
+  "setAdminFailed": "Windows बदलाव के अनुमति ना दिहलस",
   "setGestureHint": "दू गो तेज राइट क्लिक कवनो प्रोग्राम में रेसिपी मेनू खोलेला.",
   "setAutostartHint": "लॉगिन पर ट्रे में छोट होके शुरू होखेला।",
   "save": "सेव करीं",
@@ -143,7 +148,8 @@
     "stageConnect": "जुड़ल जा रहल बा...",
     "stageWork": "जवाब आ रहल बा",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "ई विंडो प्रशासक के रूप में चलत बा: Kotodama एहसे कॉपी ना कर सकेला"
+    "errorElevated": "ई विंडो प्रशासक के रूप में चलत बा: Kotodama एहसे कॉपी ना कर सकेला",
+    "restartAdmin": "प्रशासक के रूप में फेर से चालू करीं"
   },
   "rename": "नाम बदलीं",
   "edit": "संपादित करीं",

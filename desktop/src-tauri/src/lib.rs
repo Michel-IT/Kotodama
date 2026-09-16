@@ -6,6 +6,7 @@
 //! - `toast`    : notification window in the bottom-right corner.
 //! - `settings` : user settings persistence.
 
+mod admin;
 mod audio;
 mod browser;
 mod clipboard;
@@ -1023,6 +1024,9 @@ fn show_recipe_menu(app: &AppHandle, x: i32, y: i32) {
         send_escape();
     }
     let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    // Clicks must pass through it: a window sitting under the cursor that swallowed a right-click would answer
+    // with WebView2's own "Save as / Print" menu (seen 16/09/2026).
+    let _ = window.set_ignore_cursor_events(true);
     let _ = window.show();
     let build = || -> tauri::Result<Menu<tauri::Wry>> {
         let items: Vec<MenuItem<tauri::Wry>> = choices
@@ -1036,12 +1040,15 @@ fn show_recipe_menu(app: &AppHandle, x: i32, y: i32) {
         Ok(menu) => {
             // The position is relative to the owner window, and the owner is the 1x1 window already placed under
             // the cursor: passing the screen coordinates here put the menu in the far corner of the screen.
+            // The program's own menu was open a moment ago and Windows is still leaving menu mode: without this
+            // pause our menu was built while the system still belonged to the other one, and never appeared.
+            let _ = window.set_focus();
+            std::thread::sleep(std::time::Duration::from_millis(120));
             if let Err(e) = window.popup_menu_at(&menu, tauri::PhysicalPosition::new(0, 0)) {
                 debug::log(format!("gesture: popup_menu_at failed: {e}"));
-                let _ = window.hide();
-                #[cfg(windows)]
-                restore_gesture_target();
             }
+            // On Windows the call returns when the menu closes: the owner window has done its job.
+            let _ = window.hide();
         }
         Err(e) => debug::log(format!("gesture: menu build failed: {e}")),
     }
@@ -2010,6 +2017,9 @@ pub fn run() {
             hide_toast,
             quit_app,
             restart_app,
+            admin_start_state,
+            set_admin_start,
+            restart_as_admin,
             app_write_clipboard,
             show_main,
             hide_main,
@@ -2082,6 +2092,33 @@ fn foreground_blocks_input() -> bool {
         let _ = CloseHandle(process);
         elevated
     }
+}
+
+/// Settings switch: is the elevated start set up (logon task + compatibility flag)?
+#[tauri::command]
+fn admin_start_state() -> bool {
+    std::env::current_exe().map(|e| admin::enabled(&e)).unwrap_or(false)
+}
+
+/// Settings switch: set it up, or take it away. Windows asks the user for permission.
+#[tauri::command]
+fn set_admin_start(on: bool) -> Result<(), String> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    admin::set_enabled(&exe, on)?;
+    debug::log(format!("admin start -> {on}"));
+    Ok(())
+}
+
+/// "Restart as administrator", offered when a window turns out to be out of reach.
+#[tauri::command]
+fn restart_as_admin(app: AppHandle) -> Result<(), String> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    admin::relaunch_elevated(&exe)?;
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(400));
+        app.exit(0);
+    });
+    Ok(())
 }
 
 /// Is Kotodama running with administrator rights? The Windows folder is writable only to administrators, which

@@ -87,6 +87,11 @@
   "setMonitorHint": "テキストをコピーしたときに通知を表示します。",
   "setAutostart": "ログイン時に起動",
   "setGesture": "右クリック2回",
+  "setAdmin": "管理者として起動",
+  "setAdminHint": "管理者として開いたウィンドウで使うために必要です。Windows が確認を求めます。",
+  "setAdminOn": "Kotodama は管理者として起動します",
+  "setAdminOff": "Kotodama は通常のプログラムとして起動します",
+  "setAdminFailed": "Windows が変更を許可しませんでした",
   "setGestureHint": "素早く右クリックを2回すると、どのプログラムでもレシピのメニューが開きます。",
   "setAutostartHint": "ログイン時にトレイに最小化された状態で起動します。",
   "save": "保存",
@@ -151,7 +156,8 @@
     "stageConnect": "接続中...",
     "stageWork": "回答を受信中",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "このウィンドウは管理者として実行中のため、Kotodama はコピーできません"
+    "errorElevated": "このウィンドウは管理者として実行中のため、Kotodama はコピーできません",
+    "restartAdmin": "管理者として再起動"
   },
   "neutralHint": "コピーしたテキストがそのままデフォルトのプロバイダーに送信されます。",
   "setRecipe": "デフォルトのレシピ",

@@ -95,6 +95,11 @@
   "setMonitorHint": "Affiche la notification quand vous copiez du texte.",
   "setAutostart": "Lancer au démarrage",
   "setGesture": "Double clic droit",
+  "setAdmin": "Lancer en administrateur",
+  "setAdminHint": "Nécessaire pour travailler dans les fenêtres ouvertes en administrateur. Windows demande confirmation.",
+  "setAdminOn": "Kotodama démarrera en administrateur",
+  "setAdminOff": "Kotodama démarrera en programme normal",
+  "setAdminFailed": "Windows n'a pas autorisé la modification",
   "setGestureHint": "Deux clics droits rapides ouvrent le menu des recettes dans n’importe quel programme.",
   "setAutostartHint": "Démarre minimisé dans la barre d'état au login.",
   "save": "Enregistrer",
@@ -151,7 +156,8 @@
     "stageConnect": "Connexion...",
     "stageWork": "Réception de la réponse",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Cette fenêtre s'exécute en administrateur : Kotodama ne peut pas y copier"
+    "errorElevated": "Cette fenêtre s'exécute en administrateur : Kotodama ne peut pas y copier",
+    "restartAdmin": "Redémarrer en administrateur"
   },
   "neutralHint": "Le texte copié est envoyé tel quel au fournisseur par défaut.",
   "setRecipe": "Recette par défaut",

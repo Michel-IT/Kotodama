@@ -87,6 +87,11 @@
   "setMonitorHint": "ଆପଣ ଲେଖା କପି କଲେ ବିଜ୍ଞପ୍ତି ଦେଖାଏ।",
   "setAutostart": "ଲଗଇନ୍ ସମୟରେ ଆରମ୍ଭ କରନ୍ତୁ",
   "setGesture": "ଡବଲ୍ ରାଇଟ୍ କ୍ଲିକ୍",
+  "setAdmin": "ପ୍ରଶାସକ ଭାବରେ ଆରମ୍ଭ କରନ୍ତୁ",
+  "setAdminHint": "ପ୍ରଶାସକ ଭାବରେ ଖୋଲା ୱିଣ୍ଡୋରେ କାମ କରିବାକୁ ଆବଶ୍ୟକ। Windows ନିଶ୍ଚିତକରଣ ମାଗେ।",
+  "setAdminOn": "Kotodama ପ୍ରଶାସକ ଭାବରେ ଆରମ୍ଭ ହେବ",
+  "setAdminOff": "Kotodama ସାଧାରଣ ପ୍ରୋଗ୍ରାମ ଭାବରେ ଆରମ୍ଭ ହେବ",
+  "setAdminFailed": "Windows ପରିବର୍ତ୍ତନକୁ ଅନୁମତି ଦେଇନାହିଁ",
   "setGestureHint": "ଦୁଇଟି ଶୀଘ୍ର ଡାହାଣ କ୍ଲିକ୍ ଯେକୌଣସି ପ୍ରୋଗ୍ରାମରେ ରେସିପି ମେନୁ ଖୋଲେ।",
   "setAutostartHint": "ଲଗଇନ୍ ସମୟରେ ଟ୍ରେରେ ଛୋଟ ହୋଇ ଆରମ୍ଭ ହୁଏ।",
   "save": "ସେଭ୍ କରନ୍ତୁ",
@@ -143,7 +148,8 @@
     "stageConnect": "ସଂଯୋଗ କରୁଛି...",
     "stageWork": "ଉତ୍ତର ଆସୁଛି",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "ଏହି ୱିଣ୍ଡୋ ପ୍ରଶାସକ ଭାବରେ ଚାଲୁଛି: Kotodama ଏଥିରୁ କପି କରିପାରିବ ନାହିଁ"
+    "errorElevated": "ଏହି ୱିଣ୍ଡୋ ପ୍ରଶାସକ ଭାବରେ ଚାଲୁଛି: Kotodama ଏଥିରୁ କପି କରିପାରିବ ନାହିଁ",
+    "restartAdmin": "ପ୍ରଶାସକ ଭାବରେ ପୁନଃଆରମ୍ଭ କରନ୍ତୁ"
   },
   "rename": "ନାମ ବଦଳାନ୍ତୁ",
   "edit": "ସମ୍ପାଦନା",

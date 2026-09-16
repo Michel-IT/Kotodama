@@ -95,6 +95,11 @@
   "setMonitorHint": "Rodo pranešimą, kai kopijuojate tekstą.",
   "setAutostart": "Paleisti prisijungus",
   "setGesture": "Dvigubas dešinysis spustelėjimas",
+  "setAdmin": "Paleisti kaip administratoriui",
+  "setAdminHint": "Reikalinga darbui languose, atidarytuose kaip administratoriui. Windows prašo patvirtinimo.",
+  "setAdminOn": "Kotodama bus paleista kaip administratoriui",
+  "setAdminOff": "Kotodama bus paleista kaip įprasta programa",
+  "setAdminFailed": "Windows neleido pakeitimo",
   "setGestureHint": "Du greiti dešinieji spustelėjimai atveria receptų meniu bet kurioje programoje.",
   "setAutostartHint": "Prisijungus paleidžiama sumažinta sistemos dėkle.",
   "save": "Įrašyti",
@@ -151,7 +156,8 @@
     "stageConnect": "Jungiamasi...",
     "stageWork": "Atsakymas gaunamas",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Šis langas veikia kaip administratorius: Kotodama negali iš jo kopijuoti"
+    "errorElevated": "Šis langas veikia kaip administratorius: Kotodama negali iš jo kopijuoti",
+    "restartAdmin": "Paleisti iš naujo kaip administratoriui"
   },
   "neutralHint": "Nukopijuotas tekstas siunčiamas toks, koks yra, į numatytąjį provaiderį.",
   "setRecipe": "Numatytasis receptas",

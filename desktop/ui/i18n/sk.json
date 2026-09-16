@@ -95,6 +95,11 @@
   "setMonitorHint": "Zobrazí oznámenie, keď skopírujete text.",
   "setAutostart": "Spustiť pri prihlásení",
   "setGesture": "Dvojité kliknutie pravým",
+  "setAdmin": "Spúšťať ako správca",
+  "setAdminHint": "Potrebné na prácu v oknách otvorených ako správca. Windows požiada o potvrdenie.",
+  "setAdminOn": "Kotodama sa spustí ako správca",
+  "setAdminOff": "Kotodama sa spustí ako bežný program",
+  "setAdminFailed": "Windows zmenu nepovolil",
   "setGestureHint": "Dve rýchle kliknutia pravým tlačidlom otvoria ponuku receptov v ľubovoľnom programe.",
   "setAutostartHint": "Spúšťa sa minimalizovaný v oblasti oznámení pri prihlásení.",
   "save": "Uložiť",
@@ -151,7 +156,8 @@
     "stageConnect": "Pripája sa...",
     "stageWork": "Prijíma sa odpoveď",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Toto okno beží ako správca: Kotodama z neho nemôže kopírovať"
+    "errorElevated": "Toto okno beží ako správca: Kotodama z neho nemôže kopírovať",
+    "restartAdmin": "Reštartovať ako správca"
   },
   "neutralHint": "Skopírovaný text sa odošle bez zmien predvolenému poskytovateľovi.",
   "setRecipe": "Predvolený recept",

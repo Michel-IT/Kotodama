@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-restart-as-admin"
+description = "Enables the restart_as_admin command without any pre-configured scope."
+commands.allow = ["restart_as_admin"]
+
+[[permission]]
+identifier = "deny-restart-as-admin"
+description = "Denies the restart_as_admin command without any pre-configured scope."
+commands.deny = ["restart_as_admin"]

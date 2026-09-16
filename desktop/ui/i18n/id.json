@@ -87,6 +87,11 @@
   "setMonitorHint": "Menampilkan notifikasi saat Anda menyalin teks.",
   "setAutostart": "Mulai saat login",
   "setGesture": "Klik kanan ganda",
+  "setAdmin": "Jalankan sebagai administrator",
+  "setAdminHint": "Diperlukan untuk bekerja di jendela yang dibuka sebagai administrator. Windows meminta konfirmasi.",
+  "setAdminOn": "Kotodama akan dijalankan sebagai administrator",
+  "setAdminOff": "Kotodama akan dijalankan sebagai program biasa",
+  "setAdminFailed": "Windows tidak mengizinkan perubahan",
   "setGestureHint": "Dua klik kanan cepat membuka menu resep di program apa pun.",
   "setAutostartHint": "Mulai diperkecil di tray saat login.",
   "save": "Simpan",
@@ -151,7 +156,8 @@
     "stageConnect": "Menghubungkan...",
     "stageWork": "Menerima jawaban",
     "errorAccessibility": "Allow Accessibility for Kotodama",
-    "errorElevated": "Jendela ini berjalan sebagai administrator: Kotodama tidak dapat menyalin darinya"
+    "errorElevated": "Jendela ini berjalan sebagai administrator: Kotodama tidak dapat menyalin darinya",
+    "restartAdmin": "Mulai ulang sebagai administrator"
   },
   "neutralHint": "Teks yang disalin dikirim apa adanya ke penyedia default.",
   "setRecipe": "Resep default",
