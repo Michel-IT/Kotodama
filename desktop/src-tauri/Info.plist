@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged by Tauri into the macOS bundle. NSServices is what puts Kotodama in the Services submenu of
+     every application's right-click menu: the system sends the selected text to the method named here,
+     which services.rs registers on the running application. -->
+<plist version="1.0">
+<dict>
+  <key>NSServices</key>
+  <array>
+    <dict>
+      <key>NSMenuItem</key>
+      <dict>
+        <key>default</key>
+        <string>Kotodama</string>
+      </dict>
+      <key>NSMessage</key>
+      <string>kotodamaTransform</string>
+      <!-- The BUNDLE IDENTIFIER, not the product name: AppKit registers the provider's port as
+           "<bundle id>.ServiceProvider", and a port name that does not match it makes the system deliver the
+           text to nothing at all, silently (measured on macOS 15: with "Kotodama" here the method was never
+           called, with the identifier it is). -->
+      <key>NSPortName</key>
+      <string>com.kotodama.app</string>
+      <key>NSSendTypes</key>
+      <array>
+        <string>public.utf8-plain-text</string>
+        <string>public.plain-text</string>
+        <string>NSStringPboardType</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>

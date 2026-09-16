@@ -7,6 +7,8 @@
 //! - `settings` : user settings persistence.
 
 mod admin;
+#[cfg(target_os = "macos")]
+mod services;
 mod audio;
 mod browser;
 mod clipboard;
@@ -758,6 +760,50 @@ const VK_V: u16 = 0x56;
 /// show the "processing" toast, and hand text+recipe to the frontend (hidden webview
 /// gateway). The answer comes back via `inline_finish`/`inline_fail`, which paste it
 /// where the user was typing. Nothing is brought to the foreground.
+/// The inline transform when the text is ALREADY known (macOS Services: the system hands over the selection,
+/// there is nothing to copy). Same pipeline from here on: park the window, hand text and recipe to the frontend,
+/// and the answer comes back through inline_finish, which pastes it where the user was.
+#[cfg(target_os = "macos")]
+pub fn inline_transform_text(app: AppHandle, text: String) {
+    let state = app.state::<AppState>();
+    if state.inline_busy.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let recipe = state.settings.lock().unwrap().recipe.clone();
+    let notify = state.settings.lock().unwrap().recipe_notify.get(&recipe).copied().unwrap_or(true);
+    state.inline_notify.store(notify, Ordering::SeqCst);
+    state.inline_suppress_toast.store(true, Ordering::SeqCst);
+    debug::log(format!("services: transform recipe={recipe} len={}", text.len()));
+    inline_park_window(&app);
+    match app.get_window("main") {
+        Some(main) => {
+            let _ = main.emit("app://inline-transform", serde_json::json!({ "text": text, "recipe": recipe }));
+        }
+        None => {
+            debug::log("services: main window not found, aborting");
+            let st = app.state::<AppState>();
+            if st.inline_notify.load(Ordering::SeqCst) { toast::show_state(&app, "error", "sendfail"); }
+            inline_restore_window(&app);
+            st.inline_busy.store(false, Ordering::SeqCst);
+            st.inline_suppress_toast.store(false, Ordering::SeqCst);
+            return;
+        }
+    }
+    // Same safety net as the hotkey path: if no answer ever comes back, release the flags, or every later
+    // transform would no-op on the busy check without saying anything.
+    let app2 = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(240));
+        let st = app2.state::<AppState>();
+        if st.inline_busy.load(Ordering::SeqCst) {
+            st.inline_busy.store(false, Ordering::SeqCst);
+            st.inline_suppress_toast.store(false, Ordering::SeqCst);
+            inline_restore_window(&app2);
+            toast::hide(&app2);
+        }
+    });
+}
+
 fn inline_transform(app: AppHandle, recipe: String) {
     let state = app.state::<AppState>();
     if state.inline_busy.swap(true, Ordering::SeqCst) {
@@ -1468,6 +1514,10 @@ pub fn run() {
                     let _ = h2.clone().run_on_main_thread(move || show_recipe_menu(&h2, x, y));
                 }));
             }
+            // macOS: the same thing, through the supported route -> the system Services menu (see services.rs).
+            // The registration itself waits for RunEvent::Ready, down in run(); here we only hand over the handle.
+            #[cfg(target_os = "macos")]
+            services::set_app(&handle);
             let mut loaded = settings::load(&handle);
             debug::log(format!("settings da setup: always_on_top={}", loaded.always_on_top));
             gesture::set_enabled(loaded.gesture_menu);
@@ -2039,6 +2089,13 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("errore nell'avvio dell'applicazione Tauri")
         .run(|_app, event| {
+            // macOS: the Services entry is registered only once the application has finished launching. Doing it
+            // in setup() is too early: AppKit sets up its own services port while starting, and the provider
+            // registered before that never receives anything (verified on macOS 15).
+            #[cfg(target_os = "macos")]
+            if matches!(event, tauri::RunEvent::Ready) {
+                services::register(_app);
+            }
             // Diagnostics: tells a clean shutdown (these lines appear) from the process being killed or
             // crashing (the log just stops), which an unexplained exit cannot tell apart otherwise.
             if debug::enabled() {

@@ -2079,6 +2079,13 @@ const HARVEST_JS: &str = r##"
               + ' text=' + (it.innerText || '').trim().slice(0, 22).replace(/\s+/g, ' '));
           }
           window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('MENU[' + label + '] n=' + its.length + ' ' + out.join(' || ')).slice(0, 1600) });
+          // Also: every action control the page exposes for a turn, by test id. This is what says whether a
+          // regenerate exists at all on this provider's current layout.
+          try {
+            var ids = document.querySelectorAll('[data-testid*="turn-action"], [data-testid*="retry"], [data-testid*="regenerate"]'), names = [];
+            for (var z = 0; z < ids.length && z < 20; z++) names.push(ids[z].getAttribute('data-testid'));
+            if (names.length) window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('TESTIDS ' + names.join(' | ')).slice(0, 1200) });
+          } catch(e){}
           try { document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); } catch(e){}
           try { document.body.click(); } catch(e){}
           setTimeout(next, 600);
