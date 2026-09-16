@@ -30,7 +30,8 @@
     "email": "மின்னஞ்சல் உருவாக்கு",
     "neutral": "நடுநிலை",
     "translate": "மொழிபெயர்",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "ஆடியோ"
   },
   "instr": {
     "rephrase": "பின்வரும் உரையை மறுபதம் செய்:",
@@ -38,7 +39,8 @@
     "reply": "பின்வரும் செய்திக்கு ஒரு பதிலை எழுது:",
     "email": "இதன் அடிப்படையில் ஒரு மின்னஞ்சல் எழுது:",
     "translate": "பின்வரும் உரையை மொழிபெயர்க்கவும்:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "பிரிப்பான்களுக்கு இடையிலான உரையை அப்படியே மீள்உருவாக்கு. வெளியீடு: அந்த உரை மட்டும்."
   },
   "lengthOpts": [
     "சுருக்கமும் தெளிவும்",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "புதிய செய்முறை",
   "recipeName": "பெயர்",
   "recipeInstr": "வழிமுறை",
+  "recipeNoConstraints": "கட்டுப்பாடுகள் இல்லாமல்",
   "recipeNamePh": "எ.கா. ஆங்கிலத்தில் மொழிபெயர்",
   "recipeInstrPh": "எ.கா. பின்வரும் உரையை ஆங்கிலத்தில் மொழிபெயர்:",
   "confirmTitle": "உறுதிப்படுத்து",
@@ -265,6 +268,9 @@
   "ktReadStop": "படிப்பதை நிறுத்து",
   "ktTabAudio": "ஆடியோ",
   "ktAudioPlay": "ஆடியோவை இயக்கு",
+  "ktAudioExists": "ஆடியோ ஏற்கனவே சேமிக்கப்பட்டுள்ளது: அதையே இயக்குகிறேன். புதியது வேண்டுமானால் மீண்டும் அழுத்தவும்",
+  "ktAudioSave": "ஆடியோவை சேமி",
+  "ktAudioSaved": "ஆடியோ சேமிக்கப்பட்டது",
   "ktAudioPause": "இடைநிறுத்து",
   "ktAudioUnavailable": "ஆடியோ கிடைக்கவில்லை",
   "ktAttachRemove": "அகற்று",

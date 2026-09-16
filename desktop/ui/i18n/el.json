@@ -30,7 +30,8 @@
     "email": "Δημιουργία email",
     "neutral": "Ουδέτερη",
     "translate": "Μετάφραση",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Ήχος"
   },
   "instr": {
     "rephrase": "Αναδιατύπωσε το παρακάτω κείμενο:",
@@ -38,7 +39,8 @@
     "reply": "Γράψε μια απάντηση στο παρακάτω μήνυμα:",
     "email": "Γράψε ένα email με βάση:",
     "translate": "Μετάφρασε το ακόλουθο κείμενο:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Αναπαρήγαγε ακριβώς το κείμενο ανάμεσα στους οριοθέτες. Έξοδος: μόνο αυτό το κείμενο."
   },
   "lengthOpts": [
     "Σύντομο και περιεκτικό",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Νέα συνταγή",
   "recipeName": "Όνομα",
   "recipeInstr": "Οδηγία",
+  "recipeNoConstraints": "Χωρίς περιορισμούς",
   "recipeNamePh": "Π.χ. Μετάφραση στα αγγλικά",
   "recipeInstrPh": "Π.χ. Μετάφρασε το παρακάτω κείμενο στα αγγλικά:",
   "confirmTitle": "Επιβεβαίωση",
@@ -265,6 +268,9 @@
   "ktReadStop": "Διακοπή ανάγνωσης",
   "ktTabAudio": "Ήχος",
   "ktAudioPlay": "Αναπαραγωγή ήχου",
+  "ktAudioExists": "Ο ήχος είναι ήδη αποθηκευμένος: αναπαράγεται. Πατήστε ξανά για νέο",
+  "ktAudioSave": "Αποθήκευση ήχου",
+  "ktAudioSaved": "Ο ήχος αποθηκεύτηκε σε",
   "ktAudioPause": "Παύση",
   "ktAudioUnavailable": "Ο ήχος δεν είναι διαθέσιμος",
   "ktAttachRemove": "Αφαίρεση",

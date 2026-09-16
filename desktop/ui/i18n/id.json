@@ -22,7 +22,8 @@
     "email": "Buat email",
     "neutral": "Netral",
     "translate": "Terjemahkan",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Audio"
   },
   "instr": {
     "rephrase": "Tulis ulang teks berikut:",
@@ -30,7 +31,8 @@
     "reply": "Tulis balasan untuk pesan berikut:",
     "email": "Tulis email berdasarkan:",
     "translate": "Terjemahkan teks berikut:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Reproduksi persis teks di antara pembatas. Keluaran: hanya teks itu."
   },
   "lengthOpts": [
     "Singkat dan padat",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "Resep baru",
   "recipeName": "Nama",
   "recipeInstr": "Instruksi",
+  "recipeNoConstraints": "Tanpa batasan",
   "recipeNamePh": "Mis. Terjemahkan ke Inggris",
   "recipeInstrPh": "Mis. Terjemahkan teks berikut ke bahasa Inggris:",
   "confirmTitle": "Konfirmasi",
@@ -265,6 +268,9 @@
   "ktReadStop": "Hentikan pembacaan",
   "ktTabAudio": "Audio",
   "ktAudioPlay": "Putar audio",
+  "ktAudioExists": "Audio sudah tersimpan: memutarnya. Tekan lagi untuk membuat yang baru",
+  "ktAudioSave": "Simpan audio",
+  "ktAudioSaved": "Audio disimpan di",
   "ktAudioPause": "Jeda",
   "ktAudioUnavailable": "Audio tidak tersedia",
   "ktAttachRemove": "Hapus",

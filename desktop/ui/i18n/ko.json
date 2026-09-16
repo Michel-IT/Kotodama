@@ -30,7 +30,8 @@
     "email": "이메일 작성",
     "neutral": "중립",
     "translate": "번역",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "오디오"
   },
   "instr": {
     "rephrase": "다음 텍스트를 다시 작성하세요:",
@@ -38,7 +39,8 @@
     "reply": "다음 메시지에 대한 답장을 작성하세요:",
     "email": "다음 내용을 바탕으로 이메일을 작성하세요:",
     "translate": "다음 텍스트를 번역하세요:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "구분 기호 사이의 텍스트를 그대로 재현하세요. 출력: 그 텍스트만."
   },
   "lengthOpts": [
     "짧고 간결하게",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "새 레시피",
   "recipeName": "이름",
   "recipeInstr": "지시",
+  "recipeNoConstraints": "제약 없음",
   "recipeNamePh": "예: 영어로 번역",
   "recipeInstrPh": "예: 다음 텍스트를 영어로 번역하세요:",
   "confirmTitle": "확인",
@@ -265,6 +268,9 @@
   "ktReadStop": "읽기 중지",
   "ktTabAudio": "오디오",
   "ktAudioPlay": "오디오 재생",
+  "ktAudioExists": "오디오가 이미 저장되어 있어 재생합니다. 새로 만들려면 다시 누르세요",
+  "ktAudioSave": "오디오 저장",
+  "ktAudioSaved": "오디오 저장 위치",
   "ktAudioPause": "일시정지",
   "ktAudioUnavailable": "오디오를 사용할 수 없음",
   "ktAttachRemove": "제거",

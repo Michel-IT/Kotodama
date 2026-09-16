@@ -22,7 +22,8 @@
     "email": "ಇಮೇಲ್ ರಚಿಸಿ",
     "neutral": "ತಟಸ್ಥ",
     "translate": "ಅನುವಾದಿಸಿ",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "ಆಡಿಯೋ"
   },
   "instr": {
     "rephrase": "ಕೆಳಗಿನ ಪಠ್ಯವನ್ನು ಪುನಃ ಬರೆಯಿರಿ:",
@@ -30,7 +31,8 @@
     "reply": "ಕೆಳಗಿನ ಸಂದೇಶಕ್ಕೆ ಉತ್ತರ ಬರೆಯಿರಿ:",
     "email": "ಇದರ ಆಧಾರದ ಮೇಲೆ ಇಮೇಲ್ ಬರೆಯಿರಿ:",
     "translate": "ಈ ಕೆಳಗಿನ ಪಠ್ಯವನ್ನು ಅನುವಾದಿಸಿ:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "ಡಿಲಿಮಿಟರ್‌ಗಳ ನಡುವಿನ ಪಠ್ಯವನ್ನು ಯಥಾವತ್ತಾಗಿ ಪುನರುತ್ಪಾದಿಸಿ. ಔಟ್‌ಪುಟ್: ಆ ಪಠ್ಯ ಮಾತ್ರ."
   },
   "lengthOpts": [
     "ಸಂಕ್ಷಿಪ್ತ ಮತ್ತು ಸ್ಪಷ್ಟ",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "ಹೊಸ ರೆಸಿಪಿ",
   "recipeName": "ಹೆಸರು",
   "recipeInstr": "ಸೂಚನೆ",
+  "recipeNoConstraints": "ನಿರ್ಬಂಧಗಳಿಲ್ಲದೆ",
   "recipeNamePh": "ಉದಾ. ಇಂಗ್ಲಿಷ್‌ಗೆ ಅನುವಾದಿಸಿ",
   "recipeInstrPh": "ಉದಾ. ಕೆಳಗಿನ ಪಠ್ಯವನ್ನು ಇಂಗ್ಲಿಷ್‌ಗೆ ಅನುವಾದಿಸಿ:",
   "confirmTitle": "ದೃಢೀಕರಿಸಿ",
@@ -265,6 +268,9 @@
   "ktReadStop": "ಓದುವುದನ್ನು ನಿಲ್ಲಿಸಿ",
   "ktTabAudio": "ಆಡಿಯೋ",
   "ktAudioPlay": "ಆಡಿಯೋ ಪ್ಲೇ ಮಾಡಿ",
+  "ktAudioExists": "ಆಡಿಯೋ ಈಗಾಗಲೇ ಉಳಿಸಲಾಗಿದೆ: ಅದನ್ನೇ ಪ್ಲೇ ಮಾಡುತ್ತಿದೆ. ಹೊಸದಕ್ಕೆ ಮತ್ತೆ ಒತ್ತಿ",
+  "ktAudioSave": "ಆಡಿಯೋ ಉಳಿಸಿ",
+  "ktAudioSaved": "ಆಡಿಯೋ ಉಳಿಸಲಾಗಿದೆ",
   "ktAudioPause": "ವಿರಾಮ",
   "ktAudioUnavailable": "ಆಡಿಯೋ ಲಭ್ಯವಿಲ್ಲ",
   "ktAttachRemove": "ತೆಗೆದುಹಾಕಿ",

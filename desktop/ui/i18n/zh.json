@@ -22,7 +22,8 @@
     "email": "撰写邮件",
     "neutral": "中性",
     "translate": "翻译",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "音频"
   },
   "instr": {
     "rephrase": "改写以下文本：",
@@ -30,7 +31,8 @@
     "reply": "为以下消息撰写回复：",
     "email": "根据以下内容撰写一封邮件：",
     "translate": "翻译以下文本：",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "原样复现分隔符之间的文本。输出:仅该文本。"
   },
   "lengthOpts": [
     "简短精炼",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "新建配方",
   "recipeName": "名称",
   "recipeInstr": "指令",
+  "recipeNoConstraints": "无约束",
   "recipeNamePh": "例如：翻译成英语",
   "recipeInstrPh": "例如：将以下文本翻译成英语：",
   "confirmTitle": "确认",
@@ -265,6 +268,9 @@
   "ktReadStop": "停止朗读",
   "ktTabAudio": "音频",
   "ktAudioPlay": "播放音频",
+  "ktAudioExists": "音频已保存,正在播放。再按一次可重新生成",
+  "ktAudioSave": "保存音频",
+  "ktAudioSaved": "音频已保存到",
   "ktAudioPause": "暂停",
   "ktAudioUnavailable": "音频不可用",
   "ktAttachRemove": "移除",

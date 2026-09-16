@@ -30,7 +30,8 @@
     "email": "สร้างอีเมล",
     "neutral": "กลาง",
     "translate": "แปล",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "เสียง"
   },
   "instr": {
     "rephrase": "เรียบเรียงข้อความต่อไปนี้ใหม่:",
@@ -38,7 +39,8 @@
     "reply": "เขียนคำตอบสำหรับข้อความต่อไปนี้:",
     "email": "เขียนอีเมลโดยอ้างอิงจาก:",
     "translate": "แปลข้อความต่อไปนี้:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "ทำซ้ำข้อความระหว่างตัวคั่นให้เหมือนเดิม ผลลัพธ์: เฉพาะข้อความนั้น"
   },
   "lengthOpts": [
     "สั้นและกระชับ",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "สูตรใหม่",
   "recipeName": "ชื่อ",
   "recipeInstr": "คำสั่ง",
+  "recipeNoConstraints": "ไม่มีข้อกำหนด",
   "recipeNamePh": "เช่น แปลเป็นภาษาอังกฤษ",
   "recipeInstrPh": "เช่น แปลข้อความต่อไปนี้เป็นภาษาอังกฤษ:",
   "confirmTitle": "ยืนยัน",
@@ -265,6 +268,9 @@
   "ktReadStop": "หยุดอ่าน",
   "ktTabAudio": "เสียง",
   "ktAudioPlay": "เล่นเสียง",
+  "ktAudioExists": "มีเสียงบันทึกไว้แล้ว กำลังเล่นเสียงนั้น กดอีกครั้งเพื่อสร้างใหม่",
+  "ktAudioSave": "บันทึกเสียง",
+  "ktAudioSaved": "บันทึกเสียงไว้ที่",
   "ktAudioPause": "หยุดชั่วคราว",
   "ktAudioUnavailable": "ไม่มีเสียง",
   "ktAttachRemove": "ลบ",

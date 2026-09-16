@@ -22,7 +22,8 @@
     "email": "ଇମେଲ୍ ସୃଷ୍ଟି କରନ୍ତୁ",
     "neutral": "ନିରପେକ୍ଷ",
     "translate": "ଅନୁବାଦ କରନ୍ତୁ",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "ଅଡିଓ"
   },
   "instr": {
     "rephrase": "ନିମ୍ନ ଲେଖାକୁ ପୁନଃଲିଖନ କରନ୍ତୁ:",
@@ -30,7 +31,8 @@
     "reply": "ନିମ୍ନ ସନ୍ଦେଶର ଉତ୍ତର ଲେଖନ୍ତୁ:",
     "email": "ଏହାର ଆଧାରରେ ଏକ ଇମେଲ୍ ଲେଖନ୍ତୁ:",
     "translate": "ନିମ୍ନଲିଖିତ ପାଠ୍ୟ ଅନୁବାଦ କରନ୍ତୁ:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "ସୀମାଚିହ୍ନ ମଧ୍ୟରେ ଥିବା ପାଠ୍ୟକୁ ହୁବହୁ ପୁନରୁତ୍ପାଦନ କର। ଆଉଟପୁଟ୍: କେବଳ ସେହି ପାଠ୍ୟ।"
   },
   "lengthOpts": [
     "ସଂକ୍ଷିପ୍ତ ଓ ସ୍ପଷ୍ଟ",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "ନୂଆ ରେସିପି",
   "recipeName": "ନାମ",
   "recipeInstr": "ନିର୍ଦେଶ",
+  "recipeNoConstraints": "ବନ୍ଧନ ବିନା",
   "recipeNamePh": "ଯଥା ଇଂରାଜୀକୁ ଅନୁବାଦ କରନ୍ତୁ",
   "recipeInstrPh": "ଯଥା ନିମ୍ନ ଲେଖାକୁ ଇଂରାଜୀକୁ ଅନୁବାଦ କରନ୍ତୁ:",
   "confirmTitle": "ନିଶ୍ଚିତ କରନ୍ତୁ",
@@ -265,6 +268,9 @@
   "ktReadStop": "ପଢ଼ିବା ବନ୍ଦ କରନ୍ତୁ",
   "ktTabAudio": "ଅଡିଓ",
   "ktAudioPlay": "ଅଡିଓ ଚଲାନ୍ତୁ",
+  "ktAudioExists": "ଅଡିଓ ପୂର୍ବରୁ ସେଭ୍ ହୋଇଛି: ତାହା ଚଲାଉଛି। ନୂଆ ପାଇଁ ପୁଣି ଦବାନ୍ତୁ",
+  "ktAudioSave": "ଅଡିଓ ସେଭ୍ କରନ୍ତୁ",
+  "ktAudioSaved": "ଅଡିଓ ସେଭ୍ ହେଲା",
   "ktAudioPause": "ବିରତି",
   "ktAudioUnavailable": "ଅଡିଓ ଉପଲବ୍ଧ ନାହିଁ",
   "ktAttachRemove": "ହଟାନ୍ତୁ",

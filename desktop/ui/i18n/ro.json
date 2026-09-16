@@ -30,7 +30,8 @@
     "email": "Creează e-mail",
     "neutral": "Neutru",
     "translate": "Traducere",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Audio"
   },
   "instr": {
     "rephrase": "Reformulează textul următor:",
@@ -38,7 +39,8 @@
     "reply": "Scrie un răspuns la mesajul următor:",
     "email": "Scrie un e-mail pornind de la:",
     "translate": "Tradu următorul text:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Reproduce exact textul dintre delimitatori. Ieșire: doar acel text."
   },
   "lengthOpts": [
     "Scurt și concis",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Rețetă nouă",
   "recipeName": "Nume",
   "recipeInstr": "Instrucțiune",
+  "recipeNoConstraints": "Fără constrângeri",
   "recipeNamePh": "Ex. Tradu în engleză",
   "recipeInstrPh": "Ex. Tradu textul următor în engleză:",
   "confirmTitle": "Confirmă",
@@ -265,6 +268,9 @@
   "ktReadStop": "Oprește citirea",
   "ktTabAudio": "Audio",
   "ktAudioPlay": "Redă audio",
+  "ktAudioExists": "Audio este deja salvat: îl redau. Apasă din nou pentru unul nou",
+  "ktAudioSave": "Salvează audio",
+  "ktAudioSaved": "Audio salvat în",
   "ktAudioPause": "Pauză",
   "ktAudioUnavailable": "Audio indisponibil",
   "ktAttachRemove": "Elimină",

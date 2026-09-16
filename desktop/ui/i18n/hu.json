@@ -30,7 +30,8 @@
     "email": "E-mail létrehozása",
     "neutral": "Semleges",
     "translate": "Fordítás",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Hang"
   },
   "instr": {
     "rephrase": "Fogalmazd át a következő szöveget:",
@@ -38,7 +39,8 @@
     "reply": "Írj választ a következő üzenetre:",
     "email": "Írj egy e-mailt ez alapján:",
     "translate": "Fordítsd le a következő szöveget:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Add vissza pontosan a határolók közti szöveget. Kimenet: csak az a szöveg."
   },
   "lengthOpts": [
     "Rövid és tömör",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Új recept",
   "recipeName": "Név",
   "recipeInstr": "Utasítás",
+  "recipeNoConstraints": "Megkötések nélkül",
   "recipeNamePh": "Pl. Fordítás angolra",
   "recipeInstrPh": "Pl. Fordítsd le a következő szöveget angolra:",
   "confirmTitle": "Megerősítés",
@@ -265,6 +268,9 @@
   "ktReadStop": "Felolvasás leállítása",
   "ktTabAudio": "Hang",
   "ktAudioPlay": "Hang lejátszása",
+  "ktAudioExists": "A hang már mentve van: lejátszom. Új készítéséhez nyomd meg újra",
+  "ktAudioSave": "Hang mentése",
+  "ktAudioSaved": "A hang ide mentve",
   "ktAudioPause": "Szünet",
   "ktAudioUnavailable": "A hang nem érhető el",
   "ktAttachRemove": "Eltávolítás",

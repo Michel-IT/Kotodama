@@ -22,7 +22,8 @@
     "email": "ईमेल तयार करा",
     "neutral": "न्यूट्रल",
     "translate": "भाषांतर करा",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "ऑडिओ"
   },
   "instr": {
     "rephrase": "खालील मजकूर पुन्हा लिहा:",
@@ -30,7 +31,8 @@
     "reply": "खालील संदेशाला उत्तर लिहा:",
     "email": "याच्या आधारे एक ईमेल लिहा:",
     "translate": "पुढील मजकूर भाषांतरित करा:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "सीमांकांमधील मजकूर जसाच्या तसा पुन्हा द्या. आउटपुट: फक्त तोच मजकूर."
   },
   "lengthOpts": [
     "संक्षिप्त आणि नेमके",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "नवीन पाककृती",
   "recipeName": "नाव",
   "recipeInstr": "सूचना",
+  "recipeNoConstraints": "बंधनांशिवाय",
   "recipeNamePh": "उदा. इंग्रजीत भाषांतर करा",
   "recipeInstrPh": "उदा. खालील मजकूर इंग्रजीत भाषांतर करा:",
   "confirmTitle": "पुष्टी करा",
@@ -265,6 +268,9 @@
   "ktReadStop": "वाचन थांबवा",
   "ktTabAudio": "ऑडिओ",
   "ktAudioPlay": "ऑडिओ चालवा",
+  "ktAudioExists": "ऑडिओ आधीच जतन आहे: तेच चालवत आहे. नवीन तयार करण्यासाठी पुन्हा दाबा",
+  "ktAudioSave": "ऑडिओ जतन करा",
+  "ktAudioSaved": "ऑडिओ जतन केले",
   "ktAudioPause": "थांबवा",
   "ktAudioUnavailable": "ऑडिओ उपलब्ध नाही",
   "ktAttachRemove": "काढा",

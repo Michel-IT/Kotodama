@@ -21,6 +21,7 @@
     "allow-kotodama-read-aloud",
     "allow-kotodama-regenerate",
     "allow-kotodama-audio-load",
+    "allow-kotodama-audio-export",
     "allow-kotodama-audio-delete",
     "allow-kotodama-prewarm",
     "allow-kotodama-push",

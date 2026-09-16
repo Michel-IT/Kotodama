@@ -22,7 +22,8 @@
     "email": "Tengeneza barua pepe",
     "neutral": "Wastani",
     "translate": "Tafsiri",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Sauti"
   },
   "instr": {
     "rephrase": "Andika upya maandishi yafuatayo:",
@@ -30,7 +31,8 @@
     "reply": "Andika jibu kwa ujumbe ufuatao:",
     "email": "Andika barua pepe kwa kuzingatia:",
     "translate": "Tafsiri maandishi yafuatayo:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Rudia haswa maandishi yaliyo kati ya vitenganishi. Matokeo: maandishi hayo tu."
   },
   "lengthOpts": [
     "Fupi na thabiti",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "Pishi jipya",
   "recipeName": "Jina",
   "recipeInstr": "Maagizo",
+  "recipeNoConstraints": "Bila vikwazo",
   "recipeNamePh": "K.m. Tafsiri kwa Kiingereza",
   "recipeInstrPh": "K.m. Tafsiri maandishi yafuatayo kwa Kiingereza:",
   "confirmTitle": "Thibitisha",
@@ -265,6 +268,9 @@
   "ktReadStop": "Acha kusoma",
   "ktTabAudio": "Sauti",
   "ktAudioPlay": "Cheza sauti",
+  "ktAudioExists": "Sauti tayari imehifadhiwa: naicheza. Bonyeza tena kutengeneza mpya",
+  "ktAudioSave": "Hifadhi sauti",
+  "ktAudioSaved": "Sauti imehifadhiwa katika",
   "ktAudioPause": "Sitisha",
   "ktAudioUnavailable": "Sauti haipatikani",
   "ktAttachRemove": "Ondoa",

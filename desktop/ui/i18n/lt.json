@@ -30,7 +30,8 @@
     "email": "Sukurti el. laišką",
     "neutral": "Neutrali",
     "translate": "Versti",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Garsas"
   },
   "instr": {
     "rephrase": "Performuluok šį tekstą:",
@@ -38,7 +39,8 @@
     "reply": "Parašyk atsakymą į šį pranešimą:",
     "email": "Parašyk el. laišką remdamasis:",
     "translate": "Išversk šį tekstą:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Tiksliai atkurk tekstą tarp skirtukų. Išvestis: tik tas tekstas."
   },
   "lengthOpts": [
     "Trumpai ir aiškiai",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Naujas receptas",
   "recipeName": "Pavadinimas",
   "recipeInstr": "Instrukcija",
+  "recipeNoConstraints": "Be apribojimų",
   "recipeNamePh": "Pvz., Išversti į anglų",
   "recipeInstrPh": "Pvz., Išversk šį tekstą į anglų kalbą:",
   "confirmTitle": "Patvirtinti",
@@ -265,6 +268,9 @@
   "ktReadStop": "Stabdyti skaitymą",
   "ktTabAudio": "Garsas",
   "ktAudioPlay": "Leisti garsą",
+  "ktAudioExists": "Garsas jau įrašytas: leidžiu jį. Paspauskite dar kartą, kad sukurtumėte naują",
+  "ktAudioSave": "Įrašyti garsą",
+  "ktAudioSaved": "Garsas įrašytas į",
   "ktAudioPause": "Pristabdyti",
   "ktAudioUnavailable": "Garsas nepasiekiamas",
   "ktAttachRemove": "Pašalinti",

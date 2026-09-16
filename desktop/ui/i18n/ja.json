@@ -22,7 +22,8 @@
     "email": "メール作成",
     "neutral": "ニュートラル",
     "translate": "翻訳",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "音声"
   },
   "instr": {
     "rephrase": "次のテキストを言い換えてください:",
@@ -30,7 +31,8 @@
     "reply": "次のメッセージへの返信を書いてください:",
     "email": "次の内容をもとにメールを書いてください:",
     "translate": "次のテキストを翻訳してください：",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "区切り記号の間のテキストをそのまま再現してください。出力: そのテキストのみ。"
   },
   "lengthOpts": [
     "短く簡潔に",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "新しいレシピ",
   "recipeName": "名前",
   "recipeInstr": "指示",
+  "recipeNoConstraints": "制約なし",
   "recipeNamePh": "例: 英語に翻訳",
   "recipeInstrPh": "例: 次のテキストを英語に翻訳してください:",
   "confirmTitle": "確認",
@@ -265,6 +268,9 @@
   "ktReadStop": "読み上げを停止",
   "ktTabAudio": "音声",
   "ktAudioPlay": "音声を再生",
+  "ktAudioExists": "音声は保存済みです。再生します。もう一度押すと新しく作成します",
+  "ktAudioSave": "音声を保存",
+  "ktAudioSaved": "音声の保存先",
   "ktAudioPause": "一時停止",
   "ktAudioUnavailable": "音声を利用できません",
   "ktAttachRemove": "削除",

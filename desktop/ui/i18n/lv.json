@@ -30,7 +30,8 @@
     "email": "Izveidot e-pastu",
     "neutral": "Neitrāls",
     "translate": "Tulkot",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Audio"
   },
   "instr": {
     "rephrase": "Pārformulē šādu tekstu:",
@@ -38,7 +39,8 @@
     "reply": "Uzraksti atbildi uz šādu ziņojumu:",
     "email": "Uzraksti e-pastu, balstoties uz:",
     "translate": "Iztulko šo tekstu:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Precīzi atveido tekstu starp atdalītājiem. Izvade: tikai šis teksts."
   },
   "lengthOpts": [
     "Īss un kodolīgs",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Jauna recepte",
   "recipeName": "Nosaukums",
   "recipeInstr": "Instrukcija",
+  "recipeNoConstraints": "Bez ierobežojumiem",
   "recipeNamePh": "Piem., Tulkot angliski",
   "recipeInstrPh": "Piem., Pārtulko šo tekstu angļu valodā:",
   "confirmTitle": "Apstiprināt",
@@ -265,6 +268,9 @@
   "ktReadStop": "Apturēt lasīšanu",
   "ktTabAudio": "Audio",
   "ktAudioPlay": "Atskaņot audio",
+  "ktAudioExists": "Audio jau ir saglabāts: atskaņoju to. Nospiediet vēlreiz, lai izveidotu jaunu",
+  "ktAudioSave": "Saglabāt audio",
+  "ktAudioSaved": "Audio saglabāts mapē",
   "ktAudioPause": "Pauze",
   "ktAudioUnavailable": "Audio nav pieejams",
   "ktAttachRemove": "Noņemt",

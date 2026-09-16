@@ -191,7 +191,11 @@ fn set_conv(window: &Window, key: &str, bid: Option<&str>) {
 struct AudioCap {
     bid: String,
     req: String,
+    /// Raw Opus packets, for the providers that stream them over a WebSocket (Claude, DeepSeek).
     packets: Vec<Vec<u8>>,
+    /// A finished audio file, for the providers that answer with one (ChatGPT: audio/aac), plus its type.
+    file: Vec<u8>,
+    file_ct: String,
     bytes: usize,
 }
 fn audio_caps() -> &'static Mutex<HashMap<String, AudioCap>> {
@@ -208,7 +212,7 @@ fn audio_dir(window: &Window) -> Result<std::path::PathBuf, String> {
 }
 /// A saved audio is addressed by its bare file name, never a path: nothing outside the audio folder is reachable.
 fn audio_file_ok(name: &str) -> bool {
-    name.ends_with(".ogg") && !name.contains("..") && name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+    [".ogg", ".aac", ".mp3", ".m4a", ".wav", ".webm"].iter().any(|e| name.ends_with(e)) && !name.contains("..") && name.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
 }
 
 /// Presses the provider's read-aloud button (`mode` "play") or presses it again to stop ("stop"). The answer
@@ -228,13 +232,13 @@ pub fn kotodama_read_aloud(window: Window, broadcast_id: String, key: String, mo
         let req = format!("a{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0));
         audio_caps().lock().unwrap().insert(
             key.clone(),
-            AudioCap { bid: broadcast_id.clone(), req: req.clone(), packets: Vec::new(), bytes: 0 },
+            AudioCap { bid: broadcast_id.clone(), req: req.clone(), packets: Vec::new(), file: Vec::new(), file_ct: String::new(), bytes: 0 },
         );
         req
     };
-    let (sel, path) = crate::audio::tts_button(&key);
+    let (sel, path, item) = crate::audio::tts_button(&key);
     let js = format!(
-        "var __kt_bid = {}; var __kt_key = {}; var __kt_req = {}; var __kt_mode = {}; var __kt_tts_url = {}; var __kt_tts_sel = {}; var __kt_tts_path = {};",
+        "var __kt_bid = {}; var __kt_key = {}; var __kt_req = {}; var __kt_mode = {}; var __kt_tts_url = {}; var __kt_tts_sel = {}; var __kt_tts_path = {}; var __kt_tts_item = {};",
         serde_json::to_string(&broadcast_id).map_err(|e| e.to_string())?,
         serde_json::to_string(&key).map_err(|e| e.to_string())?,
         serde_json::to_string(&req).map_err(|e| e.to_string())?,
@@ -242,6 +246,7 @@ pub fn kotodama_read_aloud(window: Window, broadcast_id: String, key: String, mo
         serde_json::to_string(pattern).map_err(|e| e.to_string())?,
         serde_json::to_string(sel).map_err(|e| e.to_string())?,
         serde_json::to_string(path).map_err(|e| e.to_string())?,
+        serde_json::to_string(item).map_err(|e| e.to_string())?,
     ) + FIND_ACTION_JS + TTS_JS;
     debug::log(format!("kotodama READ-ALOUD key={key} bid={broadcast_id} mode={mode} req={req}"));
     wv.eval(&js).map_err(|e| e.to_string())?;
@@ -325,6 +330,26 @@ pub fn kotodama_audio_load(window: Window, file: String) -> Result<String, Strin
     Ok(base64_encode(&bytes))
 }
 
+/// Copies a saved audio into Downloads/Kotodama and returns where it landed, so the user can keep or share it.
+#[tauri::command]
+pub fn kotodama_audio_export(window: Window, file: String) -> Result<String, String> {
+    if !audio_file_ok(&file) {
+        return Err("bad name".into());
+    }
+    let src = audio_dir(&window)?.join(&file);
+    let dir = window.app_handle().path().download_dir().map_err(|e| e.to_string())?.join("Kotodama");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let dst = dir.join(&file);
+    std::fs::copy(&src, &dst).map_err(|e| e.to_string())?;
+    // Show it in the file manager: the copy is silent otherwise, and a toast is easy to miss.
+    {
+        use tauri_plugin_opener::OpenerExt;
+        let _ = window.app_handle().opener().reveal_item_in_dir(&dst);
+    }
+    debug::log(format!("kotodama audio export -> {}", dst.display()));
+    Ok(dst.to_string_lossy().to_string())
+}
+
 /// Removes saved audios (a deleted conversation). Missing files are not an error.
 #[tauri::command]
 pub fn kotodama_audio_delete(window: Window, files: Vec<String>) -> Result<(), String> {
@@ -363,6 +388,19 @@ fn handle_audio_push(window: &Window, key: &str, raw: &str) {
                 cap.packets.push(bytes[skip..].to_vec());
             }
         }
+        "blob" => {
+            if let Some(ct) = v.get("ct").and_then(|x| x.as_str()) {
+                cap.file_ct = ct.to_string();
+            }
+            for f in v.get("f").and_then(|x| x.as_array()).into_iter().flatten() {
+                let Some(bytes) = f.as_str().and_then(crate::audio::base64_decode) else { continue };
+                if cap.bytes + bytes.len() > AUDIO_MAX_BYTES {
+                    continue;
+                }
+                cap.bytes += bytes.len();
+                cap.file.extend_from_slice(&bytes);
+            }
+        }
         "stopped" => emit(&cap.bid.clone(), "stopped", serde_json::json!({})),
         "end" | "nobutton" | "noaudio" => {
             let cap = caps.remove(key).unwrap();
@@ -372,16 +410,30 @@ fn handle_audio_push(window: &Window, key: &str, raw: &str) {
                 emit(&cap.bid, if ev == "nobutton" { "unavailable" } else { "error" }, serde_json::json!({}));
                 return;
             }
-            let serial = req.bytes().fold(0u32, |h, b| h.wrapping_mul(31).wrapping_add(b as u32));
-            let Some((ogg, ms)) = crate::audio::ogg_opus(&cap.packets, serial) else {
+            // A finished file is saved as it came; raw packets are wrapped in an Ogg Opus stream first.
+            let (bytes, ext, ms) = if !cap.file.is_empty() {
+                let ext = crate::audio::container_ext(&cap.file_ct).unwrap_or("bin");
+                (cap.file.clone(), ext, 0u64)
+            } else {
+                let serial = req.bytes().fold(0u32, |h, b| h.wrapping_mul(31).wrapping_add(b as u32));
+                match crate::audio::ogg_opus(&cap.packets, serial) {
+                    Some((ogg, ms)) => (ogg, "ogg", ms),
+                    None => {
+                        emit(&cap.bid, "error", serde_json::json!({}));
+                        return;
+                    }
+                }
+            };
+            if ext == "bin" {
+                debug::log(format!("kotodama READ-ALOUD key={key}: unknown audio type {:?}", cap.file_ct));
                 emit(&cap.bid, "error", serde_json::json!({}));
                 return;
-            };
+            }
             let safe = |s: &str| s.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '-').collect::<String>();
-            let file = format!("{}-{}-{}.ogg", safe(&cap.bid), safe(key), safe(req));
-            match audio_dir(window).and_then(|d| std::fs::write(d.join(&file), &ogg).map_err(|e| e.to_string())) {
+            let file = format!("{}-{}-{}.{ext}", safe(&cap.bid), safe(key), safe(req));
+            match audio_dir(window).and_then(|d| std::fs::write(d.join(&file), &bytes).map_err(|e| e.to_string())) {
                 Ok(()) => {
-                    debug::log(format!("kotodama READ-ALOUD key={key} saved {file} packets={} ms={ms} bytes={}", cap.packets.len(), ogg.len()));
+                    debug::log(format!("kotodama READ-ALOUD key={key} saved {file} ms={ms} bytes={}", bytes.len()));
                     emit(&cap.bid, "saved", serde_json::json!({ "file": file, "ms": ms }));
                 }
                 Err(e) => {
@@ -1149,6 +1201,17 @@ const FIND_ACTION_JS: &str = r##"
 if (!window.__ktFindAction) {
   window.__ktFindAction = function(sel, path){
     try {
+      // "row-last:<selector>": the LAST button of the row that holds that element -- for a control with no stable
+      // attribute of its own sitting at the end of an action bar (ChatGPT's "more actions").
+      if (sel && sel.indexOf('row-last:') === 0) {
+        var anchor = document.querySelectorAll(sel.slice(9));
+        if (!anchor.length) return null;
+        var row = anchor[anchor.length - 1].closest('button, [role="button"]');
+        row = row && row.parentElement;
+        if (!row) return null;
+        var bs = row.querySelectorAll('button, [role="button"]');
+        return bs.length ? bs[bs.length - 1] : null;
+      }
       if (sel) { var l = document.querySelectorAll(sel); return l.length ? l[l.length - 1].closest('button, [role="button"]') : null; }
       if (path) {
         var ps = document.querySelectorAll('svg path');
@@ -1202,6 +1265,43 @@ const TTS_JS: &str = r##"
     try { window.__TAURI__.core.invoke('kotodama_push', { b: BID, k: KEY, st: 'audio', d: JSON.stringify(obj) }).catch(function(){}); } catch(e){}
   }
   function findButton(){ return window.__ktFindAction(__kt_tts_sel, __kt_tts_path); }
+  // Providers that answer with a finished audio file (ChatGPT): copy the response body, the page keeps its own.
+  if (!window.__ktTtsFetchHook && window.fetch) {
+    window.__ktTtsFetchHook = true;
+    var of = window.fetch;
+    window.fetch = function(input){
+      var p = of.apply(this, arguments);
+      try {
+        var u = ''; try { u = (input && typeof input === 'object' && 'url' in input) ? input.url : String(input || ''); } catch(e){}
+        var t = window.__ktTts;
+        if (!t || t.claimed || Date.now() >= t.until || !t.re.test(u)) return p;
+        return p.then(function(res){
+          try {
+            var ct = (res.headers && res.headers.get('content-type')) || '';
+            if (!/^audio\//i.test(ct) || !res.body || typeof res.body.tee !== 'function') return res;
+            t.claimed = true;
+            var req = t.req, pair = res.body.tee(), rd = pair[0].getReader(), q = [];
+            t.send({ r: req, ev: 'open' });
+            (function pump(){
+              rd.read().then(function(r){
+                if (r.done) {
+                  t.send({ r: req, ev: 'blob', ct: ct, f: q });
+                  t.send({ r: req, ev: 'end', code: 1000 });
+                  return;
+                }
+                var u8 = new Uint8Array(r.value), s = '';
+                for (var i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+                q.push(btoa(s));
+                pump();
+              }, function(){ t.send({ r: req, ev: 'end', code: 1006 }); });
+            })();
+            return (window.__ktAdoptBody ? window.__ktAdoptBody(res, pair[1]) : res);
+          } catch(e) { return res; }
+        });
+      } catch(e){}
+      return p;
+    };
+  }
   if (!window.__ktTtsHook && window.WebSocket) {
     window.__ktTtsHook = true;
     var OWS = window.WebSocket;
@@ -1247,6 +1347,27 @@ const TTS_JS: &str = r##"
   window.__ktTts = t;
   b.click();
   setTimeout(function(){ if (!t.claimed) send({ r: REQ, ev: 'noaudio' }); }, 15000);
+  // DISCOVERY (debug only): providers whose read-aloud lives in a "more actions" menu -- describe what the click opened.
+  if (window.__ktDiag) setTimeout(function(){
+    try {
+      var its = document.querySelectorAll('[role="menuitem"], [mat-menu-item], .mat-mdc-menu-item'), out = [];
+      for (var i = 0; i < its.length; i++) {
+        var it = its[i];
+        out.push('testid=' + (it.getAttribute('data-testid') || it.getAttribute('data-test-id') || '-') + ' text=' + (it.innerText || '').trim().slice(0, 20).replace(/\s+/g, ' '));
+      }
+      if (out.length) window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('TTS-MENU n=' + out.length + ' ' + out.join(' || ')).slice(0, 1500) });
+    } catch(e){}
+  }, 800);
+  if (!__kt_tts_item) return;
+  // The control opened a menu: the read-aloud is one of its items.
+  var t0 = Date.now();
+  (function pick(){
+    var it = null;
+    try { var l = document.querySelectorAll(__kt_tts_item); it = l.length ? l[l.length - 1] : null; } catch(e){}
+    if (!it) { if (Date.now() - t0 < 3000) { setTimeout(pick, 100); } else { send({ r: REQ, ev: 'nobutton' }); } return; }
+    var host = it.closest('[role="menuitem"], button') || it;
+    ((host.tagName !== 'BUTTON' && host.querySelector('button')) || host).click();
+  })();
 })();
 "##;
 
@@ -1926,6 +2047,45 @@ const HARVEST_JS: &str = r##"
     } catch(e){}
     window.__ktPush({ b: BID, k: KEY, st: 'diag', d: out.join(' || ').slice(0,1400) });
   }
+  // DISCOVERY probe (debug only, KOTO_MENUPROBE=1): opens every menu control in the answer's action row and
+  // lists what is inside, so controls that live in a menu (ChatGPT's regenerate, Perplexity's rewrite) can be
+  // addressed by structure. Only buttons that declare a popup are touched, never the plain actions.
+  function menuCensus(){
+    try {
+      var ael = getAnswerEl(); if (!ael) return;
+      var ar = ael.getBoundingClientRect();
+      var all = document.querySelectorAll('button[aria-haspopup], [role="button"][aria-haspopup]'), opens = [];
+      for (var i = 0; i < all.length; i++) {
+        var r = all[i].getBoundingClientRect();
+        if (!r.width || r.top < ar.top || r.top > ar.bottom + 90) continue;
+        opens.push(all[i]);
+      }
+      var idx = 0;
+      (function next(){
+        if (idx >= opens.length) return;
+        var b = opens[idx++], label = (b.getAttribute('aria-label') || b.getAttribute('data-testid') || '?').slice(0, 24);
+        try { b.click(); } catch(e){}
+        setTimeout(function(){
+          var its = document.querySelectorAll('[role="menuitem"], [role="option"], [mat-menu-item], .mat-mdc-menu-item');
+          if (!its.length) {
+            // Popovers that do not use menu roles (ChatGPT's model switch): read the floating layer's own controls.
+            var pops = document.querySelectorAll('[data-radix-popper-content-wrapper], [role="menu"], [role="listbox"], [role="dialog"]');
+            if (pops.length) its = pops[pops.length - 1].querySelectorAll('button, [role="button"], a');
+          }
+          var out = [];
+          for (var k = 0; k < its.length && k < 14; k++) {
+            var it = its[k];
+            out.push('testid=' + (it.getAttribute('data-testid') || it.getAttribute('data-test-id') || '-')
+              + ' text=' + (it.innerText || '').trim().slice(0, 22).replace(/\s+/g, ' '));
+          }
+          window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('MENU[' + label + '] n=' + its.length + ' ' + out.join(' || ')).slice(0, 1600) });
+          try { document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); } catch(e){}
+          try { document.body.click(); } catch(e){}
+          setTimeout(next, 600);
+        }, 800);
+      })();
+    } catch(e){}
+  }
   // DISCOVERY probe (debug only, KOTO_ACTIONPROBE=1): the action buttons under the last answer (copy, read
   // aloud, regenerate...), described by structure only: data-testid, aria-label, svg icon signature, position.
   // Used to find each provider's read-aloud and regenerate controls without matching visible text.
@@ -2212,6 +2372,7 @@ const HARVEST_JS: &str = r##"
         }
         if (window.__ktThinkProbe) thinkCensus();
         if (window.__ktActionProbe) setTimeout(actionCensus, 2500);   // action bars appear once the answer settled
+        if (window.__ktMenuProbe) setTimeout(menuCensus, 3000);
         // Hand over the chrome-free text; fall back to the raw one if the walk yields nothing,
         // so a provider whose markup defeats it degrades to today's behaviour instead of silence.
         deliver('done', sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt, elToMd(getAnswerEl()));
@@ -2411,7 +2572,8 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
     // Reasoning discovery probe: only sets a flag; the census itself runs at delivery time.
     let think = String::new()
         + if crate::debug::enabled() && std::env::var("KOTO_THINKPROBE").is_ok() { "window.__ktThinkProbe = true;" } else { "" }
-        + if crate::debug::enabled() && std::env::var("KOTO_ACTIONPROBE").is_ok() { "window.__ktActionProbe = true;" } else { "" };
+        + if crate::debug::enabled() && std::env::var("KOTO_ACTIONPROBE").is_ok() { "window.__ktActionProbe = true;" } else { "" }
+        + if crate::debug::enabled() && std::env::var("KOTO_MENUPROBE").is_ok() { "window.__ktMenuProbe = true;" } else { "" };
     // Network discovery probe: BEFORE the fill, or the send request itself is missed.
     let net = if crate::debug::enabled() && std::env::var("KOTO_NETPROBE").is_ok() {
         NET_PROBE_JS

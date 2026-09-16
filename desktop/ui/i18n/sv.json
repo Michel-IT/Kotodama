@@ -30,7 +30,8 @@
     "email": "Skapa e-post",
     "neutral": "Neutral",
     "translate": "Översätt",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Ljud"
   },
   "instr": {
     "rephrase": "Omformulera följande text:",
@@ -38,7 +39,8 @@
     "reply": "Skriv ett svar på följande meddelande:",
     "email": "Skriv ett e-postmeddelande utifrån:",
     "translate": "Översätt följande text:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Återge texten mellan avgränsarna exakt. Utdata: endast den texten."
   },
   "lengthOpts": [
     "Kort och koncist",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Nytt recept",
   "recipeName": "Namn",
   "recipeInstr": "Instruktion",
+  "recipeNoConstraints": "Utan begränsningar",
   "recipeNamePh": "T.ex. Översätt till engelska",
   "recipeInstrPh": "T.ex. Översätt följande text till engelska:",
   "confirmTitle": "Bekräfta",
@@ -265,6 +268,9 @@
   "ktReadStop": "Sluta läsa upp",
   "ktTabAudio": "Ljud",
   "ktAudioPlay": "Spela upp ljud",
+  "ktAudioExists": "Ljudet är redan sparat: spelar upp det. Tryck igen för att skapa ett nytt",
+  "ktAudioSave": "Spara ljudet",
+  "ktAudioSaved": "Ljudet sparat i",
   "ktAudioPause": "Pausa",
   "ktAudioUnavailable": "Ljud är inte tillgängligt",
   "ktAttachRemove": "Ta bort",

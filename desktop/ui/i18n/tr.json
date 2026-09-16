@@ -30,7 +30,8 @@
     "email": "E-posta oluştur",
     "neutral": "Nötr",
     "translate": "Çevir",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Ses"
   },
   "instr": {
     "rephrase": "Aşağıdaki metni yeniden ifade et:",
@@ -38,7 +39,8 @@
     "reply": "Aşağıdaki mesaja bir yanıt yaz:",
     "email": "Şuna dayanarak bir e-posta yaz:",
     "translate": "Aşağıdaki metni çevir:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Ayırıcılar arasındaki metni birebir yeniden üret. Çıktı: yalnızca o metin."
   },
   "lengthOpts": [
     "Kısa ve öz",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Yeni tarif",
   "recipeName": "Ad",
   "recipeInstr": "Talimat",
+  "recipeNoConstraints": "Kısıtlama yok",
   "recipeNamePh": "Örn. İngilizceye çevir",
   "recipeInstrPh": "Örn. Aşağıdaki metni İngilizceye çevir:",
   "confirmTitle": "Onayla",
@@ -265,6 +268,9 @@
   "ktReadStop": "Okumayı durdur",
   "ktTabAudio": "Ses",
   "ktAudioPlay": "Sesi oynat",
+  "ktAudioExists": "Ses zaten kayıtlı: onu çalıyorum. Yeni bir tane için tekrar basın",
+  "ktAudioSave": "Sesi kaydet",
+  "ktAudioSaved": "Ses şuraya kaydedildi",
   "ktAudioPause": "Duraklat",
   "ktAudioUnavailable": "Ses kullanılamıyor",
   "ktAttachRemove": "Kaldır",

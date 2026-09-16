@@ -11,18 +11,38 @@ pub fn tts_url_pattern(key: &str) -> Option<&'static str> {
     match key {
         "anthropic" => Some("/api/ws/text_to_speech/"),
         "deepseek" => Some("/api/v0/chat/tts/"),
+        // ChatGPT answers with a finished audio file instead of a stream of packets (captured: audio/aac).
+        "openai" => Some("/backend-api/synthesize"),
         _ => None,
     }
 }
 
-/// The provider's read-aloud control under an answer, by structure only: a CSS selector, or the start of the
-/// icon's SVG path when the button carries no stable attribute (DeepSeek). The last match is the last answer.
-pub fn tts_button(key: &str) -> (&'static str, &'static str) {
+/// The provider's read-aloud control under an answer, by structure only: (CSS selector, start of the icon's SVG
+/// path when the button carries no stable attribute, menu item to pick when the control opens a menu instead).
+/// The last match is the last answer's.
+pub fn tts_button(key: &str) -> (&'static str, &'static str, &'static str) {
     match key {
-        "anthropic" => ("[data-testid=\"action-bar-read-aloud\"]", ""),
-        "deepseek" => ("", "M9.31006 14.8936"),
-        _ => ("", ""),
+        "anthropic" => ("[data-testid=\"action-bar-read-aloud\"]", "", ""),
+        "deepseek" => ("", "M9.31006 14.8936", ""),
+        // ChatGPT keeps read aloud in the row's last control ("more actions"), which carries no stable attribute of
+        // its own: it is addressed as the last button of the row that holds the copy button, then the menu item.
+        "openai" => ("row-last:[data-testid=\"copy-turn-action-button\"]", "", "[data-testid=\"voice-play-turn-action-button\"]"),
+        _ => ("", "", ""),
     }
+}
+
+/// File extension for an audio content type, for the providers that hand over a finished file.
+pub fn container_ext(ct: &str) -> Option<&'static str> {
+    let ct = ct.split(';').next().unwrap_or("").trim().to_ascii_lowercase();
+    Some(match ct.as_str() {
+        "audio/aac" | "audio/aacp" | "audio/x-aac" => "aac",
+        "audio/mpeg" | "audio/mp3" => "mp3",
+        "audio/mp4" | "audio/x-m4a" => "m4a",
+        "audio/ogg" | "audio/opus" => "ogg",
+        "audio/wav" | "audio/x-wav" | "audio/wave" => "wav",
+        "audio/webm" => "webm",
+        _ => return None,
+    })
 }
 
 /// Bytes in front of the Opus packet inside one binary frame.

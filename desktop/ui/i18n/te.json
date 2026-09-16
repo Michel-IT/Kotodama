@@ -30,7 +30,8 @@
     "email": "ఇమెయిల్ సృష్టించు",
     "neutral": "తటస్థం",
     "translate": "అనువదించు",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "ఆడియో"
   },
   "instr": {
     "rephrase": "కింది వచనాన్ని తిరిగి వ్రాయి:",
@@ -38,7 +39,8 @@
     "reply": "కింది సందేశానికి సమాధానం వ్రాయి:",
     "email": "దీని ఆధారంగా ఒక ఇమెయిల్ వ్రాయి:",
     "translate": "కింది వచనాన్ని అనువదించండి:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "విభాజకాల మధ్య ఉన్న పాఠాన్ని అచ్చుగా పునరుత్పత్తి చేయి. అవుట్‌పుట్: ఆ పాఠం మాత్రమే."
   },
   "lengthOpts": [
     "సంక్షిప్తం మరియు స్పష్టం",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "కొత్త వంటకం",
   "recipeName": "పేరు",
   "recipeInstr": "సూచన",
+  "recipeNoConstraints": "పరిమితులు లేకుండా",
   "recipeNamePh": "ఉదా. ఆంగ్లంలోకి అనువదించు",
   "recipeInstrPh": "ఉదా. కింది వచనాన్ని ఆంగ్లంలోకి అనువదించు:",
   "confirmTitle": "నిర్ధారించు",
@@ -265,6 +268,9 @@
   "ktReadStop": "చదవడం ఆపు",
   "ktTabAudio": "ఆడియో",
   "ktAudioPlay": "ఆడియో ప్లే చేయి",
+  "ktAudioExists": "ఆడియో ఇప్పటికే సేవ్ అయింది: దాన్నే ప్లే చేస్తున్నా. కొత్తది కావాలంటే మళ్లీ నొక్కండి",
+  "ktAudioSave": "ఆడియో సేవ్ చేయి",
+  "ktAudioSaved": "ఆడియో సేవ్ అయింది",
   "ktAudioPause": "పాజ్",
   "ktAudioUnavailable": "ఆడియో అందుబాటులో లేదు",
   "ktAttachRemove": "తీసివేయి",

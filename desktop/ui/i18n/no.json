@@ -30,7 +30,8 @@
     "email": "Opprett e-post",
     "neutral": "Nøytral",
     "translate": "Oversett",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Lyd"
   },
   "instr": {
     "rephrase": "Omformuler følgende tekst:",
@@ -38,7 +39,8 @@
     "reply": "Skriv et svar på følgende melding:",
     "email": "Skriv en e-post basert på:",
     "translate": "Oversett følgende tekst:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Gjengi teksten mellom skilletegnene nøyaktig. Utdata: bare den teksten."
   },
   "lengthOpts": [
     "Kort og konsist",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Ny oppskrift",
   "recipeName": "Navn",
   "recipeInstr": "Instruksjon",
+  "recipeNoConstraints": "Uten begrensninger",
   "recipeNamePh": "F.eks. Oversett til engelsk",
   "recipeInstrPh": "F.eks. Oversett følgende tekst til engelsk:",
   "confirmTitle": "Bekreft",
@@ -265,6 +268,9 @@
   "ktReadStop": "Stopp opplesing",
   "ktTabAudio": "Lyd",
   "ktAudioPlay": "Spill av lyd",
+  "ktAudioExists": "Lyden er allerede lagret: spiller den av. Trykk igjen for å lage en ny",
+  "ktAudioSave": "Lagre lyden",
+  "ktAudioSaved": "Lyd lagret i",
   "ktAudioPause": "Pause",
   "ktAudioUnavailable": "Lyd er ikke tilgjengelig",
   "ktAttachRemove": "Fjern",

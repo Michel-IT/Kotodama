@@ -30,7 +30,8 @@
     "email": "Sortu e-posta",
     "neutral": "Neutrala",
     "translate": "Itzuli",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Audioa"
   },
   "instr": {
     "rephrase": "Birformulatu honako testu hau:",
@@ -38,7 +39,8 @@
     "reply": "Idatzi erantzun bat honako mezu honi:",
     "email": "Idatzi e-posta bat honetan oinarrituta:",
     "translate": "Itzuli ondorengo testua:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Erreproduzitu zehatz-mehatz mugatzaileen arteko testua. Irteera: testu hori bakarrik."
   },
   "lengthOpts": [
     "Laburra eta zehatza",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Errezeta berria",
   "recipeName": "Izena",
   "recipeInstr": "Argibidea",
+  "recipeNoConstraints": "Mugarik gabe",
   "recipeNamePh": "Adib. Itzuli ingelesera",
   "recipeInstrPh": "Adib. Itzuli honako testu hau ingelesera:",
   "confirmTitle": "Berretsi",
@@ -265,6 +268,9 @@
   "ktReadStop": "Gelditu irakurketa",
   "ktTabAudio": "Audioa",
   "ktAudioPlay": "Erreproduzitu audioa",
+  "ktAudioExists": "Audioa gordeta dago: hura erreproduzitzen. Sakatu berriro berri bat sortzeko",
+  "ktAudioSave": "Gorde audioa",
+  "ktAudioSaved": "Audioa hemen gorde da",
   "ktAudioPause": "Pausatu",
   "ktAudioUnavailable": "Audioa ez dago erabilgarri",
   "ktAttachRemove": "Kendu",

@@ -22,7 +22,8 @@
     "email": "Створити лист",
     "neutral": "Нейтральна",
     "translate": "Перекласти",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Аудіо"
   },
   "instr": {
     "rephrase": "Перефразуй наступний текст:",
@@ -30,7 +31,8 @@
     "reply": "Напиши відповідь на наступне повідомлення:",
     "email": "Напиши лист на основі:",
     "translate": "Перекладіть наступний текст:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Відтвори текст між роздільниками точно. Вивід: лише цей текст."
   },
   "lengthOpts": [
     "Коротко й стисло",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "Новий рецепт",
   "recipeName": "Назва",
   "recipeInstr": "Інструкція",
+  "recipeNoConstraints": "Без обмежень",
   "recipeNamePh": "Напр. Перекласти англійською",
   "recipeInstrPh": "Напр. Переклади наступний текст англійською:",
   "confirmTitle": "Підтвердження",
@@ -265,6 +268,9 @@
   "ktReadStop": "Зупинити читання",
   "ktTabAudio": "Аудіо",
   "ktAudioPlay": "Відтворити аудіо",
+  "ktAudioExists": "Аудіо вже збережено: відтворюю його. Натисніть ще раз, щоб створити нове",
+  "ktAudioSave": "Зберегти аудіо",
+  "ktAudioSaved": "Аудіо збережено в",
   "ktAudioPause": "Пауза",
   "ktAudioUnavailable": "Аудіо недоступне",
   "ktAttachRemove": "Видалити",

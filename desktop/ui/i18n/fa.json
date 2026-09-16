@@ -22,7 +22,8 @@
     "email": "ساخت ایمیل",
     "neutral": "خنثی",
     "translate": "ترجمه",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "صدا"
   },
   "instr": {
     "rephrase": "متن زیر را بازنویسی کن:",
@@ -30,7 +31,8 @@
     "reply": "به پیام زیر پاسخ بنویس:",
     "email": "بر اساس موارد زیر یک ایمیل بنویس:",
     "translate": "متن زیر را ترجمه کنید:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "متن میان جداکننده‌ها را دقیقاً بازتولید کن. خروجی: فقط همان متن."
   },
   "lengthOpts": [
     "کوتاه و مختصر",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "دستور جدید",
   "recipeName": "نام",
   "recipeInstr": "دستورالعمل",
+  "recipeNoConstraints": "بدون محدودیت",
   "recipeNamePh": "مثلاً ترجمه به انگلیسی",
   "recipeInstrPh": "مثلاً متن زیر را به انگلیسی ترجمه کن:",
   "confirmTitle": "تأیید",
@@ -265,6 +268,9 @@
   "ktReadStop": "توقف خواندن",
   "ktTabAudio": "صدا",
   "ktAudioPlay": "پخش صدا",
+  "ktAudioExists": "صدا از قبل ذخیره شده است: همان پخش می‌شود. برای ساخت صدای جدید دوباره بزنید",
+  "ktAudioSave": "ذخیره صدا",
+  "ktAudioSaved": "صدا ذخیره شد در",
   "ktAudioPause": "مکث",
   "ktAudioUnavailable": "صدا در دسترس نیست",
   "ktAttachRemove": "حذف",

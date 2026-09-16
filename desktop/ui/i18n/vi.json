@@ -30,7 +30,8 @@
     "email": "Tạo email",
     "neutral": "Trung lập",
     "translate": "Dịch",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Âm thanh"
   },
   "instr": {
     "rephrase": "Diễn đạt lại đoạn văn sau:",
@@ -38,7 +39,8 @@
     "reply": "Viết câu trả lời cho tin nhắn sau:",
     "email": "Viết email dựa trên:",
     "translate": "Dịch văn bản sau:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Tái tạo nguyên văn đoạn văn bản giữa các dấu phân cách. Đầu ra: chỉ đoạn văn bản đó."
   },
   "lengthOpts": [
     "Ngắn gọn",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Công thức mới",
   "recipeName": "Tên",
   "recipeInstr": "Hướng dẫn",
+  "recipeNoConstraints": "Không ràng buộc",
   "recipeNamePh": "Vd. Dịch sang tiếng Anh",
   "recipeInstrPh": "Vd. Dịch đoạn văn sau sang tiếng Anh:",
   "confirmTitle": "Xác nhận",
@@ -265,6 +268,9 @@
   "ktReadStop": "Dừng đọc",
   "ktTabAudio": "Âm thanh",
   "ktAudioPlay": "Phát âm thanh",
+  "ktAudioExists": "Âm thanh đã được lưu: đang phát. Nhấn lại để tạo bản mới",
+  "ktAudioSave": "Lưu âm thanh",
+  "ktAudioSaved": "Đã lưu âm thanh vào",
   "ktAudioPause": "Tạm dừng",
   "ktAudioUnavailable": "Không có âm thanh",
   "ktAttachRemove": "Xóa",

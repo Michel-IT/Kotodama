@@ -286,6 +286,7 @@
       transition:background .15s, border-color .15s; position:relative;
     }
     .recipe .ico { width:18px; text-align:center; opacity:.85; flex:none; }
+    .kt-recipe-plain { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); cursor:pointer; }
     .recipe .rname { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .recipe .rname-edit { flex:1; min-width:0; font:inherit; background:var(--field); color:var(--text); border:1px solid var(--accent); border-radius:6px; padding:1px 6px; outline:none; }
     /* Context menu (right-click) */
@@ -536,7 +537,8 @@
       gap:6px; text-align:center; font-size:12px; font-weight:600;
       color:var(--text-faint); background:none; border:none; border-bottom:2px solid transparent;
       cursor:pointer; transition:color .15s, border-color .15s; }
-    .kt-side-tab-ico { flex:none; font-size:13px; line-height:1; }
+    .kt-side-tab-ico { flex:none; font-size:13px; line-height:1; display:grid; place-items:center; }
+    .kt-side-tab-ico svg { width:15px; height:15px; display:block; }
     .kt-side-tab:hover { color:var(--text); }
     .kt-side-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
     /* Da collassata le due tab si impilano a tutta larghezza del rail (56px), invece di dividerselo
@@ -546,6 +548,7 @@
     .kt-side.collapsed .kt-side-tab-label { display:none; }
     .kt-side.collapsed .kt-side-tab { padding:11px 0; border-bottom:none; }
     .kt-side.collapsed .kt-side-tab-ico { font-size:16px; }
+    .kt-side.collapsed .kt-side-tab-ico svg { width:17px; height:17px; }
     .kt-side.collapsed .kt-side-tab.active { box-shadow:inset 2px 0 0 var(--accent); }
     /* Collapsed / Ricette: le righe hanno gia' la loro icona, restano usabili -- via i nomi e il
        sotto-pannello Vincoli (nessuna forma a sole icone avrebbe senso li'). */
@@ -777,6 +780,15 @@
       line-height:1.4; color:var(--text); background:var(--bg-1); border:1px solid var(--border); box-shadow:0 4px 14px rgba(0,0,0,.25);
       pointer-events:none; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
     .kt-rail-tip[hidden] { display:none; }
+    .kt-conv-tabs { display:flex; gap:4px; justify-content:center; border-bottom:1px solid var(--border-soft);
+      padding:0 24px; flex:none; }
+    .kt-conv-panel { flex:1; min-height:0; overflow:auto; padding:14px 24px 20px; }
+    .kt-conv-panel[hidden], .kt-conv-tabs[hidden], .kt-thread[hidden] { display:none; }
+    .kt-group { max-width:var(--kt-col, 820px); margin:0 auto 18px; }
+    .kt-group-h { display:flex; align-items:baseline; gap:8px; margin:0 0 8px; font-size:12px; color:var(--text-faint); }
+    .kt-group-q { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; color:var(--text); }
+    .kt-group-t { flex:none; font-variant-numeric:tabular-nums; }
+    .kt-group-w { flex:none; margin-left:auto; font-variant-numeric:tabular-nums; }
     .kt-turn-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border-soft); margin:2px 0 4px; }
     .kt-turn-tabs[hidden], .kt-grid[hidden], .kt-links[hidden], .kt-images[hidden], .kt-audios[hidden], .kt-tab[hidden], .kt-icon-btn[hidden] { display:none; }
     .kt-tab { display:flex; align-items:center; gap:6px; padding:6px 12px; border:none; background:none; cursor:pointer;
@@ -806,7 +818,7 @@
     .kt-img img { width:100%; height:100%; object-fit:cover; display:block; }
     .kt-img:focus-visible, .kt-link:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
     .kt-audios { display:grid; grid-template-columns:minmax(0,1fr); gap:6px; }
-    .kt-audio { display:grid; grid-template-columns:28px minmax(0,1fr) 56px 28px; column-gap:12px; align-items:center;
+    .kt-audio { display:grid; grid-template-columns:28px minmax(0,1fr) auto 56px 28px 28px; column-gap:10px; align-items:center;
       padding:8px 10px; border:1px solid var(--border-soft); border-radius:12px; }
     .kt-audio .kt-by { width:28px; height:28px; }
     .kt-audio .kt-by svg { width:15px; height:15px; }
@@ -814,6 +826,7 @@
     .kt-audio-bar { height:3px; margin-top:6px; border-radius:2px; background:var(--border-soft); overflow:hidden; }
     .kt-audio-bar > i { display:block; height:100%; width:0; background:var(--accent); }
     .kt-audio-len { font-size:12px; text-align:right; color:var(--text-faint); font-variant-numeric:tabular-nums; }
+    .kt-audio-when { font-size:12px; color:var(--text-faint); font-variant-numeric:tabular-nums; white-space:nowrap; }
     .kt-icon-btn.on { color:var(--accent); }
     .kt-vers { display:flex; align-items:center; gap:0; margin-left:4px; }
     .kt-vers .kt-icon-btn { width:24px; }
@@ -917,6 +930,22 @@
       background:transparent; border:none; border-radius:0; color:var(--text);
       font-size:14px; line-height:1.5; padding:9px 0; outline:none; font-family:inherit; }
     .kt-send { flex:none; width:40px; height:40px; font-size:18px; }   /* eredita .send (cerchio gradiente) */
+    /* SUMI ONLY (the flat, squared theme): send is the right end of the field, not a circle floating inside it.
+       It fills the box's height (the negative margin cancels the box's vertical padding) and repeats its right
+       corners, shaded corner to corner from the theme's accent, with a lit edge above and a shaded one below so
+       it reads as a surface catching the light. It does not grow on hover: at this size the whole field seemed
+       to jump. Every other theme keeps its own round button. */
+    /* Sumi squares everything else (Win10 look) but the chat frame kept its 18px pill: next to it a very round,
+       glossy button was the thing that looked out of place. Frame and button now share the same small radius. */
+    [data-theme="sumi"] .kt-composer-box { overflow:hidden; border-radius:6px; }
+    [data-theme="sumi"] .kt-send { width:38px; height:auto; align-self:stretch; margin:0; font-size:15px;
+      /* Inset by the box's own padding, so a strip of the field shows all around it. */
+      border-radius:4px; box-shadow:none;
+      /* A quiet shading, not a gloss: this theme drops gradients and glows everywhere else. */
+      background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 92%, #fff) 0%,
+        color-mix(in srgb, var(--accent) 92%, #000) 100%); }
+    [data-theme="sumi"] .kt-send:hover { transform:none; filter:brightness(1.06); }
+    [data-theme="sumi"] .kt-send:active { transform:none; filter:brightness(.94); }
     .modal-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border-soft); flex:none; }
     .modal-head h2 { font-size:15px; font-weight:650; }
     .modal-head .x { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:18px; }
@@ -1152,6 +1181,7 @@
           <li class="recipe" data-key="email"><span class="ico">✉</span> <span class="rname">Create Email</span></li>
           <li class="recipe" data-key="translate"><span class="ico">🌐</span> <span class="rname">Translate</span></li>
           <li class="recipe" data-key="search"><span class="ico">🔍</span> <span class="rname">Search</span></li>
+          <li class="recipe" data-key="verbatim"><span class="ico">🔊</span> <span class="rname">Audio</span></li>
         </ul>
       </aside>
 
@@ -1478,6 +1508,10 @@
           <label data-i18n="recipeInstr">Istruzione</label>
           <textarea class="field" id="recipeInstr" data-i18n-ph="recipeInstrPh"></textarea>
         </div>
+        <label class="setting kt-recipe-plain" style="border:none; padding:10px 0 0;">
+          <input type="checkbox" id="recipeNoConstraints">
+          <span data-i18n="recipeNoConstraints">Senza vincoli</span>
+        </label>
       </div>
       <div class="modal-foot">
         <button class="btn" id="recipeCancel" data-i18n="cancel">Annulla</button>
@@ -1542,10 +1576,10 @@
     <aside class="kt-side" id="ktSide">
       <div class="kt-side-tabs">
         <button class="kt-side-tab active" id="ktTabRecipesBtn" data-tab="recipes" data-i18n-title="ktTabRecipes" title="Ricette">
-          <span class="kt-side-tab-ico">📋</span><span class="kt-side-tab-label" data-i18n="ktTabRecipes">Ricette</span>
+          <span class="kt-side-tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6V3H9z"/><path d="M9 10h6M9 14h6M9 18h3"/></svg></span><span class="kt-side-tab-label" data-i18n="ktTabRecipes">Ricette</span>
         </button>
         <button class="kt-side-tab" id="ktTabHistoryBtn" data-tab="history" data-i18n-title="ktTabHistory" title="Cronologia">
-          <span class="kt-side-tab-ico">🕘</span><span class="kt-side-tab-label" data-i18n="ktTabHistory">Cronologia</span>
+          <span class="kt-side-tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span><span class="kt-side-tab-label" data-i18n="ktTabHistory">Cronologia</span>
         </button>
       </div>
       <div class="kt-side-panel" id="ktPanelHistory" hidden>
@@ -1571,6 +1605,7 @@
           <li class="recipe" data-key="email" title="Create Email"><span class="ico">✉</span> <span class="rname">Create Email</span></li>
           <li class="recipe" data-key="translate" title="Translate"><span class="ico">🌐</span> <span class="rname">Translate</span></li>
           <li class="recipe" data-key="search" title="Search"><span class="ico">🔍</span> <span class="rname">Search</span></li>
+          <li class="recipe" data-key="verbatim" title="Audio"><span class="ico">🔊</span> <span class="rname">Audio</span></li>
         </ul>
         <div class="kt-vincoli-group">
           <div class="sidebar-head">
@@ -1592,7 +1627,9 @@
         <div class="kt-chips" id="ktChips"></div>
       </div>
       <div class="kt-thread-wrap">
+        <div class="kt-conv-tabs" id="ktConvTabs" role="tablist" hidden></div>
         <div class="kt-thread" id="ktThread" role="log" aria-live="polite"></div>
+        <div class="kt-conv-panel" id="ktConvPanel" hidden></div>
         <!-- Prompt rail: one mark per message sent in this conversation; click to jump to it. -->
         <nav class="kt-rail" id="ktRail" hidden data-i18n-title="ktRailTitle">
           <button class="kt-rail-arrow" id="ktRailUp" type="button">&#8963;</button>
@@ -1679,8 +1716,8 @@
       generatedPrompt:'Generated prompt', copy:'Copy', copied:'Copied ✓',
       placeholder:'Description…',
       settings:'Settings', newRecipe:'New recipe', generate:'Open in provider',
-      recipeNames:{ rephrase:'Rephrase', summarise:'Summarise', reply:'Reply', email:'Create Email', translate:'Translate', search:'Search' },
-      instr:{ rephrase:'Reply only with the text, no preamble or comments. Rephrase the following text:', summarise:'Summarise the following text:', reply:'Write a reply to the following message:', email:'Write an email based on:', search:'Search the web for the following:' },
+      recipeNames:{ rephrase:'Rephrase', summarise:'Summarise', reply:'Reply', email:'Create Email', translate:'Translate', search:'Search', verbatim:'Audio' },
+      instr:{ rephrase:'Reply only with the text, no preamble or comments. Rephrase the following text:', summarise:'Summarise the following text:', reply:'Write a reply to the following message:', email:'Write an email based on:', search:'Search the web for the following:', verbatim:'Reproduce the text between the delimiters exactly. Output: that text only.' },
       lengthOpts:['Short and concise','Medium','Long and detailed'],
       toneOpts:['Professional','Friendly','Formal','Casual','Persuasive'],
       constraints:'Constraints:', cLength:'Length', cTone:'Tone',
@@ -1747,7 +1784,7 @@
       about:'About', aboutLine:'Open source · GPL-3.0 · A KuramaLab project', linkWebsite:'Website', linkSource:'Source code', linkIssues:'Report an issue',
       updateAvailable:'Update {v} available. <br>Install now? The app will restart.', noUpdate:'You are on the latest version ✓', updating:'Downloading update…', updateError:'Update error',
       updChecking:'Checking for updates…', updNewVersion:'New version {v} available', install:'Install',
-      newRecipeTitle:'New recipe', recipeName:'Name', recipeInstr:'Instruction',
+      newRecipeTitle:'New recipe', recipeName:'Name', recipeInstr:'Instruction', recipeNoConstraints:'No constraints',
       recipeNamePh:'E.g. Translate to English', recipeInstrPh:'E.g. Translate the following text to English:',
       confirmTitle:'Confirm', confirm:'Confirm', delete:'Delete', rename:'Rename', edit:'Edit', duplicate:'Duplicate', open:'Open', setAsDefault:'Set as default', cut:'Cut', paste:'Paste', selectAll:'Select all',
       deleteRecipeMsg:'Delete this recipe?',
@@ -1902,11 +1939,23 @@
     function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),4200); }
 
     /* ===================== PROMPT ===================== */
+    // True when the active recipe asks for its text back as it is: the built-in Audio recipe, or a custom one
+    // saved with "no constraints".
+    function ktRecipeSkipsConstraints(){
+      if(activeRecipe.kind==='key') return activeRecipe.key==='verbatim';
+      const r=customRecipes.find(x=>x.id===activeRecipe.id);
+      return !!(r && r.noConstraints);
+    }
     function buildPrompt(){
       const t=TR;
       // Ricetta "Neutra": invia il testo cosi' com'e' (nessuna istruzione, nessun vincolo).
       if(activeRecipe.kind==='key' && activeRecipe.key==='neutral') return content.value.trim();
-      let out=instruction.value.trim()+'\n\n"""\n'+content.value.trim()+'\n"""\n\n'+t.constraints+'\n- '+t.cLength+': '+lengthSel.value+'\n- '+t.cTone+': '+toneSel.value;
+      // Recipes whose instruction IS the whole job (repeat this text unchanged) must not carry the style
+      // constraints: "be short" and "be professional" contradict "repeat word for word", and a provider that
+      // takes style seriously rewrites the text (measured: Claude rewrote, ChatGPT obeyed).
+      const body=instruction.value.trim()+'\n\n"""\n'+content.value.trim()+'\n"""';
+      if(ktRecipeSkipsConstraints()) return body;
+      let out=body+'\n\n'+t.constraints+'\n- '+t.cLength+': '+lengthSel.value+'\n- '+t.cTone+': '+toneSel.value;
       // custom fields: append "- Label: selected option"
       for(const f of customFields){
         if(!f.options||!f.options.length) continue;
@@ -2141,6 +2190,11 @@
     function ktFmtDate(ms){
       const d=new Date(ms||Date.now());
       return d.toLocaleDateString(undefined,{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    }
+    // Same as ktFmtDate but with seconds: in the lists, the exact moment something arrived.
+    function ktFmtDateSec(ms){
+      const d=new Date(ms||Date.now());
+      return d.toLocaleDateString(undefined,{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     }
     // Recipe tag of a conversation: the recipe of its LATEST turn that used one. The recipe is stored as a
     // reference (turn.recipe = "key:rephrase" / "id:<custom id>") and named at render time, so the tag follows
@@ -2434,7 +2488,9 @@
       const s=ktAllSessions.find(x=>x.id===id); if(!s) return;
       ktSession=s;
       ktResetColumn(); ktThread.innerHTML=''; ktCards={};
+      ktConvTab='answers';
       (s.turns||[]).forEach(ktRenderSavedTurn);
+      ktRefreshConvTabs();
       ktThread.scrollTop=ktThread.scrollHeight;
       ktRailSchedule();
       // Tab provider "calde" solo per la sessione live di QUESTO run: le altre ripartono
@@ -2579,7 +2635,7 @@
       try { ktThread.querySelectorAll('.kt-read').forEach(b=>{ if(!b.hidden) b.click(); }); } catch(e){}
     };
     window.__ktAutoTab = function(tab){
-      try { ktThread.querySelectorAll('.kt-turn-tabs').forEach(bar=>{ const b=bar.querySelector(`.kt-tab[data-tab="${tab}"]`); if(b && !b.hidden) b.click(); }); } catch(e){}
+      try { if(!ktConvEls()) return; const b=ktConvTabsEl.querySelector(`.kt-tab[data-tab="${tab}"]`); if(b && !b.hidden) b.click(); } catch(e){}
     };
     window.__ktAutoWarm = function(key){
       try {
@@ -3008,7 +3064,7 @@
     const KT_ONLY = true;
     function closeKotodama(){ if(KT_ONLY) return; body.classList.remove('kotodama-open'); }
     function ktNewConversation(){
-      ktStarted={}; ktResetColumn(); ktThread.innerHTML=''; ktCards={}; ktRailSchedule();
+      ktStarted={}; ktResetColumn(); ktThread.innerHTML=''; ktCards={}; ktRailSchedule(); ktConvTab='answers'; ktRefreshConvTabs();
       ktSession={ id:'s'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
                   title:'', created:Date.now(), updated:Date.now(), turns:[] };
       renderKtSessions();   // persisted only at the first send
@@ -3171,7 +3227,7 @@
     function ktFmtClock(ms){ const t=Math.max(0, Math.round((ms||0)/1000)); return Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); }
     function ktTurnAudios(turn){
       const out=[];
-      for(const [key, a] of Object.entries(turn.answers||{})) for(const v of [...(a.prev||[]), a]) for(const x of (v.audio||[])) out.push({ key, file:x.file, ms:x.ms });
+      for(const [key, a] of Object.entries(turn.answers||{})) for(const v of [...(a.prev||[]), a]) for(const x of (v.audio||[])) out.push({ key, file:x.file, ms:x.ms, at:x.at });
       return out;
     }
     function ktSyncReadBtn(b){
@@ -3189,10 +3245,27 @@
       const { bid, key }=b.dataset, c=ktConv[key], card=b.closest('.kt-card');
       b.hidden=!(bid && c && c.regen && c.bid===bid) || !!(card && card._ktView!=null);
     }
-    function ktSyncReadBtns(){ ktThread.querySelectorAll('.kt-read').forEach(ktSyncReadBtn); ktThread.querySelectorAll('.kt-regen').forEach(ktSyncRegenBtn); }
+    function ktSyncReadBtns(){ document.querySelectorAll('.kt-read').forEach(ktSyncReadBtn); document.querySelectorAll('.kt-regen').forEach(ktSyncRegenBtn); }
     function ktClearRead(key){ const rs=ktReadState[key]; if(rs){ clearTimeout(rs.timer); delete ktReadState[key]; } }
+    // Asking again costs the provider a new synthesis and leaves a duplicate in the list, so an answer that already
+    // has audio is simply played back. Pressing again within a few seconds is the way to ask for a new one anyway.
+    const ktReadAgain={};
+    function ktSavedAudioFor(bid, key){
+      const turn=ktTurnByBid[bid]; const a=turn && (turn.answers||{})[key];
+      return a ? ((a.audio||[]).slice(-1)[0]||null) : null;
+    }
     async function ktReadAloud(bid, key){
       if(!TAURI) return;
+      const running=!!(ktReadState[key] && ktReadState[key].bid===bid);
+      const saved=ktSavedAudioFor(bid, key);
+      if(!running && saved && ktReadAgain[bid+':'+key]!==true){
+        ktReadAgain[bid+':'+key]=true;
+        setTimeout(()=>{ delete ktReadAgain[bid+':'+key]; }, 4000);
+        toast(TR.ktAudioExists||'');
+        ktAudioToggle(saved.file);
+        return;
+      }
+      delete ktReadAgain[bid+':'+key];
       const stop=!!(ktReadState[key] && ktReadState[key].bid===bid);
       if(stop) ktClearRead(key);
       else { ktAudioEl.pause(); ktClearRead(key); ktReadState[key]={ bid, state:'loading' }; }
@@ -3242,10 +3315,27 @@
         for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
         ktAudioEl.pause();
         if(ktAudioUrl) URL.revokeObjectURL(ktAudioUrl);
-        ktAudioUrl=URL.createObjectURL(new Blob([u8], { type:'audio/ogg' })); ktAudioFile=file;
+        const ext=(file.split('.').pop()||'ogg').toLowerCase();
+        const mime={ ogg:'audio/ogg', aac:'audio/aac', mp3:'audio/mpeg', m4a:'audio/mp4', wav:'audio/wav', webm:'audio/webm' }[ext] || 'audio/ogg';
+        ktAudioUrl=URL.createObjectURL(new Blob([u8], { type:mime })); ktAudioFile=file;
         ktAudioEl.src=ktAudioUrl;
         await ktAudioEl.play();
       }catch(e){ toast(TR.ktAudioUnavailable||''); }
+    }
+    const KT_ICON_SAVE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg>';
+    function ktAudioSaveBtn(file){
+      const b=document.createElement('button'); b.type='button'; b.className='kt-icon-btn kt-audio-save'; b.innerHTML=KT_ICON_SAVE;
+      b.title=TR.ktAudioSave||''; b.setAttribute('aria-label', TR.ktAudioSave||'');
+      b.addEventListener('click', async()=>{
+        try{
+          const path=await invoke('kotodama_audio_export',{ file });
+          toast((TR.ktAudioSaved||'')+' '+path);
+          b.innerHTML=KT_ICON_CHECK; b.classList.add('copied');
+          clearTimeout(b._ktReset); b._ktReset=setTimeout(()=>{ b.innerHTML=KT_ICON_SAVE; b.classList.remove('copied'); }, 1800);
+        }
+        catch(e){ toast(TR.ktAudioUnavailable||''); }
+      });
+      return b;
     }
     function ktPlayBtn(file){
       const b=document.createElement('button'); b.type='button'; b.className='kt-icon-btn kt-play'; b.dataset.audio=file;
@@ -3254,16 +3344,27 @@
     }
     function ktSyncPlayBtns(){
       const cur=ktAudioFile, on=!ktAudioEl.paused, frac=ktAudioEl.duration>0 ? ktAudioEl.currentTime/ktAudioEl.duration : 0;
-      ktThread.querySelectorAll('.kt-play').forEach(b=>{
+      // Rows live in the conversation panel now, not only in the thread: look everywhere, or the buttons stay
+      // blank (no icon is ever drawn) and no progress bar moves.
+      document.querySelectorAll('.kt-play').forEach(b=>{
         const playing=on && b.dataset.audio===cur;
         if(b._ktOn!==playing || !b.innerHTML){
           b._ktOn=playing; b.innerHTML=playing?KT_ICON_PAUSE:KT_ICON_PLAY; b.classList.toggle('on', playing);
           const label=playing?TR.ktAudioPause:TR.ktAudioPlay; b.title=label||''; b.setAttribute('aria-label', label||'');
         }
       });
-      ktThread.querySelectorAll('.kt-audio').forEach(r=>{ const i=r.querySelector('.kt-audio-bar > i'); if(i) i.style.width=(r.dataset.audio===cur ? frac*100 : 0)+'%'; });
+      document.querySelectorAll('.kt-audio').forEach(r=>{ const i=r.querySelector('.kt-audio-bar > i'); if(i) i.style.width=(r.dataset.audio===cur ? frac*100 : 0)+'%'; });
     }
     ['play','pause','ended','timeupdate','emptied'].forEach(ev=>ktAudioEl.addEventListener(ev, ktSyncPlayBtns));
+    // Providers that hand over a finished file do not say how long it is: learn it the first time it is played.
+    ktAudioEl.addEventListener('loadedmetadata', ()=>{
+      const ms=Math.round((ktAudioEl.duration||0)*1000);
+      if(!ms || !isFinite(ms) || !ktSession) return;
+      let changed=false;
+      for(const turn of (ktSession.turns||[])) for(const a of Object.values(turn.answers||{})) for(const v of [...(a.prev||[]), a])
+        for(const x of (v.audio||[])) if(x.file===ktAudioFile && !x.ms){ x.ms=ms; changed=true; }
+      if(changed){ ktPersist(); ktRefreshConvTabs(); }
+    });
     // The speaker (read aloud) and the play button (latest saved audio) in each answer card's actions.
     function ktEnsureAnswerAudio(turn){
       const dom=ktTurnDom.get(turn); if(!dom) return;
@@ -3406,75 +3507,120 @@
     }
     function ktOpenExternal(url){ if(TAURI) invoke('open_url',{url}).catch(()=>{}); }
     function ktMountTurnTabs(turn, grid){
-      const bar=document.createElement('div'); bar.className='kt-turn-tabs'; bar.hidden=true; bar.setAttribute('role','tablist');
-      const mk=(id, label)=>{
-        const b=document.createElement('button'); b.type='button'; b.className='kt-tab'; b.dataset.tab=id; b.setAttribute('role','tab');
-        b.innerHTML='<span class="kt-tab-l"></span><span class="kt-tab-n"></span>';
-        b.querySelector('.kt-tab-l').textContent=label; bar.appendChild(b); return b;
-      };
-      const tabs={ answers:mk('answers', TR.ktTabAnswers||''), links:mk('links', TR.ktTabLinks||''), images:mk('images', TR.ktTabImages||''), audio:mk('audio', TR.ktTabAudio||'') };
-      const links=document.createElement('div'); links.className='kt-links'; links.hidden=true;
-      const images=document.createElement('div'); images.className='kt-images'; images.hidden=true;
-      const audios=document.createElement('div'); audios.className='kt-audios'; audios.hidden=true;
-      grid.before(bar); grid.after(links); links.after(images); images.after(audios);
-      const dom={ bar, grid, links, images, audios, tabs, active:'answers' };
-      bar.addEventListener('click', e=>{ const b=e.target.closest('.kt-tab'); if(b) ktShowTurnTab(dom, b.dataset.tab); });
-      ktTurnDom.set(turn, dom);
+      ktTurnDom.set(turn, { grid });
       ktRefreshTurnTabs(turn);
     }
-    function ktShowTurnTab(dom, tab){
-      dom.active=tab;
-      for(const [k, b] of Object.entries(dom.tabs)){ const on=k===tab; b.classList.toggle('active', on); b.setAttribute('aria-selected', on?'true':'false'); }
-      dom.grid.hidden = tab!=='answers'; dom.links.hidden = tab!=='links'; dom.images.hidden = tab!=='images'; dom.audios.hidden = tab!=='audio';
-    }
+    // Per-turn entry point kept for the callers: a turn changed, so its cards and the conversation's tabs are redrawn.
     function ktRefreshTurnTabs(turn){
-      const dom=ktTurnDom.get(turn); if(!dom) return;
-      const { links, images }=ktCollectExtras(turn);
-      dom.tabs.links.querySelector('.kt-tab-n').textContent = links.length || '';
-      dom.tabs.images.querySelector('.kt-tab-n').textContent = images.length || '';
-      const audios=ktTurnAudios(turn);
-      dom.tabs.audio.querySelector('.kt-tab-n').textContent = audios.length || '';
-      dom.tabs.links.hidden=!links.length; dom.tabs.images.hidden=!images.length; dom.tabs.audio.hidden=!audios.length;
-      dom.bar.hidden = !(links.length || images.length || audios.length);
-      if((dom.active==='links' && !links.length) || (dom.active==='images' && !images.length) || (dom.active==='audio' && !audios.length)) dom.active='answers';
-      dom.audios.innerHTML='';
-      audios.forEach(a=>{
-        const row=document.createElement('div'); row.className='kt-audio'; row.dataset.audio=a.file;
-        row.appendChild(ktByBadges(new Set([a.key])));
-        const mid=document.createElement('div'); mid.style.minWidth='0';
-        mid.innerHTML='<div class="kt-audio-name"></div><div class="kt-audio-bar"><i></i></div>';
-        mid.querySelector('.kt-audio-name').textContent=(PROVIDERS[a.key]||{}).name||a.key;
-        row.appendChild(mid);
-        const len=document.createElement('span'); len.className='kt-audio-len'; len.textContent=ktFmtClock(a.ms);
-        row.appendChild(len);
-        row.appendChild(ktPlayBtn(a.file));
-        dom.audios.appendChild(row);
-      });
       ktEnsureAnswerAudio(turn);
+      ktRefreshConvTabs();
+    }
+    /* ---- Conversation tabs: ONE bar for the whole chat (Answers | Links | Images | Audio). What every turn produced
+       is listed in the order it arrived, under the message that produced it, instead of a bar per turn. ---- */
+    // Looked up lazily: these functions run while the page is still being evaluated (a restored session renders
+    // before this point), and a `const` read before its line throws and takes the whole script down.
+    var ktConvTabsEl=null, ktConvPanel=null, ktConvTab='answers';
+    function ktConvEls(){
+      if(!ktConvTabsEl) ktConvTabsEl=document.getElementById('ktConvTabs');
+      if(!ktConvPanel) ktConvPanel=document.getElementById('ktConvPanel');
+      return !!(ktConvTabsEl && ktConvPanel);
+    }
+    function ktShownTurns(){ return (ktSession && ktSession.turns) ? ktSession.turns.filter(t=>ktTurnDom.has(t)) : []; }
+    function ktGroupHead(turn, i){
+      const h=document.createElement('div'); h.className='kt-group-h';
+      const t=document.createElement('span'); t.className='kt-group-t'; t.textContent='#'+(i+1);
+      const q=document.createElement('span'); q.className='kt-group-q'; q.textContent=(turn.text||'').replace(/\s+/g,' ').slice(0,90);
+      const w=document.createElement('span'); w.className='kt-group-w';
+      // Conversations saved before turns carried their own time fall back to the first thing that arrived in them.
+      const when=turn.at || Object.values(turn.answers||{}).flatMap(a=>(a.audio||[]).map(x=>x.at)).filter(Boolean)[0];
+      if(when) w.textContent=ktFmtDateSec(when);
+      h.appendChild(t); h.appendChild(q); h.appendChild(w);
+      return h;
+    }
+    function ktLinkRow(l){
+      let host=''; try{ host=new URL(l.url).hostname.replace(/^www\./,''); }catch(e){}
+      const row=document.createElement('button'); row.type='button'; row.className='kt-link'; row.title=l.url;
+      row.innerHTML='<span class="kt-link-ic"></span><span class="kt-link-t"><div class="kt-link-title"></div><div class="kt-link-dom"></div></span>';
+      row.querySelector('.kt-link-ic').textContent=(host[0]||'?').toUpperCase();
+      row.querySelector('.kt-link-title').textContent=l.title || host || l.url;
+      row.querySelector('.kt-link-dom').textContent=host;
+      row.appendChild(ktByBadges(l.by));
+      row.addEventListener('click', ()=>ktOpenExternal(l.url));
+      return row;
+    }
+    function ktImgTile(im){
+      const tile=document.createElement('button'); tile.type='button'; tile.className='kt-img'; tile.title=im.title || im.url;
+      const img=document.createElement('img'); img.loading='lazy'; img.referrerPolicy='no-referrer'; img.alt=im.title||''; img.src=im.url;
+      // An image the page cannot show (expired, behind a login) is removed rather than left as a broken box.
+      img.addEventListener('error', ()=>{ tile.remove(); });
+      tile.appendChild(img);
+      tile.addEventListener('click', ()=>ktOpenExternal(im.url));
+      return tile;
+    }
+    function ktAudioRow(a){
+      const row=document.createElement('div'); row.className='kt-audio'; row.dataset.audio=a.file;
+      row.appendChild(ktByBadges(new Set([a.key])));
+      const mid=document.createElement('div'); mid.style.minWidth='0';
+      mid.innerHTML='<div class="kt-audio-name"></div><div class="kt-audio-bar"><i></i></div>';
+      mid.querySelector('.kt-audio-name').textContent=(PROVIDERS[a.key]||{}).name||a.key;
+      row.appendChild(mid);
+      const when=document.createElement('span'); when.className='kt-audio-when'; when.textContent=a.at ? ktFmtDateSec(a.at) : '';
+      row.appendChild(when);
+      const len=document.createElement('span'); len.className='kt-audio-len'; len.textContent=ktFmtClock(a.ms);
+      row.appendChild(len);
+      row.appendChild(ktPlayBtn(a.file));
+      row.appendChild(ktAudioSaveBtn(a.file));
+      return row;
+    }
+    function ktRefreshConvTabs(){
+      if(!ktConvEls()) return;
+      const groups=ktShownTurns().map((turn, i)=>{
+        const { links, images }=ktCollectExtras(turn);
+        return { turn, i, links, images, audios:ktTurnAudios(turn) };
+      });
+      const total=k=>groups.reduce((n, g)=>n+g[k].length, 0);
+      const n={ links:total('links'), images:total('images'), audio:total('audios') };
+      if(!ktConvTabsEl.childElementCount){
+        const mk=(id, label)=>{
+          const b=document.createElement('button'); b.type='button'; b.className='kt-tab'; b.dataset.tab=id; b.setAttribute('role','tab');
+          b.innerHTML='<span class="kt-tab-l"></span><span class="kt-tab-n"></span>';
+          b.querySelector('.kt-tab-l').textContent=label; ktConvTabsEl.appendChild(b);
+        };
+        mk('answers', TR.ktTabAnswers||''); mk('links', TR.ktTabLinks||''); mk('images', TR.ktTabImages||''); mk('audio', TR.ktTabAudio||'');
+        ktConvTabsEl.addEventListener('click', e=>{ const b=e.target.closest('.kt-tab'); if(b) ktShowConvTab(b.dataset.tab); });
+      }
+      for(const b of ktConvTabsEl.children){
+        const id=b.dataset.tab;
+        if(id!=='answers'){ b.querySelector('.kt-tab-n').textContent=n[id]||''; b.hidden=!n[id]; }
+      }
+      ktConvTabsEl.hidden = !(n.links || n.images || n.audio);
+      if(ktConvTab!=='answers' && !n[ktConvTab]) ktConvTab='answers';
+      ktConvPanel.innerHTML='';
+      if(ktConvTab!=='answers'){
+        const key = ktConvTab==='links' ? 'links' : (ktConvTab==='images' ? 'images' : 'audios');
+        groups.forEach(g=>{
+          if(!g[key].length) return;
+          const box=document.createElement('div'); box.className='kt-group';
+          box.appendChild(ktGroupHead(g.turn, g.i));
+          const list=document.createElement('div');
+          list.className = ktConvTab==='links' ? 'kt-links' : (ktConvTab==='images' ? 'kt-images' : 'kt-audios');
+          g[key].forEach(x=>list.appendChild(ktConvTab==='links' ? ktLinkRow(x) : (ktConvTab==='images' ? ktImgTile(x) : ktAudioRow(x))));
+          box.appendChild(list); ktConvPanel.appendChild(box);
+        });
+      }
+      ktApplyConvTab();
       ktSyncPlayBtns();
-      dom.links.innerHTML='';
-      links.forEach(l=>{
-        let host=''; try{ host=new URL(l.url).hostname.replace(/^www\./,''); }catch(e){}
-        const row=document.createElement('button'); row.type='button'; row.className='kt-link'; row.title=l.url;
-        row.innerHTML='<span class="kt-link-ic"></span><span class="kt-link-t"><div class="kt-link-title"></div><div class="kt-link-dom"></div></span>';
-        row.querySelector('.kt-link-ic').textContent=(host[0]||'?').toUpperCase();
-        row.querySelector('.kt-link-title').textContent=l.title || host || l.url;
-        row.querySelector('.kt-link-dom').textContent=host;
-        row.appendChild(ktByBadges(l.by));
-        row.addEventListener('click', ()=>ktOpenExternal(l.url));
-        dom.links.appendChild(row);
-      });
-      dom.images.innerHTML='';
-      images.forEach(im=>{
-        const tile=document.createElement('button'); tile.type='button'; tile.className='kt-img'; tile.title=im.title || im.url;
-        const img=document.createElement('img'); img.loading='lazy'; img.referrerPolicy='no-referrer'; img.alt=im.title||''; img.src=im.url;
-        // An image the page cannot show (expired, behind a login) is removed rather than left as a broken box.
-        img.addEventListener('error', ()=>{ tile.remove(); });
-        tile.appendChild(img);
-        tile.addEventListener('click', ()=>ktOpenExternal(im.url));
-        dom.images.appendChild(tile);
-      });
-      ktShowTurnTab(dom, dom.active);
+    }
+    function ktApplyConvTab(){
+      if(!ktConvEls()) return;
+      for(const b of ktConvTabsEl.children){ const on=b.dataset.tab===ktConvTab; b.classList.toggle('active', on); b.setAttribute('aria-selected', on?'true':'false'); }
+      ktThread.hidden = ktConvTab!=='answers';
+      ktConvPanel.hidden = ktConvTab==='answers';
+    }
+    function ktShowConvTab(tab){
+      if(tab===ktConvTab){ ktApplyConvTab(); return; }
+      ktConvTab=tab;
+      ktRefreshConvTabs();
     }
     /* ---- Attachments: files dropped from the file manager (the shell intercepts the drag, so the page gets
        no HTML drop event: Tauri's onDragDropEvent hands over the paths) or images pasted into the input. At
@@ -3814,7 +3960,7 @@
       ktInput.value=''; ktAutoGrow(); ktInput.focus();
       // session bookkeeping: append the turn, title from the first message, persist
       const recipeRef = activeRecipe.kind==='key' ? 'key:'+activeRecipe.key : 'id:'+activeRecipe.id;
-      const turn={ text, answers:{}, recipe:recipeRef, recipeName:recipeNameFor(recipeRef) };
+      const turn={ text, answers:{}, at:Date.now(), recipe:recipeRef, recipeName:recipeNameFor(recipeRef) };
       if(files.length) turn.files=files.map(f=>f.name);
       keys.forEach(k=>{ turn.answers[k]={status:'pending', text:''}; });
       const hadTurns=ktSession.turns.length>0;
@@ -4013,6 +4159,7 @@
     document.getElementById('ktAddRecipe').addEventListener('click', ()=>{
       recipeModalTarget='kotodama';
       document.getElementById('recipeName').value=''; document.getElementById('recipeInstr').value='';
+      document.getElementById('recipeNoConstraints').checked=false;
       openModal(recipeOverlay); setTimeout(()=>document.getElementById('recipeName').focus(),50);
     });
 
@@ -4665,6 +4812,7 @@
     document.getElementById('addRecipe').addEventListener('click', ()=>{
       recipeModalTarget='builder';
       document.getElementById('recipeName').value=''; document.getElementById('recipeInstr').value='';
+      document.getElementById('recipeNoConstraints').checked=false;
       openModal(recipeOverlay); setTimeout(()=>document.getElementById('recipeName').focus(),50);
     });
     document.getElementById('recipeX').addEventListener('click', ()=>closeModal(recipeOverlay));
@@ -4673,7 +4821,8 @@
       const name=document.getElementById('recipeName').value.trim();
       if(!name){ document.getElementById('recipeName').focus(); return; }
       const instr=document.getElementById('recipeInstr').value.trim()||TR.defaultInstr;
-      const id=genId(); customRecipes.push({id,name,instruction:instr});
+      const noConstraints=document.getElementById('recipeNoConstraints').checked;
+      const id=genId(); customRecipes.push({id,name,instruction:instr,noConstraints});
       await persistRecipes(); renderCustomRecipes(); closeModal(recipeOverlay);   // syncs both lists
       if(recipeModalTarget==='kotodama'){
         const li=ktRecipesEl && ktRecipesEl.querySelector(`.recipe-custom[data-id="${id}"]`);

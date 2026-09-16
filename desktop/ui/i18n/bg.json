@@ -30,7 +30,8 @@
     "email": "Създай имейл",
     "neutral": "Неутрална",
     "translate": "Преведи",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Аудио"
   },
   "instr": {
     "rephrase": "Преформулирай следния текст:",
@@ -38,7 +39,8 @@
     "reply": "Напиши отговор на следното съобщение:",
     "email": "Напиши имейл въз основа на:",
     "translate": "Преведи следния текст:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Възпроизведи точно текста между разделителите. Изход: само този текст."
   },
   "lengthOpts": [
     "Кратко и ясно",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Нова рецепта",
   "recipeName": "Име",
   "recipeInstr": "Инструкция",
+  "recipeNoConstraints": "Без ограничения",
   "recipeNamePh": "Напр. Преведи на английски",
   "recipeInstrPh": "Напр. Преведи следния текст на английски:",
   "confirmTitle": "Потвърди",
@@ -265,6 +268,9 @@
   "ktReadStop": "Спри четенето",
   "ktTabAudio": "Аудио",
   "ktAudioPlay": "Пусни аудиото",
+  "ktAudioExists": "Аудиото вече е запазено: пускам го. Натиснете отново за ново",
+  "ktAudioSave": "Запази аудиото",
+  "ktAudioSaved": "Аудиото е запазено в",
   "ktAudioPause": "Пауза",
   "ktAudioUnavailable": "Аудиото не е налично",
   "ktAttachRemove": "Премахни",

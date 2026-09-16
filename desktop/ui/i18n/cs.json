@@ -30,7 +30,8 @@
     "email": "Vytvořit e-mail",
     "neutral": "Neutrální",
     "translate": "Přeložit",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Zvuk"
   },
   "instr": {
     "rephrase": "Přeformuluj následující text:",
@@ -38,7 +39,8 @@
     "reply": "Napiš odpověď na následující zprávu:",
     "email": "Napiš e-mail na základě:",
     "translate": "Přelož následující text:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Zopakuj přesně text mezi oddělovači. Výstup: pouze ten text."
   },
   "lengthOpts": [
     "Krátké a výstižné",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Nový recept",
   "recipeName": "Název",
   "recipeInstr": "Pokyn",
+  "recipeNoConstraints": "Bez omezení",
   "recipeNamePh": "Např. Přeložit do angličtiny",
   "recipeInstrPh": "Např. Přelož následující text do angličtiny:",
   "confirmTitle": "Potvrdit",
@@ -265,6 +268,9 @@
   "ktReadStop": "Zastavit čtení",
   "ktTabAudio": "Zvuk",
   "ktAudioPlay": "Přehrát zvuk",
+  "ktAudioExists": "Zvuk je už uložený: přehrávám ho. Nový vytvoříte dalším stisknutím",
+  "ktAudioSave": "Uložit zvuk",
+  "ktAudioSaved": "Zvuk uložen do",
   "ktAudioPause": "Pozastavit",
   "ktAudioUnavailable": "Zvuk není k dispozici",
   "ktAttachRemove": "Odebrat",

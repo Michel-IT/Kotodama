@@ -22,7 +22,8 @@
     "email": "Utwórz e-mail",
     "neutral": "Neutralny",
     "translate": "Przetłumacz",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Dźwięk"
   },
   "instr": {
     "rephrase": "Przeredaguj poniższy tekst:",
@@ -30,7 +31,8 @@
     "reply": "Napisz odpowiedź na poniższą wiadomość:",
     "email": "Napisz e-mail na podstawie:",
     "translate": "Przetłumacz poniższy tekst:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Odtwórz dokładnie tekst między ogranicznikami. Wyjście: tylko ten tekst."
   },
   "lengthOpts": [
     "Krótko i zwięźle",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "Nowy przepis",
   "recipeName": "Nazwa",
   "recipeInstr": "Instrukcja",
+  "recipeNoConstraints": "Bez ograniczeń",
   "recipeNamePh": "Np. Przetłumacz na angielski",
   "recipeInstrPh": "Np. Przetłumacz poniższy tekst na angielski:",
   "confirmTitle": "Potwierdź",
@@ -265,6 +268,9 @@
   "ktReadStop": "Zatrzymaj czytanie",
   "ktTabAudio": "Dźwięk",
   "ktAudioPlay": "Odtwórz dźwięk",
+  "ktAudioExists": "Dźwięk jest już zapisany: odtwarzam go. Naciśnij ponownie, aby utworzyć nowy",
+  "ktAudioSave": "Zapisz dźwięk",
+  "ktAudioSaved": "Dźwięk zapisany w",
   "ktAudioPause": "Pauza",
   "ktAudioUnavailable": "Dźwięk niedostępny",
   "ktAttachRemove": "Usuń",

@@ -30,7 +30,8 @@
     "email": "Crea un correu",
     "neutral": "Neutra",
     "translate": "Tradueix",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Àudio"
   },
   "instr": {
     "rephrase": "Reformula el text següent:",
@@ -38,7 +39,8 @@
     "reply": "Escriu una resposta al missatge següent:",
     "email": "Escriu un correu a partir de:",
     "translate": "Tradueix el text següent:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Reprodueix exactament el text entre els delimitadors. Sortida: només aquest text."
   },
   "lengthOpts": [
     "Curt i concís",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Nova recepta",
   "recipeName": "Nom",
   "recipeInstr": "Instrucció",
+  "recipeNoConstraints": "Sense restriccions",
   "recipeNamePh": "P. ex. Tradueix a l'anglès",
   "recipeInstrPh": "P. ex. Tradueix el text següent a l'anglès:",
   "confirmTitle": "Confirma",
@@ -265,6 +268,9 @@
   "ktReadStop": "Atura la lectura",
   "ktTabAudio": "Àudio",
   "ktAudioPlay": "Reprodueix l'àudio",
+  "ktAudioExists": "L'àudio ja està desat: el reprodueixo. Torna a prémer per crear-ne un de nou",
+  "ktAudioSave": "Desa l'àudio",
+  "ktAudioSaved": "Àudio desat a",
   "ktAudioPause": "Pausa",
   "ktAudioUnavailable": "Àudio no disponible",
   "ktAttachRemove": "Elimina",

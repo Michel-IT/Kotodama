@@ -22,7 +22,8 @@
     "email": "Создать письмо",
     "neutral": "Нейтральный",
     "translate": "Перевести",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Аудио"
   },
   "instr": {
     "rephrase": "Перефразируй следующий текст:",
@@ -30,7 +31,8 @@
     "reply": "Напиши ответ на следующее сообщение:",
     "email": "Напиши письмо на основе:",
     "translate": "Переведите следующий текст:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Воспроизведи текст между разделителями точно. Вывод: только этот текст."
   },
   "lengthOpts": [
     "Кратко и ёмко",
@@ -104,6 +106,7 @@
   "newRecipeTitle": "Новый рецепт",
   "recipeName": "Название",
   "recipeInstr": "Инструкция",
+  "recipeNoConstraints": "Без ограничений",
   "recipeNamePh": "Напр. Перевести на английский",
   "recipeInstrPh": "Напр. Переведи следующий текст на английский:",
   "confirmTitle": "Подтверждение",
@@ -265,6 +268,9 @@
   "ktReadStop": "Остановить чтение",
   "ktTabAudio": "Аудио",
   "ktAudioPlay": "Воспроизвести аудио",
+  "ktAudioExists": "Аудио уже сохранено: воспроизвожу его. Нажмите ещё раз, чтобы создать новое",
+  "ktAudioSave": "Сохранить аудио",
+  "ktAudioSaved": "Аудио сохранено в",
   "ktAudioPause": "Пауза",
   "ktAudioUnavailable": "Аудио недоступно",
   "ktAttachRemove": "Удалить",

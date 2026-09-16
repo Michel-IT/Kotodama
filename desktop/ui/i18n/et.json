@@ -30,7 +30,8 @@
     "email": "Loo e-kiri",
     "neutral": "Neutraalne",
     "translate": "Tõlgi",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Heli"
   },
   "instr": {
     "rephrase": "Sõnasta järgmine tekst ümber:",
@@ -38,7 +39,8 @@
     "reply": "Kirjuta vastus järgmisele sõnumile:",
     "email": "Kirjuta e-kiri järgneva põhjal:",
     "translate": "Tõlgi järgmine tekst:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Esita piirajate vahel olev tekst täpselt. Väljund: ainult see tekst."
   },
   "lengthOpts": [
     "Lühike ja täpne",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Uus retsept",
   "recipeName": "Nimi",
   "recipeInstr": "Juhis",
+  "recipeNoConstraints": "Ilma piiranguteta",
   "recipeNamePh": "Nt Tõlgi inglise keelde",
   "recipeInstrPh": "Nt Tõlgi järgmine tekst inglise keelde:",
   "confirmTitle": "Kinnita",
@@ -265,6 +268,9 @@
   "ktReadStop": "Peata ettelugemine",
   "ktTabAudio": "Heli",
   "ktAudioPlay": "Esita heli",
+  "ktAudioExists": "Heli on juba salvestatud: esitan selle. Uue loomiseks vajuta uuesti",
+  "ktAudioSave": "Salvesta heli",
+  "ktAudioSaved": "Heli salvestatud kausta",
   "ktAudioPause": "Paus",
   "ktAudioUnavailable": "Heli pole saadaval",
   "ktAttachRemove": "Eemalda",

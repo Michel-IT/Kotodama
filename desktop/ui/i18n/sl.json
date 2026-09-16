@@ -30,7 +30,8 @@
     "email": "Ustvari e-pošto",
     "neutral": "Nevtralno",
     "translate": "Prevedi",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Zvok"
   },
   "instr": {
     "rephrase": "Preoblikuj naslednje besedilo:",
@@ -38,7 +39,8 @@
     "reply": "Napiši odgovor na naslednje sporočilo:",
     "email": "Napiši e-pošto na podlagi:",
     "translate": "Prevedi naslednje besedilo:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Natančno ponovi besedilo med ločili. Izhod: samo to besedilo."
   },
   "lengthOpts": [
     "Kratko in jedrnato",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Nov recept",
   "recipeName": "Ime",
   "recipeInstr": "Navodilo",
+  "recipeNoConstraints": "Brez omejitev",
   "recipeNamePh": "Npr. Prevedi v angleščino",
   "recipeInstrPh": "Npr. Prevedi naslednje besedilo v angleščino:",
   "confirmTitle": "Potrdi",
@@ -265,6 +268,9 @@
   "ktReadStop": "Ustavi branje",
   "ktTabAudio": "Zvok",
   "ktAudioPlay": "Predvajaj zvok",
+  "ktAudioExists": "Zvok je že shranjen: predvajam ga. Za novega pritisnite znova",
+  "ktAudioSave": "Shrani zvok",
+  "ktAudioSaved": "Zvok shranjen v",
   "ktAudioPause": "Premor",
   "ktAudioUnavailable": "Zvok ni na voljo",
   "ktAttachRemove": "Odstrani",

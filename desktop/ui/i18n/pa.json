@@ -30,7 +30,8 @@
     "email": "ਈਮੇਲ ਬਣਾਓ",
     "neutral": "ਨਿਊਟਰਲ",
     "translate": "ਅਨੁਵਾਦ ਕਰੋ",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "ਆਡੀਓ"
   },
   "instr": {
     "rephrase": "ਹੇਠਲੇ ਪਾਠ ਨੂੰ ਮੁੜ-ਲਿਖੋ:",
@@ -38,7 +39,8 @@
     "reply": "ਹੇਠਲੇ ਸੁਨੇਹੇ ਦਾ ਜਵਾਬ ਲਿਖੋ:",
     "email": "ਇਸ ਦੇ ਆਧਾਰ 'ਤੇ ਇੱਕ ਈਮੇਲ ਲਿਖੋ:",
     "translate": "ਹੇਠਲੇ ਪਾਠ ਦਾ ਅਨੁਵਾਦ ਕਰੋ:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "ਸੀਮਾ-ਚਿੰਨ੍ਹਾਂ ਵਿਚਲਾ ਲਿਖਤ ਹੂਬਹੂ ਦੁਹਰਾਓ। ਆਉਟਪੁੱਟ: ਸਿਰਫ਼ ਉਹੀ ਲਿਖਤ।"
   },
   "lengthOpts": [
     "ਸੰਖੇਪ ਅਤੇ ਸਪਸ਼ਟ",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "ਨਵਾਂ ਵਿਅੰਜਨ",
   "recipeName": "ਨਾਮ",
   "recipeInstr": "ਹਦਾਇਤ",
+  "recipeNoConstraints": "ਬਿਨਾਂ ਪਾਬੰਦੀਆਂ",
   "recipeNamePh": "ਜਿਵੇਂ ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਅਨੁਵਾਦ ਕਰੋ",
   "recipeInstrPh": "ਜਿਵੇਂ ਹੇਠਲੇ ਪਾਠ ਨੂੰ ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਅਨੁਵਾਦ ਕਰੋ:",
   "confirmTitle": "ਪੁਸ਼ਟੀ ਕਰੋ",
@@ -265,6 +268,9 @@
   "ktReadStop": "ਪੜ੍ਹਨਾ ਰੋਕੋ",
   "ktTabAudio": "ਆਡੀਓ",
   "ktAudioPlay": "ਆਡੀਓ ਚਲਾਓ",
+  "ktAudioExists": "ਆਡੀਓ ਪਹਿਲਾਂ ਹੀ ਸੰਭਾਲਿਆ ਹੈ: ਉਹੀ ਚਲਾ ਰਿਹਾ ਹਾਂ। ਨਵਾਂ ਬਣਾਉਣ ਲਈ ਫਿਰ ਦਬਾਓ",
+  "ktAudioSave": "ਆਡੀਓ ਸੰਭਾਲੋ",
+  "ktAudioSaved": "ਆਡੀਓ ਸੰਭਾਲਿਆ ਗਿਆ",
   "ktAudioPause": "ਰੋਕੋ",
   "ktAudioUnavailable": "ਆਡੀਓ ਉਪਲਬਧ ਨਹੀਂ",
   "ktAttachRemove": "ਹਟਾਓ",

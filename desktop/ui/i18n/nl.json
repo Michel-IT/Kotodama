@@ -30,7 +30,8 @@
     "email": "E-mail maken",
     "neutral": "Neutraal",
     "translate": "Vertalen",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Audio"
   },
   "instr": {
     "rephrase": "Herformuleer de volgende tekst:",
@@ -38,7 +39,8 @@
     "reply": "Schrijf een antwoord op het volgende bericht:",
     "email": "Schrijf een e-mail op basis van:",
     "translate": "Vertaal de volgende tekst:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Geef de tekst tussen de scheidingstekens exact weer. Uitvoer: alleen die tekst."
   },
   "lengthOpts": [
     "Kort en bondig",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Nieuw recept",
   "recipeName": "Naam",
   "recipeInstr": "Instructie",
+  "recipeNoConstraints": "Zonder beperkingen",
   "recipeNamePh": "Bijv. Vertalen naar Engels",
   "recipeInstrPh": "Bijv. Vertaal de volgende tekst naar het Engels:",
   "confirmTitle": "Bevestigen",
@@ -265,6 +268,9 @@
   "ktReadStop": "Voorlezen stoppen",
   "ktTabAudio": "Audio",
   "ktAudioPlay": "Audio afspelen",
+  "ktAudioExists": "Audio is al opgeslagen: ik speel die af. Druk nogmaals voor een nieuwe",
+  "ktAudioSave": "Audio opslaan",
+  "ktAudioSaved": "Audio opgeslagen in",
   "ktAudioPause": "Pauze",
   "ktAudioUnavailable": "Audio niet beschikbaar",
   "ktAttachRemove": "Verwijderen",

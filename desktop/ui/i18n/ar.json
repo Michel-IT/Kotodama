@@ -22,7 +22,8 @@
     "email": "إنشاء بريد إلكتروني",
     "neutral": "محايد",
     "translate": "ترجمة",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "الصوت"
   },
   "instr": {
     "rephrase": "أعد صياغة النص التالي:",
@@ -30,7 +31,8 @@
     "reply": "اكتب ردًا على الرسالة التالية:",
     "email": "اكتب بريدًا إلكترونيًا انطلاقًا من:",
     "translate": "ترجم النص التالي:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "أعد إنتاج النص بين الفواصل كما هو تمامًا. المخرجات: ذلك النص فقط."
   },
   "lengthOpts": [
     "قصير وموجز",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "وصفة جديدة",
   "recipeName": "الاسم",
   "recipeInstr": "التعليمات",
+  "recipeNoConstraints": "بلا قيود",
   "recipeNamePh": "مثال: الترجمة إلى الإنجليزية",
   "recipeInstrPh": "مثال: ترجم النص التالي إلى الإنجليزية:",
   "confirmTitle": "تأكيد",
@@ -265,6 +268,9 @@
   "ktReadStop": "إيقاف القراءة",
   "ktTabAudio": "الصوت",
   "ktAudioPlay": "تشغيل الصوت",
+  "ktAudioExists": "الصوت محفوظ بالفعل: يتم تشغيله. اضغط مرة أخرى لإنشاء صوت جديد",
+  "ktAudioSave": "حفظ الصوت",
+  "ktAudioSaved": "تم حفظ الصوت في",
   "ktAudioPause": "إيقاف مؤقت",
   "ktAudioUnavailable": "الصوت غير متاح",
   "ktAttachRemove": "إزالة",

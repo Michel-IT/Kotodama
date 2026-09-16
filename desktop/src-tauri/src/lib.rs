@@ -1805,6 +1805,7 @@ pub fn run() {
             kotodama::kotodama_read_aloud,
             kotodama::kotodama_regenerate,
             kotodama::kotodama_audio_load,
+            kotodama::kotodama_audio_export,
             kotodama::kotodama_audio_delete,
             kotodama::kotodama_prewarm,
             kotodama::kotodama_push,

@@ -22,7 +22,8 @@
     "email": "ईमेल बनाएँ",
     "neutral": "तटस्थ",
     "translate": "अनुवाद करें",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "ऑडियो"
   },
   "instr": {
     "rephrase": "निम्नलिखित पाठ को दोबारा लिखें:",
@@ -30,7 +31,8 @@
     "reply": "निम्नलिखित संदेश का उत्तर लिखें:",
     "email": "इसके आधार पर एक ईमेल लिखें:",
     "translate": "निम्नलिखित पाठ का अनुवाद करें:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "सीमांकों के बीच का पाठ हूबहू दोहराएँ. आउटपुट: केवल वही पाठ."
   },
   "lengthOpts": [
     "संक्षिप्त और सटीक",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "नई रेसिपी",
   "recipeName": "नाम",
   "recipeInstr": "निर्देश",
+  "recipeNoConstraints": "बिना बाध्यताओं",
   "recipeNamePh": "उदा. अंग्रेज़ी में अनुवाद करें",
   "recipeInstrPh": "उदा. निम्नलिखित पाठ का अंग्रेज़ी में अनुवाद करें:",
   "confirmTitle": "पुष्टि करें",
@@ -265,6 +268,9 @@
   "ktReadStop": "पढ़ना रोकें",
   "ktTabAudio": "ऑडियो",
   "ktAudioPlay": "ऑडियो चलाएँ",
+  "ktAudioExists": "ऑडियो पहले से सहेजा है: वही चला रहे हैं. नया बनाने के लिए फिर दबाएँ",
+  "ktAudioSave": "ऑडियो सहेजें",
+  "ktAudioSaved": "ऑडियो सहेजा गया",
   "ktAudioPause": "रोकें",
   "ktAudioUnavailable": "ऑडियो उपलब्ध नहीं है",
   "ktAttachRemove": "हटाएँ",

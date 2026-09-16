@@ -30,7 +30,8 @@
     "email": "Luo sähköposti",
     "neutral": "Neutraali",
     "translate": "Käännä",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "Ääni"
   },
   "instr": {
     "rephrase": "Muotoile seuraava teksti uudelleen:",
@@ -38,7 +39,8 @@
     "reply": "Kirjoita vastaus seuraavaan viestiin:",
     "email": "Kirjoita sähköposti tämän pohjalta:",
     "translate": "Käännä seuraava teksti:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "Toista erottimien välinen teksti täsmälleen. Tuloste: vain se teksti."
   },
   "lengthOpts": [
     "Lyhyt ja ytimekäs",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "Uusi resepti",
   "recipeName": "Nimi",
   "recipeInstr": "Ohje",
+  "recipeNoConstraints": "Ilman rajoituksia",
   "recipeNamePh": "Esim. Käännä englanniksi",
   "recipeInstrPh": "Esim. Käännä seuraava teksti englanniksi:",
   "confirmTitle": "Vahvista",
@@ -265,6 +268,9 @@
   "ktReadStop": "Lopeta lukeminen",
   "ktTabAudio": "Ääni",
   "ktAudioPlay": "Toista ääni",
+  "ktAudioExists": "Ääni on jo tallennettu: toistetaan se. Paina uudelleen luodaksesi uuden",
+  "ktAudioSave": "Tallenna ääni",
+  "ktAudioSaved": "Ääni tallennettu kansioon",
   "ktAudioPause": "Tauko",
   "ktAudioUnavailable": "Ääni ei ole saatavilla",
   "ktAttachRemove": "Poista",

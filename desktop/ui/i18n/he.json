@@ -30,7 +30,8 @@
     "email": "צור אימייל",
     "neutral": "ניטרלי",
     "translate": "תרגם",
-    "search": "Search"
+    "search": "Search",
+    "verbatim": "שמע"
   },
   "instr": {
     "rephrase": "נסח מחדש את הטקסט הבא:",
@@ -38,7 +39,8 @@
     "reply": "כתוב תשובה להודעה הבאה:",
     "email": "כתוב אימייל בהתבסס על:",
     "translate": "תרגם את הטקסט הבא:",
-    "search": "Search the web for the following:"
+    "search": "Search the web for the following:",
+    "verbatim": "שכפל במדויק את הטקסט שבין המפרידים. פלט: רק אותו טקסט."
   },
   "lengthOpts": [
     "קצר ותמציתי",
@@ -112,6 +114,7 @@
   "newRecipeTitle": "מתכון חדש",
   "recipeName": "שם",
   "recipeInstr": "הוראה",
+  "recipeNoConstraints": "ללא אילוצים",
   "recipeNamePh": "לדוגמה: תרגם לאנגלית",
   "recipeInstrPh": "לדוגמה: תרגם את הטקסט הבא לאנגלית:",
   "confirmTitle": "אישור",
@@ -265,6 +268,9 @@
   "ktReadStop": "עצירת ההקראה",
   "ktTabAudio": "שמע",
   "ktAudioPlay": "השמעת שמע",
+  "ktAudioExists": "השמע כבר שמור: מושמע. לחצו שוב כדי ליצור חדש",
+  "ktAudioSave": "שמירת השמע",
+  "ktAudioSaved": "השמע נשמר ב",
   "ktAudioPause": "השהיה",
   "ktAudioUnavailable": "השמע אינו זמין",
   "ktAttachRemove": "הסרה",
