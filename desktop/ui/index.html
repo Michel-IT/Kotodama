@@ -1334,7 +1334,7 @@
       <div class="set-tabs" id="setTabs">
         <button class="set-tab active" data-tab="system" data-i18n="setTabSystem">Sistema</button>
         <button class="set-tab" data-tab="providers" data-i18n="setTabProviders">Provider</button>
-        <button class="set-tab" data-tab="shortcuts" data-i18n="setTabShortcuts">Scorciatoie</button>
+        <button class="set-tab" data-tab="shortcuts" data-i18n="recipes">Ricette</button>
         <button class="set-tab" data-tab="about" data-i18n="setTabAbout">Info</button>
       </div>
       <div class="modal-body">
@@ -1373,6 +1373,7 @@
               <span class="rh-h-key" data-i18n="rhColHotkey">Combinazione tasti</span>
               <span class="rh-h-spacer"></span>
               <span class="rh-h-notify" data-i18n="rhColNotify">Notifica</span>
+              <span class="rh-h-notify" data-i18n="rhColMenu">Menu</span>
             </div>
             <div class="rh-row">
               <div class="rh-name" data-i18n="setHotkey">Scorciatoia globale</div>
@@ -1383,6 +1384,7 @@
                   <input type="checkbox" id="rhGlobalNotify"><span class="slider"></span>
                 </label>
               </span>
+              <span class="rh-notify-col"></span>
             </div>
             <hr class="rh-divider">
             <div id="recipeHotkeys"></div>
@@ -1407,6 +1409,15 @@
             </div>
           </div>
           <div class="set-grid">
+            <div class="setting">
+              <div class="row">
+                <div>
+                  <label data-i18n="setGesture">Doppio tasto destro</label>
+                  <div class="sub" data-i18n="setGestureHint">Due clic destri veloci aprono il menu delle ricette in qualunque programma.</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="setGesture"><span class="slider"></span></label>
+              </div>
+            </div>
             <div class="setting">
               <div class="row">
                 <div>
@@ -1766,6 +1777,8 @@
       setHotkey:'Global shortcut', setHotkeyHint:'Click and press the combo (e.g. Ctrl + \\).',
       setMonitor:'Clipboard monitor', setMonitorHint:'Show the toast when you copy text.',
       setAutostart:'Start on login', setAutostartHint:'Starts minimized in the tray at login.',
+      setGesture:'Double right-click', setGestureHint:'Two quick right-clicks open the recipe menu in any program.',
+      rhColMenu:'Menu', rhMenuTitle:'Show this recipe in the double right-click menu', trayRestart:'Restart',
       setAlwaysOnTop:'Always on top', setAlwaysOnTopHint:'Kotodama stays above other windows.',
       setLowPower:'Resource saving', setLowPowerHint:'Less memory: CPU drawing and idle providers suspended. Requires a restart.',
       setLowPowerRestart:'Saved. Restart Kotodama to apply resource saving.',
@@ -1854,7 +1867,7 @@
     // Main shortcut: <mod>+Space everywhere, but macOS reserves BOTH Ctrl+Cmd+Space (Emoji &
     // Symbols) and Ctrl+Opt+Space (input source), so it gets K -- for Kotodama -- instead.
     const DEFAULT_MAIN_HOTKEY = DEFAULT_MOD + (IS_MAC ? '+KeyK' : '+Space');
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:DEFAULT_MAIN_HOTKEY, monitor_enabled:true, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:DEFAULT_MAIN_HOTKEY, monitor_enabled:true, gesture_menu:true, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -1925,7 +1938,7 @@
       setActiveInstruction();
       recomputeHintFit();   // the hint length changes with the language → recompute whether it fits
       // Localizza le voci della tray (Apri / Avvia col sistema / Esci) nella lingua corrente.
-      if(TAURI){ try{ invoke('set_tray_labels', { open:t.open, autostart:t.setAutostart, alwaysOnTop:t.setAlwaysOnTop, quit:t.quit }); }catch(e){} }
+      if(TAURI){ try{ invoke('set_tray_labels', { open:t.open, autostart:t.setAutostart, alwaysOnTop:t.setAlwaysOnTop, restart:t.trayRestart, quit:t.quit }); }catch(e){} }
       // Localize the NATIVE provider editing context menu (muda's predefined items are English-only otherwise).
       if(TAURI){ try{ invoke('set_provider_menu_labels', { labels:{ copy:t.copy, cut:t.cut, paste:t.paste, selectAll:t.selectAll, copyUrl:t.copyUrl } }); }catch(e){} }
     }
@@ -4410,6 +4423,7 @@
     /* --- per-recipe global shortcuts (Shortcuts tab) --- */
     let capturedRecipeHotkeys={};        // "key:x"/"id:y" -> accelerator (form state)
     let capturedRecipeNotify={};         // "key:x"/"id:y" -> false (only non-default entries; absent = notify on)
+    let capturedRecipeMenu={};           // same shape: absent = the recipe is in the double right-click menu
     function allRecipeEntries(){
       const t=TR, out=[];
       recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{
@@ -4453,7 +4467,17 @@
           if(ncb.checked) delete capturedRecipeNotify[en.str]; else capturedRecipeNotify[en.str]=false;
         });
         swCol.appendChild(sw);
-        row.appendChild(nm); row.appendChild(inp); row.appendChild(clr); row.appendChild(swCol);
+        // Second switch: whether this recipe appears in the double right-click menu.
+        const menuCol=document.createElement('span'); menuCol.className='rh-notify-col';
+        const msw=document.createElement('label'); msw.className='switch sm'; msw.title=TR.rhMenuTitle||'';
+        msw.innerHTML='<input type="checkbox"><span class="slider"></span>';
+        const mcb=msw.querySelector('input');
+        mcb.checked=capturedRecipeMenu[en.str]!==false;
+        mcb.addEventListener('change', ()=>{
+          if(mcb.checked) delete capturedRecipeMenu[en.str]; else capturedRecipeMenu[en.str]=false;
+        });
+        menuCol.appendChild(msw);
+        row.appendChild(nm); row.appendChild(inp); row.appendChild(clr); row.appendChild(swCol); row.appendChild(menuCol);
         box.appendChild(row);
       });
       rhMarkConflicts();
@@ -4474,7 +4498,9 @@
       capturedHotkey=currentSettings.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey);
       capturedRecipeHotkeys={ ...(currentSettings.recipe_hotkeys||{}) };
       capturedRecipeNotify={ ...(currentSettings.recipe_notify||{}) };
+      capturedRecipeMenu={ ...(currentSettings.recipe_menu||{}) };
       rhGlobalNotify.checked=!!currentSettings.monitor_enabled;
+      setGesture.checked=currentSettings.gesture_menu!==false;
       buildShortcutRows();
       setAutostart.checked=!!currentSettings.autostart;
       setAlwaysOnTop.checked=!!currentSettings.always_on_top;
@@ -4496,8 +4522,9 @@
         Object.keys(capturedRecipeHotkeys).forEach(k=>{ const a=capturedRecipeHotkeys[k]; if(a && vals[a]===1) rh[k]=a; });
       }
       const rn={}; Object.keys(capturedRecipeNotify).forEach(k=>{ if(capturedRecipeNotify[k]===false) rn[k]=false; });
+      const rm={}; Object.keys(capturedRecipeMenu).forEach(k=>{ if(capturedRecipeMenu[k]===false) rm[k]=false; });
       const lowPowerChanged = !!currentSettings.low_power !== setLowPower.checked;
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
       closeModal(settingsOverlay);

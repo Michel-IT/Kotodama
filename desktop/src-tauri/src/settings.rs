@@ -49,6 +49,10 @@ pub struct Settings {
     /// accelerator W3C. Premuta -> flusso clipboard con QUELLA ricetta (non la predefinita).
     /// Le entry che non si registrano (conflitti/invalidi) vengono scartate al salvataggio.
     pub recipe_hotkeys: std::collections::HashMap<String, String>,
+    /// Which recipes appear in the double right-click menu: key = same reference as `recipe_hotkeys`, value =
+    /// false to leave it out. Missing means shown, so a settings file written before this existed shows all.
+    #[serde(default)]
+    pub recipe_menu: std::collections::HashMap<String, bool>,
     /// Notifiche toast per scorciatoia-ricetta: chiave = stessa di `recipe_hotkeys`, valore =
     /// mostra i toast "elaborazione/fatto/errore" per QUELLA scorciatoia. Assente = abilitata
     /// (default): solo chi disattiva esplicitamente una ricetta molto usata sparisce dalla mappa.
@@ -76,6 +80,10 @@ pub struct Settings {
     /// Requires an app RESTART: the browser arguments are read by WebView2 once, when it creates its
     /// environment (see `run()`), before any window exists.
     pub low_power: bool,
+    /// Double right-click in any program opens the recipe menu (Windows only, see gesture.rs). On by default:
+    /// it is the feature's whole point, and the gesture is one no program uses.
+    #[serde(default = "default_true")]
+    pub gesture_menu: bool,
 }
 
 /// Default modifier pair for every built-in shortcut, per platform.
@@ -111,6 +119,11 @@ pub fn default_recipe_hotkeys() -> std::collections::HashMap<String, String> {
     ])
 }
 
+/// serde default for flags added later: a settings file written before they existed must read as "on".
+fn default_true() -> bool {
+    true
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Settings {
@@ -131,11 +144,13 @@ impl Default for Settings {
             // Applied via serde container-default when the field is absent from settings.json;
             // users who already set their own keep theirs.
             recipe_hotkeys: default_recipe_hotkeys(),
+            recipe_menu: std::collections::HashMap::new(),
             recipe_notify: std::collections::HashMap::new(),
             kt_temp_chats: true,
             kt_temp_providers: std::collections::HashMap::new(),
             known_providers: std::collections::HashSet::new(),
             low_power: false, // hardware acceleration on: no user gets worse off unknowingly
+            gesture_menu: true,
         }
     }
 }

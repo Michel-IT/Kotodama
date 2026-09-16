@@ -22,6 +22,19 @@
         "visible": false
       },
       {
+        "label": "menuhost",
+        "url": "menuhost.html",
+        "width": 1,
+        "height": 1,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "shadow": false,
+        "visible": false
+      },
+      {
         "label": "toast",
         "url": "toast.html",
         "width": 372,

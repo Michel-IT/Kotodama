@@ -10,6 +10,7 @@ mod audio;
 mod browser;
 mod clipboard;
 mod debug;
+mod gesture;
 mod kotodama;
 mod netread;
 mod settings;
@@ -33,6 +34,7 @@ pub struct AppState {
     pub settings: Mutex<Settings>,
     /// Reference to the "Start on login" menu item (to sync its check).
     pub autostart_item: Mutex<Option<CheckMenuItem<Wry>>>,
+    pub restart_item: Mutex<Option<MenuItem<Wry>>>,
     /// Reference to the "Always on top" menu item (to sync its check).
     pub always_on_top_item: Mutex<Option<CheckMenuItem<Wry>>>,
     /// Tray "Open" / "Quit" items, to localize their text at runtime (set_tray_labels).
@@ -478,6 +480,7 @@ fn reveal_download_path(app: AppHandle, path: String) {
 #[tauri::command]
 fn set_settings(app: AppHandle, settings: Settings) -> Result<Settings, String> {
     apply_autostart(&app, settings.autostart);
+    gesture::set_enabled(settings.gesture_menu);
     if let Some(w) = app.get_window("main") {
         let _ = w.set_always_on_top(settings.always_on_top);
     }
@@ -550,7 +553,7 @@ fn mark_provider_known(app: AppHandle, key: String) {
 /// Localizes the tray labels (Open / Start-on-login / Always-on-top / Quit) in the app language.
 /// Called by the frontend at startup and on every language change.
 #[tauri::command]
-fn set_tray_labels(app: AppHandle, open: String, autostart: String, always_on_top: String, quit: String) {
+fn set_tray_labels(app: AppHandle, open: String, autostart: String, always_on_top: String, restart: String, quit: String) {
     if let Some(i) = app.state::<AppState>().open_item.lock().unwrap().as_ref() {
         let _ = i.set_text(open);
     }
@@ -559,6 +562,9 @@ fn set_tray_labels(app: AppHandle, open: String, autostart: String, always_on_to
     }
     if let Some(i) = app.state::<AppState>().always_on_top_item.lock().unwrap().as_ref() {
         let _ = i.set_text(always_on_top);
+    }
+    if let Some(i) = app.state::<AppState>().restart_item.lock().unwrap().as_ref() {
+        let _ = i.set_text(restart);
     }
     if let Some(i) = app.state::<AppState>().quit_item.lock().unwrap().as_ref() {
         let _ = i.set_text(quit);
@@ -913,6 +919,134 @@ fn inline_transform(app: AppHandle, recipe: String) {
     });
 }
 
+/// The recipes, named in the user's language, as (reference, name) pairs: the built-in ones from the same i18n
+/// file the interface uses, then the custom ones. Used by the double right-click menu.
+fn recipe_choices(app: &AppHandle) -> Vec<(String, String, Option<String>)> {
+    const KEYS: [&str; 8] = ["neutral", "rephrase", "summarise", "reply", "email", "translate", "search", "verbatim"];
+    let state = app.state::<AppState>();
+    let (lang, hotkeys, in_menu) = {
+        let g = state.settings.lock().unwrap();
+        (g.language.clone(), g.recipe_hotkeys.clone(), g.recipe_menu.clone())
+    };
+    let shown = |r: &str| in_menu.get(r).copied().unwrap_or(true);
+    let load = |code: &str| -> Option<serde_json::Value> {
+        let asset = app.asset_resolver().get(format!("i18n/{code}.json"))?;
+        serde_json::from_slice(&asset.bytes).ok()
+    };
+    let primary = if lang.is_empty() { None } else { load(&lang) };
+    let en = load("en").unwrap_or(serde_json::Value::Null);
+    let name = |key: &str| -> String {
+        let pick = |v: &serde_json::Value| v.get("recipeNames").and_then(|n| n.get(key)).and_then(|n| n.as_str()).map(str::to_string);
+        primary.as_ref().and_then(pick).or_else(|| pick(&en)).unwrap_or_else(|| key.to_string())
+    };
+    // The shortcut, when the recipe has one: the menu draws it dimmed on the right, as menus do.
+    let accel = |r: &str| hotkeys.get(r).filter(|h| !h.trim().is_empty()).cloned();
+    let mut out: Vec<(String, String, Option<String>)> = KEYS
+        .iter()
+        .map(|k| format!("key:{k}"))
+        .filter(|r| shown(r))
+        .map(|r| {
+            let a = accel(&r);
+            let n = name(r.trim_start_matches("key:"));
+            (r, n, a)
+        })
+        .collect();
+    for r in settings::load_recipes(app) {
+        let reference = format!("id:{}", r.id);
+        if !shown(&reference) {
+            continue;
+        }
+        let a = accel(&reference);
+        out.push((reference, r.name, a));
+    }
+    out
+}
+
+/// The window the user was in when the gesture happened. A popup menu belongs to a window and activates it, so
+/// the menu cannot hang off the main window: that would throw Kotodama in front of whatever the user was
+/// reading. It hangs off a 1x1 transparent window placed under the cursor instead, and the program the user was
+/// in is brought back before the recipe runs -- the transform copies from whatever is in front, so this is not
+/// cosmetic.
+#[cfg(windows)]
+static GESTURE_TARGET: std::sync::atomic::AtomicIsize = std::sync::atomic::AtomicIsize::new(0);
+
+/// Closes the menu the program itself opened on the first right-click, so ours takes its place.
+#[cfg(windows)]
+fn send_escape() {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VIRTUAL_KEY,
+    };
+    const VK_ESCAPE: u16 = 0x1B;
+    let key = |up: bool| INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: VIRTUAL_KEY(VK_ESCAPE),
+                wScan: 0,
+                dwFlags: if up { KEYEVENTF_KEYUP } else { Default::default() },
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+    unsafe {
+        SendInput(&[key(false), key(true)], std::mem::size_of::<INPUT>() as i32);
+    }
+}
+
+#[cfg(windows)]
+fn restore_gesture_target() {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow;
+    let h = GESTURE_TARGET.swap(0, Ordering::SeqCst);
+    if h != 0 {
+        unsafe {
+            let _ = SetForegroundWindow(HWND(h as *mut core::ffi::c_void));
+        }
+    }
+}
+
+/// Double right-click in any program: Kotodama's recipes at the mouse, and the chosen one runs on the selection,
+/// exactly like its keyboard shortcut. Position is the cursor's, in physical pixels.
+fn show_recipe_menu(app: &AppHandle, x: i32, y: i32) {
+    use tauri::menu::{Menu, MenuItem};
+    let choices = recipe_choices(app);
+    if choices.is_empty() {
+        debug::log("gesture: no recipe is enabled for the menu");
+        return;
+    }
+    let Some(window) = app.get_window("menuhost").or_else(|| app.get_window("main")) else { return };
+    #[cfg(windows)]
+    {
+        use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+        unsafe { GESTURE_TARGET.store(GetForegroundWindow().0 as isize, Ordering::SeqCst) };
+        send_escape();
+    }
+    let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    let _ = window.show();
+    let build = || -> tauri::Result<Menu<tauri::Wry>> {
+        let items: Vec<MenuItem<tauri::Wry>> = choices
+            .iter()
+            .map(|(r, n, a)| MenuItem::with_id(app, format!("recipe::{r}"), n, true, a.as_deref()))
+            .collect::<tauri::Result<_>>()?;
+        let refs: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> = items.iter().map(|i| i as &dyn tauri::menu::IsMenuItem<tauri::Wry>).collect();
+        Menu::with_items(app, &refs)
+    };
+    match build() {
+        Ok(menu) => {
+            // The position is relative to the owner window, and the owner is the 1x1 window already placed under
+            // the cursor: passing the screen coordinates here put the menu in the far corner of the screen.
+            if let Err(e) = window.popup_menu_at(&menu, tauri::PhysicalPosition::new(0, 0)) {
+                debug::log(format!("gesture: popup_menu_at failed: {e}"));
+                let _ = window.hide();
+                #[cfg(windows)]
+                restore_gesture_target();
+            }
+        }
+        Err(e) => debug::log(format!("gesture: menu build failed: {e}")),
+    }
+}
+
 /// Frontend -> show a localized inline-transform toast state (gated by the current recipe's
 /// `recipe_notify`, resolved in `inline_transform`).
 #[tauri::command]
@@ -1048,17 +1182,20 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
         let g = st.settings.lock().unwrap();
         (g.language == "it", g.always_on_top)
     };
-    let (open_lbl, auto_lbl, aot_lbl, quit_lbl) = if it {
-        ("Apri", "Apri al login", "Sempre in primo piano", "Esci")
+    let (open_lbl, auto_lbl, aot_lbl, restart_lbl, quit_lbl) = if it {
+        ("Apri", "Apri al login", "Sempre in primo piano", "Riavvia", "Esci")
     } else {
-        ("Open", "Start on login", "Always on top", "Quit")
+        ("Open", "Start on login", "Always on top", "Restart", "Quit")
     };
     let open_i = MenuItem::with_id(app, "open", open_lbl, true, None::<&str>)?;
     let login_i = CheckMenuItem::with_id(app, "autostart", auto_lbl, true, autostart_on, None::<&str>)?;
     let aot_i = CheckMenuItem::with_id(app, "alwaysontop", aot_lbl, true, always_on_top_on, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
+    // Restart: closing and reopening by hand is the only way to apply the settings that WebView2 reads once at
+    // startup (resource saving), and the quickest fix after an update.
+    let restart_i = MenuItem::with_id(app, "restart", restart_lbl, true, None::<&str>)?;
     let quit_i = MenuItem::with_id(app, "quit", quit_lbl, true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open_i, &login_i, &aot_i, &sep, &quit_i])?;
+    let menu = Menu::with_items(app, &[&open_i, &login_i, &aot_i, &sep, &restart_i, &quit_i])?;
 
     // Store items: sync check + localize text at runtime.
     {
@@ -1067,6 +1204,7 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
         st.always_on_top_item.lock().unwrap().replace(aot_i.clone());
         st.open_item.lock().unwrap().replace(open_i.clone());
         st.quit_item.lock().unwrap().replace(quit_i.clone());
+        st.restart_item.lock().unwrap().replace(restart_i.clone());
     }
 
     let mut builder = TrayIconBuilder::with_id("main-tray")
@@ -1261,6 +1399,7 @@ pub fn run() {
             last_seen: Mutex::new(None),
             settings: Mutex::new(settings::load_early()), // from disk NOW: see settings::load_early
             autostart_item: Mutex::new(None),
+            restart_item: Mutex::new(None),
             always_on_top_item: Mutex::new(None),
             open_item: Mutex::new(None),
             quit_item: Mutex::new(None),
@@ -1276,6 +1415,23 @@ pub fn run() {
         // event here).
         .on_menu_event(|app, event| {
             let id = event.id.as_ref();
+            // A recipe picked from the double right-click menu: same path as its keyboard shortcut.
+            if let Some(recipe) = id.strip_prefix("recipe::") {
+                debug::log(format!("gesture: recipe picked {recipe}"));
+                if let Some(w) = app.get_window("menuhost") {
+                    let _ = w.hide();
+                }
+                // The transform reads the selection of the program in front: give it the focus back first.
+                #[cfg(windows)]
+                restore_gesture_target();
+                let app2 = app.clone();
+                let r = recipe.to_string();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(180));
+                    inline_transform(app2, r);
+                });
+                return;
+            }
             if id == "copy_url" {
                 // Right-click "Copy URL": copy the provider webview's current URL to the clipboard
                 // (ignore-self marker set so the clipboard monitor doesn't pop a toast for it).
@@ -1295,8 +1451,19 @@ pub fn run() {
             // fresh-install autostart activation below without ever touching an existing user's
             // explicit choice.
             let fresh_install = !settings::exists(&handle);
+            // Double right-click anywhere -> the recipe menu (see gesture.rs). The menu is built on the main
+            // thread: the hook calls back from its own.
+            {
+                let h = handle.clone();
+                gesture::start(Box::new(move |x, y| {
+                    debug::log(format!("gesture: double right-click at {x},{y}"));
+                    let h2 = h.clone();
+                    let _ = h2.clone().run_on_main_thread(move || show_recipe_menu(&h2, x, y));
+                }));
+            }
             let mut loaded = settings::load(&handle);
             debug::log(format!("settings da setup: always_on_top={}", loaded.always_on_top));
+            gesture::set_enabled(loaded.gesture_menu);
             // macOS only: an install that still carries the Ctrl+Alt shortcuts inherited from the
             // Windows defaults is moved onto Ctrl+Cmd once, and persisted right away so the move
             // survives even if the user never opens Settings again.
@@ -1319,6 +1486,19 @@ pub fn run() {
             // frozen this app on Windows in the past (see the comment on PARK_Y).
             #[cfg(windows)]
             browser::start_idle_suspender(&handle);
+
+            // The window that owns the double right-click menu goes away with the menu: the menu closes by
+            // itself when it loses focus, and that is the only signal we get that it is over.
+            if let Some(host) = app.get_webview_window("menuhost") {
+                let h = host.clone();
+                host.on_window_event(move |event| {
+                    if let WindowEvent::Focused(false) = event {
+                        let _ = h.hide();
+                        #[cfg(windows)]
+                        restore_gesture_target();
+                    }
+                });
+            }
 
             // Main window lifecycle + show IMMEDIATELY: the first paint arrives
             // before the non-visual init (tray/hotkey/monitor) below.
