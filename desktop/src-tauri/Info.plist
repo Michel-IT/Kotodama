@@ -11,7 +11,7 @@
       <key>NSMenuItem</key>
       <dict>
         <key>default</key>
-        <string>Kotodama</string>
+        <string>Kotodama Transform</string>
       </dict>
       <key>NSMessage</key>
       <string>kotodamaTransform</string>

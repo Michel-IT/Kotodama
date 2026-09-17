@@ -760,6 +760,18 @@ const VK_V: u16 = 0x56;
 /// show the "processing" toast, and hand text+recipe to the frontend (hidden webview
 /// gateway). The answer comes back via `inline_finish`/`inline_fail`, which paste it
 /// where the user was typing. Nothing is brought to the foreground.
+/// Debug harness only: the JavaScript that calls one of the `__ktAuto*` hooks as soon as it EXISTS.
+///
+/// The probes fire on a timer, but a cold dev start can leave the interface still loading well past it, and
+/// `window.__ktAutoChat && __ktAutoChat(...)` then does nothing at all and says nothing: the log shows the send
+/// going out and not one line follows it. Letting the page wait for its own hook costs nothing and removes a
+/// class of runs that look like a product bug and are not one.
+fn auto_call(hook: &str, args: &str) -> String {
+    format!(
+        "(function w(n){{ if (window.{hook}) {{ {hook}({args}); }}          else if (n > 0) {{ setTimeout(function(){{ w(n - 1); }}, 500); }}          else {{ console.error('{hook}: never appeared'); }} }})(120)"
+    )
+}
+
 /// The inline transform when the text is ALREADY known (macOS Services: the system hands over the selection,
 /// there is nothing to copy). Same pipeline from here on: park the window, hand text and recipe to the frontend,
 /// and the answer comes back through inline_finish, which pastes it where the user was.
@@ -773,6 +785,16 @@ pub fn inline_transform_text(app: AppHandle, text: String) {
     let notify = state.settings.lock().unwrap().recipe_notify.get(&recipe).copied().unwrap_or(true);
     state.inline_notify.store(notify, Ordering::SeqCst);
     state.inline_suppress_toast.store(true, Ordering::SeqCst);
+    // The answer is pasted back with a synthetic Cmd+V, which macOS drops silently without Accessibility
+    // permission. Checked HERE too (the shortcut path does the same): otherwise the transform runs, the answer
+    // reaches the clipboard, and nothing appears where the user was writing, with no explanation.
+    if !ax_is_trusted(true) {
+        debug::log("services: macOS Accessibility not granted");
+        if state.inline_notify.load(Ordering::SeqCst) { toast::show_state(&app, "error", "accessibility"); }
+        state.inline_busy.store(false, Ordering::SeqCst);
+        state.inline_suppress_toast.store(false, Ordering::SeqCst);
+        return;
+    }
     debug::log(format!("services: transform recipe={recipe} len={}", text.len()));
     inline_park_window(&app);
     match app.get_window("main") {
@@ -1119,6 +1141,13 @@ fn inline_finish(app: AppHandle, text: String) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     std::thread::spawn(move || {
         inline_restore_window(&app); // hide the off-screen host again before pasting
+        // macOS Services: the text came from another application, and performing the service brought us to the
+        // front. Give the foreground back before the paste, or it lands in our own window.
+        #[cfg(target_os = "macos")]
+        {
+            services::refocus_source();
+            std::thread::sleep(std::time::Duration::from_millis(250));
+        }
         std::thread::sleep(std::time::Duration::from_millis(150));
         send_combo(VK_V);
         let st = app.state::<AppState>();
@@ -1666,7 +1695,7 @@ pub fn run() {
                             // KOTO_AUTOCHAT_PREWARM=1: load the provider pages first (the real pre-warm path) and send
                             // only after KOTO_AUTOCHAT_WAIT_S, to compare a warm page with a freshly loaded one.
                             if std::env::var("KOTO_AUTOCHAT_PREWARM").is_ok() {
-                                let _ = m.eval(format!("window.__ktAutoPrewarm && __ktAutoPrewarm({k})"));
+                                let _ = m.eval(auto_call("__ktAutoPrewarm", &k));
                                 debug::log("AUTOCHAT: pre-warming");
                             }
                             std::thread::sleep(std::time::Duration::from_secs(env_u64("KOTO_AUTOCHAT_WAIT_S", 0)));
@@ -1687,9 +1716,9 @@ pub fn run() {
                                     // KOTO_AUTOCHAT_FILES=path;path (optional): attachments for the first message.
                                     let fl: Vec<String> = std::env::var("KOTO_AUTOCHAT_FILES").unwrap_or_default().split(';').filter(|p| !p.is_empty()).map(str::to_string).collect();
                                     let f = serde_json::to_string(&fl).unwrap_or_else(|_| "[]".into());
-                                    let _ = m.eval(format!("window.__ktAutoChat && __ktAutoChat({t}, {k}, {r}, {f})"));
+                                    let _ = m.eval(auto_call("__ktAutoChat", &format!("{t}, {k}, {r}, {f}")));
                                 } else {
-                                    let _ = m.eval(format!("window.__ktAutoContinue && __ktAutoContinue({t}, {k})"));
+                                    let _ = m.eval(auto_call("__ktAutoContinue", &format!("{t}, {k}")));
                                 }
                             }
                             // KOTO_AUTOCHAT_CLOSEVIEW_S=<s>: close the verification queue (and the provider page it
@@ -1711,7 +1740,7 @@ pub fn run() {
                                 std::thread::spawn(move || {
                                     std::thread::sleep(std::time::Duration::from_secs(secs));
                                     let t = serde_json::to_string(&tab).unwrap_or_default();
-                                    let _ = m3.eval(format!("window.__ktAutoTab && __ktAutoTab({t})"));
+                                    let _ = m3.eval(auto_call("__ktAutoTab", &t));
                                 });
                             }
                             // KOTO_AUTOCHAT_REGEN_S=<s>: press every visible regenerate button that long after the send.
@@ -1720,7 +1749,7 @@ pub fn run() {
                                 std::thread::spawn(move || {
                                     std::thread::sleep(std::time::Duration::from_secs(secs));
                                     debug::log("AUTOCHAT: pressing regenerate");
-                                    let _ = m5.eval("window.__ktAutoRegen && __ktAutoRegen()");
+                                    let _ = m5.eval(auto_call("__ktAutoRegen", ""));
                                 });
                             }
                             // KOTO_AUTOCHAT_NAV=<key>|<url>|<s>: navigate that provider page elsewhere that long after the
@@ -1746,14 +1775,14 @@ pub fn run() {
                                 std::thread::spawn(move || {
                                     std::thread::sleep(std::time::Duration::from_secs(secs));
                                     debug::log("AUTOCHAT: pressing read aloud");
-                                    let _ = m4.eval("window.__ktAutoRead && __ktAutoRead()");
+                                    let _ = m4.eval(auto_call("__ktAutoRead", ""));
                                 });
                             }
                             // KOTO_AUTOCHAT_STOP_MS=<ms>: press Stop that long after the send, to test it.
                             if let Some(ms) = std::env::var("KOTO_AUTOCHAT_STOP_MS").ok().and_then(|v| v.parse::<u64>().ok()) {
                                 std::thread::sleep(std::time::Duration::from_millis(ms));
                                 debug::log("AUTOCHAT: pressing Stop");
-                                let _ = m.eval("window.__ktAutoStop && __ktAutoStop()");
+                                let _ = m.eval(auto_call("__ktAutoStop", ""));
                             }
                         });
                     }
@@ -2021,11 +2050,11 @@ pub fn run() {
                                 .ok()
                                 .and_then(|t| serde_json::to_string(&t).ok())
                                 .unwrap_or_else(|| "undefined".to_string());
-                            let _ = main.eval(format!("window.__ktAutoTest && __ktAutoTest('{k}', {arg})"));
+                            let _ = main.eval(auto_call("__ktAutoTest", &format!("'{k}', {arg}")));
                             if warm {
                                 std::thread::sleep(std::time::Duration::from_millis(50_000));
                                 debug::log(format!("auto-kotodama WARM follow-up: {k}"));
-                                let _ = main.eval(format!("window.__ktAutoWarm && __ktAutoWarm('{k}')"));
+                                let _ = main.eval(auto_call("__ktAutoWarm", &format!("'{k}'")));
                             }
                         }
                     });

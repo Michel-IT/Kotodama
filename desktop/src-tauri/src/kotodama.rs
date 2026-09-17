@@ -1938,6 +1938,15 @@ const HARVEST_JS: &str = r##"
     function armWatcher(){ try { if (!window.__ktSentAt) window.__ktSentAt = Date.now(); } catch(e){} }
     var cur = answerTxt();
     if (cur && cur !== initialAnswer) { armWatcher(); clearInterval(armIv); harvest(); return; }  // answer streaming
+    // The provider refused the message for its usage limit (429 after our send). The harvest loop already
+    // says so, but it is never reached when the refusal comes INSTEAD of an answer: the arming loop ran out
+    // its budget and reported a failed send, which is false and sends the user looking for the wrong fix
+    // (captured on Claude, 429 `rate_limit_error` on the completion endpoint -> `sendfail` after 33s).
+    if (window.__ktRateLimited && !window.__ktStreamEver && !cur) {
+      clearInterval(armIv); fdiagArm('EXIT rate-limit (arming)');
+      setTimeout(function(){ deliver('limit', ''); }, 300);
+      return;
+    }
     var v = composerVal();
     if (v !== null) {
       if (v.trim().length > 0) { sawText = true; }
