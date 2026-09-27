@@ -1018,6 +1018,17 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
   // up in the thread, a first-match pick would fill THAT box instead of the real composer,
   // dragging its neighboring UI (e.g. the localized Edit/Save button) into the sent message.
   // Geometry, not text, so this holds for every UI language without per-language matching.
+  // ChatGPT can open a "writing block" canvas for poem/letter/document-style answers (own title
+  // <textarea> plus a body `.ProseMirror`, both matching the selectors above). Measured live
+  // 27/09/2026 (WebView2 inspection port, real chatgpt.com page, Riformula on a formal-letter
+  // request): the canvas body's rect.bottom (1046) sat BELOW the real composer's (610), so the
+  // bottom-most-wins rule above picked the open document instead -- the next message got typed
+  // into it, never reaching the chat box (docs/qa/chat-confortevole.md step 5, logged as `FILL SUSPECT
+  // delivered with no submits`). `data-testid="chatgpt-writing-block"` marks
+  // that whole panel and is not present anywhere near the real composer -- checked live the same
+  // session. Kept in sync with the identical check in kotodama.rs's findComposerEl(): both must
+  // reject it, or the fill (geometry-based) and the harvest (first-in-DOM) composer lookups can
+  // land on different elements.
   function pickComposer(){
     var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'];
     var best = null, bestY = -1e9;
@@ -1025,6 +1036,7 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
       var els = document.querySelectorAll(sels[i]);
       for (var j=0;j<els.length;j++){
         var e = els[j]; if (e.offsetParent === null) continue;
+        if (e.closest('[data-testid="chatgpt-writing-block"]')) continue;   // canvas, not the composer
         var b = e.getBoundingClientRect().bottom;
         if (b > bestY){ bestY = b; best = e; }
       }
@@ -1128,13 +1140,31 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
   // COLUMN as the input field (the conversation sits above it), while the history list sits in a side
   // column, outside that horizontal band. No names, no classes, no language: the same principle used
   // to recognize the send button.
+  // A follow-up message can begin exactly like one already in the conversation: a recipe puts the same
+  // instruction in front of every message, and people repeat a question. Found anywhere in the column,
+  // that earlier copy made the loop conclude "already delivered" at its first tick and leave without
+  // pressing Enter (measured 2026-09-26: the second message of a conversation ended in `sendfail` on
+  // ChatGPT and Claude alike, "SUSPECT delivered with no submits"). So on a follow-up turn "delivered"
+  // means our text appears MORE times than it did before this loop started, not merely that it appears.
+  // A fresh turn keeps the plain check: a provider sending by itself from the URL (?q=) may already have
+  // posted the message before this loop starts (and after it the page may move to a new address and the
+  // send be resumed), and that copy is the one that proves the send. Except for the providers whose "new"
+  // page is not always empty (`window.__ktFreshBaseline`, set by Rust from `unreliable_prewarm`): Claude in
+  // incognito restores its last conversation a few seconds after /new?incognito= has loaded, same address
+  // (measured 2026-09-27), and the context preamble that starts every fresh message was found in those old
+  // bubbles and taken for our send.
+  var FOLLOW_UP = (typeof __kt_fresh !== 'undefined') && __kt_fresh === false;
+  var COUNT_FIRST = FOLLOW_UP || !!window.__ktFreshBaseline;
   function foundInConversation(){
+    return countInConversation() > BASELINE;
+  }
+  function countInConversation(){
     try {
       var el = pickComposer();
       var cr = el ? el.getBoundingClientRect() : null;
       var probe = HEAD.slice(0, 20);
       var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-      var node, seen = 0;
+      var node, seen = 0, found = 0;
       while ((node = walker.nextNode())) {
         if (++seen > 20000) break;                       // huge pages: never stall the loop
         var txt = node.textContent || '';
@@ -1147,16 +1177,18 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
         // send silently never happened (measured on Claude: "exit: delivered at tick 3", submits=0).
         if (el && (el === p || el.contains(p))) continue;
         if (p.closest(NAV_SEL)) continue;                // declared navigation: does not count
-        if (!cr) return true;                            // no field to measure from: do not obstruct
+        if (!cr) { found++; continue; }                  // no field to measure from: do not obstruct
         var r = p.getBoundingClientRect();
         if (r.width === 0 && r.height === 0) continue;    // hidden
         var cx = (r.left + r.right) / 2;
-        if (cx >= cr.left - 30 && cx <= cr.right + 30) return true;   // inside the conversation column
+        if (cx >= cr.left - 30 && cx <= cr.right + 30) found++;   // inside the conversation column
       }
-      return false;   // found only outside the column (or not found): it was not sent
+      return found;   // copies outside the column (history, sidebar) never count as sent
 
-    } catch(e){ return false; }
+    } catch(e){ return 0; }
   }
+  // Copies of our text already in the conversation before this loop typed anything (see COUNT_FIRST above).
+  var BASELINE = COUNT_FIRST ? countInConversation() : 0;
   function delivered(){
     try {
       var el = pickComposer();
@@ -1302,7 +1334,8 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
     try { if (window.__ktDiag && window.__ktPush) window.__ktPush({ b: __kt_bid, k: __kt_key, st: 'diag', d: 'FILL ' + m }); } catch(e){}
   }
   function elId(e){ try { return e ? (e.tagName + '.' + String(e.className||'').slice(0,24)) : 'NONE'; } catch(err){ return '?'; } }
-  fdiag('start send=' + send + ' hold=' + (!!window.__ktHoldFill) + ' el=' + elId(pickComposer()));
+  fdiag('start send=' + send + ' hold=' + (!!window.__ktHoldFill) + ' el=' + elId(pickComposer())
+    + ' followUp=' + FOLLOW_UP + ' baseline=' + BASELINE);
   // ONE loop per page. Every injection (first load, resume after a navigation, follow-up turn) created
   // a NEW one without stopping the previous ones, and each pressed Enter on its own: that is how the
   // same message ended up posted several times to the provider (measured: three live loops on Gemini,

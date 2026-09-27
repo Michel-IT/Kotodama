@@ -99,7 +99,7 @@ license your contribution under GPL-3.0.
 
 <div align="center">
 
-<a href="https://kotodama.kuramalab.net"><img src="assets/kuramalab.png" alt="KuramaLab" height="34"></a>
+<a href="https://kotodama.kuramalab.net"><img src="assets/kuramalab.png" alt="KuramaLab" height="68"></a>
 
 A **KuramaLab** project · distributed free as open-source software.
 

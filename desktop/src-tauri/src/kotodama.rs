@@ -62,12 +62,15 @@ fn pending_injections() -> &'static Mutex<HashMap<String, PendingInjection>> {
     static P: OnceLock<Mutex<HashMap<String, PendingInjection>>> = OnceLock::new();
     P.get_or_init(|| Mutex::new(HashMap::new()))
 }
-/// Injections that already ran: provider key -> (broadcast_id, sent text). Needed because some
-/// provider pages NAVIGATE right after send (Qwen landing -> chat route, ChatGPT /?q= -> /c/<id>),
-/// killing the injected harvester with the old document: on the next page-load we re-inject a
-/// HARVEST-ONLY script to resume collection. Cleared when the key's answer is delivered.
-fn active_harvests() -> &'static Mutex<HashMap<String, (String, String)>> {
-    static A: OnceLock<Mutex<HashMap<String, (String, String)>>> = OnceLock::new();
+/// Injections that already ran: provider key -> (broadcast_id, sent text, private chat clicked). Needed because
+/// some provider pages NAVIGATE right after send (Qwen landing -> chat route, ChatGPT /?q= -> /c/<id>; Grok's own
+/// private-chat toggle is a real `<a href>` whose click fires the same WebView2 navigation events even for its
+/// in-page route change), killing the injected harvester with the old document: on the next page-load we
+/// re-inject a HARVEST-ONLY (or resend) script to resume. The third field lets that resume re-assert the
+/// private chat instead of silently sending into a normal conversation saved in the account's history
+/// (measured on Grok, 27/09/2026). Cleared when the key's answer is delivered.
+fn active_harvests() -> &'static Mutex<HashMap<String, (String, String, bool)>> {
+    static A: OnceLock<Mutex<HashMap<String, (String, String, bool)>>> = OnceLock::new();
     A.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
@@ -76,7 +79,10 @@ fn active_harvests() -> &'static Mutex<HashMap<String, (String, String)>> {
 /// providers redesign; the JS treats them as the first candidate only, so a stale selector
 /// degrades to the generic chain instead of breaking.
 const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
-    ("openai", r#"[data-message-author-role="assistant"]"#, r#"button[data-testid="stop-button"]"#),
+    // Since 26/09/2026 ChatGPT no longer marks messages with data-message-author-role: the answer's markdown
+    // root carries data-markdown-text-style="assistant-message" (read live through the WebView2 inspection
+    // port on 27/09). The old marker stays second, for an older build of their page.
+    ("openai", r#"[data-markdown-text-style="assistant-message"], [data-message-author-role="assistant"]"#, r#"button[data-testid="stop-button"]"#),
     // `.font-claude-response` is the current class; `.font-claude-message` was the previous one and is
     // kept so an older build of their UI still matches. Captured live 2026-08-18 -- with neither
     // matching, the chain fell back to the whole message wrapper and harvested the screen-reader
@@ -126,10 +132,30 @@ fn blocked_marks() -> &'static Mutex<HashSet<(String, String)>> {
 }
 /// Network readers per (broadcast, provider), one per answer request the page made (netread.rs).
 type NetReaders = HashMap<String, Box<dyn crate::netread::Reader>>;
+/// When the last network preview went out for a (broadcast, provider), and how long the text was then. Both
+/// matter: the time throttles the flood of frames, the length keeps the preview from ever going backwards.
+fn net_partials() -> &'static Mutex<HashMap<(String, String), (std::time::Instant, usize)>> {
+    static P: OnceLock<Mutex<HashMap<(String, String), (std::time::Instant, usize)>>> = OnceLock::new();
+    P.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 fn net_readers() -> &'static Mutex<HashMap<(String, String), NetReaders>> {
     static S: OnceLock<Mutex<HashMap<(String, String), NetReaders>>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(HashMap::new()))
 }
+/// (broadcast, provider) whose network stream has ended and whose delivery from the network is already
+/// scheduled (see `NET_FINISH_GRACE`), so a socket that keeps sending does not schedule it again.
+fn net_finish_armed() -> &'static Mutex<HashSet<(String, String)>> {
+    static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashSet::new()))
+}
+/// How long the page gets, after the provider's stream says the answer is complete, to deliver it
+/// itself. The page's answer carries what only the rendered page has (links, images), so it wins when it
+/// works; this grace only matters when it does not. Measured on ChatGPT on 2026-09-26: after a redesign
+/// its answer element no longer matched any selector, the stream had ended with the full text, and the
+/// turn stayed "in progress" until the next send cancelled it ("Interrupted" next to a visible answer).
+/// A provider changing its page must never again leave a finished answer hanging.
+const NET_FINISH_GRACE: std::time::Duration = std::time::Duration::from_millis(3000);
 /// JS literal for `window.__ktNetUrl`: the provider's answer endpoint pattern, or null (reading from the
 /// network off for this provider, or disabled with KOTO_NO_NETREAD to compare against the DOM).
 fn net_url_js(key: &str) -> String {
@@ -316,7 +342,7 @@ pub fn kotodama_regenerate(window: Window, old_bid: String, new_bid: String, key
         finish_key(&window, &new_bid, &key, "error", "", false, "");
         return Ok(());
     }
-    active_harvests().lock().unwrap().insert(key.clone(), (new_bid, text));
+    active_harvests().lock().unwrap().insert(key.clone(), (new_bid, text, false));
     Ok(())
 }
 
@@ -566,7 +592,9 @@ const ATTACH_JS: &str = r##"
   }
   function composer(){
     var sels = ['textarea:not([readonly])', '[contenteditable="true"]', 'div[role="textbox"]'];
-    for (var i = 0; i < sels.length; i++) { var e = document.querySelectorAll(sels[i]); for (var j = e.length - 1; j >= 0; j--) if (e[j].offsetParent !== null) return e[j]; }
+    // Never ChatGPT's open document block: its title <textarea> and body are editable too (same exclusion as
+    // pickComposer in browser.rs and findComposerEl below), and an attachment dropped there never reaches the chat.
+    for (var i = 0; i < sels.length; i++) { var e = document.querySelectorAll(sels[i]); for (var j = e.length - 1; j >= 0; j--) if (e[j].offsetParent !== null && !e[j].closest('[data-testid="chatgpt-writing-block"]')) return e[j]; }
     return null;
   }
   function fileInput(){
@@ -667,6 +695,30 @@ fn fresh_bases() -> &'static Mutex<HashMap<String, String>> {
 fn prewarmed() -> &'static Mutex<HashMap<String, String>> {
     static P: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
     P.get_or_init(|| Mutex::new(HashMap::new()))
+}
+/// Providers whose fresh page can start showing ANOTHER conversation some time after it finished loading,
+/// with no navigation Kotodama could see. Claude in incognito, measured 27/09/2026 through the WebView2
+/// inspection port: `/new?incognito=` is empty right after the load (0 messages), then its own client restores
+/// the last incognito conversation about 3 s later, at the same address (which never changes in incognito).
+/// A "this tab is sitting on an empty page" note kept for a later send goes stale without any sign, and the next
+/// conversation was typed into the old one (eight messages of four conversations in one chat). For these
+/// providers a pre-warm still loads the page early, but a send always navigates for real and types right after
+/// that load.
+fn unreliable_prewarm(key: &str) -> bool {
+    matches!(key, "anthropic")
+}
+
+/// Claude's client resumes the previous incognito conversation instead of starting one when the tab's
+/// sessionStorage still holds `incognito_temporary_conversation_uuid` (per tab, it survives navigation inside the
+/// same WebView2 tab, and Kotodama reuses the tab across conversations). Measured live on 2026-09-27 through the
+/// inspection port, A/B on the real send path: from the third fresh `/new?incognito=` load in the same tab the
+/// answers came from the old conversation; with only this key removed the next send was a new conversation,
+/// with it left in place the chain came back at once. Only this key is touched: login, cookies and
+/// preferences stay as they are.
+fn forget_incognito_conversation(webview: &tauri::Webview, key: &str, url: &str) {
+    if key == "anthropic" && url.contains("incognito=") {
+        let _ = webview.eval("try{sessionStorage.removeItem('incognito_temporary_conversation_uuid');}catch(e){}");
+    }
 }
 /// Providers whose pre-warm navigation has STARTED but not finished. A page that is still loading is
 /// not a warm tab: injecting into it is worse than navigating normally, because committing the new
@@ -1037,7 +1089,16 @@ const STREAM_WATCH_JS: &str = r##"
   // The answer is over when the LAST stream opened after our send has closed, not the first one. Captured
   // on Perplexity (15/09/2026): the answer stream stays open while a short related-queries stream opens and
   // closes next to it, and firing on that close harvested the page 1s into the answer ("2:02 AM").
-  function ended(){ try { if ((window.__ktStreamOpen || 0) > 0) return; if (window.__ktStreamEnd) window.__ktStreamEnd(); } catch(e){} }
+  // A stream belongs to the injection that was current when it OPENED (`window.__ktBid`). When a second message
+  // is sent while the first answer is still streaming, the first stream closing must not end the second one: it
+  // did, and the second card showed the first message's answer (measured on Gemini, 27/09/2026).
+  function ended(bid){
+    try {
+      if (bid !== undefined && window.__ktBid !== bid) return;
+      if ((window.__ktStreamOpen || 0) > 0) return;
+      if (window.__ktStreamEnd) window.__ktStreamEnd();
+    } catch(e){}
+  }
   // ---- Network reading (netread.rs): copies of the ANSWER stream only, forwarded in small batches. The URL
   // pattern comes from Rust per provider (__ktNetUrl); every other request of the page is ignored. IPC only.
   var NET_URL = null;
@@ -1088,10 +1149,11 @@ const STREAM_WATCH_JS: &str = r##"
             // the message reach the provider at all?). The second is what the arming loop needs: a
             // model can finish its reasoning stream and open the answer one a moment later, and in
             // that gap the first counter is legitimately zero while the send was plainly fine.
+            var sb = window.__ktBid;
             try { window.__ktStreamOpen = (window.__ktStreamOpen || 0) + 1; } catch(e){}
             try { window.__ktStreamEver = (window.__ktStreamEver || 0) + 1; } catch(e){}
             var fwd = netWanted(reqUrl), nid = fwd ? 'f' + (++netSeq) : '', dec = fwd ? new TextDecoder() : null;
-            function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} if (fwd) { try { netSend(nid, reqUrl, dec.decode(), true); } catch(e){} } ended(); }
+            function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} if (fwd) { try { netSend(nid, reqUrl, dec.decode(), true); } catch(e){} } ended(sb); }
             (function pump(){
               mine.read().then(function(r){
                 if (r.done) { closed(); return; }
@@ -1109,11 +1171,13 @@ const STREAM_WATCH_JS: &str = r##"
   // DeepSeek streams its answer over XMLHttpRequest (text/event-stream), Gemini over XMLHttpRequest with
   // a JSON content type on StreamGenerate, Grok over a WebSocket opened with the page. Without these the
   // three providers could only conclude by DOM stability, seconds after the answer was complete.
+  // opened() returns the injection the stream belongs to; closedOne() takes it back (see ended()).
   function opened(){
     try { window.__ktStreamOpen = (window.__ktStreamOpen || 0) + 1; } catch(e){}
     try { window.__ktStreamEver = (window.__ktStreamEver || 0) + 1; } catch(e){}
+    return window.__ktBid;
   }
-  function closedOne(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} ended(); }
+  function closedOne(bid){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} ended(bid); }
   // Streaming endpoints whose content type does not say "stream". Kept to exact answer endpoints: a
   // generic JSON match would treat every background call as the end of the answer.
   var STREAM_URL = /\/StreamGenerate\b/;
@@ -1141,9 +1205,9 @@ const STREAM_WATCH_JS: &str = r##"
               if (xhr.readyState === 2 && xhr.status === 429) { try { window.__ktRateLimited = Date.now(); } catch(e){} }
               if (xhr.readyState === 2 && !counted) {
                 var ct = xhr.getResponseHeader('content-type') || '';
-                if (STREAMY.test(ct) || STREAM_URL.test(xhr.__ktUrl || '')) { counted = true; opened(); }
+                if (STREAMY.test(ct) || STREAM_URL.test(xhr.__ktUrl || '')) { counted = true; xhr.__ktOpenBid = opened(); }
               }
-              if (xhr.readyState === 4 && counted) { counted = false; closedOne(); }
+              if (xhr.readyState === 4 && counted) { counted = false; closedOne(xhr.__ktOpenBid); }
             } catch(e){}
           });
         }
@@ -1164,8 +1228,8 @@ const STREAM_WATCH_JS: &str = r##"
             try {
               if (!window.__ktSentAt || typeof ev.data !== 'string') return;
               if (netWanted(u)) netSend(wid, u, ev.data, false);
-              if (ev.data.indexOf('"type":"response.created"') >= 0) opened();
-              if (ev.data.indexOf('"type":"response.done"') >= 0) closedOne();
+              if (ev.data.indexOf('"type":"response.created"') >= 0) ws.__ktOpenBid = opened();
+              if (ev.data.indexOf('"type":"response.done"') >= 0) closedOne(ws.__ktOpenBid);
             } catch(e){}
           });
         } catch(e){}
@@ -1384,12 +1448,47 @@ const HARVEST_JS: &str = r##"
   // (the generic selector chain can match the USER bubble on providers without a
   // dedicated assistant selector).
   var SENT = (typeof __apb_text === 'string') ? __apb_text.trim() : '';
+  // Our own message, however the page lays it out: the bubble can differ from what was sent in spaces and
+  // line breaks (measured on ChatGPT, 27/09/2026: a conversation reopened from the history sent a long text
+  // with the earlier turns, its bubble matched a generic selector, and the exact comparison let it through as
+  // the "answer"). Compared with whitespace collapsed. Narrow on purpose: an answer that repeats our text and
+  // then adds something real is an answer (a cleanup rule must never empty one).
+  // written by character code, like the line breaks elsewhere in this script (String.fromCharCode(10))
+  function squash(x){
+    x = String(x || ''); var o = '';
+    for (var i = 0; i < x.length; i++){ var c = x.charCodeAt(i); o += (c <= 32 || c === 160) ? ' ' : x.charAt(i); }
+    return o.split(' ').filter(Boolean).join(' ');
+  }
+  var SENT_SQ = squash(SENT);
+  function isOwnText(t){
+    if (!SENT_SQ) return false;
+    var q = squash(t);
+    if (q === SENT_SQ) return true;
+    // our whole text plus a few interface words around it (edit, copy labels)
+    return q.length <= SENT_SQ.length + 30 && q.slice(0, SENT_SQ.length) === SENT_SQ;
+  }
   window.__ktBid = BID;               // a newer injection overwrites; older loops self-terminate
   var t0 = Date.now();
+  // Only RENDERED matches: a node inside a closed or display:none ancestor still matches querySelectorAll, and
+  // its own computed display does not change, so it could win over the real answer. Measured on ChatGPT's
+  // logged-out mobile page (27/09/2026, inspection port): a closed <dialog> (display:none) holds an <article> with
+  // an "Interactive content / Details could not be loaded" placeholder; the generic chain took it as the answer
+  // and Ctrl+Alt+C pasted it over the user's selection. Such a node has no client rects at all. The SIZE is not
+  // the test: a provider tab can measure 0x0 while Kotodama is minimized, and Claude's answer node is
+  // display:contents (always a zero box, never any rects), so it is judged by its parent instead.
+  function isPainted(el){
+    try {
+      var cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden' || cs.opacity === '0') return false;
+      if (cs.display === 'contents') return !el.parentElement || isPainted(el.parentElement);
+      return el.getClientRects().length > 0;
+    } catch(e){ return false; }
+  }
   function lastMatch(sel, outermost){
     if (!sel) return null;
     try {
-      var els = document.querySelectorAll(sel);
+      var all = document.querySelectorAll(sel), els = [];
+      for (var k = 0; k < all.length; k++) { if (isPainted(all[k])) els.push(all[k]); }
       if (!outermost) return els.length ? els[els.length-1] : null;
       // The last match that is not INSIDE another match: a provider's answer selector can also match pieces
       // of that answer. Measured on Mistral: `[class*="markdown"]` also matched each table cell, and the last
@@ -1438,8 +1537,13 @@ const HARVEST_JS: &str = r##"
   // "writing block" surface carrying its own controls -- the "Edit" label was landing at the head of
   // every inline-transform result the user pasted back. Matched on STRUCTURE (tag/role), never on
   // the label text, which changes with the interface language.
+  // Claude's reasoning step is not content either: `.font-claude-response` nests a `[data-testid="TurnStatus"]`
+  // pill ahead of the real text (data-step-key="thinking-0"...) with a free-form caption of the step, plus an
+  // sr-only copy of it. The text match on "Thought for..." in sanitizeAnswer cannot recognise such a caption in
+  // every language, so it landed at the head of the answer, doubled. Read live on 27/09/2026 through the
+  // WebView2 inspection port; excluding the pill removes both copies.
   var CHROME_SEL = 'button, [role="button"], [role="toolbar"], [role="menu"], [role="menuitem"],'
-    + ' [role="tab"], [role="tablist"], select, input, textarea';
+    + ' [role="tab"], [role="tablist"], select, input, textarea, [data-testid="TurnStatus"]';
   // Reads the answer's text while SKIPPING that chrome. Hiding the controls and re-reading
   // innerText does not work -- measured: with three controls hidden the string came back byte for
   // byte identical, because innerText serves a value the engine had already computed. So the text
@@ -1472,6 +1576,9 @@ const HARVEST_JS: &str = r##"
         if (isBlock) nl();
         walk(c);
         if (isBlock) nl();
+        // table cells on one row: a tab between them, as a copy from the page would give (they came out glued
+        // together, "StileFrasePunti di forza", in the text used for previews, copies and inline results)
+        if ((tag === 'td' || tag === 'th') && c.nextElementSibling) out += TAB;
       }
     }
     try { walk(el); } catch(e){ return ''; }
@@ -1487,7 +1594,7 @@ const HARVEST_JS: &str = r##"
     t = (t || '').trim();
     // strip private-use icon glyphs (UI font icons)
     t = t.replace(new RegExp('[' + String.fromCharCode(57344) + '-' + String.fromCharCode(63743) + ']', 'g'), '').trim();
-    if (t && SENT && t === SENT) return '';   // that's our own message, not an answer
+    if (t && SENT && isOwnText(t)) return '';   // that's our own message, not an answer
     // Drop a leading collapsed-thinking header ("Ha pensato per 2s" / "Thought for 2s"):
     // Claude nests it inside the answer container with no stable class to hide via CSS.
     var lines = t.split(String.fromCharCode(10));
@@ -1647,12 +1754,22 @@ const HARVEST_JS: &str = r##"
     return false;
   }
   function findComposerEl(){
-    // Same VISIBLE-only pick as the fill script (ChatGPT keeps a hidden legacy textarea).
+    // Same VISIBLE-only pick as the fill script (ChatGPT keeps a hidden legacy textarea), and the
+    // same canvas exclusion as pickComposer() in browser.rs -- see its comment for the live
+    // measurement (ChatGPT's "writing block" panel has its own title textarea and body editor,
+    // both matching these selectors; `data-testid="chatgpt-writing-block"` marks the whole panel
+    // and is absent near the real composer). Kept in sync: this lookup and the fill's must agree
+    // on which element is the composer, or delivered()/composerVal() reads the wrong box.
     var el = null;
     var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'];
     for (var i=0;i<sels.length && !el;i++){
       var els = document.querySelectorAll(sels[i]);
-      for (var j=0;j<els.length;j++){ if (els[j].offsetParent !== null) { el = els[j]; break; } }
+      for (var j=0;j<els.length;j++){
+        var e = els[j];
+        if (e.offsetParent === null) continue;
+        if (e.closest('[data-testid="chatgpt-writing-block"]')) continue;
+        el = e; break;
+      }
     }
     return el;
   }
@@ -1721,6 +1838,8 @@ const HARVEST_JS: &str = r##"
   // Why the wall was detected, for the debug log: a wrong "sign in" is only fixable when we know which
   // signal fired.
   var authWallWhy = '';
+  // Time the page gets, after our send, to open its response stream before ChatGPT's login buttons count as a wall.
+  var OPENAI_WALL_MS = 10000;
   function authWallPresent(){
     authWallWhy = '';
     // A response stream opened after our send means the provider accepted the message from a working
@@ -1756,6 +1875,21 @@ const HARVEST_JS: &str = r##"
         for (var gi=0; gi<els.length; gi++){
           var gt = (els[gi].innerText || '').trim();
           if ((gt === 'Log in' || gt === 'Sign up') && els[gi].offsetParent !== null) { authWallWhy = 'grok-login-text'; return true; }
+        }
+      }
+      // Same dead end on ChatGPT's logged-out mobile page (chatgpt.com/unauth-mweb): its "Log in" / "Sign up for free"
+      // buttons carry no data-testid or id (seen 27/09/2026), so the text is read. It is English on Windows, where the
+      // webview asks for English (--accept-lang, browser.rs); elsewhere a localized page simply never matches and the
+      // turn ends on the usual timeout. The buttons are there from the first load and ChatGPT lets an anonymous user
+      // through for ONE message, so they only count once the message has gone out, no new answer is on the page and
+      // no response stream has opened for OPENAI_WALL_MS (the stream test is at the top of this function).
+      if (KEY === 'openai' && (KNOWN_SENT || window.__ktEnterPressed)
+          && Date.now() - (window.__ktSentAt || t0) > OPENAI_WALL_MS
+          && answerTxt() === (typeof initialAnswer === 'string' ? initialAnswer : '')) {
+        var oels = document.querySelectorAll('button, a');
+        for (var oi=0; oi<oels.length; oi++){
+          var ot = (oels[oi].innerText || '').trim();
+          if ((ot === 'Log in' || ot === 'Sign up for free' || ot === 'Sign up') && oels[oi].offsetParent !== null) { authWallWhy = 'openai-login-text'; return true; }
         }
       }
     } catch(e){}
@@ -1886,7 +2020,9 @@ const HARVEST_JS: &str = r##"
       }
       out.push('composer='+(composerVal()===null?'NONE':'present'));
       try { out.push('nav.language='+navigator.language+' nav.languages='+JSON.stringify(navigator.languages)); } catch(e){}
-      try { out.push('cookie='+(document.cookie||'').slice(0,300)); } catch(e){}
+      // Cookie NAMES only (which language/consent cookies exist): the values include session tokens,
+      // and secrets never go into a log, not even a local diagnostic one.
+      try { out.push('cookies='+(document.cookie||'').split(';').map(function(c){ return c.split('=')[0].trim(); }).filter(Boolean).join(',').slice(0,300)); } catch(e){}
       window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('AUTHWALL-CENSUS '+out.join(' || ')).slice(0,1400) });
     } catch(e){}
   }
@@ -2495,7 +2631,7 @@ fn temp_click_js(svg: &str) -> String {
   var iv=setInterval(function(){{
     if(!composer()){{ if(Date.now()-t0>12000){{ clearInterval(iv); window.__ktHoldFill=false; diag('TEMPCLICK-NOCOMPOSER'); }} return; }}   // wait hydration
     var ctl=findCtl();
-    if(ctl){{ clearInterval(iv); try{{ ctl.click(); }}catch(e){{}} diag('TEMPCLICK-OK'); setTimeout(function(){{ window.__ktHoldFill=false; }},1500); return; }}
+    if(ctl){{ clearInterval(iv); try{{ ctl.click(); }}catch(e){{}} window.__ktTempDone=true; diag('TEMPCLICK-OK'); setTimeout(function(){{ window.__ktHoldFill=false; }},1500); return; }}
     if(Date.now()-t0>9000){{ clearInterval(iv); window.__ktHoldFill=false; diag('TEMPCLICK-NOTFOUND'); }}       // give up: fill anyway
   }},400);
 }})();"##,
@@ -2569,7 +2705,7 @@ const TEMP_PROBE_JS: &str = r##"
 fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp: bool) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     let prelude = format!(
-        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url};",
+        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url}; window.__ktFreshBaseline = {fresh_baseline};",
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
         serde_json::to_string(key).map_err(|e| e.to_string())?,
         serde_json::to_string(ans).map_err(|e| e.to_string())?,
@@ -2578,6 +2714,7 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
         diag = crate::debug::enabled(),
         trusted = browser::needs_trusted_input(key),
         net_url = net_url_js(key),
+        fresh_baseline = unreliable_prewarm(key),
     );
     // incognito/temporary trigger (holds the fill until done), only on fresh turns of providers
     // that have an in-page trigger AND the user enabled it for this provider.
@@ -2622,6 +2759,7 @@ fn build_resume_js(
     key: &str,
     text: &str,
     allow_send: bool,
+    temp: bool,
 ) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     // Whitespace-collapsed head of the message for a robust "is it on the page?" check.
@@ -2630,7 +2768,7 @@ fn build_resume_js(
         // `window.__ktDiag` must be set HERE too: without it, all the fill-loop diagnostics stayed
         // silent in exactly the path where they are needed -- the resume after a navigation (providers
         // whose temporary chat is a click DO navigate).
-        "var __apb_text = {}; var __kt_head = {}; var __apb_send = true; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true; var __kt_fast = {fast}; var __kt_sent = {sent}; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url};",
+        "var __apb_text = {}; var __kt_head = {}; var __apb_send = true; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true; var __kt_fast = {fast}; var __kt_sent = {sent}; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url}; window.__ktFreshBaseline = {fresh_baseline};",
         serde_json::to_string(text).map_err(|e| e.to_string())?,
         serde_json::to_string(&head).map_err(|e| e.to_string())?,
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
@@ -2644,6 +2782,7 @@ fn build_resume_js(
         diag = crate::debug::enabled(),
         trusted = browser::needs_trusted_input(key),
         net_url = net_url_js(key),
+        fresh_baseline = unreliable_prewarm(key),
     );
     // `allow_send` is decided by Rust from `sent_marks`, NOT by reading the page:
     //  - send not out yet -> inject the fill (the case this resume exists for: pages that navigate
@@ -2666,8 +2805,33 @@ fn build_resume_js(
             + STREAM_WATCH_JS
             + HARVEST_JS);
     }
+    // This resume can follow Grok's OWN private-chat toggle (a real `<a href>`: its click fires the same
+    // navigation events as a page load, even for an in-page route change). `window.__ktTempDone` survives
+    // exactly when the page's script realm survived: re-click only when it is gone (a real reload lost the
+    // private state), never a second time on a page already private, which would switch it back OFF.
+    // Grok only: it is the one provider measured (27/09/2026). On a provider whose toggle click reloads into a page
+    // that is already private, the flag is lost with the old page and a second click would switch privacy OFF;
+    // others join this list only after checking two things on their own page: does the toggle click reload the
+    // page, and does the private page show the same toggle icon (so that a second click would hit it again)?
+    let temp_part = if temp && key == "grok" {
+        temp_trigger_js(key).map(|js| format!("if(!window.__ktTempDone){{{}}}", js)).unwrap_or_default()
+    } else {
+        String::new()
+    };
     let fill = browser::fill_js(text, true)?;
-    Ok(prelude + PUSH_HELPER_JS + SR_HIDE_JS + &attach_js(broadcast_id) + &fill + HARVEST_JS)
+    // The stream watcher goes in here too, before the fill, as in build_inject_js: without it a resend after a
+    // navigation could only end by DOM stability, about 3 s later than the stream's own end (seen on ChatGPT,
+    // 27/09/2026). It installs itself once per document, so a page whose script realm survived keeps its own.
+    Ok(prelude
+        + PUSH_HELPER_JS
+        + SR_HIDE_JS
+        + RESPONSE_ADOPT_JS
+        + net_probe_js()
+        + STREAM_WATCH_JS
+        + &temp_part
+        + &attach_js(broadcast_id)
+        + &fill
+        + HARVEST_JS)
 }
 
 /// Marks (bid, key) answered: removes it from the broadcast, emits `app://kotodama-answer`
@@ -2676,6 +2840,8 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     // An outcome ends any block on this provider for this broadcast, and its network readers.
     blocked_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_readers().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    net_partials().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    net_finish_armed().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     // Total wall-clock from the broadcast being registered to the answer being handed to the UI. Read
     // together with HARVEST-DONE's `sinceLastChangeMs` it splits the wait into "the model was still
     // writing" and "we were still deciding it had finished" -- the second is the only part we control.
@@ -2709,7 +2875,7 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     // registered harvest belongs to THIS broadcast — a newer one must keep its entry).
     {
         let mut ah = active_harvests().lock().unwrap();
-        if ah.get(key).map(|(b, _)| b == bid).unwrap_or(false) {
+        if ah.get(key).map(|(b, _, _)| b == bid).unwrap_or(false) {
             ah.remove(key);
         }
     }
@@ -2735,6 +2901,34 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     if all_done {
         let _ = window.emit("app://kotodama-finished", serde_json::json!({ "broadcastId": bid }));
     }
+}
+
+/// Delivers the answer from the provider's own stream if the page has not delivered it within
+/// `NET_FINISH_GRACE` of the stream's end. `finish_key` hands out one outcome per (broadcast, provider),
+/// so whichever comes first wins and the other is dropped; the text is read again at the deadline because
+/// the stream may have grown since it ended (a closing frame after the end marker).
+fn schedule_net_finish(window: Window, bid: String, key: String) {
+    std::thread::spawn(move || {
+        std::thread::sleep(NET_FINISH_GRACE);
+        let still_pending = broadcasts().lock().unwrap().get(&bid).map(|bc| bc.pending.contains(&key)).unwrap_or(false);
+        if !still_pending {
+            return; // the page delivered it: the normal path
+        }
+        let text = net_readers()
+            .lock()
+            .unwrap()
+            .get(&(bid.clone(), key.clone()))
+            .and_then(|rs| rs.values().map(|r| r.answer().text.clone()).max_by_key(|t| t.len()))
+            .unwrap_or_default();
+        if text.trim().is_empty() {
+            return;
+        }
+        debug::log(format!(
+            "kotodama NET-FINISH key={key} bid={bid}: stream ended, page did not deliver within {} ms, answer taken from the stream",
+            NET_FINISH_GRACE.as_millis()
+        ));
+        finish_key(&window, &bid, &key, "done", &text, false, &text);
+    });
 }
 
 /// Sentinel handler, called from `create_tab`'s `on_navigation` for `kotodama.result` URLs. This
@@ -2943,6 +3137,48 @@ fn handle_push(
                 r.end();
             }
         }
+        // Live preview straight from the provider's own stream: the text as the model writes it, in its own
+        // Markdown, without waiting for the page to paint it. The page observer keeps feeding its own preview
+        // (providers whose stream we cannot read still depend on it) and the interface keeps whichever is
+        // longer, so the two cannot fight. Throttled: a stream produces far more frames than a screen can show.
+        let text = readers.values().map(|r| r.answer().text.clone()).max_by_key(|t| t.len()).unwrap_or_default();
+        // Only a stream that says "finished" by itself may close the answer (today ChatGPT's, whose page no
+        // longer exposes the answer): readers that mark `done` when the connection closes would hand out a
+        // truncated answer as complete.
+        let stream_done =
+            readers.values().any(|r| r.done_is_explicit() && r.answer().done && !r.answer().text.trim().is_empty());
+        drop(map);
+        // Armed only while the answer is still owed: a stream frame arriving after delivery would otherwise leave
+        // an entry that nothing removes (finish_key, which clears it, has already run).
+        let still_owed = broadcasts().lock().unwrap().get(&bid).map(|bc| bc.pending.contains(&key)).unwrap_or(false);
+        if stream_done && still_owed && net_finish_armed().lock().unwrap().insert((bid.clone(), key.clone())) {
+            schedule_net_finish(window.clone(), bid.clone(), key.clone());
+        }
+        if !text.trim().is_empty() {
+            let now = std::time::Instant::now();
+            let send = {
+                let mut seen = net_partials().lock().unwrap();
+                let e = seen
+                    .entry((bid.clone(), key.clone()))
+                    .or_insert((now - std::time::Duration::from_secs(1), 0));
+                let ok = text.len() > e.1 && now.duration_since(e.0) >= std::time::Duration::from_millis(120);
+                if ok {
+                    // One line the first time only: says whether this provider's answer is being previewed from
+                    // the network at all, without logging the hot path.
+                    if e.1 == 0 {
+                        debug::log(format!("kotodama NETLIVE key={key} first preview {}B", text.len()));
+                    }
+                    *e = (now, text.len());
+                }
+                ok
+            };
+            if send {
+                let _ = window.emit(
+                    "app://kotodama-partial",
+                    serde_json::json!({ "broadcastId": bid, "key": key, "text": text, "md": text }),
+                );
+            }
+        }
         return;
     }
     // Genuine input requested by the fill script (see browser::trusted_input).
@@ -3145,6 +3381,7 @@ pub fn kotodama_prewarm(window: Window, keys: Vec<String>) {
         };
         match url.parse::<Url>() {
             Ok(parsed) => {
+                forget_incognito_conversation(&wv, &key, &url);
                 if wv.navigate(parsed).is_ok() {
                     set_conv(&window, &key, None);
                     debug::log(format!("kotodama prewarm START key={key} -> {}", &url[..url.len().min(90)]));
@@ -3210,7 +3447,7 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
                 active_harvests()
                     .lock()
                     .unwrap()
-                    .insert(key.to_string(), (inj.broadcast_id.clone(), inj.text.clone()));
+                    .insert(key.to_string(), (inj.broadcast_id.clone(), inj.text.clone(), inj.temp));
             }
             Err(e) => debug::log(format!("kotodama inject build error: {e}")),
         }
@@ -3220,7 +3457,7 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
     // NAVIGATED after the send (Qwen landing -> chat, ChatGPT /?q= -> /c/<id>), killing the
     // injected script. Resume with a harvest-only script in the new document.
     let resume = active_harvests().lock().unwrap().get(key).cloned();
-    if let Some((bid, text)) = resume {
+    if let Some((bid, text, temp)) = resume {
         let still_pending = broadcasts()
             .lock()
             .unwrap()
@@ -3233,7 +3470,7 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
                 "kotodama RESUME after nav key={key} bid={bid} resend={}",
                 if allow_send { "YES (never went out)" } else { "NO (already sent)" }
             ));
-            if let Ok(js) = build_resume_js(&bid, key, &text, allow_send) {
+            if let Ok(js) = build_resume_js(&bid, key, &text, allow_send, temp) {
                 let _ = webview.eval(&js);
             }
             return;
@@ -3244,7 +3481,7 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
     // that is still loading is not ready -- see `prewarming`.
     if prewarming().lock().unwrap().remove(key) {
         let here = webview.url().map(|u| u.to_string()).unwrap_or_default();
-        if !here.is_empty() {
+        if !here.is_empty() && !unreliable_prewarm(key) {
             debug::log(format!("kotodama prewarm READY key={key}"));
             prewarmed().lock().unwrap().insert(key.to_string(), here);
         }
@@ -3347,7 +3584,7 @@ pub async fn kotodama_broadcast(
                         active_harvests()
                             .lock()
                             .unwrap()
-                            .insert(key.clone(), (broadcast_id.clone(), text.clone()));
+                            .insert(key.clone(), (broadcast_id.clone(), text.clone(), false));
                     }
                 }
                 Err(_) => finish_key(&window, &broadcast_id, key, "error", "", false, ""),
@@ -3396,7 +3633,7 @@ pub async fn kotodama_broadcast(
                             active_harvests()
                                 .lock()
                                 .unwrap()
-                                .insert(key.clone(), (broadcast_id.clone(), text.clone()));
+                                .insert(key.clone(), (broadcast_id.clone(), text.clone(), false));
                         }
                     }
                     Err(_) => finish_key(&window, &broadcast_id, key, "error", "", false, ""),
@@ -3422,6 +3659,7 @@ pub async fn kotodama_broadcast(
             }
         };
         let created_ok = if let Some(webview) = existing {
+            forget_incognito_conversation(&webview, key, base);
             webview.navigate(parsed).is_ok()
         } else {
             match browser::provider_bounds(&window) {
@@ -3469,7 +3707,7 @@ pub async fn kotodama_broadcast(
                         active_harvests()
                             .lock()
                             .unwrap()
-                            .insert(key.clone(), (inj.broadcast_id.clone(), inj.text.clone()));
+                            .insert(key.clone(), (inj.broadcast_id.clone(), inj.text.clone(), inj.temp));
                     } else {
                         finish_key(&win, &inj.broadcast_id, &key, "error", "", false, "");
                     }

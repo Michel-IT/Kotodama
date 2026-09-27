@@ -42,6 +42,12 @@ pub trait Reader: Send {
     /// The transport closed (fetch body ended, XHR finished, socket closed).
     fn end(&mut self);
     fn answer(&self) -> &NetAnswer;
+    /// True when `done` can only come from the provider's own end-of-answer marker, never from the transport
+    /// simply closing: only then may the stream stand in for the page and close the answer by itself
+    /// (`schedule_net_finish` in kotodama.rs). A connection that drops mid-answer must not look finished.
+    fn done_is_explicit(&self) -> bool {
+        false
+    }
 }
 
 /// The answer endpoint of a provider, as a JavaScript regular expression source: the page observer forwards
@@ -49,6 +55,8 @@ pub trait Reader: Send {
 pub fn url_pattern(key: &str) -> Option<&'static str> {
     Some(match key {
         "anthropic" => "/completion(\\?|$)",
+        // ChatGPT: /backend-api/f/conversation (and the plain /backend-api/conversation), never the history list.
+        "openai" => "/backend-api/(f/)?conversation(\\?|$)",
         "deepseek" => "/chat/completion",
         "gemini" => "StreamGenerate",
         "mistral" => "/api/chat(\\?|$)",
@@ -65,6 +73,7 @@ pub fn url_pattern(key: &str) -> Option<&'static str> {
 pub fn reader_for(key: &str, url: &str) -> Option<Box<dyn Reader>> {
     let r: Box<dyn Reader> = match key {
         "anthropic" if url.contains("/completion") => Box::new(Claude::default()),
+        "openai" if url.contains("/conversation") => Box::new(OpenAi::default()),
         "deepseek" if url.contains("/chat/completion") => Box::new(DeepSeek::default()),
         "gemini" if url.contains("StreamGenerate") => Box::new(Gemini::default()),
         "mistral" if url.ends_with("/api/chat") || url.contains("/api/chat?") => Box::new(Mistral::default()),
@@ -348,6 +357,148 @@ impl Reader for Claude {
     fn answer(&self) -> &NetAnswer {
         &self.ans
     }
+}
+
+/// ChatGPT: SSE in OpenAI's "delta encoding v1". A first frame adds the whole message, then frames carry
+/// operations on paths (`{p, o, v}`), and a frame with only `v` continues the previous path and operation --
+/// the same idea DeepSeek uses. We do not rebuild the document: the only thing worth following is the assistant
+/// message being written, so the reader captures when an assistant text message opens and appends what lands in
+/// its part. Reasoning ("thoughts") is kept apart, everything else (system messages, the echo of the user's own
+/// question, metadata) is ignored, which is what stops the question itself from ending up in the answer.
+#[derive(Default, PartialEq, Clone, Copy)]
+enum Cap {
+    #[default]
+    None,
+    Text,
+    Reasoning,
+}
+#[derive(Default)]
+struct OpenAi {
+    sse: Sse,
+    last_path: String,
+    last_op: String,
+    cap: Cap,
+    ans: NetAnswer,
+    /// What `answer()` hands out: `ans` with ChatGPT's block directives removed (see `strip_block_directives`).
+    view: NetAnswer,
+}
+impl OpenAi {
+    fn refresh_view(&mut self) {
+        self.view = self.ans.clone();
+        self.view.text = strip_block_directives(&self.ans.text);
+    }
+    fn event(&mut self, data: &str) {
+        let data = data.trim();
+        if data == "[DONE]" {
+            self.ans.done = true;
+            return;
+        }
+        let Ok(v) = serde_json::from_str::<Value>(data) else { self.ans.skipped += 1; return };
+        // Frames that are not deltas: the end of the stream is the one that matters.
+        if let Some(t) = v.get("type").and_then(Value::as_str) {
+            if t == "message_stream_complete" {
+                self.ans.done = true;
+            }
+            return;
+        }
+        self.op(&v);
+    }
+    fn op(&mut self, v: &Value) {
+        if let Some(p) = v.get("p").and_then(Value::as_str) {
+            self.last_path = p.to_string();
+            if v.get("o").is_none() {
+                self.last_op = "append".into();
+            }
+        }
+        if let Some(o) = v.get("o").and_then(Value::as_str) {
+            self.last_op = o.to_string();
+        }
+        let val = v.get("v");
+        if self.last_op == "patch" {
+            if let Some(Value::Array(items)) = val {
+                for it in items.clone() {
+                    self.op(&it);
+                }
+            }
+            return;
+        }
+        let Some(val) = val else { return };
+        if self.last_op == "add" && self.last_path.is_empty() {
+            // A new message opens: decide whether what follows belongs to the answer.
+            let m = &val["message"];
+            let role = m.pointer("/author/role").and_then(Value::as_str).unwrap_or("");
+            let ctype = m.pointer("/content/content_type").and_then(Value::as_str).unwrap_or("");
+            self.cap = match (role, ctype) {
+                ("assistant", "text") => Cap::Text,
+                ("assistant", "thoughts") => Cap::Reasoning,
+                _ => Cap::None,
+            };
+            if self.cap == Cap::Text {
+                if let Some(part) = m.pointer("/content/parts/0").and_then(Value::as_str) {
+                    if !part.is_empty() {
+                        self.ans.text.push_str(part);
+                    }
+                }
+            }
+            return;
+        }
+        if self.last_op == "append" {
+            let Some(text) = val.as_str() else { return };
+            if self.last_path.contains("/content/parts/") {
+                match self.cap {
+                    Cap::Text => self.ans.text.push_str(text),
+                    Cap::Reasoning => self.ans.reasoning.push_str(text),
+                    Cap::None => {}
+                }
+            } else if self.last_path.contains("/thoughts") {
+                self.ans.reasoning.push_str(text);
+            }
+        }
+    }
+}
+impl Reader for OpenAi {
+    fn feed(&mut self, chunk: &str) {
+        for d in self.sse.push(chunk) {
+            self.event(&d);
+        }
+        self.refresh_view();
+    }
+    fn end(&mut self) {
+        for d in self.sse.flush() {
+            self.event(&d);
+        }
+        self.refresh_view();
+    }
+    fn answer(&self) -> &NetAnswer {
+        &self.view
+    }
+    fn done_is_explicit(&self) -> bool {
+        true // `[DONE]` and `message_stream_complete` only: `end()` never marks the answer done
+    }
+}
+
+/// ChatGPT wraps "writing" answers (poems, letters, documents) in block directives that its own page turns
+/// into a canvas and never shows as text: `:::writing{variant="document" id="1" title="X"}` on the opening
+/// line and `:::` on the closing one. Removes every line that is only a directive, keeping the content.
+/// The last line may still be arriving, so an unfinished opening (`:::wri`, `:::writing{variant=`) goes too.
+fn strip_block_directives(text: &str) -> String {
+    fn is_directive(line: &str, last: bool) -> bool {
+        let t = line.trim();
+        let rest = t.trim_start_matches(':');
+        if t.len() - rest.len() < 2 {
+            return false;
+        }
+        let name_end = rest.find(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '_')).unwrap_or(rest.len());
+        let tail = &rest[name_end..];
+        tail.is_empty() || (tail.starts_with('{') && (tail.ends_with('}') || (last && !tail.contains('}'))))
+    }
+    if !text.contains("::") {
+        return text.to_string();
+    }
+    let lines: Vec<&str> = text.split('\n').collect();
+    let n = lines.len();
+    let kept: Vec<&str> = lines.iter().enumerate().filter(|(i, l)| !is_directive(l, *i + 1 == n)).map(|(_, l)| *l).collect();
+    kept.join("\n").trim_matches('\n').to_string()
 }
 
 /// DeepSeek: SSE carrying a response object and then patches `{p, o, v}`; a patch with only `v` continues
@@ -682,7 +833,7 @@ impl Perplexity {
             }
         }
         if !best.is_empty() {
-            self.ans.text = best;
+            self.ans.text = strip_numeric_citations(&best);
         }
         for (k, v) in &self.blocks {
             if !k.starts_with("web_results#") {
@@ -868,6 +1019,51 @@ fn strip_citation_markers(text: &str) -> String {
     out
 }
 
+/// Perplexity's answer text carries its source references as bare numbers glued to the sentence ("...blu.[1][2][3]");
+/// its page draws them as small chips, and the sources themselves reach Kotodama separately (`sources`). Removes a
+/// `[n]` (one or two digits) only when it is glued to the text before it, never inside a code block or inline code
+/// (`list[0]`), so a real "[1]" in prose after a space, or in code, stays. Known limit: an index written in plain
+/// prose without backticks (x[1]) cannot be told apart from a glued citation and goes too.
+fn strip_numeric_citations(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut in_code = false;
+    for (li, line) in text.split('\n').enumerate() {
+        if li > 0 {
+            out.push('\n');
+        }
+        if line.trim_start().starts_with("```") {
+            in_code = !in_code;
+            out.push_str(line);
+            continue;
+        }
+        if in_code {
+            out.push_str(line);
+            continue;
+        }
+        let chars: Vec<char> = line.chars().collect();
+        let mut i = 0;
+        let mut in_inline = false;
+        while i < chars.len() {
+            if chars[i] == '`' {
+                in_inline = !in_inline;
+            }
+            if !in_inline && chars[i] == '[' && !out.is_empty() && !out.ends_with(char::is_whitespace) && !out.ends_with('(') {
+                let mut k = i + 1;
+                while k < chars.len() && k - i <= 2 && chars[k].is_ascii_digit() {
+                    k += 1;
+                }
+                if k > i + 1 && k < chars.len() && chars[k] == ']' {
+                    i = k + 1;
+                    continue;
+                }
+            }
+            out.push(chars[i]);
+            i += 1;
+        }
+    }
+    out
+}
+
 fn push_source(list: &mut Vec<Source>, title: &str, url: &str, image: Option<String>) {
     if !(url.starts_with("http://") || url.starts_with("https://")) {
         return;
@@ -932,6 +1128,16 @@ mod tests {
     }
 
     #[test]
+    fn perplexity_numeric_citations_removed() {
+        assert_eq!(strip_numeric_citations("Il cielo appare azzurro.[1][2][3]"), "Il cielo appare azzurro.");
+        assert_eq!(strip_numeric_citations("Vedi [1] qui"), "Vedi [1] qui");
+        assert_eq!(strip_numeric_citations("```\nlet a = b[1];\n```"), "```\nlet a = b[1];\n```");
+        assert_eq!(strip_numeric_citations("(vedi [2])"), "(vedi [2])");
+        assert_eq!(strip_numeric_citations("usa `lista[0]` qui.[1]"), "usa `lista[0]` qui.");
+        assert_eq!(strip_numeric_citations("uno.[1]\ndue.[12]"), "uno.\ndue.");
+    }
+
+    #[test]
     fn citation_markers_removed() {
         assert_eq!(strip_citation_markers("Fari antichi [citation:2]. Fine [citation:1,3]"), "Fari antichi. Fine");
         assert_eq!(strip_citation_markers("[nota] resta"), "[nota] resta");
@@ -956,6 +1162,35 @@ mod tests {
         assert_eq!(r.answer().text, "# Ciao");
         assert_eq!(r.answer().reasoning, "hm");
         assert!(r.answer().done);
+    }
+
+    #[test]
+    fn openai_deltas() {
+        // The shape captured on 17/09/2026: the message opens, the answer arrives in appends, and a final
+        // `patch` closes it. The user's own question is echoed first and must NOT end up in the answer.
+        let mut r = reader_for("openai", "https://chatgpt.com/backend-api/f/conversation").unwrap();
+        r.feed("event: delta\ndata: {\"p\":\"\",\"o\":\"add\",\"v\":{\"message\":{\"author\":{\"role\":\"user\"},\"content\":{\"content_type\":\"text\",\"parts\":[\"la domanda\"]}}}}\n\n");
+        r.feed("event: delta\ndata: {\"p\":\"\",\"o\":\"add\",\"v\":{\"message\":{\"author\":{\"role\":\"assistant\"},\"content\":{\"content_type\":\"text\",\"parts\":[\"\"]}}}}\n\n");
+        r.feed("event: delta\ndata: {\"p\":\"/message/content/parts/0\",\"o\":\"append\",\"v\":\"1. **Frasi\"}\n\n");
+        r.feed("event: delta\ndata: {\"v\":\" brevi**\"}\n\n");
+        r.feed("event: delta\ndata: {\"p\":\"\",\"o\":\"patch\",\"v\":[{\"p\":\"/message/content/parts/0\",\"o\":\"append\",\"v\":\" e dirette.\"},{\"p\":\"/message/status\",\"o\":\"replace\",\"v\":\"finished_successfully\"}]}\n\n");
+        r.feed("data: {\"type\":\"message_stream_complete\",\"conversation_id\":\"x\"}\n\n");
+        assert_eq!(r.answer().text, "1. **Frasi brevi** e dirette.");
+        assert!(r.answer().done);
+    }
+
+    #[test]
+    fn openai_writing_block_directives_removed() {
+        // Seen on 26/09/2026: a poem arrived as a "writing" block, and its markers ended up in the chat.
+        let mut r = reader_for("openai", "https://chatgpt.com/backend-api/f/conversation").unwrap();
+        r.feed("event: delta\ndata: {\"p\":\"\",\"o\":\"add\",\"v\":{\"message\":{\"author\":{\"role\":\"assistant\"},\"content\":{\"content_type\":\"text\",\"parts\":[\"\"]}}}}\n\n");
+        r.feed("event: delta\ndata: {\"p\":\"/message/content/parts/0\",\"o\":\"append\",\"v\":\":::writ\"}\n\n");
+        assert_eq!(r.answer().text, "");
+        r.feed("event: delta\ndata: {\"v\":\"ing{variant=\\\"document\\\" id=\\\"58321\\\" title=\\\"La Luna\\\"}\\nNel cielo\"}\n\n");
+        assert_eq!(r.answer().text, "Nel cielo");
+        r.feed("event: delta\ndata: {\"v\":\" la luna.\\n:::\"}\n\n");
+        assert_eq!(r.answer().text, "Nel cielo la luna.");
+        assert_eq!(strip_block_directives("use ::std::io;\na :: b"), "use ::std::io;\na :: b");
     }
 
     #[test]

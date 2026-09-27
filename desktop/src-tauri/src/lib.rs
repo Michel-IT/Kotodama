@@ -97,7 +97,61 @@ fn quit_app(app: AppHandle) {
 /// dual-path reasoning as `quit_app`.
 #[tauri::command]
 fn restart_app(app: AppHandle) {
+    relaunch(&app);
+}
+
+/// Argument a relaunched copy receives, carrying the PID of the copy that launched it.
+#[cfg(windows)]
+const RELAUNCH_ARG: &str = "--relaunch-after=";
+
+/// Restarts Kotodama. On Windows it does not use `app.restart()`: that starts the new copy BEFORE the
+/// old one has exited, so the new copy finds the single-instance lock still held, hands over to the
+/// dying copy and quits, and no Kotodama is left open. Here the new copy receives the old PID and
+/// waits for it to end before taking the lock (`wait_for_relaunching_instance`).
+/// `--silent` is dropped: a restart asked for by the user must bring the window back, or it looks as
+/// if nothing happened. The child inherits this process's token, so a copy running as administrator
+/// restarts as administrator.
+fn relaunch(app: &AppHandle) {
+    #[cfg(windows)]
+    {
+        let Ok(exe) = std::env::current_exe() else {
+            debug::log("relaunch: current_exe failed");
+            return;
+        };
+        let mut args: Vec<std::ffi::OsString> = std::env::args_os()
+            .skip(1)
+            .filter(|a| {
+                let s = a.to_string_lossy();
+                s != "--silent" && !s.starts_with(RELAUNCH_ARG)
+            })
+            .collect();
+        args.push(format!("{RELAUNCH_ARG}{}", std::process::id()).into());
+        match std::process::Command::new(exe).args(&args).spawn() {
+            Ok(_) => app.exit(0),
+            // The new copy did not start: keep this one open, a failed restart must not leave nothing.
+            Err(e) => debug::log(format!("relaunch: spawn failed: {e}")),
+        }
+    }
+    #[cfg(not(windows))]
     app.restart();
+}
+
+/// A copy started by `relaunch` waits for the copy that launched it to end (at most 10 s), so the
+/// single-instance lock is free when this copy asks for it.
+#[cfg(windows)]
+fn wait_for_relaunching_instance() {
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::System::Threading::{OpenProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE};
+    let Some(pid) = std::env::args().find_map(|a| a.strip_prefix(RELAUNCH_ARG).and_then(|p| p.parse::<u32>().ok()))
+    else {
+        return;
+    };
+    unsafe {
+        // Already gone: OpenProcess fails and there is nothing to wait for.
+        let Ok(process) = OpenProcess(PROCESS_SYNCHRONIZE, false, pid) else { return };
+        let _ = WaitForSingleObject(process, 10_000);
+        let _ = CloseHandle(process);
+    }
 }
 
 /// Hides the toast (✕ button / frontend-side auto-hide).
@@ -873,6 +927,7 @@ fn inline_transform(app: AppHandle, recipe: String) {
                 let mut pid = 0u32;
                 GetWindowThreadProcessId(hwnd, Some(&mut pid));
                 debug::log(format!("inline_transform: foreground hwnd={:?} pid={pid} title={title:?}", hwnd.0));
+                INLINE_TARGET.store(hwnd.0 as isize, Ordering::SeqCst);
             }
         }
         // A window running as administrator does not accept synthetic input from a normal process (Windows UIPI):
@@ -1039,6 +1094,39 @@ fn recipe_choices(app: &AppHandle) -> Vec<(String, String, Option<String>)> {
 #[cfg(windows)]
 static GESTURE_TARGET: std::sync::atomic::AtomicIsize = std::sync::atomic::AtomicIsize::new(0);
 
+/// The window the transform took the text FROM, remembered until the answer is pasted back into it. Between
+/// those two moments a whole request goes by, and in that time our own window can end up in front (the user
+/// clicks it, a provider page finishes loading): the paste would then land in Kotodama instead of where the
+/// user was writing, with nothing to show for it but the clipboard. Measured on Windows with the app window
+/// open on screen.
+#[cfg(windows)]
+static INLINE_TARGET: std::sync::atomic::AtomicIsize = std::sync::atomic::AtomicIsize::new(0);
+
+/// Brings that window back and waits until it really is in front, so the paste that follows reaches it.
+#[cfg(windows)]
+fn refocus_inline_target() {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, SetForegroundWindow};
+    let h = INLINE_TARGET.swap(0, Ordering::SeqCst);
+    if h == 0 {
+        return;
+    }
+    unsafe {
+        let hwnd = HWND(h as *mut core::ffi::c_void);
+        if GetForegroundWindow() == hwnd {
+            return;
+        }
+        let _ = SetForegroundWindow(hwnd);
+        for _ in 0..40 {
+            if GetForegroundWindow() == hwnd {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        debug::log(format!("inline: focus back to hwnd={h} front={:?}", GetForegroundWindow().0));
+    }
+}
+
 /// Closes the menu the program itself opened on the first right-click, so ours takes its place.
 #[cfg(windows)]
 fn send_escape() {
@@ -1063,6 +1151,25 @@ fn send_escape() {
     }
 }
 
+/// Is the program in the foreground showing a menu right now? The double right-click usually opens the
+/// application's own context menu, and Windows stays in menu mode, where our menu cannot appear. Asking first
+/// matters: the Escape that closes that menu also CLEARS THE SELECTION in several editors, and sending it when
+/// no menu is open costs the user exactly the text they wanted to transform.
+#[cfg(windows)]
+fn foreground_in_menu_mode() -> bool {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetForegroundWindow, GetGUIThreadInfo, GetWindowThreadProcessId, GUITHREADINFO, GUI_INMENUMODE,
+    };
+    unsafe {
+        let tid = GetWindowThreadProcessId(GetForegroundWindow(), None);
+        if tid == 0 {
+            return false;
+        }
+        let mut info = GUITHREADINFO { cbSize: std::mem::size_of::<GUITHREADINFO>() as u32, ..Default::default() };
+        GetGUIThreadInfo(tid, &mut info).is_ok() && (info.flags & GUI_INMENUMODE) == GUI_INMENUMODE
+    }
+}
+
 #[cfg(windows)]
 fn restore_gesture_target() {
     use windows::Win32::Foundation::HWND;
@@ -1070,7 +1177,17 @@ fn restore_gesture_target() {
     let h = GESTURE_TARGET.swap(0, Ordering::SeqCst);
     if h != 0 {
         unsafe {
-            let _ = SetForegroundWindow(HWND(h as *mut core::ffi::c_void));
+            let hwnd = HWND(h as *mut core::ffi::c_void);
+            let _ = SetForegroundWindow(hwnd);
+            // The change of foreground window is not immediate, and what follows is a synthetic Ctrl+C: sent a
+            // moment too early it copies from whatever window is still in front. Wait for it, with a ceiling.
+            use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+            for _ in 0..40 {
+                if GetForegroundWindow() == hwnd {
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
         }
     }
 }
@@ -1089,7 +1206,11 @@ fn show_recipe_menu(app: &AppHandle, x: i32, y: i32) {
     {
         use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
         unsafe { GESTURE_TARGET.store(GetForegroundWindow().0 as isize, Ordering::SeqCst) };
-        send_escape();
+        let in_menu = foreground_in_menu_mode();
+        debug::log(format!("gesture: foreground in menu mode={in_menu}"));
+        if in_menu {
+            send_escape();
+        }
     }
     let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
     // Clicks must pass through it: a window sitting under the cursor that swallowed a right-click would answer
@@ -1141,6 +1262,10 @@ fn inline_finish(app: AppHandle, text: String) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     std::thread::spawn(move || {
         inline_restore_window(&app); // hide the off-screen host again before pasting
+        // Windows: back to the window the text came from, or the paste lands wherever the user (or a provider
+        // page) left the foreground in the meantime.
+        #[cfg(windows)]
+        refocus_inline_target();
         // macOS Services: the text came from another application, and performing the service brought us to the
         // front. Give the foreground back before the paste, or it lands in our own window.
         #[cfg(target_os = "macos")]
@@ -1341,6 +1466,7 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
                     let _ = main.emit("app://always-on-top-changed", want);
                 }
             }
+            "restart" => relaunch(app),
             "quit" => app.exit(0),
             _ => {}
         })
@@ -1426,6 +1552,9 @@ pub(crate) fn read_low_power_pref() -> bool {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     debug::install_panic_hook();
+    // Before anything takes the single-instance lock: see `relaunch`.
+    #[cfg(windows)]
+    wait_for_relaunching_instance();
     // WebView2 (Windows): ALL webviews of the process must create their environment
     // with the SAME additional browser arguments, otherwise the 2nd webview (the
     // provider child) fails to initialize and stays BLANK. We therefore set the

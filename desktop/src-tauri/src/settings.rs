@@ -53,6 +53,21 @@ pub struct Settings {
     /// false to leave it out. Missing means shown, so a settings file written before this existed shows all.
     #[serde(default)]
     pub recipe_menu: std::collections::HashMap<String, bool>,
+    /// Which recipes have their answer read aloud as soon as it arrives: same key, value = true to read. Only
+    /// the recipe's own provider is read (`recipe_provider`, or the default one), so several answers to the
+    /// same question do not talk over each other.
+    /// Missing means off: reading costs a request to the provider, so it is asked for, never assumed.
+    #[serde(default)]
+    pub recipe_read: std::collections::HashMap<String, bool>,
+    /// Which constraints each recipe sends with its prompt (ids: length, tone, resp, f:<field id>). Absent =
+    /// the sensible default for that recipe, decided in the interface: a translation carries no length, a
+    /// summary no tone, Audio and Neutra none at all.
+    #[serde(default)]
+    pub recipe_constraints: std::collections::HashMap<String, Vec<String>>,
+    /// Provider each recipe uses for inline transforms: key = recipe ref, value = provider key,
+    /// empty string or absent = the default one.
+    #[serde(default)]
+    pub recipe_provider: std::collections::HashMap<String, String>,
     /// Notifiche toast per scorciatoia-ricetta: chiave = stessa di `recipe_hotkeys`, valore =
     /// mostra i toast "elaborazione/fatto/errore" per QUELLA scorciatoia. Assente = abilitata
     /// (default): solo chi disattiva esplicitamente una ricetta molto usata sparisce dalla mappa.
@@ -145,6 +160,9 @@ impl Default for Settings {
             // users who already set their own keep theirs.
             recipe_hotkeys: default_recipe_hotkeys(),
             recipe_menu: std::collections::HashMap::new(),
+            recipe_read: std::collections::HashMap::new(),
+            recipe_constraints: std::collections::HashMap::new(),
+            recipe_provider: std::collections::HashMap::new(),
             recipe_notify: std::collections::HashMap::new(),
             kt_temp_chats: true,
             kt_temp_providers: std::collections::HashMap::new(),

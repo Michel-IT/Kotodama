@@ -303,12 +303,14 @@
     /* ★ sulla ricetta predefinita (usata quando si copia). Nascosta in hover sulle custom (lascia spazio alla ✕). */
     .recipe.is-default::after { content:'★'; position:absolute; top:50%; right:10px; transform:translateY(-50%); font-size:10px; line-height:1; color:var(--accent); pointer-events:none; }
     .recipe-custom.is-default:hover::after { opacity:0; }
-    /* Ricetta "Neutra" attiva: l'editor istruzione + i vincoli non servono (testo grezzo) --
-       .kt-vincoli-group nasconde anche l'intestazione "VINCOLI:", non solo i controlli dentro. */
+    /* "Neutral" recipe active: no instruction and no constraints, the text goes as it is. */
     body.recipe-neutral .panel-head,
     body.recipe-neutral #instruction,
-    body.recipe-neutral #controls,
-    body.recipe-neutral .kt-vincoli-group { display:none; }
+    body.recipe-neutral #controls { display:none; }
+    /* A constraint the active recipe does not carry: hidden, not removed, so switching recipe is instant. */
+    .control.is-off { display:none !important; }
+    .rh-cons { display:flex; flex-direction:column; gap:8px; }
+    .rh-cons-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); }
     .neutral-hint { display:none; font-size:12px; color:var(--text-faint); line-height:1.5; margin:2px 2px 6px; }
     body.recipe-neutral .neutral-hint { display:block; }
     .recipe-del {
@@ -478,7 +480,9 @@
     /* Settings: FIXED height filling the window (minus the header bar): switching tabs
        must not make the modal jump in size */
     #settingsOverlay { padding-top:calc(var(--topbar-h) + 12px); align-items:stretch; }
-    #settingsOverlay .modal--wide { height:100%; max-height:none; }
+    /* 960 and not 800: the Recipes tab carries two more columns (constraints, provider), and at 800 the
+       recipe name was squeezed to nothing. */
+    #settingsOverlay .modal--wide { height:100%; max-height:none; max-width:min(96vw, 960px); }
     /* Download manager: side panel docked to the right (provider narrows to make room) */
     .dl-dock { position:fixed; top:46px; right:0; bottom:0; width:340px; z-index:1400;
       display:flex; flex-direction:column; background:var(--bg-1); border-left:1px solid var(--border);
@@ -513,7 +517,10 @@
     .dl-spin { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--accent); animation:plspin .8s linear infinite; }
     .dl-act[disabled] { opacity:.32; pointer-events:none; }
     /* ===== Kotodama meta-chat overlay (full page over the builder; providers stay parked) ===== */
-    .kt-view { position:fixed; inset:0; top:var(--topbar-h); z-index:1200; display:none;
+    /* --kt-hint-h: height of the bars shown above the view (Claude sign-in banner, verification bar), set by
+       syncProviderTopExtra, so they sit above it instead of covering the top of the sidebar ("New conversation"
+       disappeared under the banner). */
+    .kt-view { position:fixed; inset:0; top:calc(var(--topbar-h) + var(--kt-hint-h, 0px)); z-index:1200; display:none;
       flex-direction:row; background:var(--bg-0, var(--bg-1)); }
     body.kotodama-open .kt-view { display:flex; }
     /* session sidebar (left column). Collapsible: .collapsed narrows it to an icon-only rail.
@@ -550,13 +557,6 @@
     .kt-side.collapsed .kt-side-tab-ico { font-size:16px; }
     .kt-side.collapsed .kt-side-tab-ico svg { width:17px; height:17px; }
     .kt-side.collapsed .kt-side-tab.active { box-shadow:inset 2px 0 0 var(--accent); }
-    /* Collapsed / Ricette: le righe hanno gia' la loro icona, restano usabili -- via i nomi e il
-       sotto-pannello Vincoli (nessuna forma a sole icone avrebbe senso li'). */
-    .kt-side.collapsed #ktPanelRecipes .sidebar-head .seclabel,
-    .kt-side.collapsed #ktPanelRecipes .recipe .rname { display:none; }
-    .kt-side.collapsed #ktPanelRecipes .sidebar-head { justify-content:center; }
-    .kt-side.collapsed #ktPanelRecipes .recipe { justify-content:center; padding-left:0; padding-right:0; }
-    .kt-side.collapsed .kt-vincoli-group { display:none; }
     /* Collapsed / Cronologia: ogni conversazione diventa un quadratino con la sua INIZIALE (icone
        tutte uguali non si distinguerebbero); il titolo completo e la data restano nel tooltip
        della riga, impostato in renderKtSessions(). Sopra restano "nuova conversazione" e la
@@ -579,49 +579,55 @@
     /* barra di scorrimento invisibile: in un rail da 56px ruberebbe meta' della larghezza */
     .kt-side.collapsed .kt-sess-list { scrollbar-width:none; }
     .kt-side.collapsed .kt-sess-list::-webkit-scrollbar { width:0; height:0; }
-    .kt-side.collapsed #ktPanelHistory .kt-side-head { padding:8px 0; gap:6px; align-items:center;
-      border-bottom:none; }
-    .kt-side.collapsed #ktPanelHistory .kt-search { width:34px; height:34px; padding:0; gap:0;
+    /* Collapsed: the three rows on top become three 34px squares with their own icon, on the same
+       40px rhythm as the conversations below. */
+    .kt-side.collapsed .kt-top { align-items:center; padding:8px 0; gap:6px; border-bottom:none; }
+    .kt-side.collapsed .kt-hist-search { display:flex; justify-content:center; padding:8px 0 3px; }
+    .kt-side.collapsed .kt-hist-search .kt-search { width:34px; height:34px; padding:0; gap:0; margin:0;
       justify-content:center; border-radius:9px; cursor:pointer; }
-    .kt-side.collapsed #ktPanelHistory .kt-search:hover { border-color:var(--accent); }
-    .kt-side.collapsed #ktPanelHistory .kt-search input { display:none; }
-    .kt-side.collapsed #ktPanelHistory .kt-new { width:34px; height:34px; padding:0;
-      display:grid; place-items:center; }
-    .kt-side.collapsed #ktPanelHistory .kt-new-label { display:none; }
-    .kt-new-ico { display:none; font-size:16px; line-height:1; }
-    .kt-side.collapsed #ktPanelHistory .kt-new-ico { display:block; }
-    /* In the collapsed 56px rail, two controls would become a second glyph stuck to the recipe's
-       icon: the delete ✕ (which appears on hover over custom recipes) and the ★ of the default
-       recipe. Both out -- deleting stays available from the right-click menu (Set as default /
-       Rename / Delete) and the ★ comes back when the sidebar is reopened. */
-    .kt-side.collapsed #ktPanelRecipes .recipe-del,
-    .kt-side.collapsed #ktPanelRecipes .recipe.is-default::after { display:none; }
-    /* Vincoli NON scorre MAI internamente: altezza sempre naturale/dinamica (cresce aggiungendo
-       campi personalizzati). Ricette è l'UNICO a scorrere/espandersi: riempie TUTTO lo spazio
-       residuo fino a Vincoli (flex:1, niente margin-top:auto su Vincoli -- competerebbe con la
-       crescita di Ricette e lascerebbe un vuoto), restringendosi quando Vincoli cresce, così
-       Vincoli non deve mai clippare il proprio contenuto. */
+    .kt-side.collapsed .kt-hist-search .kt-search:hover { border-color:var(--accent); }
+    .kt-side.collapsed .kt-hist-search .kt-search input { display:none; }
+    .kt-side.collapsed .kt-row { width:34px; height:34px; padding:0; gap:0; justify-content:center; }
+    .kt-side.collapsed .kt-row-label,
+    .kt-side.collapsed .kt-hist-head { display:none; }
+    /* The sidebar holds the history only (the recipes are chosen from the composer): it takes the whole
+       height under "New conversation". */
     .kt-side-panel { flex:1; min-height:0; display:flex; flex-direction:column; }
+    .kt-side-fill { flex:1 1 auto; min-height:0; }
+    /* The top of the sidebar speaks one language: search, then rows that all look alike (icon + label),
+       the way the history below is a list of alike rows. "New conversation" used to be a button in the
+       middle of the column and "Recipes" a centred caption with a fold arrow: three different shapes
+       for three actions, which is what made the column feel disordered. */
+    .kt-top { flex:none; display:flex; flex-direction:column; gap:6px; padding:10px 6px 8px;
+      border-bottom:1px solid var(--border-soft); }
+    /* 8px above and below, and the same left and right edges as the conversation rows under it (6px). */
+    .kt-hist-search { flex:none; padding:8px 6px 2px; }
+    .kt-hist-search .kt-search { margin:0; }
+    .kt-row { display:flex; align-items:center; gap:11px; width:100%; box-sizing:border-box; padding:10px 12px;
+      border-radius:var(--radius-s); border:1px solid transparent; background:none; color:var(--text);
+      font:inherit; font-size:14px; font-weight:600; text-align:left; cursor:pointer; }
+    .kt-row:hover { background:var(--panel-2); }
+    .kt-row:focus-visible { outline:1px solid var(--accent); outline-offset:-1px; }
+    .kt-row-ico { flex:none; width:18px; text-align:center; color:var(--accent); font-size:15px; line-height:1; }
+    .kt-row-label { flex:none; }
+    .kt-new { background:var(--panel-2); border-color:var(--border); }
+    .kt-new:hover { border-color:var(--accent); }
+    /* The recipes open as a menu above their button in the composer, over the chat: the conversation never
+       moves. It stays inside the window and scrolls when there are many recipes; "New recipe" stays pinned
+       at the bottom. */
+    .kt-recipes-menu { position:fixed; z-index:1300; width:250px; display:flex; flex-direction:column;
+      background:var(--panel); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow);
+      padding:5px; }
+    .kt-side.recipes-folded .kt-recipes-menu { display:none; }
+    .kt-recipes-menu .recipes { flex:1 1 auto; min-height:0; overflow-y:auto; padding:0; }
+    .kt-menu-sep { flex:none; height:1px; background:var(--border-soft); margin:5px 4px; }
+    .kt-menu-new { flex:none; width:100%; background:none; font:inherit; font-size:14px; text-align:left; }
+    .kt-menu-new .ico { color:var(--accent); }
     .kt-side-panel[hidden] { display:none; }
     .kt-side-panel .sidebar-head { flex:none; padding:10px 10px 8px; margin-bottom:0;
       border-bottom:1px solid var(--border-soft); }
     .kt-side-panel .recipes { padding:6px; flex:1 1 auto; min-height:60px; overflow-y:auto; }
-    .kt-vincoli-group { flex:none; display:flex; flex-direction:column; }
-    .kt-vincoli-group .sidebar-head { flex:none; }
-    /* #controls (Lunghezza/Tono/Risposta + campi personalizzati) è spostato qui via JS dal
-       builder classico -- stesso pannello, stessa persistenza; qui però la colonna è stretta
-       (242px), quindi ogni controllo occupa tutta la larghezza invece di stare in riga. Mai una
-       propria scrollbar: altezza naturale, sempre (vedi nota sopra). */
-    .kt-constraints { flex:none; padding:4px 10px 12px; overflow:visible; }
-    /* .controls' own rule has flex-wrap:wrap -- combined with flex-direction:column and a
-       height-constrained ancestor that would silently split the controls into side-by-side
-       "columns" clipped by the narrow 242px sidebar (invisible). nowrap forces one single column. */
-    .kt-constraints .controls { flex-direction:column; flex-wrap:nowrap; gap:10px; }
-    .kt-constraints .control, .kt-constraints .select, .kt-constraints select { width:100%; }
-    .kt-side-head { flex:none; display:flex; flex-direction:column; gap:8px; padding:10px 10px 8px;
-      border-bottom:1px solid var(--border-soft); }
     .kt-search input { font-size:12.5px; }
-    .kt-new { font-size:12px; }
     .kt-sess-list { flex:1; min-height:0; overflow-y:auto; padding:6px; }
     .kt-sess { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:10px;
       cursor:pointer; border:1px solid transparent; }
@@ -640,14 +646,36 @@
       font-size:10px; line-height:15px; padding:0 6px; border-radius:999px;
       color:var(--text-dim); border:1px solid var(--border); }
     .kt-sess.active .kt-sess-tag { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 45%, transparent); }
-    .kt-sess-ren, .kt-sess-del { flex:none; width:22px; height:22px; border:none; border-radius:6px;
-      background:none; color:var(--text-faint); cursor:pointer; font-size:12px;
-      display:grid; place-items:center; opacity:0; transition:opacity .12s; }
-    .kt-sess:hover .kt-sess-ren, .kt-sess:hover .kt-sess-del { opacity:1; }
+    /* Rename and delete take no room at rest: they float over the end of the row and show on hover (the title
+       under them fades out), so a title runs to the right edge before its ellipsis. Kept as flex items they
+       reserved about 55px, and titles were cut at 80% of the row. */
+    .kt-sess { position:relative; }
+    .kt-sess-ren, .kt-sess-del { position:absolute; top:50%; transform:translateY(-50%); width:22px; height:22px;
+      border:none; border-radius:6px; background:var(--field); color:var(--text-faint); cursor:pointer; font-size:12px;
+      display:grid; place-items:center; opacity:0; pointer-events:none; transition:opacity .12s; }
+    .kt-sess-del { right:6px; }
+    .kt-sess-ren { right:30px; }
+    .kt-sess:hover .kt-sess-ren, .kt-sess:hover .kt-sess-del, .kt-sess:focus-within .kt-sess-ren,
+    .kt-sess:focus-within .kt-sess-del, .kt-sess-del.confirm { opacity:1; pointer-events:auto; }
+    .kt-sess:is(:hover, :focus-within) .kt-sess-meta { -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 64px), transparent calc(100% - 46px));
+      mask-image:linear-gradient(90deg, #000 calc(100% - 64px), transparent calc(100% - 46px)); }
+    /* While renaming, the field needs the whole row: no fade over the text being typed, and no buttons over it
+       (a click meant to place the cursor would hit the pencil and end the rename). */
+    .kt-sess:has(.kt-sess-title-edit) .kt-sess-meta { -webkit-mask-image:none; mask-image:none; }
+    .kt-sess:has(.kt-sess-title-edit) .kt-sess-ren, .kt-sess:has(.kt-sess-title-edit) .kt-sess-del { opacity:0; pointer-events:none; }
     .kt-sess-ren:hover { background:var(--panel-glow); color:var(--accent); }
     .kt-sess-del:hover { background:var(--panel-glow); color:#e08585; }
     .kt-sess-del.confirm { opacity:1; background:#5a2323; color:#ffb4b4; font-size:10px; width:auto; padding:0 7px; }
+    .kt-sess:has(.kt-sess-del.confirm) .kt-sess-ren { opacity:0; pointer-events:none; }   /* the wider confirm covers it */
     .kt-empty { text-align:center; color:var(--text-faint); font-size:12.5px; padding:26px 8px; }
+    /* "Delete all history": the last row of the history, far from the conversations so it is not hit by
+       mistake, quiet until the pointer is on it; switched off (with the reason as tooltip) when empty. */
+    .kt-clear-row { flex:none; margin:4px 6px 6px; width:calc(100% - 12px); color:var(--text-dim); font-weight:500;
+      font-size:13px; border-top:1px solid var(--border-soft); border-radius:0 0 9px 9px; }
+    .kt-clear-row .kt-row-ico { color:var(--text-faint); display:grid; place-items:center; }
+    .kt-clear-row:hover:not(:disabled), .kt-clear-row:hover:not(:disabled) .kt-row-ico { color:#e08585; }
+    .kt-clear-row:disabled { opacity:.4; cursor:default; }
+    .kt-side.collapsed .kt-clear-row { margin:4px auto 6px; width:34px; border-top:none; border-radius:9px; }
     /* --kt-col: width of the ONE column shared by the conversation, the recipe bar and the input box, so
        their edges line up. Set by ktUpdateColumn from the widest turn in view: a single answer reads in a
        narrow column, a multi-provider row needs room for its columns. */
@@ -746,8 +774,11 @@
     .kt-card.pending .kt-card-head .ic::after { content:""; position:absolute; inset:-3px; border-radius:50%;
       border:2px solid transparent; border-top-color:var(--pc,var(--accent)); animation:plspin .9s linear infinite; }
     .kt-card .kt-status .dl-spin { display:none; }
+    /* Reduced motion (Windows "animation effects" off): the ring keeps turning, only slower. It is not
+       decoration but the one sign that a provider is still working; stopped, it read as a plain coloured
+       border around every waiting avatar and nothing said which answers were still coming. */
     @media (prefers-reduced-motion: reduce) {
-      .kt-card.pending .kt-card-head .ic::after { animation:none; border-color:var(--pc,var(--accent)); opacity:.5; }
+      .kt-card.pending .kt-card-head .ic::after { animation-duration:2.4s; }
     }
     .kt-card-head .nm { font-size:12.5px; font-weight:650; min-width:0; color:var(--text-dim); }
     .kt-status { font-size:11px; color:var(--text-faint); display:flex; align-items:center; gap:6px; flex:none; }
@@ -767,6 +798,10 @@
     .kt-rail { position:absolute; right:8px; top:50%; transform:translateY(-50%); z-index:5; display:flex; flex-direction:column;
       align-items:center; gap:4px; padding:6px 4px; border-radius:12px; background:color-mix(in srgb, var(--bg-1) 80%, transparent); }
     .kt-rail[hidden] { display:none; }
+    /* In a narrow window the centred column reaches the right edge, and the rail sat on the answers (it covered
+       the response time and the copy icon). While the rail is shown the thread keeps a right margin wide
+       enough for it; in a wide window the column's own margin is already larger and nothing moves. */
+    .kt-thread-wrap:has(> .kt-rail:not([hidden])) .kt-thread { padding-right:max(48px, calc((100% - var(--kt-col)) / 2)); }
     .kt-rail-marks { display:flex; flex-direction:column; gap:7px; max-height:50vh; overflow-y:auto; padding:2px 4px; scrollbar-width:none; }
     .kt-rail-marks::-webkit-scrollbar { display:none; }
     .kt-rail-mark { flex:none; width:16px; height:4px; padding:0; border:none; border-radius:2px; cursor:pointer;
@@ -872,31 +907,32 @@
     .kt-card-body.kt-md a { color:var(--accent); }
     .kt-card-foot { grid-column:2; grid-row:3; display:flex; align-items:center; gap:6px; padding:8px 0 0; }
     .kt-card-foot .btn { font-size:11.5px; padding:4px 10px; }
-    /* Barra ricetta attiva sopra il composer: stessa identità visiva di ".sidebar-head"/"Vincoli"
-       nella sidebar (etichetta con barretta accento + contenuto sotto). Neutra -> solo testo
-       informativo; altrimenti la textarea #instruction (spostata qui dal builder) è modificabile
-       direttamente in riga. */
-    .kt-recipe-badge { flex:none; flex-direction:column; background:var(--bg-1);
-      border-bottom:1px solid var(--border-soft); }
+    /* Active recipe bar above the composer, in a frame shaped like the composer's own: the instruction
+       (#instruction, moved here from the builder) editable in place, then the recipe's constraints.
+       Hidden for Neutral, which has neither. */
+    .kt-recipe-badge { flex:none; flex-direction:column; padding-block:8px 0; }
     .kt-recipe-badge:not([hidden]) { display:flex; }
-    .kt-recipe-badge-head { padding:8px 16px 6px; margin-bottom:0; border-bottom:none; }
-    /* .sidebar-head forza display:flex senza guardia [hidden] -- senza questa regola
-       l'attributo hidden (impostato via JS in ktUpdateRecipeBadge) non nasconde davvero
-       l'header quando si torna alla ricetta Neutra dopo averne selezionata un'altra. */
-    .kt-recipe-badge-head[hidden] { display:none; }
     .kt-recipe-badge { padding-inline:max(20px, calc((100% - var(--kt-col)) / 2)); }
-    .kt-recipe-badge .kt-recipe-badge-head { padding-inline:0; }
-    .kt-recipe-badge-row { display:flex; align-items:center; gap:8px; padding:0 0 10px;
+    .kt-recipe-badge-row { display:flex; align-items:center; gap:8px; padding:4px 0 6px;
       font-size:12px; font-weight:600; color:var(--accent); }
-    .kt-recipe-badge.kt-recipe-badge-neutral .kt-recipe-badge-row { color:var(--text-faint); font-weight:500; }
-    /* Neutra: solo testo informativo, niente riquadro -- nessuno sfondo/bordo che lo faccia
-       sembrare un elemento interattivo o un banner da chiudere. */
-    .kt-recipe-badge.kt-recipe-badge-neutral { background:transparent; border-bottom:none; }
-    .kt-recipe-badge-row #ktRecipeBadgeHint { flex:1; }
-    .kt-recipe-badge-row textarea.instruction { flex:1; min-height:32px; max-height:140px; resize:vertical;
-      background:var(--field); border:1px solid var(--border); border-radius:8px; color:var(--text);
-      font-size:12.5px; font-weight:400; font-family:inherit; padding:6px 10px; box-sizing:border-box; }
-    .kt-recipe-badge-row textarea.instruction:focus { border-color:var(--accent); outline:none; }
+    /* What the active recipe adds to the message, its instruction and its constraints, sits in one frame
+       shaped exactly like the composer below it: everything that will be sent is in one place. The
+       constraints used to live at the bottom of the sidebar, far from the text they change. */
+    .kt-badge-frame { display:flex; flex-direction:column; background:var(--field); border:1px solid var(--border);
+      border-radius:18px; padding:4px 8px 8px 16px; transition:border-color .15s; }
+    .kt-badge-frame:focus-within { border-color:var(--accent); }
+    [data-theme="sumi"] .kt-badge-frame { border-radius:6px; }
+    .kt-recipe-badge-row .add-btn { flex:none; width:26px; height:26px; font-size:14px; }
+    .kt-badge-constraints { display:flex; align-items:center; flex-wrap:wrap; gap:8px 14px; padding-top:8px;
+      border-top:1px solid var(--border-soft); }
+    .kt-badge-constraints .controls { flex-direction:row; flex-wrap:wrap; gap:8px 14px; }
+    .kt-badge-constraints .control { flex-direction:row; align-items:center; gap:7px; }
+    .kt-badge-constraints .control label { padding-left:0; white-space:nowrap; font-size:11.5px; }
+    .kt-badge-constraints .select { padding:5px 10px; gap:6px; }
+    .kt-badge-constraints .select select { font-size:12.5px; }
+    .kt-recipe-badge-row textarea.instruction { flex:1; min-height:32px; max-height:140px; resize:none;
+      background:transparent; border:none; border-radius:0; color:var(--text);
+      font-size:13px; font-weight:400; font-family:inherit; padding:6px 0; box-sizing:border-box; outline:none; }
     .kt-recipe-badge-row button { border:none; background:none; color:var(--text-faint);
       cursor:pointer; font-size:13px; padding:4px; flex:none; }
     .kt-recipe-badge-row button:hover { color:var(--danger); }
@@ -906,7 +942,7 @@
     /* The input is ONE rounded box in the same centred column as the conversation, with the send button
        inside it: the textarea carries no border of its own, the box does. */
     .kt-composer { flex:none; padding-block:8px 16px; padding-inline:max(20px, calc((100% - var(--kt-col)) / 2)); }
-    .kt-composer-box { display:flex; align-items:flex-end; gap:8px; padding:6px 6px 6px 16px;
+    .kt-composer-box { display:flex; align-items:flex-end; gap:8px; padding:6px;
       background:var(--field); border:1px solid var(--border); border-radius:18px; transition:border-color .15s; }
     .kt-composer-box:focus-within { border-color:var(--accent); }
     /* Files being dragged over the window: the input box is where they land. */
@@ -929,7 +965,19 @@
     .kt-composer textarea { flex:1; min-height:32px; max-height:200px; overflow-y:hidden; resize:none;
       background:transparent; border:none; border-radius:0; color:var(--text);
       font-size:14px; line-height:1.5; padding:9px 0; outline:none; font-family:inherit; }
-    .kt-send { flex:none; width:40px; height:40px; font-size:18px; }   /* eredita .send (cerchio gradiente) */
+    .kt-send { flex:none; width:40px; height:40px; font-size:18px; }   /* inherits .send (gradient circle) */
+    /* The active recipe, inside the box on the left, at the height of the send button: quiet for Neutral
+       (nothing is added to the text), in full colour for any other recipe. */
+    .kt-recipe-btn { flex:none; display:flex; align-items:center; gap:7px; height:40px; max-width:190px; padding:0 11px;
+      border-radius:12px; border:1px solid var(--border); background:var(--panel-2); color:var(--text);
+      font:inherit; font-size:13px; cursor:pointer; }
+    .kt-recipe-btn:hover, .kt-recipe-btn[aria-expanded="true"] { border-color:var(--accent); }
+    .kt-recipe-btn:focus-visible { outline:1px solid var(--accent); outline-offset:1px; }
+    .kt-recipe-btn.neutral { background:none; color:var(--text-dim); }
+    .kt-recipe-btn-ico { flex:none; width:16px; text-align:center; color:var(--accent); line-height:1; }
+    .kt-recipe-btn-name { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .kt-recipe-btn-chev { flex:none; color:var(--text-faint); font-size:10px; }
+    [data-theme="sumi"] .kt-recipe-btn { border-radius:4px; }
     /* SUMI ONLY (the flat, squared theme): send is the right end of the field, not a circle floating inside it.
        It fills the box's height (the negative margin cancels the box's vertical padding) and repeats its right
        corners, shaded corner to corner from the theme's accent, with a lit edge above and a shaded one below so
@@ -967,22 +1015,45 @@
     .set-panel.active { display:block; }
     /* per-recipe shortcut rows -- header + rows share the SAME flex layout (name flex:1, then
        fixed-width columns in the same order) so the columns line up exactly, row after row. */
-    .rh-header { display:flex; align-items:center; gap:8px; }
+    .rh-header { display:flex; align-items:center; gap:6px; }
     /* Hint sits in the header's NAME column (one line, avoids a whole extra row -- reclaims
        vertical space so the shortcut list needs less scrolling). */
-    .rh-header .rh-hint { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* The hint keeps the name column's width in the header but is not shown there: in that narrow column it was
+       either cut in half or five lines tall. It lives on each shortcut field instead, where the action is. */
+    .rh-header .rh-hint { flex:1; min-width:0; visibility:hidden; white-space:nowrap; overflow:hidden; }
     .rh-h-notify, .rh-h-key { flex:none; font-size:10.5px; font-weight:700; letter-spacing:.05em;
       text-transform:uppercase; color:var(--text-faint); text-align:center; }
-    .rh-h-notify { width:64px; }
-    .rh-h-key { width:210px; }
+    /* long one-word headers in other languages break with a hyphen on two lines; what still does not fit
+       widens its column (rhFitColumns) */
+    .rh-h-notify { width:64px; white-space:normal; hyphens:auto; line-height:1.15; }
+    .rh-h-key { width:164px; }
     .rh-h-spacer { flex:none; width:28px; }
+    /* The row reads left to right like a sentence: press this combination, with these constraints, on this
+       provider, then notify / menu / read. Each header explains itself on hover, in one sentence; the dotted
+       underline says there is something to read, without adding text to the table. */
+    .rh-h-vin, .rh-notify-col.rh-vin-col { width:104px; }
+    .rh-h-prov, .rh-notify-col.rh-prov-col { width:124px; }
+    .rh-h-info { cursor:help; text-decoration:underline dotted; text-underline-offset:3px; }
+    .rh-vin-btn { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:none;
+      border:1px solid var(--border); border-radius:8px; color:var(--text-dim); font:inherit; font-size:11.5px;
+      padding:4px 8px; cursor:pointer; }
+    .rh-vin-btn:hover, .rh-vin-btn.active { border-color:var(--accent); color:var(--text); }
+    .rh-vin-none { color:var(--text-faint); cursor:default; }
+    .rh-prov-col .rh-prov-sel { width:100%; height:32px; font-size:12.5px; }
+    /* The constraints of one recipe hang from its button, above everything: opening them never pushes the
+       rows below, which is what the old fold arrow did. */
+    .rh-pop { position:fixed; z-index:9999; width:260px; background:var(--bg-1); border:1px solid var(--border);
+      border-radius:10px; box-shadow:var(--shadow); padding:12px 14px; }
+    .rh-pop-head { font-size:13px; font-weight:600; color:var(--text); margin-bottom:10px; }
     /* wraps the .switch so the NOTIFICA column has breathing room without stretching the switch
        itself -- width matches .rh-h-notify above so the header label stays centered over it. */
     .rh-notify-col { flex:none; width:64px; display:flex; justify-content:center; }
-    .rh-row { display:flex; align-items:center; gap:8px; margin-top:7px; }
-    .rh-name { flex:1; min-width:0; font-size:13px; color:var(--text);
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .rh-row input { width:210px; flex:none; cursor:pointer; }
+    .rh-row { display:flex; align-items:center; gap:6px; margin-top:7px; }
+    /* Up to two lines, then the ellipsis (the full name is the row's tooltip): with the Constraints and
+       Provider columns the name column got narrow, and one line cut even "Global shortcut". */
+    .rh-name { flex:1; min-width:120px; font-size:13px; line-height:1.3; color:var(--text); overflow:hidden;
+      display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; hyphens:auto; }
+    .rh-row input { width:164px; flex:none; cursor:pointer; }
     .rh-row input.conflict { border-color:#c0504d; }
     .rh-clear { flex:none; width:28px; height:28px; border:none; border-radius:8px;
       background:none; color:var(--text-faint); cursor:pointer; font-size:13px; }
@@ -998,6 +1069,23 @@
     .set-section > .set-grid + .set-grid { margin-top:12px; }
     @media (max-width:560px){ .set-grid { grid-template-columns:1fr; } }
     /* Settings > Provider: dual list (Disponibili/Selezionati) + transfer buttons in the middle. */
+    /* One row per provider: name on the left, the three decisions in fixed columns, so they line up
+       between rows (and with the header). The two-column transfer list this replaces asked the user to
+       understand "available" vs "selected" before touching anything. */
+    .prov-head, .prov-row { display:flex; align-items:center; gap:8px; }
+    .prov-head { padding:2px 10px 6px; font-size:10.5px; font-weight:700; letter-spacing:.05em;
+      text-transform:uppercase; color:var(--text-faint); }
+    .prov-head-nm { flex:1 1 auto; }
+    .prov-head-col { flex:none; width:84px; text-align:center; }
+    .prov-list { display:flex; flex-direction:column; gap:2px; }
+    .prov-row { padding:6px 10px; border-radius:8px; }
+    .prov-row:hover { background:var(--panel-glow); }
+    .prov-row .ic { flex:none; width:18px; display:grid; place-items:center; color:var(--pc, var(--text-dim)); }
+    .prov-row .ic svg { width:16px; height:16px; }
+    .prov-row .nm { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .prov-cell { flex:none; width:84px; display:flex; align-items:center; justify-content:center; }
+    .prov-cell .sub { font-size:10.5px; }
+    .prov-row.coming-soon { opacity:.55; }
     .prov-xfer { display:grid; grid-template-columns:1fr auto 1fr; gap:14px; align-items:stretch; margin-top:12px; margin-bottom:12px; }
     .prov-xfer-col { display:flex; flex-direction:column; min-width:0; }
     .prov-xfer-head { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-faint); font-weight:700; margin-bottom:6px; }
@@ -1261,15 +1349,15 @@
           <textarea class="instruction" id="instruction" rows="1"></textarea>
           <textarea class="content" id="content" data-i18n-ph="placeholder"></textarea>
           <div class="controls" id="controls">
-            <div class="control">
+            <div class="control" data-c="length">
               <label data-i18n="length">Lunghezza</label>
               <div class="select"><span class="ico">▦</span><select id="length"></select></div>
             </div>
-            <div class="control">
+            <div class="control" data-c="tone">
               <label data-i18n="tone">Tono</label>
               <div class="select"><span class="ico">👤</span><select id="tone"></select></div>
             </div>
-            <div class="control">
+            <div class="control" data-c="resp">
               <label data-i18n="respLabel">Risposta</label>
               <div class="select"><span class="ico">✎</span><select id="respFmt"></select></div>
             </div>
@@ -1344,25 +1432,15 @@
         <div class="set-section set-panel" data-panel="providers">
           <div class="setting">
             <label data-i18n="setProvidersBar">Provider nella barra</label>
-            <span class="sub" data-i18n="setProvidersBarHint">Quelli a destra sono quelli disponibili nel menu "+", da lì scegli quali usare nella barra "Provider selezionati".</span>
+            <span class="sub" data-i18n="setProvidersBarHint2">Tutti i provider, una riga ciascuno: se compare nel menu "+", se apre chat private, e quale usi come predefinito.</span>
           </div>
-          <div class="prov-xfer">
-            <div class="prov-xfer-col">
-              <div class="prov-xfer-head" data-i18n="provXferAvailable">Disponibili</div>
-              <div class="prov-xfer-list" id="provXferAvail"></div>
-            </div>
-            <div class="prov-xfer-mid">
-              <button class="btn prov-xfer-btn" type="button" id="provXferAllRight" data-i18n-title="provXferAllRightTitle" title="Aggiungi tutti">»</button>
-              <button class="btn prov-xfer-btn" type="button" id="provXferAllLeft" data-i18n-title="provXferAllLeftTitle" title="Rimuovi tutti">«</button>
-            </div>
-            <div class="prov-xfer-col">
-              <div class="prov-xfer-head prov-xfer-head-sel">
-                <span data-i18n="provXferSelected">Selezionati</span>
-                <span class="prov-xfer-head-temp" data-i18n="ktTempColHeader">Chat privata</span>
-              </div>
-              <div class="prov-xfer-list" id="provXferSel"></div>
-            </div>
+          <div class="prov-head">
+            <span class="prov-head-nm"></span>
+            <span class="prov-head-col" data-i18n="provColBar">Nella barra</span>
+            <span class="prov-head-col" data-i18n="ktTempColHeader">Chat privata</span>
+            <span class="prov-head-col" data-i18n="provColDefault">Predefinito</span>
           </div>
+          <div class="prov-list" id="provList"></div>
         </div>
         <!-- Shortcuts: main hotkey as the first row, then a divider, then one row per recipe --
              ALL in the same list so the NOTIFICA/COMBINAZIONE TASTI columns line up across every row. -->
@@ -1370,20 +1448,26 @@
           <div class="setting">
             <div class="rh-header">
               <span class="sub rh-hint" data-i18n="setRecipeHotkeysHint">Clicca il campo e premi la combinazione; ✕ la rimuove.</span>
-              <span class="rh-h-key" data-i18n="rhColHotkey">Combinazione tasti</span>
+              <span class="rh-h-key rh-h-info" data-i18n="rhColHotkey" data-i18n-title="rhKeyTitle">Combinazione tasti</span>
               <span class="rh-h-spacer"></span>
-              <span class="rh-h-notify" data-i18n="rhColNotify">Notifica</span>
-              <span class="rh-h-notify" data-i18n="rhColMenu">Menu</span>
+              <span class="rh-h-notify rh-h-vin rh-h-info" data-i18n="rhColVincoli" data-i18n-title="rhVinTitle">Vincoli</span>
+              <span class="rh-h-notify rh-h-prov rh-h-info" data-i18n="rhColProvider" data-i18n-title="rhProvTitle">Provider</span>
+              <span class="rh-h-notify rh-h-info" data-i18n="rhColNotify" data-i18n-title="rhNotifyHeadTitle">Notifica</span>
+              <span class="rh-h-notify rh-h-info" data-i18n="rhColMenu" data-i18n-title="rhMenuHeadTitle">Menu</span>
+              <span class="rh-h-notify rh-h-info" data-i18n="rhColRead" data-i18n-title="rhReadTitle">Lettura</span>
             </div>
             <div class="rh-row">
               <div class="rh-name" data-i18n="setHotkey">Scorciatoia globale</div>
               <input type="text" class="field" id="setHotkey" readonly>
               <button class="rh-clear" id="hotkeyClear" data-i18n-title="reset" title="Reset">↺</button>
+              <span class="rh-notify-col rh-vin-col"></span>
+              <span class="rh-notify-col rh-prov-col"></span>
               <span class="rh-notify-col">
                 <label class="switch sm" id="rhGlobalNotifySwitch" data-i18n-title="rhNotifyTitle" title="Notifiche per questa scorciatoia">
                   <input type="checkbox" id="rhGlobalNotify"><span class="slider"></span>
                 </label>
               </span>
+              <span class="rh-notify-col"></span>
               <span class="rh-notify-col"></span>
             </div>
             <hr class="rh-divider">
@@ -1594,29 +1678,10 @@
     <!-- session sidebar: Cronologia (search + saved conversations) / Ricette (reuses the builder's
          recipe list+CRUD, applied to the Kotodama composer instead of the builder's own prompt). -->
     <aside class="kt-side" id="ktSide">
-      <div class="kt-side-tabs">
-        <button class="kt-side-tab active" id="ktTabRecipesBtn" data-tab="recipes" data-i18n-title="ktTabRecipes" title="Ricette">
-          <span class="kt-side-tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6V3H9z"/><path d="M9 10h6M9 14h6M9 18h3"/></svg></span><span class="kt-side-tab-label" data-i18n="ktTabRecipes">Ricette</span>
-        </button>
-        <button class="kt-side-tab" id="ktTabHistoryBtn" data-tab="history" data-i18n-title="ktTabHistory" title="Cronologia">
-          <span class="kt-side-tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span><span class="kt-side-tab-label" data-i18n="ktTabHistory">Cronologia</span>
-        </button>
+      <div class="kt-top">
+        <button class="kt-row kt-new" id="ktNew" type="button" data-i18n-title="ktNewChat" title="Nuova conversazione"><span class="kt-row-ico">＋</span><span class="kt-row-label" data-i18n="ktNewChat">Nuova conversazione</span></button>
       </div>
-      <div class="kt-side-panel" id="ktPanelHistory" hidden>
-        <div class="kt-side-head">
-          <div class="dl-search kt-search">
-            <span class="dl-search-i">⌕</span>
-            <input id="ktSearch" type="text" data-i18n-ph="ktSearch" placeholder="Cerca nelle conversazioni...">
-          </div>
-          <button class="btn kt-new" id="ktNew" data-i18n-title="ktNewChat" title="Nuova conversazione"><span class="kt-new-ico">＋</span><span class="kt-new-label" data-i18n="ktNewChat">Nuova conversazione</span></button>
-        </div>
-        <div class="kt-sess-list" id="ktSessList"></div>
-      </div>
-      <div class="kt-side-panel" id="ktPanelRecipes">
-        <div class="sidebar-head">
-          <span class="seclabel" data-i18n="recipes">Ricette</span>
-          <button class="add-btn" id="ktAddRecipe" data-i18n-title="newRecipe" title="Nuova ricetta">+</button>
-        </div>
+      <div class="kt-recipes-menu" id="ktPanelRecipes">
         <ul class="recipes" id="ktRecipes">
           <li class="recipe active" data-key="neutral" title="Neutral"><span class="ico">↦</span> <span class="rname">Neutral</span></li>
           <li class="recipe" data-key="rephrase" title="Rephrase"><span class="ico">↻</span> <span class="rname">Rephrase</span></li>
@@ -1627,13 +1692,20 @@
           <li class="recipe" data-key="search" title="Search"><span class="ico">🔍</span> <span class="rname">Search</span></li>
           <li class="recipe" data-key="verbatim" title="Audio"><span class="ico">🔊</span> <span class="rname">Audio</span></li>
         </ul>
-        <div class="kt-vincoli-group">
-          <div class="sidebar-head">
-            <span class="seclabel" data-i18n="constraints">Vincoli</span>
-            <button class="add-btn" id="ktManageFields" data-i18n-title="fieldsTitle" title="Personalizza campi">⚙</button>
+        <div class="kt-menu-sep"></div>
+        <button class="recipe kt-menu-new" id="ktAddRecipe" type="button"><span class="ico">＋</span><span class="rname" data-i18n="newRecipe">Nuova ricetta</span></button>
+      </div>
+      <div class="kt-side-panel kt-side-fill" id="ktPanelHistory">
+        <div class="sidebar-head kt-hist-head"><span class="seclabel" data-i18n="ktTabHistory">Cronologia</span></div>
+        <!-- The search belongs to the history it searches: right under its title, same edges as the rows. -->
+        <div class="kt-hist-search">
+          <div class="dl-search kt-search">
+            <span class="dl-search-i">⌕</span>
+            <input id="ktSearch" type="text" data-i18n-ph="ktSearch" placeholder="Cerca nelle conversazioni...">
           </div>
-          <div class="kt-constraints" id="ktConstraints"><!-- #controls (Lunghezza/Tono/Risposta + campi personalizzati) viene spostato qui via JS: stesso pannello del builder classico, stesso stato persistito. --></div>
         </div>
+        <div class="kt-sess-list" id="ktSessList"></div>
+        <button class="kt-row kt-clear-row" id="ktClearAll" type="button" data-i18n-title="ktClearAll" title="Cancella tutta la cronologia"><span class="kt-row-ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></span><span class="kt-row-label" data-i18n="ktClearAll">Cancella tutta la cronologia</span></button>
       </div>
       <div class="kt-side-collapse-row">
         <button class="kt-side-toggle" id="ktSideToggle" title="Comprimi sidebar">«</button>
@@ -1658,23 +1730,27 @@
         </nav>
         <div class="kt-rail-tip" id="ktRailTip" hidden></div>
       </div>
-      <!-- Barra ricetta attiva: testo istruzione modificabile (sostituisce #instruction, spostato
-           qui via JS, non più nella sidebar) quando una ricetta non-Neutra è attiva; altrimenti un
-           breve testo informativo. Sempre attaccata sopra il composer, stesso stile di ".sidebar-head"
-           usato per "Vincoli" nella sidebar (coerenza visiva). -->
+      <!-- Active recipe bar: the instruction of the active recipe, editable in place (#instruction is
+           moved here by JS), and its constraints (#controls), in a frame shaped like the composer.
+           Hidden for Neutral. -->
       <div class="kt-recipe-badge" id="ktRecipeBadge" hidden>
-        <div class="sidebar-head kt-recipe-badge-head">
-          <span class="seclabel" data-i18n="instructions">Istruzioni</span>
-        </div>
-        <div class="kt-recipe-badge-row">
-          <span id="ktRecipeBadgeHint"></span>
-          <button id="ktRecipeBadgeSave" data-i18n-title="save" title="Salva" hidden>✓</button>
-          <button id="ktRecipeBadgeClear" data-i18n-title="ktRecipeNeutral" title="Torna a Neutro">✕</button>
+        <div class="kt-badge-frame">
+          <div class="kt-recipe-badge-row">
+            <button id="ktRecipeBadgeSave" data-i18n-title="save" title="Salva" hidden>✓</button>
+            <button class="add-btn" id="ktManageFields" data-i18n-title="fieldsTitle" title="Personalizza campi">⚙</button>
+            <button id="ktRecipeBadgeClear" data-i18n-title="ktRecipeNeutral" title="Torna a Neutro">✕</button>
+          </div>
+          <!-- #controls (length, tone, answer + custom fields) is moved in here at startup: the same panel
+               and the same saved state as before, only shown next to the text it changes. -->
+          <div class="kt-badge-constraints" id="ktConstraints"></div>
         </div>
       </div>
       <div class="kt-composer">
         <div class="kt-attach-row" id="ktAttachRow" hidden></div>
         <div class="kt-composer-box">
+          <!-- The recipe is chosen where the text is written: the button names the active one and opens the
+               recipes menu upwards (#ktPanelRecipes). -->
+          <button class="kt-recipe-btn" id="ktRecipeBtn" type="button" aria-haspopup="menu" aria-controls="ktPanelRecipes" aria-expanded="false" data-i18n-title="recipes" title="Ricette"><span class="kt-recipe-btn-ico" id="ktRecipeIco">↦</span><span class="kt-recipe-btn-name" id="ktRecipeCur"></span><span class="kt-recipe-btn-chev">▴</span></button>
           <textarea id="ktInput" rows="1" data-i18n-ph="ktPlaceholder" placeholder="Chiedi a tutti i provider selezionati..."></textarea>
           <button class="send kt-send" id="ktSend" data-i18n-title="ktSendBtn" title="Invia">→</button>
         </div>
@@ -1695,8 +1771,8 @@
     if (TAURI) document.body.classList.add('tauri');
 
     /* ===================== PROVIDER ===================== */
-    // autosend:true → after opening we inject fill+focus+submit. NOT on grok/perplexity
-    // (they already auto-submit via ?q=, this would cause a double submit) nor "other".
+    // autosend:true → after opening we inject fill+focus+submit (used by the classic builder view). Grok and
+    // Perplexity keep a ?q= form here for that view only; Kotodama's chat does not use it (see ktBaseUrlFor).
     // Claude (?q=) prefills but does NOT auto-submit → it needs autosend (focus+Enter).
     const PROVIDERS = {
       openai:     { name:'ChatGPT',    base:'https://chatgpt.com/',             q:'?q=', mode:'query',     autosend:true, temp:'temporary-chat=true' },
@@ -1753,6 +1829,9 @@
       ktLogin:'Sign-in required', ktOpenProvider:'Open provider', ktLoginBtn:'Log in',
       ktSelectOne:'Select at least one provider', ktTruncated:'(truncated)',
       ktSearch:'Search conversations...', ktNoSessions:'No conversations yet',
+      ktClearAll:'Delete all history', ktClearAllQ:'Delete all history?', ktClearAllOk:'Delete all',
+      ktClearAllMsg:'{n} conversations and their audio are gone for good.',
+      ktClearAllMsgOne:'The conversation and its audio are gone for good.', ktClearAllEmpty:'History is already empty',
       ktDeleteConfirm:'Delete?',
       ktAddProvider:'Add provider', ktOpenRealPage:'Open real page',
       ktSelectAllProviders:'Select all', ktAddSelectedBtn:'Add', ktAddMoreProviders:'Add more providers',
@@ -1763,7 +1842,6 @@
       provXferAllRightTitle:'Add all', provXferToRightTitle:'Add', provXferToLeftTitle:'Remove', provXferAllLeftTitle:'Remove all',
       ktTabHistory:'History', ktTabRecipes:'Recipes', ktRecipeNeutral:'Back to Neutral',
       ktSideCollapse:'Collapse sidebar', ktSideExpand:'Expand sidebar',
-      ktNeutralHint:'Text is sent as-is, with no extra instructions.',
       ktCtxIntro:'Context from our earlier conversation; answer the new message at the end.',
       ktCtxUser:'User:', ktCtxYou:'You answered:', ktCtxNew:'New message:',
       ktRetry:'Retry',
@@ -1788,6 +1866,10 @@
       setAutostart:'Start on login', setAutostartHint:'Starts minimized in the tray at login.',
       setGesture:'Double right-click', setGestureHint:'Two quick right-clicks open the recipe menu in any program.',
       rhColMenu:'Menu', rhMenuTitle:'Show this recipe in the double right-click menu', trayRestart:'Restart',
+      rhColRead:'Read', rhReadTitle:'Reads the answer aloud as soon as it arrives.',
+      rhColVincoli:'Constraints', rhColProvider:'Provider', rhKeyTitle:'The combination that runs the recipe on the selected text.', rhVinTitle:'The ones the recipe adds to the text when you run it from a shortcut.', rhProvTitle:'The one the recipe uses when you run it from a shortcut.', rhNotifyHeadTitle:'Shows the notice while the recipe works.', rhMenuHeadTitle:'Puts the recipe in the double right-click menu.', rhVinPopTitle:"This recipe's constraints", rhNeutralNoCons:'Neutral sends the text as it is, with no constraints.', rhProvDefaultShort:'Default',
+      provColBar:'In the bar', provColDefault:'Default',
+      setProvidersBarHint2:'Every provider, one row each: whether it appears in the "+" menu, whether it opens private chats, and which one is your default.',
       setAdmin:'Start as administrator', setAdminHint:'Needed to work inside windows opened as administrator. Windows asks for confirmation.',
       setAdminOn:'Kotodama will start as administrator', setAdminOff:'Kotodama will start as a normal program', setAdminFailed:'Windows did not allow the change',
       setAlwaysOnTop:'Always on top', setAlwaysOnTopHint:'Kotodama stays above other windows.',
@@ -1924,6 +2006,8 @@
       if(ktRecipesEl) ktRecipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]){ li.querySelector('.rname').textContent=t.recipeNames[k]; li.title=t.recipeNames[k]; } });
       renderKtSessions();   // recipe tags follow the language (every applyLang call runs after the sessions state exists)
       if(typeof ktSideApply==='function') ktSideApply();   // re-translate the collapse toggle's tooltip
+      // the chip bar's "+" is built with its tooltip in the language of that moment: re-translate it here
+      document.querySelectorAll('.kt-chip-add').forEach(b=>{ b.title=t.ktAddProvider||b.title; });
       // "open on the fly" tooltip on each provider (Kotodama gets its own meta tooltip)
       providers.querySelectorAll('.prov').forEach(tile=>{
         if(tile.dataset.prov==='kotodama'){ tile.title=t.ktTileTitle; return; }
@@ -1963,12 +2047,62 @@
     function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toastEl.classList.remove('show'),4200); }
 
     /* ===================== PROMPT ===================== */
-    // True when the active recipe asks for its text back as it is: the built-in Audio recipe, or a custom one
-    // saved with "no constraints".
-    function ktRecipeSkipsConstraints(){
-      if(activeRecipe.kind==='key') return activeRecipe.key==='verbatim';
-      const r=customRecipes.find(x=>x.id===activeRecipe.id);
-      return !!(r && r.noConstraints);
+    /* ---- Constraints, per recipe --------------------------------------------------------------------
+       A constraint is one line appended under "Vincoli:" at the end of the prompt. They used to be all-or-
+       nothing: every recipe carried Lunghezza, Tono, Risposta and every custom field, or (Audio, Neutra)
+       none at all. That is wrong for several of them -- asking a TRANSLATION to be "breve e concisa" makes
+       the provider cut the text, and a summary does not need a tone -- so each recipe now carries its own
+       list, and the user can change it in Settings -> Ricette.
+       Ids: 'length', 'tone', 'resp' for the built-in ones, 'f:<id>' for a custom field. */
+    const CONSTRAINT_DEFAULTS = {
+      neutral:   [],                          // sends the text as it is
+      verbatim:  [],                          // "repeat this word for word": any style rule contradicts it
+      rephrase:  ['length','tone','resp'],
+      summarise: ['length','resp'],           // a summary is asked to be short, not to have a tone
+      reply:     ['length','tone','resp'],
+      email:     ['length','tone','resp'],
+      translate: ['resp'],                    // a translation is as long and as toned as the original
+      search:    ['length','resp'],
+    };
+    function recipeRefOf(rec){ return rec.kind==='key' ? 'key:'+rec.key : 'id:'+rec.id; }
+    /* Per-recipe provider: each recipe can have its own, because providers are not equally good
+       at everything (Claude rewrites better, Gemini makes better images). It decides where the
+       recipe's shortcut sends the text and which provider reads the answer aloud; in the chat the
+       user picks providers from the bar and a recipe does not override that choice.
+       Empty = "the default one". A provider that is not available (not enabled, not supported
+       yet) blocks nothing: it falls back to the default, because a recipe that does not start
+       is worse than a recipe that starts somewhere else. */
+    // Every recipe starts on the default provider: a per-recipe choice is only ever the user's own.
+    function providerForRecipe(ref){
+      const base=(currentSettings.recipe_provider||{})[ref] || '';
+      const ok = k => k && (k in PROVIDERS) && PROVIDERS[k].base && !PROV_COMING_SOON.has(k) && ktLoadEnabled().has(k);
+      if(ok(base)) return base;
+      return ktDefaultProvider();
+    }
+    function customFieldIds(){ return customFields.filter(f=>f.options&&f.options.length).map(f=>'f:'+f.id); }
+    // The list for one recipe: what the user chose, else the sensible default for that recipe. A recipe that
+    // carries constraints at all also carries the user's own fields, which is what happened before this existed.
+    function constraintsForRef(ref){
+      const saved=(currentSettings.recipe_constraints||{})[ref];
+      if(Array.isArray(saved)) return saved;
+      if(ref.indexOf('key:')===0){
+        const base=CONSTRAINT_DEFAULTS[ref.slice(4)];
+        if(base) return base.length ? base.concat(customFieldIds()) : [];
+        return ['length','tone','resp'].concat(customFieldIds());
+      }
+      const r=customRecipes.find(x=>('id:'+x.id)===ref);
+      if(r && r.noConstraints) return [];
+      return ['length','tone','resp'].concat(customFieldIds());
+    }
+    function activeConstraints(){ return constraintsForRef(recipeRefOf(activeRecipe)); }
+    function ktRecipeSkipsConstraints(){ return activeConstraints().length===0; }
+    // Show only the selectors the active recipe actually sends. Called whenever the recipe or the fields change.
+    function applyConstraintVisibility(){
+      const cons=activeConstraints();
+      document.querySelectorAll('#controls .control').forEach(c=>{
+        const id=c.dataset.c || (c.dataset.id ? 'f:'+c.dataset.id : '');
+        if(id) c.classList.toggle('is-off', cons.indexOf(id)<0);
+      });
     }
     function buildPrompt(){
       const t=TR;
@@ -1979,15 +2113,19 @@
       // takes style seriously rewrites the text (measured: Claude rewrote, ChatGPT obeyed).
       const body=instruction.value.trim()+'\n\n"""\n'+content.value.trim()+'\n"""';
       if(ktRecipeSkipsConstraints()) return body;
-      let out=body+'\n\n'+t.constraints+'\n- '+t.cLength+': '+lengthSel.value+'\n- '+t.cTone+': '+toneSel.value;
-      // custom fields: append "- Label: selected option"
+      const cons=activeConstraints();
+      const lines=[];
+      if(cons.indexOf('length')>=0) lines.push('- '+t.cLength+': '+lengthSel.value);
+      if(cons.indexOf('tone')>=0) lines.push('- '+t.cTone+': '+toneSel.value);
+      // custom fields: append "- Label: selected option", those this recipe carries
       for(const f of customFields){
-        if(!f.options||!f.options.length) continue;
+        if(!f.options||!f.options.length || cons.indexOf('f:'+f.id)<0) continue;
         const v=f.options[Math.min(f.value||0, f.options.length-1)];
-        if(f.label && v) out+='\n- '+f.label+': '+v;
+        if(f.label && v) lines.push('- '+f.label+': '+v);
       }
+      let out=body+(lines.length ? '\n\n'+t.constraints+'\n'+lines.join('\n') : '');
       // Risposta = "Solo testo": append the answer-only constraint (clean output)
-      if(respSel.selectedIndex===1) out+='\n\n'+t.answerOnlyText;
+      if(cons.indexOf('resp')>=0 && respSel.selectedIndex===1) out+='\n\n'+t.answerOnlyText;
       return out;
     }
     function showOutput(text){ result.textContent=text; output.classList.add('show'); }
@@ -2193,14 +2331,23 @@
     let ktAllSessions=[];        // [{id,title,created,updated,turns:[{text,answers:{key:{status,text}}}]}]
     let ktSession=null;          // current session (inserted in ktAllSessions at first send)
     let ktLiveId=null;           // session whose provider tabs are "warm" in THIS app run
+    let ktLiveStarted={};        // ktStarted of that session: kept while another conversation is only being looked at
     // bid -> Set of keys still waiting for their final answer. Drives the Send/Stop button and survives a
     // switch of conversation, so a turn still running elsewhere can be stopped and its answers saved.
     const ktPendingByBid={};
     let ktTurnByBid={};          // broadcast id -> turn object (routes answers into the right turn)
     let ktSaveTimer=null;
     async function ktLoadAll(){
-      if(TAURI){ try{ const v=await invoke('get_kotodama_sessions'); ktAllSessions=Array.isArray(v)?v:[]; }catch(e){ ktAllSessions=[]; } }
-      else { try{ ktAllSessions=JSON.parse(localStorage.getItem('kotodama.sessions')||'[]'); }catch(e){ ktAllSessions=[]; } }
+      let read=[];
+      if(TAURI){ try{ const v=await invoke('get_kotodama_sessions'); read=Array.isArray(v)?v:[]; }catch(e){ read=[]; } }
+      else { try{ read=JSON.parse(localStorage.getItem('kotodama.sessions')||'[]'); }catch(e){ read=[]; } }
+      // A conversation started in the moment before the file was read is already in memory: kept, not replaced
+      // (it would have vanished from the list until its next turn).
+      const readIds=new Set(read.map(s=>s && s.id));
+      ktAllSessions=[...ktAllSessions.filter(s=>s && !readIds.has(s.id)), ...read];
+      // The list is drawn on start too (by the language setup), but that can run before the file has been read:
+      // after a restart the history then looked empty until the first click (QA run of 27/09/2026).
+      renderKtSessions();
     }
     function ktPersist(){
       clearTimeout(ktSaveTimer);
@@ -2236,6 +2383,8 @@
     }
     function renderKtSessions(){
       const list=document.getElementById('ktSessList'); if(!list) return;
+      { const b=document.getElementById('ktClearAll');
+        if(b){ const empty=!ktAllSessions.length; b.disabled=empty; b.title=(empty ? TR.ktClearAllEmpty : TR.ktClearAll)||''; } }
       const q=((ktSearch&&ktSearch.value)||'').trim().toLowerCase();
       list.innerHTML='';
       const items=ktAllSessions.filter(s=>{
@@ -2286,6 +2435,19 @@
         list.appendChild(row);
       });
     }
+    // "Delete all history": every conversation and its audio, after the app's own confirmation. A search in
+    // progress does not narrow it: the count in the question says how many go.
+    document.getElementById('ktClearAll').addEventListener('click', ()=>{
+      const n=ktAllSessions.length; if(!n) return;
+      const msg=n===1 ? TR.ktClearAllMsgOne : TR.ktClearAllMsg.replace('{n}', '<b>'+n+'</b>');
+      askConfirm(msg, ()=>{
+        const files=ktAllSessions.flatMap(s=>(s.turns||[]).flatMap(tr=>Object.values(tr.answers||{})
+          .flatMap(a=>[...(a.prev||[]), a].flatMap(v=>(v.audio||[]).map(x=>x.file)))));
+        if(files.length && TAURI) invoke('kotodama_audio_delete',{ files }).catch(()=>{});
+        ktAllSessions=[];
+        ktNewConversation(); ktPersist(); renderKtSessions();
+      }, { title:TR.ktClearAllQ, ok:TR.ktClearAllOk, safe:true });
+    });
     // Pencil on a Cronologia entry -> inline rename (same pattern as custom recipes' rname-edit).
     function startRenameSession(s, tt){
       if(tt.querySelector('input')) return;
@@ -2510,6 +2672,7 @@
     }
     function ktLoadSession(id){
       const s=ktAllSessions.find(x=>x.id===id); if(!s) return;
+      if(ktInstrDrafts && (!ktSession || ktSession.id!==id)) ktInstrDrafts={};
       ktSession=s;
       ktResetColumn(); ktThread.innerHTML=''; ktCards={};
       ktConvTab='answers';
@@ -2517,9 +2680,12 @@
       ktRefreshConvTabs();
       ktThread.scrollTop=ktThread.scrollHeight;
       ktRailSchedule();
-      // Tab provider "calde" solo per la sessione live di QUESTO run: le altre ripartono
-      // fresh (con reinvio del contesto per-provider al prossimo messaggio).
-      if(ktLiveId!==id) ktStarted={};
+      // The provider tabs still carry the live conversation until something is SENT elsewhere: just looking at
+      // another conversation in the history changes nothing in them. So coming back to the live one finds its
+      // providers where they were and continues their chats; any other conversation starts them fresh, with
+      // the per-provider context. (Clearing on every load made a mere look at the history restart every
+      // provider from scratch: QA run of 27/09/2026, step 8.)
+      ktStarted = (ktLiveId===id) ? ktLiveStarted : {};
       // Cosmetic only: pre-select the providers THIS conversation already talked to, so
       // continuing it doesn't require hunting for the right chips first. Skipped while locked to
       // a single provider (Kotodama-di-uno). Never persisted (ktSaveSel) -- just navigating
@@ -2561,16 +2727,42 @@
       const tempOn=ktTempEnabled(key);
       if(tempOn && p.tempUrl) u=p.tempUrl;
       if(tempOn && p.temp) u+=sep()+p.temp;
-      // A click-toggle temp provider (e.g. Grok) must land on the COMPOSE page so the backend can
-      // click its private toggle, then fill+send -> drop the ?q= auto-send URL when temp is on.
-      const skipQuery = tempOn && p.tempClick;
+      // Grok and Perplexity (click-toggle temp providers) always land on the COMPOSE page and get the message
+      // typed and sent like every other provider, private chat on or off. Their ?q= auto-send looked faster but
+      // proved unreliable (QA run of 27/09/2026): Grok answers a ?q= with a "send it yourself" confirmation, and
+      // when Perplexity did send by itself Kotodama had no proof of the send and refused the answer as
+      // "never sent". One way in, the one that is measured.
+      const skipQuery = !!p.tempClick;
       if(p.mode==='query'&&p.q&&!skipQuery){ const enc=encodeURIComponent(ptext); if(enc.length<=MAX_URL) u+=sep()+p.q.replace(/^\?/,'')+enc; }
       return u;
     }
+    // The user's messages a provider did not receive: taken out of the chip bar, it kept its own chat, but the
+    // conversation went on without it. Everything after the last turn it took part in, up to the turn being sent now.
+    function ktMissedTurns(key, currentTurn){
+      if(!ktSession) return [];
+      const turns=ktSession.turns.filter(tr=>tr!==currentTurn);
+      let last=-1;
+      // taking part = the message reached it: an answer came, or was cut short, or is still coming. A sign-in
+      // wall, a human check, a limit or an error mean it probably never got there.
+      const tookPart=a=>!!a && ['done','timeout','cancelled','pending'].includes(a.status);
+      turns.forEach((tr,i)=>{ if(tookPart((tr.answers||{})[key])) last=i; });
+      if(last<0) return [];                          // never took part: that is a fresh start, not a catch-up
+      return turns.slice(last+1).filter(tr=>!tookPart((tr.answers||{})[key]));
+    }
+    // Same shape as ktContextPrompt, with only what was missed: the provider already has the rest in its chat.
+    function ktCatchUpPrompt(missed, newText){
+      const t=TR;
+      const ctx=missed.map(tr=>t.ktCtxUser+' '+(tr.text||'')).join('\n');
+      return t.ktCtxIntro+'\n'+ctx+'\n\n'+t.ktCtxNew+' '+newText;
+    }
     async function ktDispatchKey(bid, key, text, ctxTurn, freshFlag){
       if(!freshFlag){
+        // Back in the bar after some turns without it: it gets the messages it missed, then the new one
+        // (the owner's request of 27/09/2026: continuity must include what it missed).
+        const missed=ktMissedTurns(key, ctxTurn);
+        const wtext=missed.length ? ktCatchUpPrompt(missed, text) : text;
         const bw={}; bw[key]=PROVIDERS[key].base;      // safety net if the tab died
-        await invoke('kotodama_broadcast',{broadcastId:bid, text, keys:[key], newChat:false, bases:bw});
+        await invoke('kotodama_broadcast',{broadcastId:bid, text:wtext, keys:[key], newChat:false, bases:bw});
         return;
       }
       const hasHistory=!!(ktSession && ktSession.turns.some(tr=>tr!==ctxTurn));
@@ -2685,18 +2877,31 @@
       if(kind==='key') return (TR.recipeNames&&TR.recipeNames[val])||val;
       const r=customRecipes.find(x=>x.id===val); return r?r.name:'';
     }
-    // Inline prompt: instruction + fenced text. NO Length/Tone/custom fields: the inline
-    // result replaces the user's text, it must be a clean transformation.
+    // Inline prompt: instruction, the recipe's constraints, then the fenced text. The result replaces the
+    // user's text, so the answer-only line keeps it a clean transformation.
     function buildInlinePrompt(recipeStr, text){
       const instr=instructionFor(recipeStr);
       if(!instr) return text;   // neutral -> as-is
-      // inline result is pasted back: ALWAYS answer-only (no preamble/comments), whatever
-      // the builder's Risposta field says.
-      return instr+'\n\n"""\n'+text+'\n"""\n\n'+(TR.answerOnlyText||'');
+      // The recipe's constraints (Settings -> Recipes -> Constraints) go with its shortcut too. Until
+      // 1.2.53 only the chat sent them, so that column promised something the shortcut never did.
+      // "Answer" is left out: a result pasted back is ALWAYS answer-only (no preamble/comments), whatever
+      // that field says.
+      const cons=constraintsForRef(recipeStr);
+      const lines=[];
+      if(cons.indexOf('length')>=0) lines.push('- '+TR.cLength+': '+lengthSel.value);
+      if(cons.indexOf('tone')>=0) lines.push('- '+TR.cTone+': '+toneSel.value);
+      customFields.forEach(f=>{
+        if(!f.options||!f.options.length||cons.indexOf('f:'+f.id)<0) return;
+        const v=f.options[Math.min(f.value||0, f.options.length-1)];
+        if(f.label && v) lines.push('- '+f.label+': '+v);
+      });
+      const tail=lines.length ? '\n\n'+TR.constraints+'\n'+lines.join('\n') : '';
+      return instr+'\n\n"""\n'+text+'\n"""'+tail+'\n\n'+(TR.answerOnlyText||'');
     }
     let inlineSeq=0;
     const inlinePending={};     // bid -> true (answers routed to inline_finish, not to cards)
     const inlineSessions={};    // bid -> in-flight Cronologia session for a recipe-shortcut transform
+    const inlineClosed=new Set();  // bids ended early (sign-in wall): their late outcome is swallowed, not shown as a card
     // live status line in the processing toast (cross-window Tauri event, no re-show).
     // On 'connect' we also pass the provider (name + tile glyph/color) so the toast can
     // show WHICH provider is working, highlighted.
@@ -2706,8 +2911,7 @@
       try{ window.__TAURI__.event.emit('toast://progress', { stage, len: len||0, prov }); }catch(e){}
     }
     function ktInlineDispatch(recipeStr, text){
-      const key=(currentSettings.default_provider in PROVIDERS && PROVIDERS[currentSettings.default_provider].base)
-        ? currentSettings.default_provider : 'openai';
+      const key=providerForRecipe(recipeStr);
       inlineToastStage('connect', 0, key);   // show WHICH provider (icon + name) in the toast
       const bid='inl-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
       inlinePending[bid]=true;
@@ -2725,6 +2929,7 @@
         .catch(()=>{ delete inlinePending[bid]; delete inlineSessions[bid]; invoke('inline_fail',{reason:'dispatch'}).catch(()=>{}); });
     }
     function inlineOnAnswer(d){
+      if(inlineClosed.has(d.broadcastId)) return true;
       if(!inlinePending[d.broadcastId]) return false;
       const st=d.status||'error';
       if(st==='pending') return true;            // swallow (no cards for inline)
@@ -2776,6 +2981,8 @@
       ktPersist();
       const freshFlag=!ktStarted[key];
       ktStarted[key]=true;
+      // a retry sends too: from here on the tabs carry this conversation
+      if(ktSession && ktLiveId!==ktSession.id){ ktLiveId=ktSession.id; ktLiveStarted=ktStarted; }
       try{ await ktDispatchKey(bid, key, turn.sendText||turn.text, turn, freshFlag); }
       catch(e){ toast(`${TR.openError}: ${e}`); }
     }
@@ -2890,16 +3097,14 @@
     // verified live too (see kotodama.rs HARVEST_SELECTORS).
     const PROV_COMING_SOON=new Set(['copilot']);
     function renderProviderXfer(){
-      const availEl=document.getElementById('provXferAvail'), selEl=document.getElementById('provXferSel');
-      if(!availEl || !selEl) return;
+      const box=document.getElementById('provList');
+      if(!box) return;
       ktLoadEnabled();
-      const real=ktRealKeys();
-      availEl.innerHTML=''; selEl.innerHTML='';
-      real.forEach(key=>{
+      box.innerHTML='';
+      ktRealKeys().forEach(key=>{
         const p=PROVIDERS[key], bits=ktTileBits(key);
         const comingSoon=PROV_COMING_SOON.has(key);
-        const inSel=!comingSoon && ktEnabled.has(key);
-        const row=document.createElement('div'); row.className='prov-xfer-row'; row.dataset.prov=key;
+        const row=document.createElement('div'); row.className='prov-row'; row.dataset.prov=key;
         if(bits.color) row.style.setProperty('--pc', bits.color);
         row.innerHTML=`<span class="ic">${bits.svg}</span><span class="nm"></span>`;
         row.querySelector('.nm').textContent=p.name;
@@ -2907,35 +3112,48 @@
           row.classList.add('coming-soon');
           const badge=document.createElement('span'); badge.className='prov-xfer-badge'; badge.textContent=TR.provComingSoon;
           row.appendChild(badge);
-          availEl.appendChild(row);
-          return;   // no click interaction -- can't be moved into Selezionati
+          box.appendChild(row);
+          return;                      // nothing to decide about a provider that is not there yet
         }
-        // Click anywhere on the row = immediate move to the other column. The per-row arrow
-        // button below does the exact same move -- it's just an explicit affordance for users
-        // who look for a button rather than a clickable row; both trigger the same function.
-        row.addEventListener('click', ()=> inSel ? provXferMoveOut(key) : provXferMoveIn(key));
-        const arrow=document.createElement('button'); arrow.type='button'; arrow.className='prov-xfer-row-arrow';
-        arrow.textContent=inSel?'‹':'›';
-        arrow.title=inSel?(TR.provXferToLeftTitle||'Remove'):(TR.provXferToRightTitle||'Add');
-        arrow.addEventListener('click', e=>{ e.stopPropagation(); inSel?provXferMoveOut(key):provXferMoveIn(key); });
-        row.appendChild(arrow);
-        // Temp-chat toggle: only meaningful for a provider actually in use (Selezionati) --
-        // merged in here instead of a separate "Chat temporanee nei provider" list so the same
-        // provider isn't shown twice in the tab.
-        if(inSel){
-          const sup=ktTempSupport(key);
-          const wrap=document.createElement('span'); wrap.className='prov-xfer-temp';
-          wrap.addEventListener('click', e=>e.stopPropagation());   // don't trigger the row's own move
-          if(!sup){ const na=document.createElement('span'); na.className='sub'; na.textContent=TR.setKtTempNA; wrap.appendChild(na); }
+        // 1. in the bar: this is the pool the "+" menu offers.
+        const barCell=document.createElement('span'); barCell.className='prov-cell';
+        const barSw=document.createElement('label'); barSw.className='switch sm'; barSw.title=TR.provColBar||'';
+        barSw.innerHTML='<input type="checkbox"><span class="slider"></span>';
+        const barCb=barSw.querySelector('input');
+        barCb.checked=ktEnabled.has(key);
+        barCb.addEventListener('change', ()=>{
+          if(barCb.checked) ktEnabled.add(key);
+          else {
+            ktEnabled.delete(key);
+            if(ktSel && ktSel.delete(key)) ktSaveSel();   // out of the pool: cannot stay in the bar
+          }
+          ktSaveEnabled(); renderKtChips(); renderProviderXfer();
+        });
+        barCell.appendChild(barSw); row.appendChild(barCell);
+        // 2. private chat, where the provider has one.
+        const sup=ktTempSupport(key);
+        const tempCell=document.createElement('span'); tempCell.className='prov-cell prov-xfer-temp';
+        if(!sup){ const na=document.createElement('span'); na.className='sub'; na.textContent=TR.setKtTempNA; tempCell.appendChild(na); }
+        else {
           const sw=document.createElement('label'); sw.className='switch sm'; sw.title=TR.setKtTempHint||TR.setKtTemp||'';
           sw.innerHTML='<input type="checkbox"><span class="slider"></span>';
           const cb=sw.querySelector('input'); cb.dataset.prov=key;
-          cb.disabled=!sup;
-          cb.checked=sup && ((currentSettings.kt_temp_providers||{})[key]!==false);
-          wrap.appendChild(sw);
-          row.appendChild(wrap);
+          cb.checked=(currentSettings.kt_temp_providers||{})[key]!==false;
+          tempCell.appendChild(sw);
         }
-        (inSel?selEl:availEl).appendChild(row);
+        row.appendChild(tempCell);
+        // 3. the default provider: the one a copied text goes to. Choosing it here puts it in the bar too,
+        // because a default that is not even available would be a setting that quietly does nothing.
+        const defCell=document.createElement('span'); defCell.className='prov-cell';
+        const rd=document.createElement('input'); rd.type='radio'; rd.name='provDefault'; rd.title=TR.setProvider||'';
+        rd.checked=(setProvider ? setProvider.value : currentSettings.default_provider)===key;
+        rd.addEventListener('change', ()=>{
+          if(setProvider) setProvider.value=key;
+          if(!ktEnabled.has(key)){ ktEnabled.add(key); ktSaveEnabled(); renderKtChips(); }
+          renderProviderXfer();
+        });
+        defCell.appendChild(rd); row.appendChild(defCell);
+        box.appendChild(row);
       });
     }
     function provXferMoveIn(key){ ktEnabled.add(key); ktSaveEnabled(); renderKtChips(); }
@@ -2944,15 +3162,6 @@
       if(ktSel && ktSel.delete(key)) ktSaveSel();   // no longer enabled -> can't stay active in the bar
       renderKtChips();
     }
-    document.getElementById('provXferAllRight').addEventListener('click', ()=>{
-      ktRealKeys().filter(k=>!PROV_COMING_SOON.has(k)).forEach(k=>ktEnabled.add(k));
-      provXferPickAvail=null; ktSaveEnabled(); renderKtChips();
-    });
-    document.getElementById('provXferAllLeft').addEventListener('click', ()=>{
-      ktEnabled.clear(); provXferPickSel=null; ktSaveEnabled();
-      if(ktSel){ ktSel.clear(); ktSaveSel(); }   // nothing enabled -> nothing can stay in the bar
-      renderKtChips();
-    });
     // Right-click on a chip -> same "Apri pagina reale"/"Imposta come predefinito" menu the
     // (hidden) classic provider grid already has -- the click itself already means something
     // else here (toggle out of the bar), so no "Apri" entry.
@@ -3056,7 +3265,9 @@
       menu.appendChild(more);
       document.body.appendChild(menu);
       const r=anchorBtn.getBoundingClientRect();
-      const mw=260;
+      // the width it really takes (padding, border, a scrollbar), not the nominal 260px: with the nominal one
+      // the menu ran past the right edge of a narrow window
+      const mw=menu.offsetWidth||260;
       menu.style.left=Math.max(6, Math.min(r.left, window.innerWidth-mw-6))+'px';
       menu.style.top=(r.bottom+6)+'px';
       ktAddMenuEl=menu;
@@ -3088,6 +3299,7 @@
     const KT_ONLY = true;
     function closeKotodama(){ if(KT_ONLY) return; body.classList.remove('kotodama-open'); }
     function ktNewConversation(){
+      if(ktInstrDrafts) ktInstrDrafts={};
       ktStarted={}; ktResetColumn(); ktThread.innerHTML=''; ktCards={}; ktRailSchedule(); ktConvTab='answers'; ktRefreshConvTabs();
       ktSession={ id:'s'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
                   title:'', created:Date.now(), updated:Date.now(), turns:[] };
@@ -3114,7 +3326,9 @@
     }
     function ktMarkFirst(ref){ if(ref && !ref.firstAt) ref.firstAt=Date.now(); }
     function ktTimingOf(ref){
-      const start=ref.sentAt||ref.createdAt;
+      // A "sent" notice that lands after the first words is late news, not the start: using it made the time
+      // read "0,0 s" (QA run of 27/09: Claude and Gemini). Then the card's creation time is the start.
+      const start=(ref.sentAt && (!ref.firstAt || ref.sentAt<=ref.firstAt)) ? ref.sentAt : ref.createdAt;
       if(!start || !ref.firstAt) return null;
       return { firstMs:Math.max(0, ref.firstAt-start), totalMs:ref.doneAt ? Math.max(0, ref.doneAt-start) : null };
     }
@@ -3146,6 +3360,15 @@
       return short ? TR.ktActionShort : TR.ktOverlay;
     }
     function ktOnBlocked(d){
+      if(inlineClosed.has(d.broadcastId)) return;   // a late block from an inline transform already ended
+      // An inline transform has no card and its page is never shown: a sign-in wall ends it now, with a toast that
+      // says so, instead of "Working on it..." until the harvest's 180 s safety timeout (reported 27/09 on ChatGPT).
+      if(d.blocked && d.reason==='login' && inlinePending[d.broadcastId]){
+        inlineOnAnswer({ broadcastId:d.broadcastId, key:d.key, status:'login', text:'' });
+        inlineClosed.add(d.broadcastId);
+        invoke('kotodama_cancel',{broadcastId:d.broadcastId}).catch(()=>{});
+        return;
+      }
       const id=`${d.broadcastId}:${d.key}`, ref=ktCards[id];
       const at=ktBlocks.findIndex(b=>b.bid===d.broadcastId && b.key===d.key);
       if(d.blocked){
@@ -3278,6 +3501,25 @@
       const turn=ktTurnByBid[bid]; const a=turn && (turn.answers||{})[key];
       return a ? ((a.audio||[]).slice(-1)[0]||null) : null;
     }
+    /* Reads the answer aloud on arrival, when the recipe was set to do so (Settings -> Recipes -> Lettura).
+       Two deliberate limits: only the recipe's provider (the default one unless the recipe names another),
+       because a question sent to five of them would come back as five voices over each other; and only when that provider's page still offers its read button, which is
+       what ktConv carries. Everything else keeps the play button it already has. */
+    function ktMaybeAutoRead(d, st, turn){
+      if(st!=='done' || !TAURI || !turn || !(d.text||'').trim()) return;
+      if(((currentSettings.recipe_read||{})[turn.recipe])!==true) return;
+      if(d.key!==providerForRecipe(turn.recipe)) return;
+      const c=ktConv[d.key];
+      if(!c || !c.tts || c.bid!==d.broadcastId) return;
+      if(ktReadState[d.key]) return;                  // already reading something: do not cut it off
+      setTimeout(()=>ktReadAloud(d.broadcastId, d.key), 400);
+    }
+
+    function ktDefaultProvider(){
+      const k=currentSettings.default_provider;
+      return (k in PROVIDERS && PROVIDERS[k].base) ? k : 'openai';
+    }
+
     async function ktReadAloud(bid, key){
       if(!TAURI) return;
       const running=!!(ktReadState[key] && ktReadState[key].bid===bid);
@@ -3855,6 +4097,7 @@
       // A real answer = proof of an active login there: remember it so future "chiedi a tutti"
       // chats default to it too (see ktLoadSel). No-op on the Rust side if already known.
       if(st==='done' && TAURI) invoke('mark_provider_known',{key:d.key}).catch(()=>{});
+      ktMaybeAutoRead(d, st, turn);
       const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
       if(restored){
         // Back to the previous answer as it was, timing included, not a new "done" measured from the click.
@@ -3994,6 +4237,7 @@
       ktTurnByBid[bid]=turn;
       ktMountTurnTabs(turn, turnGrid);
       ktLiveId=ktSession.id;              // these provider tabs now carry THIS conversation
+      ktLiveStarted=ktStarted;
       ktPersist(); renderKtSessions();
       // The moment the request goes out: jump the sidebar to Cronologia so the user sees the
       // chat they just started (renderKtSessions() above already marks it .active there),
@@ -4033,18 +4277,98 @@
         for(const k of fresh){ if(ktStoppedBids.has(bid)) break; await ktDispatchKey(bid, k, sendText, turn, true); }
       }catch(e){ toast(`${t.openError}: ${e}`); }
     }
-    /* ===================== KOTODAMA SIDE TABS (Cronologia / Ricette) ===================== */
-    function ktSwitchSideTab(tab){
-      document.querySelectorAll('.kt-side-tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
-      ktPanelHistory.hidden = tab!=='history';
-      ktPanelRecipes.hidden = tab!=='recipes';
-    }
+    /* ===================== KOTODAMA SIDEBAR (history) + RECIPES MENU (composer) =====================
+       The sidebar holds the history only; the recipes are chosen from a button inside the composer. What used
+       to be a tab change is a no-op kept for the callers that asked for the history. */
+    function ktSwitchSideTab(){ /* one page now: nothing to switch */ }
     const ktPanelHistory=document.getElementById('ktPanelHistory');
     const ktPanelRecipes=document.getElementById('ktPanelRecipes');
-    // Entrambe le tab hanno una forma valida anche da collassate (Ricette: le icone delle ricette;
-    // Cronologia: nuova conversazione + ricerca), quindi cambiare tab non forza mai l'espansione.
-    document.getElementById('ktTabHistoryBtn').addEventListener('click', ()=>ktSwitchSideTab('history'));
-    document.getElementById('ktTabRecipesBtn').addEventListener('click', ()=>ktSwitchSideTab('recipes'));
+    const ktRecipeBtn=document.getElementById('ktRecipeBtn');
+    // The recipes menu opens above its button in the composer, on click or from the keyboard (Enter, Space,
+    // arrow up or down). It closes when a recipe is chosen, with Esc, or on a click elsewhere. Never
+    // remembered: it always starts closed.
+    let ktRecipeMenuOpen=false;
+    function ktPlaceRecipeMenu(){
+      const r=ktRecipeBtn.getBoundingClientRect();
+      const left=Math.max(8, Math.min(r.left, window.innerWidth-ktPanelRecipes.offsetWidth-8));
+      ktPanelRecipes.style.left=left+'px';
+      ktPanelRecipes.style.top='auto';
+      ktPanelRecipes.style.bottom=(window.innerHeight-r.top+6)+'px';
+      ktPanelRecipes.style.maxHeight=Math.max(120, r.top-14)+'px';
+    }
+    function ktFoldApply(){
+      ktSide.classList.toggle('recipes-folded', !ktRecipeMenuOpen);
+      ktRecipeBtn.setAttribute('aria-expanded', ktRecipeMenuOpen ? 'true' : 'false');
+      if(ktRecipeMenuOpen) ktPlaceRecipeMenu();
+    }
+    let ktRecipePickT=null;   // see the click handler on #ktRecipes below
+    function ktSetRecipeMenu(open){ clearTimeout(ktRecipePickT); ktRecipeMenuOpen=open; ktFoldApply(); }
+    // The menu stays open while something that belongs to it is still in use: the right-click menu of a
+    // recipe (it lives outside the panel, so reaching it leaves the panel) or a recipe being renamed.
+    function ktRecipeMenuBusy(){
+      return !document.getElementById('ctxMenu').hidden || !!ktPanelRecipes.querySelector('.rname-edit');
+    }
+    // A click picks the recipe at once but closes the menu a moment later, so that a double click on a
+    // custom recipe can still rename it (the first click would otherwise hide it).
+    const KT_PICK_CLOSE_MS=320;
+    ktRecipeBtn.addEventListener('click', e=>{
+      ktSetRecipeMenu(!ktRecipeMenuOpen);
+      // opened from the keyboard (Enter or Space give a click with no pointer): the focus goes into the menu
+      if(ktRecipeMenuOpen && e.detail===0) ktRecipeMenuFocus('active');
+    });
+    ktRecipeBtn.addEventListener('keydown', e=>{
+      // arrows open the menu, or move into it when it is already open (opened with the mouse)
+      if(e.key==='ArrowUp' || e.key==='ArrowDown'){
+        e.preventDefault(); if(!ktRecipeMenuOpen) ktSetRecipeMenu(true); ktRecipeMenuFocus('active');
+      }
+    });
+    document.getElementById('ktRecipes').addEventListener('click', e=>{
+      if(e.target.closest('.recipe') && !e.target.closest('.recipe-del')){
+        clearTimeout(ktRecipePickT);
+        ktRecipePickT=setTimeout(()=>{ if(!ktRecipeMenuBusy()) ktSetRecipeMenu(false); }, KT_PICK_CLOSE_MS);
+      }
+    });
+    // only a custom recipe can be renamed: on a built-in one the double click just picks it
+    document.getElementById('ktRecipes').addEventListener('dblclick', e=>{ if(e.target.closest('.recipe-custom')) clearTimeout(ktRecipePickT); });
+    document.getElementById('ktAddRecipe').addEventListener('click', ()=>ktSetRecipeMenu(false));
+    document.addEventListener('keydown', e=>{
+      if(e.key!=='Escape' || !ktRecipeMenuOpen || ktRecipeMenuBusy()) return;
+      const inside=ktPanelRecipes.contains(document.activeElement);
+      ktSetRecipeMenu(false);
+      if(inside) ktRecipeBtn.focus();        // keyboard users land back where they opened it
+    });
+    // Keyboard: arrows move through the recipes and "New recipe", Enter or Space picks, Esc closes.
+    function ktRecipeMenuItems(){ return [...ktPanelRecipes.querySelectorAll('.recipe')].filter(el=>el.offsetParent!==null); }
+    function ktRecipeMenuFocus(which){
+      const items=ktRecipeMenuItems(); if(!items.length) return;
+      let i=items.indexOf(document.activeElement);
+      if(which==='first') i=0;
+      else if(which==='active') i=Math.max(0, items.findIndex(el=>el.classList.contains('active')));
+      else if(which==='last') i=items.length-1;
+      else i=(i+which+items.length)%items.length;
+      items.forEach(el=>{ if(!el.hasAttribute('tabindex')) el.tabIndex=-1; });
+      items[i].focus();
+    }
+    ktPanelRecipes.addEventListener('keydown', e=>{
+      if(e.target.closest('.rname-edit')) return;      // typing a new name
+      const k=e.key;
+      if(k==='ArrowDown'){ e.preventDefault(); ktRecipeMenuFocus(1); }
+      else if(k==='ArrowUp'){ e.preventDefault(); ktRecipeMenuFocus(-1); }
+      else if(k==='Home'){ e.preventDefault(); ktRecipeMenuFocus('first'); }
+      else if(k==='End'){ e.preventDefault(); ktRecipeMenuFocus('last'); }
+      else if((k==='Enter' || k===' ') && e.target.closest('.recipe') && e.target.tagName!=='BUTTON'){
+        e.preventDefault(); e.target.closest('.recipe').click();
+        clearTimeout(ktRecipePickT); ktSetRecipeMenu(false); ktRecipeBtn.focus();
+      }
+    });
+    document.addEventListener('mousedown', e=>{
+      if(!ktRecipeMenuOpen) return;
+      // the right-click menu of a recipe (rename, delete...) belongs to the recipes menu
+      if(ktPanelRecipes.contains(e.target) || ktRecipeBtn.contains(e.target) || e.target.closest('.ctxmenu')) return;
+      ktSetRecipeMenu(false);
+    });
+    window.addEventListener('resize', ()=>{ if(ktRecipeMenuOpen) ktPlaceRecipeMenu(); });
+    document.getElementById('ktSideToggle').addEventListener('click', ()=>ktSetRecipeMenu(false));
 
     /* ===================== KOTODAMA SIDEBAR COLLAPSE (icon-only rail) =====================
        ONE source of truth: the toggle at the bottom of the column, saved in localStorage.
@@ -4069,9 +4393,10 @@
     }
     ktSideToggle.addEventListener('click', ()=>ktSideSetCollapsed(!ktSideCollapsedNow()));
     ktSideApply();
+    ktFoldApply();
     // When collapsed, search is a single icon: clicking it reopens the sidebar and focuses the input,
     // which would not have fitted inside the rail.
-    { const box=ktPanelHistory.querySelector('.kt-search');
+    { const box=ktSide.querySelector('.kt-hist-search .kt-search');
       if(box) box.addEventListener('click', ()=>{
         if(!ktSide.classList.contains('collapsed')) return;
         ktSideSetCollapsed(false);
@@ -4088,23 +4413,24 @@
        conversation until changed or cleared. */
     const ktRecipesEl=document.getElementById('ktRecipes');
     const ktRecipeBadge=document.getElementById('ktRecipeBadge');
-    const ktRecipeBadgeHead=document.querySelector('.kt-recipe-badge-head');
-    const ktRecipeBadgeHint=document.getElementById('ktRecipeBadgeHint');
+    const ktRecipeCur=document.getElementById('ktRecipeCur');
     const ktRecipeBadgeSave=document.getElementById('ktRecipeBadgeSave');
     const ktRecipeBadgeClear=document.getElementById('ktRecipeBadgeClear');
-    // Bar above the composer: Neutra -> just the short info text, no "Istruzioni" header, no
-    // editor (nothing to edit/save for raw text). Any other recipe -> the "Istruzioni" header
-    // appears and the instruction textarea itself (#instruction, moved here from the builder)
-    // becomes visible and editable right there.
+    // Bar above the composer: Neutral sends the text as it is, so there is nothing to say or edit there and
+    // the bar is not shown at all (it used to hold a line of faint text, read as noise in the middle of the
+    // chat). Any other recipe shows its instruction, editable in place. The active recipe is also named, with
+    // its icon, on the recipe button inside the composer.
     function ktUpdateRecipeBadge(){
       const isNeutral=activeRecipe.kind==='key' && activeRecipe.key==='neutral';
-      ktRecipeBadge.hidden=false;
-      ktRecipeBadge.classList.toggle('kt-recipe-badge-neutral', isNeutral);
-      ktRecipeBadgeHead.hidden=isNeutral;
-      ktRecipeBadgeHint.hidden=!isNeutral;
+      ktRecipeBadge.hidden=isNeutral;
       instruction.hidden=isNeutral;
-      ktRecipeBadgeClear.hidden=isNeutral;   // "Torna a Neutro" non serve se già su Neutra
-      if(isNeutral) ktRecipeBadgeHint.textContent=TR.ktNeutralHint||'';
+      ktRecipeBadgeClear.hidden=isNeutral;
+      const ref = activeRecipe.kind==='key' ? 'key:'+activeRecipe.key : 'id:'+activeRecipe.id;
+      ktRecipeCur.textContent=recipeNameFor(ref);
+      const li=ktRecipesEl && ktRecipesEl.querySelector(activeRecipe.kind==='key'
+        ? `.recipe[data-key="${activeRecipe.key}"]` : `.recipe[data-id="${activeRecipe.id}"]`);
+      document.getElementById('ktRecipeIco').textContent=((li && li.querySelector('.ico')) || {}).textContent || '✦';
+      ktRecipeBtn.classList.toggle('neutral', isNeutral);
       updateSaveInstr();
     }
     function ktSyncRecipeActive(){
@@ -4132,7 +4458,7 @@
       customRecipes.forEach(r=>{
         const li=document.createElement('li');
         li.className='recipe recipe-custom'; li.dataset.id=r.id; li.dataset.instruction=r.instruction;
-        li.innerHTML='<span class="ico">★</span><span class="rname"></span><button class="recipe-del">✕</button>';
+        li.innerHTML='<span class="ico">✦</span><span class="rname"></span><button class="recipe-del">✕</button>';
         li.querySelector('.rname').textContent=r.name;
         li.title=r.name;
         li.querySelector('.recipe-del').title=t.delete;
@@ -4202,7 +4528,12 @@
     function ktPrewarm(){
       if (ktPrewarmed || !TAURI) return;
       ktPrewarmed = true;
-      try { invoke('kotodama_prewarm', { keys: [...ktLoadSel()] }); } catch(e){}
+      const keys=[...ktLoadSel()];
+      // Pre-warming moves these tabs to an empty chat: the live conversation no longer has them, so coming back
+      // to it must start them again with its context, not write into the empty chat (safe side: a refused
+      // pre-warm only costs a fresh start).
+      keys.forEach(k=>{ delete ktLiveStarted[k]; });
+      try { invoke('kotodama_prewarm', { keys }); } catch(e){}
     }
     ktInput.addEventListener('input', ()=>{
       if(!ktInput.value.trim().length) return;
@@ -4242,6 +4573,8 @@
       const vb=document.getElementById('ktVerifyBar');
       if(vb){ vb.style.top = `calc(var(--topbar-h) + ${hintH}px)`; }
       const px = hintH + ((vb && !vb.hidden) ? (vb.offsetHeight||0) : 0);
+      // the chat view moves down by both bars too, so neither covers the top of the sidebar
+      document.documentElement.style.setProperty('--kt-hint-h', px+'px');
       if(TAURI){ try{ await invoke('set_provider_top_extra',{px}); }catch(e){} }
     }
     claudeHintClose.addEventListener('click', ()=>{ localStorage.setItem(CLAUDE_HINT_KEY,'1'); setClaudeHint(false); });
@@ -4278,7 +4611,15 @@
     let confirmAction=null;
     // innerHTML: the messages are controlled i18n strings (e.g. with <br> for line breaks),
     // no user input → safe. {v} is a semver version.
-    function askConfirm(message,onOk){ document.getElementById('confirmMsg').innerHTML=message; confirmAction=onOk; openModal(confirmOverlay); }
+    // opts: { title, ok } replace the generic "Confirm" words for this question only; { safe:true } starts
+    // with the focus on Cancel, for questions where a stray Enter must not destroy anything.
+    function askConfirm(message,onOk,opts){
+      const o=opts||{};
+      document.getElementById('confirmTitle').textContent=o.title||TR.confirmTitle;
+      document.getElementById('confirmOk').textContent=o.ok||TR.confirm;
+      document.getElementById('confirmMsg').innerHTML=message; confirmAction=onOk; openModal(confirmOverlay);
+      if(o.safe) setTimeout(()=>document.getElementById('confirmCancel').focus(), 30);
+    }
     document.getElementById('confirmOk').addEventListener('click', ()=>{ const a=confirmAction; confirmAction=null; closeModal(confirmOverlay); if(a) a(); });
     document.getElementById('confirmX').addEventListener('click', ()=>closeModal(confirmOverlay));
     document.getElementById('confirmCancel').addEventListener('click', ()=>closeModal(confirmOverlay));
@@ -4430,8 +4771,8 @@
       if(modCodes.includes(e.code)) return null;
       return mods.concat([e.code]).join('+');
     }
-    setHotkey.addEventListener('focus', ()=>{ setHotkey.classList.add('capturing'); setHotkey.value=TR.pressCombo; });
-    setHotkey.addEventListener('blur', ()=>{ setHotkey.classList.remove('capturing'); setHotkey.value=friendlyHotkey(capturedHotkey); });
+    setHotkey.addEventListener('focus', ()=>{ setHotkey.classList.add('capturing'); setHotkey.value=TR.pressCombo; rhFitPressText(setHotkey); });
+    setHotkey.addEventListener('blur', ()=>{ setHotkey.classList.remove('capturing'); setHotkey.style.fontSize=''; setHotkey.value=friendlyHotkey(capturedHotkey); rhFitColumns(); });
     setHotkey.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a){ capturedHotkey=a; setHotkey.value=friendlyHotkey(a); setHotkey.blur(); } });
     document.getElementById('hotkeyClear').addEventListener('click', ()=>{ capturedHotkey=DEFAULT_SETTINGS.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey); });
 
@@ -4439,6 +4780,9 @@
     function settingsShowTab(name){
       document.querySelectorAll('#setTabs .set-tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
       document.querySelectorAll('#settingsOverlay .set-panel').forEach(p=>p.classList.toggle('active', p.dataset.panel===name));
+      // The Recipes rows list only the providers that are on: rebuilt on the way in, so a provider switched
+      // on or off in the Providers tab a moment ago is already right (unsaved choices live in captured*).
+      if(name==='shortcuts') buildShortcutRows();
     }
     document.getElementById('setTabs').addEventListener('click', e=>{
       const b=e.target.closest('.set-tab'); if(b) settingsShowTab(b.dataset.tab);
@@ -4448,6 +4792,9 @@
     let capturedRecipeHotkeys={};        // "key:x"/"id:y" -> accelerator (form state)
     let capturedRecipeNotify={};         // "key:x"/"id:y" -> false (only non-default entries; absent = notify on)
     let capturedRecipeMenu={};           // same shape: absent = the recipe is in the double right-click menu
+    let capturedRecipeRead={};
+    let capturedRecipeConstraints={};   // recipe -> the constraint ids it sends; absent = the default for it
+    let capturedRecipeProvider={};      // recipe -> provider key; '' = the default one
     function allRecipeEntries(){
       const t=TR, out=[];
       recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{
@@ -4470,15 +4817,17 @@
     }
     function buildShortcutRows(){
       const box=document.getElementById('recipeHotkeys'); if(!box) return;
+      rhClosePop();
       box.innerHTML='';
       allRecipeEntries().forEach(en=>{
         const row=document.createElement('div'); row.className='rh-row';
-        const nm=document.createElement('div'); nm.className='rh-name'; nm.textContent=en.name;
+        const nm=document.createElement('div'); nm.className='rh-name'; nm.textContent=en.name; nm.title=en.name;
         const inp=document.createElement('input'); inp.type='text'; inp.className='field'; inp.readOnly=true;
         inp.dataset.recipe=en.str;
+        inp.title=TR.setRecipeHotkeysHint||'';
         inp.value=friendlyHotkey(capturedRecipeHotkeys[en.str]||'');
-        inp.addEventListener('focus', ()=>{ inp.classList.add('capturing'); inp.value=TR.pressCombo; });
-        inp.addEventListener('blur', ()=>{ inp.classList.remove('capturing'); inp.value=friendlyHotkey(capturedRecipeHotkeys[en.str]||''); rhMarkConflicts(); });
+        inp.addEventListener('focus', ()=>{ inp.classList.add('capturing'); inp.value=TR.pressCombo; rhFitPressText(inp); });
+        inp.addEventListener('blur', ()=>{ inp.classList.remove('capturing'); inp.style.fontSize=''; inp.value=friendlyHotkey(capturedRecipeHotkeys[en.str]||''); rhMarkConflicts(); rhFitColumns(); });
         inp.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a){ capturedRecipeHotkeys[en.str]=a; inp.value=friendlyHotkey(a); inp.blur(); } });
         const clr=document.createElement('button'); clr.className='rh-clear'; clr.textContent='✕'; clr.title=TR.reset||'';
         clr.addEventListener('click', ()=>{ delete capturedRecipeHotkeys[en.str]; inp.value=friendlyHotkey(''); rhMarkConflicts(); });
@@ -4501,10 +4850,137 @@
           if(mcb.checked) delete capturedRecipeMenu[en.str]; else capturedRecipeMenu[en.str]=false;
         });
         menuCol.appendChild(msw);
-        row.appendChild(nm); row.appendChild(inp); row.appendChild(clr); row.appendChild(swCol); row.appendChild(menuCol);
+        // Third switch: read the answer aloud as soon as it arrives. Off by default -- reading asks the provider
+        // for the audio, so it happens because the user wants it, not by surprise.
+        const readCol=document.createElement('span'); readCol.className='rh-notify-col';
+        const rsw=document.createElement('label'); rsw.className='switch sm'; rsw.title=TR.rhReadTitle||'';
+        rsw.innerHTML='<input type="checkbox"><span class="slider"></span>';
+        const rcb=rsw.querySelector('input');
+        rcb.checked=capturedRecipeRead[en.str]===true;
+        rcb.addEventListener('change', ()=>{
+          if(rcb.checked) capturedRecipeRead[en.str]=true; else delete capturedRecipeRead[en.str];
+        });
+        readCol.appendChild(rsw);
+        // Constraints: what the recipe adds to the text. Neutral never sends any (chat, builder, shortcut),
+        // so a button there would promise something that does not happen: a dash, in the same place, keeps
+        // the column straight.
+        const vinCol=document.createElement('span'); vinCol.className='rh-notify-col rh-vin-col';
+        if(en.str==='key:neutral'){
+          const none=document.createElement('span'); none.className='rh-vin-none'; none.textContent='—';
+          none.title=TR.rhNeutralNoCons||'';
+          vinCol.appendChild(none);
+        } else {
+          const list=document.createElement('div'); list.className='rh-cons';
+          const cat=[{id:'length',label:TR.length||'Lunghezza'},{id:'tone',label:TR.tone||'Tono'},{id:'resp',label:TR.respLabel||'Risposta'}]
+            .concat(customFields.filter(f=>f.options&&f.options.length).map(f=>({ id:'f:'+f.id, label:f.label||'' })));
+          cat.forEach(c=>{
+            const lab=document.createElement('label'); lab.className='rh-cons-item';
+            const cb=document.createElement('input'); cb.type='checkbox';
+            cb.checked=(capturedRecipeConstraints[en.str]||constraintsForRef(en.str)).indexOf(c.id)>=0;
+            cb.addEventListener('change', ()=>{
+              // The first change writes the whole list: from then on this recipe carries what the user says,
+              // not what the default happened to be.
+              const cur=new Set(capturedRecipeConstraints[en.str]||constraintsForRef(en.str));
+              if(cb.checked) cur.add(c.id); else cur.delete(c.id);
+              capturedRecipeConstraints[en.str]=cat.map(x=>x.id).filter(id=>cur.has(id));
+            });
+            lab.appendChild(cb); lab.appendChild(document.createTextNode(' '+c.label));
+            list.appendChild(lab);
+          });
+          const vb=document.createElement('button'); vb.type='button'; vb.className='rh-vin-btn';
+          vb.textContent=(TR.rhColVincoli||'')+' ▾';
+          vb.addEventListener('click', ()=>rhOpenCons(vb, list));
+          vinCol.appendChild(vb);
+        }
+        // Provider: the one the recipe uses when it runs from its shortcut.
+        const provCol=document.createElement('span'); provCol.className='rh-notify-col rh-prov-col';
+        {
+          const sel=document.createElement('select'); sel.className='field rh-prov-sel';
+          const opt0=document.createElement('option'); opt0.value=''; opt0.textContent=TR.rhProvDefaultShort||''; sel.appendChild(opt0);
+          // Only the providers turned on (Settings -> Providers): a switched-off one would be offered and
+          // then silently replaced by the default (providerForRecipe).
+          const cur=(capturedRecipeProvider[en.str]!==undefined ? capturedRecipeProvider[en.str]
+                    : ((currentSettings.recipe_provider||{})[en.str] || ''));
+          ktEnabledKeys().forEach(k=>{
+            const o=document.createElement('option'); o.value=k; o.textContent=PROVIDERS[k].name; sel.appendChild(o);
+          });
+          sel.value=[...sel.options].some(o=>o.value===cur) ? cur : '';
+          sel.addEventListener('change', ()=>{ capturedRecipeProvider[en.str]=sel.value; });
+          provCol.appendChild(sel);
+          // same look as the other menus of the app, not the raw system menu
+          setTimeout(()=>{ try{ enhanceSelect(sel); }catch(e){} }, 0);
+        }
+        row.appendChild(nm); row.appendChild(inp); row.appendChild(clr); row.appendChild(vinCol); row.appendChild(provCol);
+        row.appendChild(swCol); row.appendChild(menuCol); row.appendChild(readCol);
         box.appendChild(row);
       });
       rhMarkConflicts();
+      rhFitColumns();
+    }
+    /* The small columns (constraints, provider, notify, menu, read) have a width that fits the Italian and English
+       headers; in about a dozen languages the header is one longer word ("Benachrichtigungen", "Notificación")
+       and ran into the next one. Each column grows to its own header, header and cells together, so the columns
+       stay aligned; the name column, the only flexible one, gives up the room. Measured when the tab is shown. */
+    /* While a field records, it shows "press a combination", longer than the field in about thirty languages.
+       Widening the column for it pushed the table sideways, so the text shrinks to fit instead, only while
+       recording (down to 10px); the combination itself keeps the normal size. */
+    function rhFitPressText(inp){
+      inp.style.fontSize='';
+      let px=parseFloat(getComputedStyle(inp).fontSize)||13;
+      while(inp.scrollWidth>inp.clientWidth && px>10){ px-=0.5; inp.style.fontSize=px+'px'; }
+    }
+    function rhFitColumns(){
+      const panel=document.querySelector('#settingsOverlay [data-panel="shortcuts"]');
+      if(!panel || !panel.offsetParent) return;           // hidden: nothing can be measured
+      const heads=[...panel.querySelectorAll('.rh-header .rh-h-notify')];
+      const rows=[...panel.querySelectorAll('.rh-row')];
+      // the combination column is 164px, enough for the usual combinations; a longer one widens it
+      const keyHead=panel.querySelector('.rh-header .rh-h-key'), keys=rows.map(r=>r.querySelector('input.field')).filter(Boolean);
+      keyHead.style.width=''; keys.forEach(k=>{ k.style.width=''; });
+      const keyNeed=Math.max(0, ...keys.map(k=>k.scrollWidth>k.clientWidth ? k.scrollWidth+8 : 0));
+      if(keyNeed){ keyHead.style.width=keyNeed+'px'; keys.forEach(k=>{ k.style.width=keyNeed+'px'; }); }
+      heads.forEach(h=>{ h.style.width=''; });
+      rows.forEach(r=>r.querySelectorAll('.rh-notify-col').forEach(c=>{ c.style.width=''; }));
+      heads.forEach((h, i)=>{
+        if(h.scrollWidth<=h.clientWidth) return;
+        const w=(h.scrollWidth+6)+'px';
+        h.style.width=w;
+        rows.forEach(r=>{ const c=r.querySelectorAll('.rh-notify-col')[i]; if(c) c.style.width=w; });
+      });
+    }
+    /* One constraints panel at a time, hanging from its button. It closes on a click elsewhere, Esc, any
+       scroll (it is fixed on screen and would drift from its row), or when the rows are rebuilt. */
+    let rhOpenPop=null;
+    function rhClosePop(){
+      if(!rhOpenPop) return;
+      const o=rhOpenPop; rhOpenPop=null;
+      o.pop.remove(); o.btn.classList.remove('active');
+      document.removeEventListener('mousedown', rhPopOutside, true);
+      document.removeEventListener('keydown', rhPopEsc, true);
+      document.removeEventListener('scroll', rhClosePop, true);
+    }
+    function rhPopOutside(e){ if(rhOpenPop && !rhOpenPop.pop.contains(e.target) && !rhOpenPop.btn.contains(e.target)) rhClosePop(); }
+    // Esc closes the panel only, not the whole Settings window behind it.
+    function rhPopEsc(e){ if(e.key==='Escape' && rhOpenPop){ e.stopPropagation(); rhClosePop(); } }
+    function rhOpenCons(btn, list){
+      const same=rhOpenPop && rhOpenPop.btn===btn;
+      rhClosePop();
+      if(same) return;
+      const pop=document.createElement('div'); pop.className='rh-pop';
+      // Title and checkboxes only: what constraints are for is said once, on the column header.
+      const head=document.createElement('div'); head.className='rh-pop-head'; head.textContent=TR.rhVinPopTitle||'';
+      pop.appendChild(head); pop.appendChild(list);
+      settingsOverlay.appendChild(pop);
+      const r=btn.getBoundingClientRect();
+      pop.style.top=(r.bottom+6)+'px';
+      pop.style.left=Math.max(8, Math.min(r.left, window.innerWidth-pop.offsetWidth-8))+'px';
+      btn.classList.add('active');
+      rhOpenPop={ pop, btn };
+      setTimeout(()=>{
+        document.addEventListener('mousedown', rhPopOutside, true);
+        document.addEventListener('keydown', rhPopEsc, true);
+        document.addEventListener('scroll', rhClosePop, true);
+      }, 0);
     }
 
     /* --- per-provider temporary-chat support (merged into the "Selezionati" column of the
@@ -4523,6 +4999,9 @@
       capturedRecipeHotkeys={ ...(currentSettings.recipe_hotkeys||{}) };
       capturedRecipeNotify={ ...(currentSettings.recipe_notify||{}) };
       capturedRecipeMenu={ ...(currentSettings.recipe_menu||{}) };
+      capturedRecipeRead={ ...(currentSettings.recipe_read||{}) };
+      capturedRecipeConstraints={ ...(currentSettings.recipe_constraints||{}) };
+      capturedRecipeProvider={ ...(currentSettings.recipe_provider||{}) };
       rhGlobalNotify.checked=!!currentSettings.monitor_enabled;
       setGesture.checked=currentSettings.gesture_menu!==false;
       if(setAdmin && TAURI) invoke('admin_start_state').then(v=>{ setAdmin.checked=!!v; }).catch(()=>{});
@@ -4548,8 +5027,11 @@
       }
       const rn={}; Object.keys(capturedRecipeNotify).forEach(k=>{ if(capturedRecipeNotify[k]===false) rn[k]=false; });
       const rm={}; Object.keys(capturedRecipeMenu).forEach(k=>{ if(capturedRecipeMenu[k]===false) rm[k]=false; });
+      const rr={}; Object.keys(capturedRecipeRead).forEach(k=>{ if(capturedRecipeRead[k]===true) rr[k]=true; });
+      const rc={ ...capturedRecipeConstraints };
+      const rp={ ...capturedRecipeProvider };
       const lowPowerChanged = !!currentSettings.low_power !== setLowPower.checked;
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, recipe_read:rr, recipe_constraints:rc, recipe_provider:rp, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
       closeModal(settingsOverlay);
@@ -4698,7 +5180,7 @@
       customRecipes.forEach(r=>{
         const li=document.createElement('li');
         li.className='recipe recipe-custom'; li.dataset.id=r.id; li.dataset.instruction=r.instruction;
-        li.innerHTML='<span class="ico">★</span><span class="rname"></span><button class="recipe-del">✕</button>';
+        li.innerHTML='<span class="ico">✦</span><span class="rname"></span><button class="recipe-del">✕</button>';
         li.querySelector('.rname').textContent=r.name;
         li.querySelector('.recipe-del').title=t.delete;
         recipesEl.appendChild(li);
@@ -4730,13 +5212,27 @@
       if(isNeutral){ instruction.value=''; }
       else if(activeRecipe.kind==='key'&&t.instr[activeRecipe.key]) instruction.value=t.instr[activeRecipe.key];
       else if(activeRecipe.kind==='id'){ const r=customRecipes.find(x=>x.id===activeRecipe.id); if(r) instruction.value=r.instruction; }
+      // an edit not saved yet comes back with its recipe, for as long as this conversation lasts
+      const draft=!isNeutral && ktInstrDrafts && ktInstrDrafts[recipeRefOf(activeRecipe)];
+      if(draft) instruction.value=draft;
       updateSaveInstr();
+      applyConstraintVisibility();
     }
-    instruction.addEventListener('input', updateSaveInstr);
+    /* Unsaved edits of a recipe's instruction, per recipe, for the current conversation only: switching to another
+       recipe and back used to throw the edit away (QA run of 27/09/2026, step 4). Saving turns the edit into the
+       recipe's own text; a new conversation, or another one opened from the history, starts clean. `var` on
+       purpose: a new conversation can be opened while the page is still starting, before this line has run. */
+    var ktInstrDrafts={};
+    instruction.addEventListener('input', ()=>{
+      const ref=recipeRefOf(activeRecipe), v=instruction.value;
+      if(v.trim() && v.trim()!==canonicalInstruction().trim()) ktInstrDrafts[ref]=v; else delete ktInstrDrafts[ref];
+      updateSaveInstr();
+    });
     // Toggle "Auto-invio" Neutra: salva la preferenza (persistente).
     // Save the modified instruction: custom → updates the recipe; built-in → creates a custom copy.
     saveInstrBtn.addEventListener('click', async ()=>{
       const text=instruction.value.trim(); if(!text) return;
+      delete ktInstrDrafts[recipeRefOf(activeRecipe)];
       if(activeRecipe.kind==='id'){
         const r=customRecipes.find(x=>x.id===activeRecipe.id);
         if(r){ r.instruction=text; await persistRecipes(); renderCustomRecipes();
@@ -4921,6 +5417,7 @@
         enhanceSelect(sel);
         sel.addEventListener('change', ()=>{ f.value=sel.selectedIndex; persistFields(); });
       });
+      applyConstraintVisibility();
     }
     function renderCustomFieldsDebounced(){ clearTimeout(renderCFTimer); renderCFTimer=setTimeout(renderCustomFields,300); }
 
@@ -5048,7 +5545,7 @@
       // builder's #content, invisible now that it sits under the always-on Kotodama view (KT_ONLY).
       listen('app://fill-clipboard', e=>{ ktInput.value=e.payload||''; ktAutoGrow(); closeProviderBar(); closeKotodama(); ktInput.focus(); });
       // Per-recipe hotkey -> INLINE transform: the text was copied from ANOTHER app; process
-      // it invisibly with the default provider and paste the answer back (inline_finish).
+      // it invisibly with the recipe's provider and paste the answer back (inline_finish).
       listen('app://inline-transform', e=>{
         const d=e.payload||{}; const txt=(d.text||'').trim(); const recipe=d.recipe||'';
         if(!txt){ invoke('inline_fail',{reason:'empty'}).catch(()=>{}); return; }
@@ -5237,7 +5734,7 @@
       populateProviderSelect();
       populateRecipeSelect();
       buildLangBar();
-      ktLoadAll();                // Kotodama sessions from disk (async, list renders on open)
+      ktLoadAll();                // Kotodama sessions from disk (async; draws the list once read)
       await applySettings(currentSettings); // async: loads and applies the language
       enhanceSelects();           // after applySettings: the length/tone options exist
       renderCustomRecipes();
