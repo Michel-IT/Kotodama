@@ -1517,7 +1517,21 @@ const HARVEST_JS: &str = r##"
     if (!el) return false;
     try {
       var composerEl = findComposerEl();
-      if (composerEl && el === composerEl) return true;
+      // Rejected whenever the candidate and the real composer are the SAME element, or one sits
+      // inside the other's subtree -- never trimmed/split, the whole candidate is thrown away.
+      // `composerEl.contains(el)` catches a fallback selector that matched something INSIDE the
+      // composer itself (e.g. its own placeholder span). `el.contains(composerEl)` is the mirror
+      // case, a candidate that wraps the composer. Both are about the composer ELEMENT precisely,
+      // never a wrapper found by `closest()` on an ancestor class/role -- that broader form was
+      // tried and reverted (see the note above): a real answer bubble commonly lives inside the
+      // SAME outer `<form>` as the input box (observed on ChatGPT), so rejecting anything under
+      // that shared wrapper throws real answers away too. Neither containment check ever fires
+      // for ChatGPT's writing-block/canvas: `findComposerEl` already excludes anything inside
+      // `[data-testid="chatgpt-writing-block"]` from the composer search, so `composerEl` is
+      // never part of that subtree and `el.contains(composerEl)` is false there (checked live
+      // 27/09/2026 on both writing-block variants, plus Claude and Gemini's real answers) -- the
+      // writing-block's OWN chrome is handled separately, in `CHROME_SEL` below.
+      if (composerEl && (el === composerEl || el.contains(composerEl) || composerEl.contains(el))) return true;
       return el.matches('form, [role="textbox"], [class*="query-bar" i]');
     } catch(e){ return false; }
   }
@@ -1542,8 +1556,19 @@ const HARVEST_JS: &str = r##"
   // sr-only copy of it. The text match on "Thought for..." in sanitizeAnswer cannot recognise such a caption in
   // every language, so it landed at the head of the answer, doubled. Read live on 27/09/2026 through the
   // WebView2 inspection port; excluding the pill removes both copies.
+  // ChatGPT's "writing block" canvas carries its OWN title/toolbar bar in a `<header>`, a sibling of the
+  // body editor inside the same answer container -- e.g. the document's title ("Nuovo progetto") or, for
+  // the email variant, "Email" plus an in-header "Connect email" button. The button was already excluded
+  // above; the plain title text next to it was not, and rode along at the head of the answer (measured
+  // live 27/09/2026, both variants, WebView2 inspection port: ANSWER-SHAPE logged PRIMO-TESTO under a
+  // `header.flex.min-w-0.select-none` ancestor that is itself inside `[data-testid="chatgpt-writing-block"]`).
+  // Scoped to that testid, not a bare `header`: this selector is shared by every provider via CHROME_SEL,
+  // and a bare tag name would exclude any `<header>` ANY provider might render as real content -- unverified
+  // for providers other than ChatGPT. `matches()` accepts a descendant-combinator selector like this one:
+  // it checks the element's real ancestry in the document, not just a scope rooted at the element itself.
   var CHROME_SEL = 'button, [role="button"], [role="toolbar"], [role="menu"], [role="menuitem"],'
-    + ' [role="tab"], [role="tablist"], select, input, textarea, [data-testid="TurnStatus"]';
+    + ' [role="tab"], [role="tablist"], select, input, textarea, [data-testid="TurnStatus"],'
+    + ' [data-testid="chatgpt-writing-block"] header';
   // Reads the answer's text while SKIPPING that chrome. Hiding the controls and re-reading
   // innerText does not work -- measured: with three controls hidden the string came back byte for
   // byte identical, because innerText serves a value the engine had already computed. So the text
