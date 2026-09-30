@@ -2079,20 +2079,20 @@
       if(ok(base)) return base;
       return ktDefaultProvider();
     }
-    function customFieldIds(){ return customFields.filter(f=>f.options&&f.options.length).map(f=>'f:'+f.id); }
-    // The list for one recipe: what the user chose, else the sensible default for that recipe. A recipe that
-    // carries constraints at all also carries the user's own fields, which is what happened before this existed.
+    // The list for one recipe: what the user chose, else the sensible default for that recipe. The user's own
+    // fields are never in a default: a field is made for one recipe (a "Lingua" for Traduci) and on every other
+    // recipe it changes the answer (Riformula came back in English). A new field goes to the recipe it was
+    // created on; Settings -> Ricette adds it to others.
     function constraintsForRef(ref){
       const saved=(currentSettings.recipe_constraints||{})[ref];
       if(Array.isArray(saved)) return saved;
       if(ref.indexOf('key:')===0){
         const base=CONSTRAINT_DEFAULTS[ref.slice(4)];
-        if(base) return base.length ? base.concat(customFieldIds()) : [];
-        return ['length','tone','resp'].concat(customFieldIds());
+        return base ? base.slice() : ['length','tone','resp'];
       }
       const r=customRecipes.find(x=>('id:'+x.id)===ref);
       if(r && r.noConstraints) return [];
-      return ['length','tone','resp'].concat(customFieldIds());
+      return ['length','tone','resp'];
     }
     function activeConstraints(){ return constraintsForRef(recipeRefOf(activeRecipe)); }
     function ktRecipeSkipsConstraints(){ return activeConstraints().length===0; }
@@ -2104,14 +2104,18 @@
         if(id) c.classList.toggle('is-off', cons.indexOf(id)<0);
       });
     }
-    function buildPrompt(){
+    function buildPrompt(){ return wrapForActiveRecipe(content.value.trim()); }
+    // The active recipe's instruction around the text, then only the constraints THIS recipe carries. The chat
+    // send and the classic builder both go through here: the chat used to append Length, Tone and every custom
+    // field whatever the recipe, so a field made for one recipe changed the answer of all the others.
+    function wrapForActiveRecipe(text){
       const t=TR;
       // Ricetta "Neutra": invia il testo cosi' com'e' (nessuna istruzione, nessun vincolo).
-      if(activeRecipe.kind==='key' && activeRecipe.key==='neutral') return content.value.trim();
+      if(activeRecipe.kind==='key' && activeRecipe.key==='neutral') return text;
       // Recipes whose instruction IS the whole job (repeat this text unchanged) must not carry the style
       // constraints: "be short" and "be professional" contradict "repeat word for word", and a provider that
       // takes style seriously rewrites the text (measured: Claude rewrote, ChatGPT obeyed).
-      const body=instruction.value.trim()+'\n\n"""\n'+content.value.trim()+'\n"""';
+      const body=instruction.value.trim()+'\n\n"""\n'+text+'\n"""';
       if(ktRecipeSkipsConstraints()) return body;
       const cons=activeConstraints();
       const lines=[];
@@ -2947,8 +2951,34 @@
         sess.updated=Date.now();
         ktAllSessions.unshift(sess);
         ktPersist(); renderKtSessions();
+        // Coming back to the app after a shortcut shows ITS conversation (ktShortcutJumpCheck). Not when the
+        // app has the focus right now: then the user is working in it and nothing moves under them.
+        if(!ktWinFocused) ktShortcutJump=sess.id;
       }
       return true;
+    }
+    /* Back in the app after a shortcut: the conversation it created is the one shown, not the last one used
+       inside the app. Several shortcuts in a row -> the last one (the others are right below it in the
+       history). A message being written in the composer wins: the user stays where they were. */
+    let ktShortcutJump=null;
+    // The focus of the WINDOW, from Tauri. The page's own signals do not follow it: document.hasFocus() stayed
+    // true with Notepad in front, and bringing the window back fired no 'focus' until a click inside the page
+    // (QA run of 30/09/2026). The browser events stay only for the page opened outside the app.
+    let ktWinFocused=true;
+    if(tauriWin){
+      tauriWin.isFocused().then(f=>{ ktWinFocused=!!f; }).catch(()=>{});
+      tauriWin.onFocusChanged(e=>{ ktWinFocused=!!e.payload; if(ktWinFocused) ktShortcutJumpCheck(); }).catch(()=>{});
+    } else {
+      window.addEventListener('focus', ()=>{ ktWinFocused=true; ktShortcutJumpCheck(); });
+      window.addEventListener('blur', ()=>{ ktWinFocused=false; });
+    }
+    function ktShortcutJumpCheck(){
+      if(!ktShortcutJump) return;
+      const id=ktShortcutJump; ktShortcutJump=null;
+      if(ktInput.value.trim()) return;
+      if(ktSession && ktSession.id===id) return;
+      if(!ktAllSessions.some(s=>s.id===id)) return;
+      ktLoadSession(id);
     }
 
     // Retry ONE failed card (⟳ in its header): reset it to pending and re-dispatch that
@@ -4253,19 +4283,8 @@
       // not re-wrapped every turn. Uses `instruction.value` (the live-edited textarea, NOT the
       // canonical/saved one) exactly like the builder's own buildPrompt() -- editing without
       // hitting "Salva" still applies to the send, saving only persists it for reuse later.
-      const ktIsNeutral = activeRecipe.kind==='key' && activeRecipe.key==='neutral';
-      let sendText;
-      if(ktIsNeutral){
-        sendText = text;   // Neutra: testo grezzo, nessun vincolo (come buildPrompt)
-      } else {
-        sendText = instruction.value.trim()+'\n\n"""\n'+text+'\n"""\n\n'+t.constraints+'\n- '+t.cLength+': '+lengthSel.value+'\n- '+t.cTone+': '+toneSel.value;
-        for(const f of customFields){
-          if(!f.options||!f.options.length) continue;
-          const v=f.options[Math.min(f.value||0, f.options.length-1)];
-          if(f.label && v) sendText+='\n- '+f.label+': '+v;
-        }
-        if(respSel.selectedIndex===1) sendText+='\n\n'+t.answerOnlyText;
-      }
+      // Only the constraints the recipe carries (Settings -> Ricette), as buildPrompt does.
+      const sendText = wrapForActiveRecipe(text);
       if(sendText!==text) turn.sendText=sendText;   // a retry resends exactly this (recipe + constraints)
       // The pre-warmed page is being consumed by this very send: re-arm, so the NEXT message
       // pre-warms again on its first keystroke.
@@ -5480,7 +5499,16 @@
     fieldsOverlay.addEventListener('click', e=>{ if(e.target===fieldsOverlay) closeModal(fieldsOverlay); });
     document.getElementById('addFieldBtn').addEventListener('click', ()=>{
       const t=TR;
-      customFields.push({ id:genId(), label:t.newFieldName, options:[t.newOption+' 1', t.newOption+' 2'], value:0 });
+      const f={ id:genId(), label:t.newFieldName, options:[t.newOption+' 1', t.newOption+' 2'], value:0 };
+      customFields.push(f);
+      // The new field belongs to the recipe it was created on, and only to that one (see constraintsForRef).
+      // Not to a recipe that carries no constraints by design (Neutra, Ripeti identico, "no constraints"):
+      // one field there would switch all of them back on.
+      const ref=recipeRefOf(activeRecipe), cur=constraintsForRef(ref);
+      if(ref!=='key:neutral' && cur.length){
+        currentSettings.recipe_constraints={ ...(currentSettings.recipe_constraints||{}), [ref]:cur.concat('f:'+f.id) };
+        persistSettings(currentSettings);
+      }
       persistFields(); renderFieldsEditor(); renderCustomFields();
     });
 
