@@ -782,11 +782,9 @@
     }
     .kt-card-head .nm { font-size:12.5px; font-weight:650; min-width:0; color:var(--text-dim); }
     .kt-status { font-size:11px; color:var(--text-faint); display:flex; align-items:center; gap:6px; flex:none; }
-    .kt-retry { flex:none; width:22px; height:22px; border:1px solid var(--border); border-radius:50%;
-      background:var(--field); color:inherit; cursor:pointer; font-size:13px; line-height:1;
-      display:grid; place-items:center; transition:color .15s, border-color .15s, transform .1s; }
-    .kt-retry:hover { color:var(--accent); border-color:var(--accent); }
-    .kt-retry:active { transform:rotate(180deg); }
+    /* ⟳ sits with Copy, in the same row of faint actions (.kt-acts); only its press turns. */
+    .kt-retry svg, .kt-resend svg { transition:transform .15s; }
+    .kt-retry:active svg, .kt-resend:active svg { transform:rotate(180deg); }
     .kt-status .dl-spin { width:12px; height:12px; border-width:2px; }
     .kt-card.done .kt-status { color:var(--accent); }
     .kt-card.blocked .kt-status { color:var(--accent); }
@@ -1844,7 +1842,7 @@
       ktSideCollapse:'Collapse sidebar', ktSideExpand:'Expand sidebar',
       ktCtxIntro:'Context from our earlier conversation; answer the new message at the end.',
       ktCtxUser:'User:', ktCtxYou:'You answered:', ktCtxNew:'New message:',
-      ktRetry:'Retry',
+      ktRetry:'Retry', ktRetryAll:'Send again to the ones that did not answer',
       setTabGeneral:'General', setTabShortcuts:'Shortcuts', setTabAppearance:'Appearance',
       setTabSystem:'System', setTabAbout:'Updates',
       setRecipeHotkeys:'Shortcuts',
@@ -2586,7 +2584,38 @@
     }
     function ktActs(...btns){ const a=document.createElement('span'); a.className='kt-acts'; btns.forEach(x=>a.appendChild(x)); return a; }
     // The user's message: the bubble plus its faint actions. Built in one place for live and saved turns.
-    function ktUserMsg(text, files){
+    const KT_ICON_RESEND='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+    // ⟳ of one answer, next to its Copy: the actions on an answer stay together, in the same place. Also on a card
+    // waiting for a sign-in: once the user has signed in, sending again is exactly what is needed.
+    function ktPlaceRetry(foot, bid, key){
+      if(!foot) return;
+      let acts=foot.querySelector('.kt-acts'); if(!acts){ acts=ktActs(); foot.appendChild(acts); }
+      const old=acts.querySelector('.kt-retry'); if(old) old.remove();
+      const rb=document.createElement('button'); rb.type='button'; rb.className='kt-icon-btn kt-retry'; rb.innerHTML=KT_ICON_RESEND;
+      rb.title=TR.ktRetry; rb.setAttribute('aria-label', TR.ktRetry||'');
+      rb.addEventListener('click', ()=>ktRetryKey(bid, key));
+      acts.appendChild(rb); foot.hidden=false;
+    }
+    // The answers of one turn that can be sent again: failed ones and those waiting on the user (sign-in, check).
+    function ktRetryable(turn){
+      const out=[];
+      for(const id of Object.keys(ktCards)){
+        const i=id.lastIndexOf(':'), bid=id.slice(0,i), key=id.slice(i+1), ref=ktCards[id];
+        if(ktTurnByBid[bid]!==turn) continue;
+        const c=ref.card.classList;
+        if(c.contains('blocked') || (ktIsFinal(ref) && !c.contains('done') && !c.contains('cancelled'))) out.push([bid,key]);
+      }
+      return out;
+    }
+    // "Resend" under the user's message: visible only while some answer of that turn can be sent again.
+    const ktResendBtns=new Map();   // turn -> its button, for the turns on screen
+    function ktSyncAllRetry(){
+      for(const [turn,btn] of ktResendBtns){
+        if(!btn.isConnected){ ktResendBtns.delete(turn); continue; }
+        btn.hidden=!ktRetryable(turn).length;
+      }
+    }
+    function ktUserMsg(text, files, getTurn){
       const m=document.createElement('div'); m.className='kt-umsg';
       if(files && files.length){
         const fl=document.createElement('div'); fl.className='kt-umsg-files';
@@ -2594,7 +2623,16 @@
         m.appendChild(fl);
       }
       const u=document.createElement('div'); u.className='kt-user'; u.textContent=text;
-      m.appendChild(u); m.appendChild(ktActs(ktCopyBtn(()=>text)));
+      const acts=ktActs(ktCopyBtn(()=>text));
+      if(getTurn){
+        const rs=document.createElement('button'); rs.type='button'; rs.className='kt-icon-btn kt-resend'; rs.innerHTML=KT_ICON_RESEND;
+        rs.title=TR.ktRetryAll||''; rs.setAttribute('aria-label', TR.ktRetryAll||''); rs.hidden=true;
+        rs.addEventListener('click', ()=>{ const turn=getTurn(); if(turn) ktRetryable(turn).forEach(([b,k])=>ktRetryKey(b,k)); });
+        acts.appendChild(rs);
+        // Registered once the turn exists (a live turn is created right after its message is drawn).
+        setTimeout(()=>{ const turn=getTurn(); if(turn){ ktResendBtns.set(turn, rs); ktSyncAllRetry(); } }, 0);
+      }
+      m.appendChild(u); m.appendChild(acts);
       return m;
     }
     // Width of the shared column (--kt-col in the CSS), taken from the WIDEST turn in the thread: every
@@ -2613,7 +2651,7 @@
     // Rebuilds one SAVED turn in the thread (final cards, no spinners). Failed cards get
     // the ⟳ retry too: they are registered under a synthetic bid so ktRetryKey can reuse them.
     function ktRenderSavedTurn(turn){
-      ktThread.appendChild(ktUserMsg(turn.text||'', turn.files));
+      ktThread.appendChild(ktUserMsg(turn.text||'', turn.files, ()=>turn));
       const grid=document.createElement('div'); grid.className='kt-grid';
       ktSetGridCols(grid, Object.keys(turn.answers||{}).length);
       const svBid='sv'+(ktSeq++);
@@ -2660,13 +2698,7 @@
           anyRetry=true;
           ktCards[`${svBid}:${key}`]={ card, body, st:card.querySelector('.kt-st-txt'),
             spin:null, foot:card.querySelector('.kt-card-foot'), text:'' };
-          // Same reasoning as ktOnAnswer: retrying a 'login' card would just fail again the same way.
-          if(st!=='login'){
-            const stEl=card.querySelector('.kt-status');
-            const rb=document.createElement('button'); rb.className='kt-retry'; rb.textContent='⟳'; rb.title=TR.ktRetry;
-            rb.addEventListener('click', ()=>ktRetryKey(svBid, key));
-            stEl.appendChild(rb);
-          }
+          if(st!=='cancelled') ktPlaceRetry(card.querySelector('.kt-card-foot'), svBid, key);
         }
         grid.appendChild(card);
       });
@@ -2983,10 +3015,21 @@
 
     // Retry ONE failed card (⟳ in its header): reset it to pending and re-dispatch that
     // provider only, with the same turn text (context-aware on resumed sessions).
+    const ktSuperseded=new Set();   // "bid:key" of attempts replaced by a retry: their late events are dropped
     async function ktRetryKey(oldBid, key){
       const turn=ktTurnByBid[oldBid]; const ref=ktCards[`${oldBid}:${key}`];
       if(!turn || !ref || !TAURI) return;
       const bid='b'+(ktSeq++)+'-r'+Math.random().toString(36).slice(2,6);
+      // The attempt being replaced may still be open in Rust (a card waiting on a sign-in or a check): the new
+      // send closes it as an error, and that outcome must not overwrite the turn the new attempt now owns.
+      ktSuperseded.add(`${oldBid}:${key}`);
+      // Retrying a card that waits on a sign-in or a check: it leaves the verification queue, the new send
+      // brings the block back if it is still there.
+      if(ktBlocks.some(b=>b.bid===oldBid && b.key===key)){
+        ktClearBlock(oldBid, key); ref.card.classList.remove('blocked');
+        // The verification bar follows the queue: gone with its last block, on to the next one otherwise.
+        if(ktBlocks.length) ktVerifyPump(); else ktVerifyFinish();
+      }
       delete ktCards[`${oldBid}:${key}`];
       ktCards[`${bid}:${key}`]=ref;
       ktTurnByBid[bid]=turn;
@@ -3002,13 +3045,13 @@
       ref.createdAt=Date.now(); ref.sentAt=0; ref.firstAt=0; ref.doneAt=0;
       ktShowTiming(ref.card.querySelector('.kt-status'), null);   // a retry streams from scratch: forget the previous attempt's preview
       const stEl=ref.card.querySelector('.kt-status');
-      const rb=stEl&&stEl.querySelector('.kt-retry'); if(rb) rb.remove();
       if(stEl && !stEl.querySelector('.dl-spin')){ const sp=document.createElement('span'); sp.className='dl-spin'; stEl.prepend(sp); ref.spin=sp; }
       ref.st.textContent=ktStatusLabel('pending');
       { const a=turn.answers[key]||{}; const old=[...(a.prev||[]), a].flatMap(v=>(v.audio||[]).map(x=>x.file)); if(old.length) invoke('kotodama_audio_delete',{ files:old }).catch(()=>{}); }
       turn.answers[key]={status:'pending', text:''};
       if(ktSession) ktSession.updated=Date.now();
       ktPersist();
+      ktSyncAllRetry();
       const freshFlag=!ktStarted[key];
       ktStarted[key]=true;
       // a retry sends too: from here on the tabs carry this conversation
@@ -3400,6 +3443,7 @@
         return;
       }
       const id=`${d.broadcastId}:${d.key}`, ref=ktCards[id];
+      if(ktSuperseded.has(id)) return;   // an attempt already replaced by a retry: its blocks are not the user's to solve
       const at=ktBlocks.findIndex(b=>b.bid===d.broadcastId && b.key===d.key);
       if(d.blocked){
         if(at<0){ ktBlocks.push({ bid:d.broadcastId, key:d.key, reason:d.reason, since:Date.now() }); ktVerifyPaused=false; }
@@ -3416,6 +3460,7 @@
           }
           ob.textContent = d.reason==='login' ? (TR.ktLoginBtn||TR.ktOpenProvider) : TR.ktOpenProvider;
           ref.foot.hidden=false;
+          ktPlaceRetry(ref.foot, d.broadcastId, d.key);
         }
       } else {
         const was=ktBlocks.find(b=>b.bid===d.broadcastId && b.key===d.key);
@@ -3436,7 +3481,10 @@
       if(ref && ref.card.classList.contains('blocked')){
         ref.card.classList.remove('blocked');
         const ob=ref.foot.querySelector('.kt-open-block'); if(ob) ob.remove();
-        if(!ktIsFinal(ref)){ ref.st.textContent=ktStatusLabel('pending'); ref.body.textContent=''; }
+        if(!ktIsFinal(ref)){
+          ref.st.textContent=ktStatusLabel('pending'); ref.body.textContent='';
+          const rb=ref.foot.querySelector('.kt-retry'); if(rb) rb.remove();   // the answer is coming again
+        }
       }
       if(ktVerifyActive && ktVerifyActive.bid===bid && ktVerifyActive.key===key) ktVerifyActive=null;
     }
@@ -4045,7 +4093,7 @@
       ktCards[`${bid}:${key}`]=ref;
     }
     function ktAppendTurn(bid, text, keys, files){
-      ktThread.appendChild(ktUserMsg(text, files));
+      ktThread.appendChild(ktUserMsg(text, files, ()=>ktTurnByBid[bid]));
       const grid=document.createElement('div'); grid.className='kt-grid';
       ktSetGridCols(grid, keys.length);
       keys.forEach(key=>ktPendingCard(grid, bid, key));
@@ -4086,6 +4134,7 @@
     }
     function ktOnAnswer(d){
       if(inlineOnAnswer(d)) return;   // inline transform: paste-back, no cards/sessions
+      if(ktSuperseded.has(`${d.broadcastId}:${d.key}`)){ ktClearPending(d.broadcastId, d.key); return; }
       const st=d.status||'error';
       if(st==='pending') return;                       // card already rendered as pending
       // Stopped or failed mid-stream with nothing delivered: keep what the user already watched being written
@@ -4155,17 +4204,6 @@
       if(ref.spin) ref.spin.remove();
       ref.st.textContent=ktStatusLabel(st)+((d.truncated&&st!=='error')?` ${TR.ktTruncated}`:'');
       ktShowTiming(ref.card.querySelector('.kt-status'), ktTimingOf(ref));
-      // failed/partial card: browser-style ⟳ retry icon right of the status text -- EXCEPT for
-      // 'login': retrying the same send while still logged out would just fail again the same
-      // way; the useful action there is the "Accedi" button below, not a retry.
-      if(st!=='done' && st!=='login'){
-        const stEl=ref.card.querySelector('.kt-status');
-        if(stEl && !stEl.querySelector('.kt-retry')){
-          const rb=document.createElement('button'); rb.className='kt-retry'; rb.textContent='⟳'; rb.title=TR.ktRetry;
-          rb.addEventListener('click', ()=>ktRetryKey(d.broadcastId, d.key));
-          stEl.appendChild(rb);
-        }
-      }
       const text=(d.text||'').trim();
       ref.text=text;
       if(text){
@@ -4183,6 +4221,8 @@
         if(st!=='cancelled'){ ref.foot.hidden=false; ref.foot.prepend(btn); }
         const cp=ref.foot.querySelector('.kt-copy'); if(cp) cp.remove();
       }
+      // A failed or partial answer can be sent again, 'login' included: after signing in that is the fix.
+      if(st!=='done' && st!=='cancelled') ktPlaceRetry(ref.foot, d.broadcastId, d.key);
     }
     // Live preview (app://kotodama-partial): the answer rendered while it is being written. It is never
     // final -- no status change and no ref.text, so Copy and the saved session keep using the delivered
@@ -5587,11 +5627,11 @@
       });
       listen('app://provider-closed', ()=>{ closeProviderBar(); });
       // Kotodama meta-chat: per-provider answers and progress heartbeats.
-      listen('app://kotodama-answer', e=>{ ktOnAnswer(e.payload||{}); });
+      listen('app://kotodama-answer', e=>{ ktOnAnswer(e.payload||{}); ktSyncAllRetry(); });
       listen('app://kotodama-progress', e=>{ ktOnProgress(e.payload||{}); });
       listen('app://kotodama-sent', e=>{ const d=e.payload||{}; const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(ref && !ref.sentAt) ref.sentAt=Date.now(); });
       listen('app://kotodama-partial', e=>{ ktOnPartial(e.payload||{}); });
-      listen('app://kotodama-blocked', e=>{ ktOnBlocked(e.payload||{}); });
+      listen('app://kotodama-blocked', e=>{ ktOnBlocked(e.payload||{}); ktSyncAllRetry(); });
       listen('app://kotodama-conv', e=>{ ktOnConv(e.payload||{}); });
       listen('app://kotodama-audio', e=>{ ktOnAudio(e.payload||{}); });
       listen('app://kotodama-extras', e=>{ const d=e.payload||{}; ktPendingExtras[`${d.broadcastId}:${d.key}`]={ sources:d.sources||[], reasoning:d.reasoning||'' }; });

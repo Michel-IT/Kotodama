@@ -321,5 +321,6 @@
   "ktClearAllOk": "全部删除",
   "ktClearAllMsg": "{n} 个对话及其音频将永久消失。",
   "ktClearAllMsgOne": "该对话及其音频将永久消失。",
-  "ktClearAllEmpty": "历史已经是空的"
+  "ktClearAllEmpty": "历史已经是空的",
+  "ktRetryAll": "重新发送给未回复的人"
 }

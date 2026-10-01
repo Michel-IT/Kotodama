@@ -321,5 +321,6 @@
   "ktClearAllOk": "Izbriši vse",
   "ktClearAllMsg": "Pogovori ({n}) in njihov zvok izginejo za vedno.",
   "ktClearAllMsgOne": "Pogovor in njegov zvok izgineta za vedno.",
-  "ktClearAllEmpty": "Zgodovina je že prazna"
+  "ktClearAllEmpty": "Zgodovina je že prazna",
+  "ktRetryAll": "Pošlji ponovno tistim, ki niso odgovorili"
 }

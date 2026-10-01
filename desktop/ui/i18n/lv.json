@@ -321,5 +321,6 @@
   "ktClearAllOk": "Dzēst visu",
   "ktClearAllMsg": "{n} sarunas un to audio pazudīs uz visiem laikiem.",
   "ktClearAllMsgOne": "Saruna un tās audio pazudīs uz visiem laikiem.",
-  "ktClearAllEmpty": "Vēsture jau ir tukša"
+  "ktClearAllEmpty": "Vēsture jau ir tukša",
+  "ktRetryAll": "Nosūtīt vēlreiz tiem, kuri neatbildēja"
 }

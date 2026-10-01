@@ -321,5 +321,6 @@
   "ktClearAllOk": "すべて削除",
   "ktClearAllMsg": "{n} 件の会話と音声は完全に消えます。",
   "ktClearAllMsgOne": "会話と音声は完全に消えます。",
-  "ktClearAllEmpty": "履歴はすでに空です"
+  "ktClearAllEmpty": "履歴はすでに空です",
+  "ktRetryAll": "返答しなかった者に再送信"
 }

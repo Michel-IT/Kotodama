@@ -321,5 +321,6 @@
   "ktClearAllOk": "Futa yote",
   "ktClearAllMsg": "Mazungumzo {n} na sauti zake yatapotea kabisa.",
   "ktClearAllMsgOne": "Mazungumzo na sauti yake yatapotea kabisa.",
-  "ktClearAllEmpty": "Historia tayari iko tupu"
+  "ktClearAllEmpty": "Historia tayari iko tupu",
+  "ktRetryAll": "Tuma tena kwa wale ambao hawakujibu"
 }

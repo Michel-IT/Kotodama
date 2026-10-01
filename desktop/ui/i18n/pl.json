@@ -321,5 +321,6 @@
   "ktClearAllOk": "Usuń wszystko",
   "ktClearAllMsg": "Rozmowy ({n}) i ich dźwięk znikną na zawsze.",
   "ktClearAllMsgOne": "Rozmowa i jej dźwięk znikną na zawsze.",
-  "ktClearAllEmpty": "Historia jest już pusta"
+  "ktClearAllEmpty": "Historia jest już pusta",
+  "ktRetryAll": "Wyślij ponownie tym, którzy nie odpowiedzieli"
 }

@@ -321,5 +321,6 @@
   "ktClearAllOk": "Xóa tất cả",
   "ktClearAllMsg": "{n} cuộc trò chuyện và âm thanh của chúng sẽ biến mất vĩnh viễn.",
   "ktClearAllMsgOne": "Cuộc trò chuyện và âm thanh của nó sẽ biến mất vĩnh viễn.",
-  "ktClearAllEmpty": "Lịch sử đã trống"
+  "ktClearAllEmpty": "Lịch sử đã trống",
+  "ktRetryAll": "Gửi lại cho những người không trả lời"
 }

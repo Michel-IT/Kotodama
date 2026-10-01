@@ -321,5 +321,6 @@
   "ktClearAllOk": "Șterge tot",
   "ktClearAllMsg": "{n} conversații și sunetul lor dispar definitiv.",
   "ktClearAllMsgOne": "Conversația și sunetul ei dispar definitiv.",
-  "ktClearAllEmpty": "Istoricul este deja gol"
+  "ktClearAllEmpty": "Istoricul este deja gol",
+  "ktRetryAll": "Trimite din nou celor care nu au răspuns"
 }

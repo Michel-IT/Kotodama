@@ -321,5 +321,6 @@
   "ktClearAllOk": "Apagar tudo",
   "ktClearAllMsg": "{n} conversas e o seu áudio desaparecem para sempre.",
   "ktClearAllMsgOne": "A conversa e o seu áudio desaparecem para sempre.",
-  "ktClearAllEmpty": "O histórico já está vazio"
+  "ktClearAllEmpty": "O histórico já está vazio",
+  "ktRetryAll": "Enviar novamente para os que não responderam"
 }

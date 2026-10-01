@@ -321,5 +321,6 @@
   "ktClearAllOk": "Alles wissen",
   "ktClearAllMsg": "{n} gesprekken en hun audio verdwijnen voorgoed.",
   "ktClearAllMsgOne": "Het gesprek en de audio verdwijnen voorgoed.",
-  "ktClearAllEmpty": "De geschiedenis is al leeg"
+  "ktClearAllEmpty": "De geschiedenis is al leeg",
+  "ktRetryAll": "Opnieuw verzenden naar degenen die niet hebben geantwoord"
 }

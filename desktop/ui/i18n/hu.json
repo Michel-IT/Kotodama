@@ -321,5 +321,6 @@
   "ktClearAllOk": "Összes törlése",
   "ktClearAllMsg": "{n} beszélgetés és a hangjuk végleg eltűnik.",
   "ktClearAllMsgOne": "A beszélgetés és a hangja végleg eltűnik.",
-  "ktClearAllEmpty": "Az előzmények már üresek"
+  "ktClearAllEmpty": "Az előzmények már üresek",
+  "ktRetryAll": "Küld újra azoknak, akik nem válaszoltak"
 }

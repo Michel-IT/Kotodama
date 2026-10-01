@@ -321,5 +321,6 @@
   "ktClearAllOk": "Ištrinti viską",
   "ktClearAllMsg": "Pokalbiai ({n}) ir jų garsas dings visam laikui.",
   "ktClearAllMsgOne": "Pokalbis ir jo garsas dings visam laikui.",
-  "ktClearAllEmpty": "Istorija jau tuščia"
+  "ktClearAllEmpty": "Istorija jau tuščia",
+  "ktRetryAll": "Siųsti dar kartą tiems, kurie neatsakė"
 }

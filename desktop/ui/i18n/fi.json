@@ -321,5 +321,6 @@
   "ktClearAllOk": "Poista kaikki",
   "ktClearAllMsg": "{n} keskustelua ja niiden äänet katoavat pysyvästi.",
   "ktClearAllMsgOne": "Keskustelu ja sen ääni katoavat pysyvästi.",
-  "ktClearAllEmpty": "Historia on jo tyhjä"
+  "ktClearAllEmpty": "Historia on jo tyhjä",
+  "ktRetryAll": "Lähetä uudelleen niille, jotka eivät vastanneet"
 }

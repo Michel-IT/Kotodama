@@ -321,5 +321,6 @@
   "ktClearAllOk": "Kustuta kõik",
   "ktClearAllMsg": "{n} vestlust ja nende heli kaovad jäädavalt.",
   "ktClearAllMsgOne": "Vestlus ja selle heli kaovad jäädavalt.",
-  "ktClearAllEmpty": "Ajalugu on juba tühi"
+  "ktClearAllEmpty": "Ajalugu on juba tühi",
+  "ktRetryAll": "Saada uuesti neile, kes ei vastanud"
 }

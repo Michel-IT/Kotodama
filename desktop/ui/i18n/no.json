@@ -321,5 +321,6 @@
   "ktClearAllOk": "Slett alt",
   "ktClearAllMsg": "{n} samtaler og lyden deres forsvinner for godt.",
   "ktClearAllMsgOne": "Samtalen og lyden forsvinner for godt.",
-  "ktClearAllEmpty": "Historikken er allerede tom"
+  "ktClearAllEmpty": "Historikken er allerede tom",
+  "ktRetryAll": "Send på nytt til dem som ikke svarte"
 }

@@ -321,5 +321,6 @@
   "ktClearAllOk": "מחק הכול",
   "ktClearAllMsg": "{n} שיחות והשמע שלהן נעלמים לתמיד.",
   "ktClearAllMsgOne": "השיחה והשמע שלה נעלמים לתמיד.",
-  "ktClearAllEmpty": "ההיסטוריה כבר ריקה"
+  "ktClearAllEmpty": "ההיסטוריה כבר ריקה",
+  "ktRetryAll": "שלח שוב לאלו שלא השיבו"
 }

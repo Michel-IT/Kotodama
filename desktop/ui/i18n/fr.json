@@ -321,5 +321,6 @@
   "ktClearAllOk": "Tout effacer",
   "ktClearAllMsg": "{n} conversations et leur audio disparaissent définitivement.",
   "ktClearAllMsgOne": "La conversation et son audio disparaissent définitivement.",
-  "ktClearAllEmpty": "L'historique est déjà vide"
+  "ktClearAllEmpty": "L'historique est déjà vide",
+  "ktRetryAll": "Renvoyer à ceux qui n'ont pas répondu"
 }

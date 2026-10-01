@@ -321,5 +321,6 @@
   "ktClearAllOk": "Alles löschen",
   "ktClearAllMsg": "{n} Unterhaltungen und ihr Audio sind endgültig weg.",
   "ktClearAllMsgOne": "Die Unterhaltung und ihr Audio sind endgültig weg.",
-  "ktClearAllEmpty": "Der Verlauf ist schon leer"
+  "ktClearAllEmpty": "Der Verlauf ist schon leer",
+  "ktRetryAll": "Erneut an die senden, die nicht geantwortet haben"
 }

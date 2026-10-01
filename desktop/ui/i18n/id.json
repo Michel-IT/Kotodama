@@ -321,5 +321,6 @@
   "ktClearAllOk": "Hapus semua",
   "ktClearAllMsg": "{n} percakapan beserta audionya hilang selamanya.",
   "ktClearAllMsgOne": "Percakapan beserta audionya hilang selamanya.",
-  "ktClearAllEmpty": "Riwayat sudah kosong"
+  "ktClearAllEmpty": "Riwayat sudah kosong",
+  "ktRetryAll": "Kirim ulang ke yang tidak menjawab"
 }

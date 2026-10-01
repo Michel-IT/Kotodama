@@ -321,5 +321,6 @@
   "ktClearAllOk": "Tümünü sil",
   "ktClearAllMsg": "{n} konuşma ve sesleri kalıcı olarak silinir.",
   "ktClearAllMsgOne": "Konuşma ve sesi kalıcı olarak silinir.",
-  "ktClearAllEmpty": "Geçmiş zaten boş"
+  "ktClearAllEmpty": "Geçmiş zaten boş",
+  "ktRetryAll": "Cevap vermeyenlere yeniden gönder"
 }

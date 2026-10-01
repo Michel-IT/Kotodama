@@ -321,5 +321,6 @@
   "ktClearAllOk": "Ezabatu dena",
   "ktClearAllMsg": "{n} elkarrizketa eta haien audioa betiko desagertuko dira.",
   "ktClearAllMsgOne": "Elkarrizketa eta haren audioa betiko desagertuko dira.",
-  "ktClearAllEmpty": "Historia hutsik dago dagoeneko"
+  "ktClearAllEmpty": "Historia hutsik dago dagoeneko",
+  "ktRetryAll": "Igorri berriro ez zutenei"
 }

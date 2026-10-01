@@ -321,5 +321,6 @@
   "ktClearAllOk": "모두 삭제",
   "ktClearAllMsg": "대화 {n}개와 오디오가 영구히 사라집니다.",
   "ktClearAllMsgOne": "대화와 오디오가 영구히 사라집니다.",
-  "ktClearAllEmpty": "기록이 이미 비어 있습니다"
+  "ktClearAllEmpty": "기록이 이미 비어 있습니다",
+  "ktRetryAll": "응답하지 않은 사람에게 다시 전송"
 }

@@ -321,5 +321,6 @@
   "ktClearAllOk": "Radera allt",
   "ktClearAllMsg": "{n} konversationer och deras ljud försvinner för alltid.",
   "ktClearAllMsgOne": "Konversationen och dess ljud försvinner för alltid.",
-  "ktClearAllEmpty": "Historiken är redan tom"
+  "ktClearAllEmpty": "Historiken är redan tom",
+  "ktRetryAll": "Skicka igen till de som inte svarade"
 }

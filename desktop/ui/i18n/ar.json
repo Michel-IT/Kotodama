@@ -321,5 +321,6 @@
   "ktClearAllOk": "حذف الكل",
   "ktClearAllMsg": "ستُحذف المحادثات ({n}) وملفاتها الصوتية نهائيًا.",
   "ktClearAllMsgOne": "ستُحذف المحادثة وملفاتها الصوتية نهائيًا.",
-  "ktClearAllEmpty": "السجل فارغ بالفعل"
+  "ktClearAllEmpty": "السجل فارغ بالفعل",
+  "ktRetryAll": "أرسل مجددًا إلى من لم يرد"
 }

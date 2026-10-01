@@ -321,5 +321,6 @@
   "ktClearAllOk": "ลบทั้งหมด",
   "ktClearAllMsg": "การสนทนา {n} รายการและเสียงจะหายไปถาวร",
   "ktClearAllMsgOne": "การสนทนาและเสียงจะหายไปถาวร",
-  "ktClearAllEmpty": "ประวัติว่างอยู่แล้ว"
+  "ktClearAllEmpty": "ประวัติว่างอยู่แล้ว",
+  "ktRetryAll": "ส่งใหม่ให้ผู้ที่ไม่ได้ตอบ"
 }

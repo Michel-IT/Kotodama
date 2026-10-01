@@ -321,5 +321,6 @@
   "ktClearAllOk": "Smazat vše",
   "ktClearAllMsg": "Konverzace ({n}) a jejich zvuk zmizí navždy.",
   "ktClearAllMsgOne": "Konverzace a její zvuk zmizí navždy.",
-  "ktClearAllEmpty": "Historie je už prázdná"
+  "ktClearAllEmpty": "Historie je už prázdná",
+  "ktRetryAll": "Poslat znovu těm, co neodpověděli"
 }

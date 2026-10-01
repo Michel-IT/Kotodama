@@ -321,5 +321,6 @@
   "ktClearAllOk": "Elimina-ho tot",
   "ktClearAllMsg": "{n} converses i el seu àudio desapareixen per sempre.",
   "ktClearAllMsgOne": "La conversa i el seu àudio desapareixen per sempre.",
-  "ktClearAllEmpty": "L'historial ja és buit"
+  "ktClearAllEmpty": "L'historial ja és buit",
+  "ktRetryAll": "Reenvia als que no van respondre"
 }

@@ -290,6 +290,7 @@
   "ktCtxYou": "You answered:",
   "ktCtxNew": "New message:",
   "ktRetry": "Retry",
+  "ktRetryAll": "Send again to the ones that did not answer",
   "setTabGeneral": "General",
   "setTabShortcuts": "Shortcuts",
   "setTabAppearance": "Appearance",

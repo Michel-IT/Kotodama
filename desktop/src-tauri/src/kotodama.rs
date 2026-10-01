@@ -130,6 +130,14 @@ fn blocked_marks() -> &'static Mutex<HashSet<(String, String)>> {
     static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(HashSet::new()))
 }
+/// The subset of `blocked_marks` whose block is a sign-in wall. Signing in navigates the page, and the new
+/// document does not know a block was ever pushed, so it never pushes "unblocked": the page load that brings
+/// the tab back ends the block instead (on_page_finished). A message that met a sign-in wall did not really
+/// reach the user's account, so that same page load sends it again, once.
+fn login_marks() -> &'static Mutex<HashSet<(String, String)>> {
+    static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashSet::new()))
+}
 /// Network readers per (broadcast, provider), one per answer request the page made (netread.rs).
 type NetReaders = HashMap<String, Box<dyn crate::netread::Reader>>;
 /// When the last network preview went out for a (broadcast, provider), and how long the text was then. Both
@@ -2864,6 +2872,7 @@ fn build_resume_js(
 fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, truncated: bool, md: &str) {
     // An outcome ends any block on this provider for this broadcast, and its network readers.
     blocked_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    login_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_readers().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_partials().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_finish_armed().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
@@ -3216,10 +3225,17 @@ fn handle_push(
         let reason = data.unwrap_or_default();
         {
             let mut marks = blocked_marks().lock().unwrap();
+            let mut logins = login_marks().lock().unwrap();
             if st == "blocked" {
                 marks.insert((bid.clone(), key.clone()));
+                if reason == "login" {
+                    logins.insert((bid.clone(), key.clone()));
+                } else {
+                    logins.remove(&(bid.clone(), key.clone()));
+                }
             } else {
                 marks.remove(&(bid.clone(), key.clone()));
+                logins.remove(&(bid.clone(), key.clone()));
             }
         }
         debug::log(format!("kotodama {st} key={key} bid={bid} reason={reason}"));
@@ -3490,6 +3506,18 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
             .map(|bc| bc.pending.contains(key))
             .unwrap_or(false);
         if still_pending {
+            // Back on the provider's site after a sign-in wall: the block is over as far as we know (a wall
+            // still there is pushed again by the resumed script), and the message goes out again, once.
+            let pair = (bid.clone(), key.to_string());
+            if login_marks().lock().unwrap().remove(&pair) {
+                blocked_marks().lock().unwrap().remove(&pair);
+                sent_marks().lock().unwrap().remove(&pair);
+                debug::log(format!("kotodama unblocked key={key} bid={bid} reason=login (page back after sign-in)"));
+                let _ = webview.app_handle().emit(
+                    "app://kotodama-blocked",
+                    serde_json::json!({ "broadcastId": bid, "key": key, "blocked": false, "reason": "login" }),
+                );
+            }
             let allow_send = !already_sent(&bid, key);
             debug::log(format!(
                 "kotodama RESUME after nav key={key} bid={bid} resend={}",
