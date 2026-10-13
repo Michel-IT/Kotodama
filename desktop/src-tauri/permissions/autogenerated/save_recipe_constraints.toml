@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-recipe-constraints"
+description = "Enables the save_recipe_constraints command without any pre-configured scope."
+commands.allow = ["save_recipe_constraints"]
+
+[[permission]]
+identifier = "deny-save-recipe-constraints"
+description = "Denies the save_recipe_constraints command without any pre-configured scope."
+commands.deny = ["save_recipe_constraints"]

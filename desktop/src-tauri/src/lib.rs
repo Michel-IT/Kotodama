@@ -652,16 +652,17 @@ fn save_kotodama_sessions(app: AppHandle, sessions: serde_json::Value) -> Result
     settings::save_kt_sessions(&app, &sessions)
 }
 
-/// Returns the custom fields.
+/// Returns every recipe's constraints (built once from the old model on the first start, see settings.rs).
 #[tauri::command]
-fn get_fields(app: AppHandle) -> Vec<settings::Field> {
-    settings::load_fields(&app)
+fn get_recipe_constraints(app: AppHandle) -> Result<settings::RecipeConstraints, String> {
+    let s = app.state::<AppState>().settings.lock().unwrap().clone();
+    settings::load_recipe_constraints(&app, &s)
 }
 
-/// Saves the custom fields.
+/// Saves every recipe's constraints.
 #[tauri::command]
-fn save_fields(app: AppHandle, fields: Vec<settings::Field>) -> Result<(), String> {
-    settings::save_fields(&app, &fields)
+fn save_recipe_constraints(app: AppHandle, store: settings::RecipeConstraints) -> Result<(), String> {
+    settings::save_recipe_constraints(&app, &store)
 }
 
 // ============================ HELPER ============================
@@ -2239,8 +2240,8 @@ pub fn run() {
             set_tray_labels,
             get_recipes,
             save_recipes,
-            get_fields,
-            save_fields,
+            get_recipe_constraints,
+            save_recipe_constraints,
             check_for_update,
             install_update,
         ])

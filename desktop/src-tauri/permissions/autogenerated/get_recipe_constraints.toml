@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-recipe-constraints"
+description = "Enables the get_recipe_constraints command without any pre-configured scope."
+commands.allow = ["get_recipe_constraints"]
+
+[[permission]]
+identifier = "deny-get-recipe-constraints"
+description = "Denies the get_recipe_constraints command without any pre-configured scope."
+commands.deny = ["get_recipe_constraints"]

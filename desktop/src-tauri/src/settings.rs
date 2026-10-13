@@ -124,7 +124,11 @@ pub fn default_hotkey() -> String {
     // (for Kotodama) is free under Ctrl+Cmd, unlike F/Q/D/Space which macOS already claims.
     // `cfg!` rather than `#[cfg]` on purpose: both arms are compiled on every platform, so a
     // Windows build still type-checks the macOS one.
-    let key = if cfg!(target_os = "macos") { "KeyK" } else { "Space" };
+    let key = if cfg!(target_os = "macos") {
+        "KeyK"
+    } else {
+        "Space"
+    };
     format!("{DEFAULT_MOD}+{key}")
 }
 pub fn default_recipe_hotkeys() -> std::collections::HashMap<String, String> {
@@ -202,8 +206,12 @@ fn config_dir_early() -> Option<PathBuf> {
     }
     #[cfg(target_os = "macos")]
     {
-        std::env::var_os("HOME")
-            .map(|h| PathBuf::from(h).join("Library").join("Application Support").join(IDENTIFIER))
+        std::env::var_os("HOME").map(|h| {
+            PathBuf::from(h)
+                .join("Library")
+                .join("Application Support")
+                .join(IDENTIFIER)
+        })
     }
     #[cfg(all(not(windows), not(target_os = "macos")))]
     {
@@ -337,10 +345,152 @@ pub fn load_fields(app: &AppHandle) -> Vec<Field> {
         .unwrap_or_default()
 }
 
-/// Save the custom fields to disk.
-pub fn save_fields(app: &AppHandle, fields: &[Field]) -> Result<(), String> {
-    let path = fields_path(app)?;
-    let json = serde_json::to_string_pretty(fields).map_err(|e| e.to_string())?;
+/// A constraint's value. Length, Tone and Answer keep the option's position, because their text comes from the
+/// translations and changes with the interface language; the user's own constraints keep the option's text, so
+/// removing or moving an option never silently changes the chosen value.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(untagged)]
+pub enum ConstraintValue {
+    Index(u32),
+    Text(String),
+}
+
+fn yes() -> bool {
+    true
+}
+
+/// One constraint of one recipe. `kind` is "length", "tone", "resp" (options from the translations) or "field"
+/// (the user's own, with `label` and `options`). `on` = sent; off keeps the definition and the values.
+/// `shortcut` is what the recipe's shortcut sends, `chat` the last value picked in the chat on that recipe.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RecipeConstraint {
+    pub id: String,
+    pub kind: String,
+    #[serde(default)]
+    pub label: String,
+    #[serde(default)]
+    pub options: Vec<String>,
+    #[serde(default = "yes")]
+    pub on: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shortcut: Option<ConstraintValue>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chat: Option<ConstraintValue>,
+}
+
+/// A constraint the user created once, offered again under "Your constraints" (a copy, not a link).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SavedConstraint {
+    pub label: String,
+    #[serde(default)]
+    pub options: Vec<String>,
+}
+
+/// `recipe-constraints.json`: recipe ref ("key:x" / "id:y") -> its constraints, plus the user's own list.
+/// A recipe without an entry carries the default for it (decided by the interface).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct RecipeConstraints {
+    #[serde(default)]
+    pub recipes: std::collections::HashMap<String, Vec<RecipeConstraint>>,
+    #[serde(default)]
+    pub mine: Vec<SavedConstraint>,
+}
+
+fn recipe_constraints_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.join("recipe-constraints.json"))
+}
+
+/// The one-time conversion from the old model: one list of ids per recipe in `settings.json`, the values shared
+/// by every recipe (`length`/`tone`/`resp_fmt`, `Field::value`), the custom fields in `fields.json`. Each recipe
+/// keeps what it sent; every field becomes a constraint of the recipes that carried it, with today's value as
+/// text, and joins "Your constraints". Recipes without a list keep their default. `fields.json` is left on disk.
+pub fn convert_constraints(s: &Settings, fields: &[Field]) -> RecipeConstraints {
+    let fixed = |kind: &str, v: u32| RecipeConstraint {
+        id: kind.to_string(),
+        kind: kind.to_string(),
+        label: String::new(),
+        options: Vec::new(),
+        on: true,
+        shortcut: None,
+        chat: Some(ConstraintValue::Index(v)),
+    };
+    let mut out = RecipeConstraints::default();
+    for (rref, ids) in &s.recipe_constraints {
+        let list = ids
+            .iter()
+            .filter_map(|id| match id.as_str() {
+                "length" => Some(fixed("length", s.length)),
+                "tone" => Some(fixed("tone", s.tone)),
+                "resp" => Some(fixed("resp", s.resp_fmt)),
+                _ => {
+                    let fid = id.strip_prefix("f:")?;
+                    let f = fields.iter().find(|f| f.id == fid)?;
+                    if f.options.is_empty() {
+                        return None;
+                    }
+                    let v = f.options[(f.value as usize).min(f.options.len() - 1)].clone();
+                    Some(RecipeConstraint {
+                        id: f.id.clone(),
+                        kind: "field".into(),
+                        label: f.label.clone(),
+                        options: f.options.clone(),
+                        on: true,
+                        shortcut: None,
+                        chat: Some(ConstraintValue::Text(v)),
+                    })
+                }
+            })
+            .collect();
+        out.recipes.insert(rref.clone(), list);
+    }
+    for f in fields {
+        if f.label.trim().is_empty()
+            || f.options.is_empty()
+            || out.mine.iter().any(|m| m.label == f.label)
+        {
+            continue;
+        }
+        out.mine.push(SavedConstraint {
+            label: f.label.clone(),
+            options: f.options.clone(),
+        });
+    }
+    out
+}
+
+/// Loads the recipes' constraints. On the first start with this model the file is missing: it is built from
+/// the old one (`convert_constraints`) and written, so the conversion happens once.
+/// Err when the file is there but cannot be read now: the interface then must not save over it.
+pub fn load_recipe_constraints(app: &AppHandle, s: &Settings) -> Result<RecipeConstraints, String> {
+    let path = recipe_constraints_path(app)?;
+    match fs::read_to_string(&path) {
+        Ok(txt) => match serde_json::from_str(&txt) {
+            Ok(rc) => return Ok(rc),
+            // a damaged file is kept aside, never overwritten: the user's lists may still be recovered from it
+            Err(e) => {
+                let _ = fs::rename(&path, path.with_extension("bad.json"));
+                crate::debug::log(format!(
+                    "recipe-constraints.json invalid ({e}): kept as .bad.json, rebuilt from the old model"
+                ));
+            }
+        },
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => {
+            crate::debug::log(format!("recipe-constraints.json not readable: {e}"));
+            return Err(e.to_string());
+        }
+    }
+    let rc = convert_constraints(s, &load_fields(app));
+    let _ = save_recipe_constraints(app, &rc);
+    Ok(rc)
+}
+
+/// Saves the recipes' constraints to disk.
+pub fn save_recipe_constraints(app: &AppHandle, rc: &RecipeConstraints) -> Result<(), String> {
+    let path = recipe_constraints_path(app)?;
+    let json = serde_json::to_string_pretty(rc).map_err(|e| e.to_string())?;
     let _guard = io_lock().lock().unwrap();
     fs::write(path, json).map_err(|e| e.to_string())
 }
@@ -390,6 +540,61 @@ mod tests {
             assert_eq!(r["key:rephrase"], "Control+Alt+KeyC");
             assert_eq!(r["key:translate"], "Control+Alt+KeyT");
         }
+    }
+
+    /// The old model to the new one: each recipe keeps the constraints it sent, in order, with today's
+    /// values (a field's as text); a field nobody carried still joins "Your constraints"; a recipe with no
+    /// list stays absent, so it keeps its default; a field id that no longer exists is dropped.
+    #[test]
+    fn conversion_keeps_what_each_recipe_sent() {
+        let mut s = Settings::default();
+        s.length = 2;
+        s.tone = 1;
+        s.resp_fmt = 0;
+        s.recipe_constraints.insert(
+            "key:translate".into(),
+            vec!["f:lang".into(), "tone".into(), "f:gone".into()],
+        );
+        s.recipe_constraints.insert("id:mine".into(), vec![]);
+        let fields = vec![
+            Field {
+                id: "lang".into(),
+                label: "Lingua".into(),
+                options: vec!["Inglese".into(), "Italiano".into()],
+                value: 1,
+            },
+            Field {
+                id: "dest".into(),
+                label: "Destinatario".into(),
+                options: vec!["Cliente".into()],
+                value: 7,
+            },
+        ];
+
+        let rc = convert_constraints(&s, &fields);
+
+        let tr = &rc.recipes["key:translate"];
+        assert_eq!(tr.len(), 2);
+        assert_eq!(
+            (tr[0].kind.as_str(), tr[0].label.as_str()),
+            ("field", "Lingua")
+        );
+        assert_eq!(tr[0].chat, Some(ConstraintValue::Text("Italiano".into())));
+        assert_eq!(
+            (tr[1].kind.as_str(), tr[1].chat.clone()),
+            ("tone", Some(ConstraintValue::Index(1)))
+        );
+        assert!(rc.recipes["id:mine"].is_empty());
+        assert!(!rc.recipes.contains_key("key:rephrase"));
+        assert_eq!(
+            rc.mine.iter().map(|m| m.label.as_str()).collect::<Vec<_>>(),
+            ["Lingua", "Destinatario"]
+        );
+
+        // round trip: an index stays a number, a text stays a string
+        let back: RecipeConstraints =
+            serde_json::from_str(&serde_json::to_string(&rc).unwrap()).unwrap();
+        assert_eq!(back, rc);
     }
 
     /// The migration moves what the install merely inherited, and nothing the user chose. Off

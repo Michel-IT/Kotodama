@@ -14,7 +14,7 @@ fn main() {
         "provider_suppress", "provider_dock", "open_download_path", "reveal_download_path",
         "accept_clipboard", "hide_toast", "app_write_clipboard", "show_main", "hide_main",
         "get_settings", "get_system_locale", "open_url", "set_settings", "save_ui_state",
-        "set_tray_labels", "get_recipes", "save_recipes", "get_fields", "save_fields",
+        "set_tray_labels", "get_recipes", "save_recipes", "get_recipe_constraints", "save_recipe_constraints",
         "check_for_update", "install_update",
         "quit_app", "restart_app",
         "kotodama_set_attachments", "kotodama_file_info", "kotodama_read_aloud", "kotodama_regenerate", "kotodama_audio_load", "kotodama_audio_export", "admin_start_state", "set_admin_start", "restart_as_admin", "kotodama_audio_delete",

@@ -307,10 +307,6 @@
     body.recipe-neutral .panel-head,
     body.recipe-neutral #instruction,
     body.recipe-neutral #controls { display:none; }
-    /* A constraint the active recipe does not carry: hidden, not removed, so switching recipe is instant. */
-    .control.is-off { display:none !important; }
-    .rh-cons { display:flex; flex-direction:column; gap:8px; }
-    .rh-cons-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); }
     .neutral-hint { display:none; font-size:12px; color:var(--text-faint); line-height:1.5; margin:2px 2px 6px; }
     body.recipe-neutral .neutral-hint { display:block; }
     .recipe-del {
@@ -928,6 +924,18 @@
     .kt-badge-constraints .control label { padding-left:0; white-space:nowrap; font-size:11.5px; }
     .kt-badge-constraints .select { padding:5px 10px; gap:6px; }
     .kt-badge-constraints .select select { font-size:12.5px; }
+    /* The active recipe's constraints: fixed columns, so with five of them the rows stay aligned. */
+    .kt-cons { display:grid; grid-template-columns:repeat(auto-fill, minmax(236px, 1fr)); gap:8px 16px; width:100%; }
+    .kt-cons .control { min-width:0; }
+    .kt-cons .control label { flex:none; width:70px; overflow:hidden; text-overflow:ellipsis; }
+    .kt-cons .control .cs { flex:1; min-width:0; }
+    .kt-cons .control.stale .cs-trigger { border-color:var(--danger); }
+    .kt-cons .control.stale label::before { content:'\25CF\00a0'; color:var(--danger); font-size:9px; vertical-align:1px; }
+    .kt-cons-none { font-size:12.5px; color:var(--text-faint); }
+    .kt-cons-none, .kt-cons-add { grid-column:1 / -1; justify-self:start; }
+    .kt-cons-add { background:none; border:1px dashed var(--border); border-radius:var(--radius-s); color:var(--text-dim); font:inherit;
+      font-size:12.5px; padding:5px 12px; cursor:pointer; }
+    .kt-cons-add:hover { border-color:var(--accent); color:var(--text); }
     .kt-recipe-badge-row textarea.instruction { flex:1; min-height:32px; max-height:140px; resize:none;
       background:transparent; border:none; border-radius:0; color:var(--text);
       font-size:13px; font-weight:400; font-family:inherit; padding:6px 0; box-sizing:border-box; outline:none; }
@@ -1038,11 +1046,68 @@
     .rh-vin-btn:hover, .rh-vin-btn.active { border-color:var(--accent); color:var(--text); }
     .rh-vin-none { color:var(--text-faint); cursor:default; }
     .rh-prov-col .rh-prov-sel { width:100%; height:32px; font-size:12.5px; }
-    /* The constraints of one recipe hang from its button, above everything: opening them never pushes the
-       rows below, which is what the old fold arrow did. */
-    .rh-pop { position:fixed; z-index:9999; width:260px; background:var(--bg-1); border:1px solid var(--border);
-      border-radius:10px; box-shadow:var(--shadow); padding:12px 14px; }
-    .rh-pop-head { font-size:13px; font-weight:600; color:var(--text); margin-bottom:10px; }
+    /* The constraints of one recipe hang from their button, above everything: opening them never pushes the
+       rows below. One panel for Settings and the chat; the columns are shared by the header and the rows:
+       checkbox | name | value from the shortcut | edit | delete. */
+    .vp { position:fixed; z-index:9999; width:440px; max-width:calc(100vw - 16px); display:flex; flex-direction:column;
+      background:var(--bg-1); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); padding:12px 14px; }
+    .vp-head { flex:none; font-size:13px; font-weight:600; color:var(--text); margin-bottom:8px; }
+    .vp-h, .vp-row { display:grid; grid-template-columns:22px minmax(0,1fr) 150px 28px 28px; align-items:center; gap:6px; }
+    .vp-h { flex:none; padding-bottom:4px; font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); }
+    .vp-h-info { cursor:help; text-decoration:underline dotted; text-underline-offset:3px; }
+    /* about six rows, then the list scrolls; while editing it takes the room it needs */
+    .vp-list { flex:1 1 auto; min-height:0; overflow:auto; }
+    .vp-list:not(.editing) { max-height:252px; }
+    .vp-item { border-top:1px solid var(--border-soft); padding:5px 0; }
+    .vp-item.editing { background:var(--panel-2); border-radius:8px; border-top-color:transparent; padding:5px 0; margin:2px 0; }
+    .vp-row .vp-name { font-size:13px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .vp-row.off .vp-name { color:var(--text-faint); }
+    .vp-row.off .vp-val { opacity:.45; }
+    .vp-row input[type=checkbox] { margin:0; justify-self:center; accent-color:var(--accent); }
+    .vp-val { min-width:0; }
+    .vp-row .cs-trigger { height:30px; padding:0 10px; font-size:12.5px; }
+    /* fixed, placed by enhanceSelect: an absolute menu, even closed, would make the list scroll and be cut */
+    .vp-row .cs-panel { position:fixed; min-width:0; }
+    .vp-row .cs-host-hidden { top:0; left:0; }
+    .vp-fixed { height:30px; display:flex; align-items:center; padding:0 10px; font-size:12.5px; color:var(--text-faint);
+      border:1px dashed var(--border); border-radius:var(--radius-s); cursor:help; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .vp-ibw { display:inline-flex; }
+    .vp-ib { width:28px; height:28px; border:none; border-radius:8px; background:none; color:var(--text-faint); cursor:pointer; font-size:13px; }
+    .vp-ib:hover:not(:disabled) { background:var(--panel-glow); color:var(--text); }
+    .vp-ib.del:hover:not(:disabled) { color:var(--danger); }
+    .vp-ib:disabled { opacity:.35; cursor:not-allowed; pointer-events:none; }
+    .vp-ib.on { color:var(--accent); }
+    .vp-edit { padding:8px 6px 2px 28px; display:flex; flex-direction:column; gap:8px; }
+    .vp-l { font-size:11px; color:var(--text-faint); display:block; margin-bottom:3px; }
+    .vp-edit .field { width:100%; padding:7px 10px; font-size:13px; }
+    .vp-opts { display:flex; flex-direction:column; gap:6px; }
+    .vp-opt { display:grid; grid-template-columns:minmax(0,1fr) 28px 28px 28px; gap:6px; align-items:center; }
+    .vp-edit-foot { display:flex; align-items:center; gap:10px; }
+    .vp-edit-foot .btn:disabled { opacity:.45; cursor:not-allowed; filter:none; }
+    .vp-why { flex:1; font-size:11.5px; color:var(--text-faint); }
+    .vp-empty { padding:10px 0 6px; font-size:12.5px; color:var(--text-faint); }
+    .vp-foot { flex:none; border-top:1px solid var(--border-soft); margin-top:4px; padding-top:8px; }
+    .vp-add { display:flex; align-items:center; width:100%; background:none; border:1px dashed var(--border); border-radius:8px;
+      color:var(--text-dim); font:inherit; font-size:12.5px; padding:7px 10px; cursor:pointer; }
+    .vp-add:hover, .vp-add.active { border-color:var(--accent); color:var(--text); }
+    .vp-menu { margin-top:6px; border:1px solid var(--border-soft); border-radius:8px; padding:4px; max-height:236px; overflow:auto; }
+    .vp-mi { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:0; background:none; border:none;
+      color:var(--text); font:inherit; font-size:13px; padding:7px 10px; border-radius:6px; cursor:pointer; text-align:left; }
+    .vp-mi:hover, .vp-mi:focus-visible { background:var(--panel-2); outline:none; }
+    .vp-mi span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .vp-mi small { color:var(--text-faint); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:190px; }
+    .vp-mi.new { color:var(--accent); font-weight:600; }
+    .vp-mi-row { display:grid; grid-template-columns:minmax(0,1fr) 28px; align-items:center; gap:2px; }
+    .vp-mg { font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); padding:8px 10px 3px; }
+    .vp-toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); z-index:10001; display:flex; gap:14px; align-items:center;
+      background:var(--bg-1); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); padding:9px 14px; font-size:13px; color:var(--text); }
+    .vp-toast button { background:none; border:none; color:var(--accent); font:inherit; font-weight:600; cursor:pointer; }
+    /* New recipe: the constraints it starts with */
+    .nr-cons-box { display:flex; flex-direction:column; gap:2px; max-height:220px; overflow:auto; }
+    .nr-cons-box .vp-mg { padding:6px 0 3px; }
+    .nr-cons { display:grid; grid-template-columns:22px auto minmax(0,1fr); align-items:center; gap:6px; font-size:13px; color:var(--text); padding:3px 0; cursor:pointer; }
+    .nr-cons input { margin:0; accent-color:var(--accent); }
+    .nr-cons small { color:var(--text-faint); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     /* wraps the .switch so the NOTIFICA column has breathing room without stretching the switch
        itself -- width matches .rh-h-notify above so the header label stays centered over it. */
     .rh-notify-col { flex:none; width:64px; display:flex; justify-content:center; }
@@ -1125,23 +1190,12 @@
     .about-links .lnk { background:none; border:none; padding:0; cursor:pointer; font:inherit; font-size:12.5px; color:var(--accent); text-decoration:none; }
     .about-links .lnk:hover { text-decoration:underline; }
 
-    /* Custom fields editor */
+    /* Option rows of a constraint being edited (.vp-opt) */
     .fields-btn { width:auto; height:auto; padding:7px 12px; font-size:13px; gap:6px; display:inline-flex; align-items:center; }
-    .fld-empty { font-size:13px; color:var(--text-faint); padding:16px 4px; text-align:center; }
-    .fld-block { background:var(--field); border:1px solid var(--border-soft); border-radius:var(--radius-s); padding:12px; margin-bottom:12px; }
-    .fld-top { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-    .fld-top .field { flex:1; }
     .fld-mv { border:1px solid var(--border); background:var(--field-2); color:var(--text-dim); cursor:pointer; width:28px; height:28px; border-radius:var(--radius-s); flex:none; display:grid; place-items:center; font-size:13px; }
     .fld-mv:hover { color:var(--accent); }
     .fld-del { border:none; background:none; color:var(--text-faint); cursor:pointer; width:28px; height:28px; border-radius:var(--radius-s); flex:none; display:grid; place-items:center; font-size:14px; }
     .fld-del:hover { background:rgba(255,107,107,.16); color:var(--danger); }
-    /* delete field: button with text (not just an icon) */
-    .fld-del-text { width:auto; padding:0 12px; gap:6px; display:inline-flex; align-items:center; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--field-2); }
-    .fld-del-text:hover { background:rgba(255,107,107,.16); color:var(--danger); border-color:var(--danger); }
-    .fld-opts { display:flex; flex-direction:column; gap:6px; padding-left:4px; }
-    .fld-opt { display:flex; align-items:center; gap:8px; }
-    .fld-opt .field { flex:1; padding:7px 10px; }
-    .fld-opt .fld-del { width:24px; height:24px; font-size:13px; }
     .fld-addopt { align-self:flex-start; background:none; border:none; color:var(--accent); cursor:pointer; font-size:12.5px; padding:4px 2px; }
     .fld-addopt:hover { text-decoration:underline; }
     [data-theme="sumi"] .fld-mv,[data-theme="sumi"] .fld-del,[data-theme="sumi"] .fields-btn { border-radius:2px; }
@@ -1361,7 +1415,7 @@
             </div>
           </div>
           <div class="footer">
-            <button class="add-btn fields-btn" id="manageFields" data-i18n-title="fieldsTitle" title="Personalizza campi">⚙</button>
+            <button class="add-btn fields-btn" id="manageFields" data-i18n-title="rhVinPopTitle" title="Vincoli di questa ricetta">⚙</button>
             <span class="hint" data-i18n="hint">Compila i campi e premi → per aprire il provider selezionato</span>
             <button class="send" id="generate" data-i18n-title="generate" title="Apri nel provider">→</button>
           </div>
@@ -1610,10 +1664,10 @@
           <label data-i18n="recipeInstr">Istruzione</label>
           <textarea class="field" id="recipeInstr" data-i18n-ph="recipeInstrPh"></textarea>
         </div>
-        <label class="setting kt-recipe-plain" style="border:none; padding:10px 0 0;">
-          <input type="checkbox" id="recipeNoConstraints">
-          <span data-i18n="recipeNoConstraints">Senza vincoli</span>
-        </label>
+        <div class="setting" style="border:none; padding:12px 0 0;">
+          <label data-i18n="vinNewRecipeCons">Vincoli della ricetta</label>
+          <div class="nr-cons-box" id="recipeCons"></div>
+        </div>
       </div>
       <div class="modal-foot">
         <button class="btn" id="recipeCancel" data-i18n="cancel">Annulla</button>
@@ -1633,21 +1687,6 @@
       <div class="modal-foot">
         <button class="btn" id="confirmCancel" data-i18n="cancel">Annulla</button>
         <button class="btn danger" id="confirmOk" data-i18n="confirm">Conferma</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Customize fields modal -->
-  <div class="modal-overlay" id="fieldsOverlay">
-    <div class="modal modal--wide">
-      <div class="modal-head">
-        <h2 data-i18n="fieldsTitle">Personalizza campi</h2>
-        <button class="x" id="fieldsX" data-i18n-title="winClose" title="Chiudi">✕</button>
-      </div>
-      <div class="modal-body" id="fieldsBody"></div>
-      <div class="modal-foot">
-        <button class="btn" id="addFieldBtn" data-i18n="addField">＋ Aggiungi campo</button>
-        <button class="btn primary" id="fieldsDone" data-i18n="done">Fatto</button>
       </div>
     </div>
   </div>
@@ -1735,7 +1774,7 @@
         <div class="kt-badge-frame">
           <div class="kt-recipe-badge-row">
             <button id="ktRecipeBadgeSave" data-i18n-title="save" title="Salva" hidden>✓</button>
-            <button class="add-btn" id="ktManageFields" data-i18n-title="fieldsTitle" title="Personalizza campi">⚙</button>
+            <button class="add-btn" id="ktManageFields" data-i18n-title="rhVinPopTitle" title="Vincoli di questa ricetta">⚙</button>
             <button id="ktRecipeBadgeClear" data-i18n-title="ktRecipeNeutral" title="Torna a Neutro">✕</button>
           </div>
           <!-- #controls (length, tone, answer + custom fields) is moved in here at startup: the same panel
@@ -1865,7 +1904,7 @@
       setGesture:'Double right-click', setGestureHint:'Two quick right-clicks open the recipe menu in any program.',
       rhColMenu:'Menu', rhMenuTitle:'Show this recipe in the double right-click menu', trayRestart:'Restart',
       rhColRead:'Read', rhReadTitle:'Reads the answer aloud as soon as it arrives.',
-      rhColVincoli:'Constraints', rhColProvider:'Provider', rhKeyTitle:'The combination that runs the recipe on the selected text.', rhVinTitle:'The ones the recipe adds to the text when you run it from a shortcut.', rhProvTitle:'The one the recipe uses when you run it from a shortcut.', rhNotifyHeadTitle:'Shows the notice while the recipe works.', rhMenuHeadTitle:'Puts the recipe in the double right-click menu.', rhVinPopTitle:"This recipe's constraints", rhNeutralNoCons:'Neutral sends the text as it is, with no constraints.', rhProvDefaultShort:'Default',
+      vinAdd:"+ Add constraint", vinNew:"New constraint", vinBuiltin:"Built-in", vinMine:"Your constraints", vinMineRemove:"Remove from your constraints", vinNewRecipeCons:"Recipe constraints", vinColName:"Constraint", vinColShortcut:"From shortcut", vinColShortcutTitle:"The value this recipe's shortcut sends.", vinName:"Name", vinNamePh:"Constraint name", vinOptions:"Options", vinAddOption:"+ Add option", vinNeedName:"A name and at least one option are needed.", vinEdit:"Edit constraint", vinDelete:"Delete constraint", vinDeleted:"Constraint deleted", vinUndo:"Undo", vinUse:"Use this constraint", vinFixedOpts:"The options of {c} are fixed.", vinRespFixed:"The shortcut always pastes the text only.", vinNone:"No constraints", vinEmptyPop:"No constraints: the recipe sends the text only.", vinStale:"The chosen value is gone: using \"{v}\".", rhColVincoli:'Constraints', rhColProvider:'Provider', rhKeyTitle:'The combination that runs the recipe on the selected text.', rhVinTitle:'The ones the recipe adds to the text when you run it from a shortcut.', rhProvTitle:'The one the recipe uses when you run it from a shortcut.', rhNotifyHeadTitle:'Shows the notice while the recipe works.', rhMenuHeadTitle:'Puts the recipe in the double right-click menu.', rhVinPopTitle:"This recipe's constraints", rhNeutralNoCons:'Neutral sends the text as it is, with no constraints.', rhProvDefaultShort:'Default',
       provColBar:'In the bar', provColDefault:'Default',
       setProvidersBarHint2:'Every provider, one row each: whether it appears in the "+" menu, whether it opens private chats, and which one is your default.',
       setAdmin:'Start as administrator', setAdminHint:'Needed to work inside windows opened as administrator. Windows asks for confirmation.',
@@ -1982,7 +2021,6 @@
     let lang='it';
     let currentSettings={ ...DEFAULT_SETTINGS };
     let customRecipes=[];
-    let customFields=[];
     let activeRecipe={ kind:'key', key:'rephrase' };
     let recipeModalTarget='builder';   // 'builder' | 'kotodama' -- which recipe list opened #recipeOverlay
 
@@ -2049,9 +2087,17 @@
        A constraint is one line appended under "Vincoli:" at the end of the prompt. They used to be all-or-
        nothing: every recipe carried Lunghezza, Tono, Risposta and every custom field, or (Audio, Neutra)
        none at all. That is wrong for several of them -- asking a TRANSLATION to be "breve e concisa" makes
-       the provider cut the text, and a summary does not need a tone -- so each recipe now carries its own
-       list, and the user can change it in Settings -> Ricette.
-       Ids: 'length', 'tone', 'resp' for the built-in ones, 'f:<id>' for a custom field. */
+       the provider cut the text, and a summary does not need a tone -- and a field made for one recipe (a
+       "Lingua" for Traduci) changed the answer of all the others. So each recipe carries its own list, with
+       its own options and values, in recipe-constraints.json (read and written by Rust, settings.rs):
+         { id, kind:'length'|'tone'|'resp'|'field', label, options, on, shortcut, chat }
+       Length, Tone and Answer take their options from the translations; a 'field' is the user's own. `on`
+       off keeps the constraint and its values without sending it. `shortcut` is what the recipe's shortcut
+       sends, `chat` the last value picked in the chat on that recipe. A value is the option's position for
+       the translated kinds (their text changes with the language) and the option's text for the user's own,
+       so removing or moving an option never silently changes it: a value no longer there falls back to the
+       first option, and the chat marks it. Kinds listed here are the defaults; a recipe without a list of
+       its own carries its default, so the built-in recipes follow a better default in a later version. */
     const CONSTRAINT_DEFAULTS = {
       neutral:   [],                          // sends the text as it is
       verbatim:  [],                          // "repeat this word for word": any style rule contradicts it
@@ -2077,57 +2123,96 @@
       if(ok(base)) return base;
       return ktDefaultProvider();
     }
-    // The list for one recipe: what the user chose, else the sensible default for that recipe. The user's own
-    // fields are never in a default: a field is made for one recipe (a "Lingua" for Traduci) and on every other
-    // recipe it changes the answer (Riformula came back in English). A new field goes to the recipe it was
-    // created on; Settings -> Ricette adds it to others.
-    function constraintsForRef(ref){
-      const saved=(currentSettings.recipe_constraints||{})[ref];
-      if(Array.isArray(saved)) return saved;
-      if(ref.indexOf('key:')===0){
-        const base=CONSTRAINT_DEFAULTS[ref.slice(4)];
-        return base ? base.slice() : ['length','tone','resp'];
-      }
-      const r=customRecipes.find(x=>('id:'+x.id)===ref);
-      if(r && r.noConstraints) return [];
-      return ['length','tone','resp'];
+    const FIXED_CONS=['length','tone','resp'];
+    let rcStore={ recipes:{}, mine:[] };   // recipe-constraints.json: recipe ref -> list, and "your constraints"
+    let rcSaveTimer=0;
+    let rcReadOnly=false;   // the file is there but could not be read: never save over it in this run
+    async function loadRecipeConstraints(){
+      let s=null;
+      if(TAURI){ try{ s=await invoke('get_recipe_constraints'); }catch(e){ rcReadOnly=true; } }
+      else { try{ s=JSON.parse(localStorage.getItem('apb-recipe-constraints')||'null'); }catch(e){} }
+      s=s||{};
+      return { recipes:s.recipes||{}, mine:Array.isArray(s.mine)?s.mine:[] };
     }
-    function activeConstraints(){ return constraintsForRef(recipeRefOf(activeRecipe)); }
-    function ktRecipeSkipsConstraints(){ return activeConstraints().length===0; }
-    // Show only the selectors the active recipe actually sends. Called whenever the recipe or the fields change.
-    function applyConstraintVisibility(){
-      const cons=activeConstraints();
-      document.querySelectorAll('#controls .control').forEach(c=>{
-        const id=c.dataset.c || (c.dataset.id ? 'f:'+c.dataset.id : '');
-        if(id) c.classList.toggle('is-off', cons.indexOf(id)<0);
+    function persistRecipeConstraints(){
+      clearTimeout(rcSaveTimer);   // debounce: a value picked, an option typed, all in quick succession
+      if(rcReadOnly) return;
+      rcSaveTimer=setTimeout(()=>{
+        if(TAURI){ invoke('save_recipe_constraints',{store:rcStore}).catch(()=>{}); }
+        else { try{ localStorage.setItem('apb-recipe-constraints', JSON.stringify(rcStore)); }catch(e){} }
+      }, 250);
+    }
+    function fixedCons(kind){ return { id:kind, kind, label:'', options:[], on:true }; }
+    // The default for a recipe. The user's own constraints are never in a default: one made for a recipe (a
+    // "Lingua" for Traduci) changes the answer of every other one (Riformula came back in English).
+    function defaultConsFor(ref){
+      const base = ref.indexOf('key:')===0 ? CONSTRAINT_DEFAULTS[ref.slice(4)] : null;
+      return (base||FIXED_CONS).map(fixedCons);
+    }
+    // The list of one recipe in a store: its own, else its default (not stored until something changes).
+    function consFor(ref, store){ const l=((store||rcStore).recipes||{})[ref]; return Array.isArray(l) ? l : defaultConsFor(ref); }
+    // The same list made the recipe's own, so it can be changed.
+    function consOwn(ref, store){
+      store=store||rcStore; if(!store.recipes) store.recipes={};
+      if(!Array.isArray(store.recipes[ref])) store.recipes[ref]=defaultConsFor(ref);
+      return store.recipes[ref];
+    }
+    function consLabel(c){
+      return c.kind==='length' ? (TR.length||'') : c.kind==='tone' ? (TR.tone||'') : c.kind==='resp' ? (TR.respLabel||'') : (c.label||'');
+    }
+    function consOptions(c){
+      if(c.kind==='length') return TR.lengthOpts||[];
+      if(c.kind==='tone') return TR.toneOpts||[];
+      if(c.kind==='resp') return [TR.respNormal, TR.respTextOnly];
+      return (c.options||[]).filter(o=>o && o.trim());
+    }
+    // Position of a value among the options; -1 when it is no longer there.
+    function consPos(c, v){ const o=consOptions(c); return typeof v==='number' ? (v<o.length ? v : -1) : o.indexOf(v); }
+    function consHas(c, which){ const v=c[which]; return typeof v==='number' || typeof v==='string'; }
+    // The option to use: `which` ('chat' or 'shortcut') first, then the other one, then the value every recipe
+    // shared until 1.2.74 (Length, Tone, Answer) or the first option. A value no longer there gives the first.
+    function consIndex(c, which){
+      for(const w of [which, which==='chat' ? 'shortcut' : 'chat']){
+        if(consHas(c, w)){ const p=consPos(c, c[w]); return p>=0 ? p : 0; }
+      }
+      if(c.kind==='field') return 0;
+      const s=currentSettings||{}, n=consOptions(c).length;
+      const v = c.kind==='length' ? s.length : c.kind==='tone' ? s.tone : (s.resp_fmt===0 ? 0 : 1);
+      return Math.max(0, Math.min(typeof v==='number' ? v : 0, n-1));
+    }
+    function consStale(c, which){ return consHas(c, which) && consPos(c, c[which])<0; }
+    function consText(c, which){ return consOptions(c)[consIndex(c, which)]||''; }
+    // What is stored for the option at position i: the position, or the text for the user's own.
+    function consValueAt(c, i){ return c.kind==='field' ? consOptions(c)[i] : i; }
+    // The "- Label: value" lines of a recipe, with its chat or its shortcut values. Answer is never a line:
+    // in the chat "text only" adds its own sentence (wrapForActiveRecipe), a shortcut always asks for it.
+    function consLines(ref, which){
+      const lines=[];
+      consFor(ref).forEach(c=>{
+        if(!c.on || c.kind==='resp') return;
+        const label = c.kind==='length' ? TR.cLength : c.kind==='tone' ? TR.cTone : (c.label||'').trim();
+        const v=consText(c, which);
+        if(label && v) lines.push('- '+label+': '+v);
       });
+      return lines;
     }
     function buildPrompt(){ return wrapForActiveRecipe(content.value.trim()); }
-    // The active recipe's instruction around the text, then only the constraints THIS recipe carries. The chat
-    // send and the classic builder both go through here: the chat used to append Length, Tone and every custom
-    // field whatever the recipe, so a field made for one recipe changed the answer of all the others.
+    // The active recipe's instruction around the text, then only the constraints THIS recipe carries, with the
+    // values last picked in the chat on it. The chat send and the classic builder both go through here.
     function wrapForActiveRecipe(text){
       const t=TR;
       // Ricetta "Neutra": invia il testo cosi' com'e' (nessuna istruzione, nessun vincolo).
       if(activeRecipe.kind==='key' && activeRecipe.key==='neutral') return text;
-      // Recipes whose instruction IS the whole job (repeat this text unchanged) must not carry the style
-      // constraints: "be short" and "be professional" contradict "repeat word for word", and a provider that
-      // takes style seriously rewrites the text (measured: Claude rewrote, ChatGPT obeyed).
+      // Recipes whose instruction IS the whole job (repeat this text unchanged) carry no constraints by default:
+      // "be short" and "be professional" contradict "repeat word for word", and a provider that takes style
+      // seriously rewrites the text (measured: Claude rewrote, ChatGPT obeyed).
+      const ref=recipeRefOf(activeRecipe);
       const body=instruction.value.trim()+'\n\n"""\n'+text+'\n"""';
-      if(ktRecipeSkipsConstraints()) return body;
-      const cons=activeConstraints();
-      const lines=[];
-      if(cons.indexOf('length')>=0) lines.push('- '+t.cLength+': '+lengthSel.value);
-      if(cons.indexOf('tone')>=0) lines.push('- '+t.cTone+': '+toneSel.value);
-      // custom fields: append "- Label: selected option", those this recipe carries
-      for(const f of customFields){
-        if(!f.options||!f.options.length || cons.indexOf('f:'+f.id)<0) continue;
-        const v=f.options[Math.min(f.value||0, f.options.length-1)];
-        if(f.label && v) lines.push('- '+f.label+': '+v);
-      }
+      const lines=consLines(ref, 'chat');
       let out=body+(lines.length ? '\n\n'+t.constraints+'\n'+lines.join('\n') : '');
       // Risposta = "Solo testo": append the answer-only constraint (clean output)
-      if(cons.indexOf('resp')>=0 && respSel.selectedIndex===1) out+='\n\n'+t.answerOnlyText;
+      const resp=consFor(ref).find(c=>c.on && c.kind==='resp');
+      if(resp && consIndex(resp, 'chat')===1) out+='\n\n'+t.answerOnlyText;
       return out;
     }
     function showOutput(text){ result.textContent=text; output.classList.add('show'); }
@@ -2921,16 +3006,8 @@
       // The recipe's constraints (Settings -> Recipes -> Constraints) go with its shortcut too. Until
       // 1.2.53 only the chat sent them, so that column promised something the shortcut never did.
       // "Answer" is left out: a result pasted back is ALWAYS answer-only (no preamble/comments), whatever
-      // that field says.
-      const cons=constraintsForRef(recipeStr);
-      const lines=[];
-      if(cons.indexOf('length')>=0) lines.push('- '+TR.cLength+': '+lengthSel.value);
-      if(cons.indexOf('tone')>=0) lines.push('- '+TR.cTone+': '+toneSel.value);
-      customFields.forEach(f=>{
-        if(!f.options||!f.options.length||cons.indexOf('f:'+f.id)<0) return;
-        const v=f.options[Math.min(f.value||0, f.options.length-1)];
-        if(f.label && v) lines.push('- '+f.label+': '+v);
-      });
+      // that field says. The values are the recipe's own "From shortcut" ones (consIndex).
+      const lines=consLines(recipeStr, 'shortcut');
       const tail=lines.length ? '\n\n'+TR.constraints+'\n'+lines.join('\n') : '';
       return instr+'\n\n"""\n'+text+'\n"""'+tail+'\n\n'+(TR.answerOnlyText||'');
     }
@@ -4568,7 +4645,7 @@
     document.getElementById('ktAddRecipe').addEventListener('click', ()=>{
       recipeModalTarget='kotodama';
       document.getElementById('recipeName').value=''; document.getElementById('recipeInstr').value='';
-      document.getElementById('recipeNoConstraints').checked=false;
+      renderNewRecipeCons();
       openModal(recipeOverlay); setTimeout(()=>document.getElementById('recipeName').focus(),50);
     });
 
@@ -4648,7 +4725,7 @@
 
     /* ===================== MODALS ===================== */
     function openModal(o){ o.classList.add('show'); }
-    function closeModal(o){ o.classList.remove('show'); }
+    function closeModal(o){ if(o===settingsOverlay && vpOpen && vpOpen.where==='settings') vpClose(); o.classList.remove('show'); }
     const settingsOverlay=document.getElementById('settingsOverlay');
     const recipeOverlay=document.getElementById('recipeOverlay');
     const welcomeOverlay=document.getElementById('welcomeOverlay');
@@ -4852,7 +4929,6 @@
     let capturedRecipeNotify={};         // "key:x"/"id:y" -> false (only non-default entries; absent = notify on)
     let capturedRecipeMenu={};           // same shape: absent = the recipe is in the double right-click menu
     let capturedRecipeRead={};
-    let capturedRecipeConstraints={};   // recipe -> the constraint ids it sends; absent = the default for it
     let capturedRecipeProvider={};      // recipe -> provider key; '' = the default one
     function allRecipeEntries(){
       const t=TR, out=[];
@@ -4876,7 +4952,7 @@
     }
     function buildShortcutRows(){
       const box=document.getElementById('recipeHotkeys'); if(!box) return;
-      rhClosePop();
+      vpClose();
       box.innerHTML='';
       allRecipeEntries().forEach(en=>{
         const row=document.createElement('div'); row.className='rh-row';
@@ -4929,26 +5005,9 @@
           none.title=TR.rhNeutralNoCons||'';
           vinCol.appendChild(none);
         } else {
-          const list=document.createElement('div'); list.className='rh-cons';
-          const cat=[{id:'length',label:TR.length||'Lunghezza'},{id:'tone',label:TR.tone||'Tono'},{id:'resp',label:TR.respLabel||'Risposta'}]
-            .concat(customFields.filter(f=>f.options&&f.options.length).map(f=>({ id:'f:'+f.id, label:f.label||'' })));
-          cat.forEach(c=>{
-            const lab=document.createElement('label'); lab.className='rh-cons-item';
-            const cb=document.createElement('input'); cb.type='checkbox';
-            cb.checked=(capturedRecipeConstraints[en.str]||constraintsForRef(en.str)).indexOf(c.id)>=0;
-            cb.addEventListener('change', ()=>{
-              // The first change writes the whole list: from then on this recipe carries what the user says,
-              // not what the default happened to be.
-              const cur=new Set(capturedRecipeConstraints[en.str]||constraintsForRef(en.str));
-              if(cb.checked) cur.add(c.id); else cur.delete(c.id);
-              capturedRecipeConstraints[en.str]=cat.map(x=>x.id).filter(id=>cur.has(id));
-            });
-            lab.appendChild(cb); lab.appendChild(document.createTextNode(' '+c.label));
-            list.appendChild(lab);
-          });
           const vb=document.createElement('button'); vb.type='button'; vb.className='rh-vin-btn';
           vb.textContent=(TR.rhColVincoli||'')+' ▾';
-          vb.addEventListener('click', ()=>rhOpenCons(vb, list));
+          vb.addEventListener('click', ()=>vpOpenFor(vb, en.str, 'settings'));
           vinCol.appendChild(vb);
         }
         // Provider: the one the recipe uses when it runs from its shortcut.
@@ -5007,41 +5066,6 @@
         rows.forEach(r=>{ const c=r.querySelectorAll('.rh-notify-col')[i]; if(c) c.style.width=w; });
       });
     }
-    /* One constraints panel at a time, hanging from its button. It closes on a click elsewhere, Esc, any
-       scroll (it is fixed on screen and would drift from its row), or when the rows are rebuilt. */
-    let rhOpenPop=null;
-    function rhClosePop(){
-      if(!rhOpenPop) return;
-      const o=rhOpenPop; rhOpenPop=null;
-      o.pop.remove(); o.btn.classList.remove('active');
-      document.removeEventListener('mousedown', rhPopOutside, true);
-      document.removeEventListener('keydown', rhPopEsc, true);
-      document.removeEventListener('scroll', rhClosePop, true);
-    }
-    function rhPopOutside(e){ if(rhOpenPop && !rhOpenPop.pop.contains(e.target) && !rhOpenPop.btn.contains(e.target)) rhClosePop(); }
-    // Esc closes the panel only, not the whole Settings window behind it.
-    function rhPopEsc(e){ if(e.key==='Escape' && rhOpenPop){ e.stopPropagation(); rhClosePop(); } }
-    function rhOpenCons(btn, list){
-      const same=rhOpenPop && rhOpenPop.btn===btn;
-      rhClosePop();
-      if(same) return;
-      const pop=document.createElement('div'); pop.className='rh-pop';
-      // Title and checkboxes only: what constraints are for is said once, on the column header.
-      const head=document.createElement('div'); head.className='rh-pop-head'; head.textContent=TR.rhVinPopTitle||'';
-      pop.appendChild(head); pop.appendChild(list);
-      settingsOverlay.appendChild(pop);
-      const r=btn.getBoundingClientRect();
-      pop.style.top=(r.bottom+6)+'px';
-      pop.style.left=Math.max(8, Math.min(r.left, window.innerWidth-pop.offsetWidth-8))+'px';
-      btn.classList.add('active');
-      rhOpenPop={ pop, btn };
-      setTimeout(()=>{
-        document.addEventListener('mousedown', rhPopOutside, true);
-        document.addEventListener('keydown', rhPopEsc, true);
-        document.addEventListener('scroll', rhClosePop, true);
-      }, 0);
-    }
-
     /* --- per-provider temporary-chat support (merged into the "Selezionati" column of the
        provider transfer list -- see renderProviderXfer) --- */
     function ktTempSupport(key){ const p=PROVIDERS[key]; return !!(p&&(p.temp||p.tempUrl||p.tempClick)); }
@@ -5059,7 +5083,7 @@
       capturedRecipeNotify={ ...(currentSettings.recipe_notify||{}) };
       capturedRecipeMenu={ ...(currentSettings.recipe_menu||{}) };
       capturedRecipeRead={ ...(currentSettings.recipe_read||{}) };
-      capturedRecipeConstraints={ ...(currentSettings.recipe_constraints||{}) };
+      rcDraft=JSON.parse(JSON.stringify(rcStore));   // the Constraints panels edit this until Save
       capturedRecipeProvider={ ...(currentSettings.recipe_provider||{}) };
       rhGlobalNotify.checked=!!currentSettings.monitor_enabled;
       setGesture.checked=currentSettings.gesture_menu!==false;
@@ -5087,13 +5111,13 @@
       const rn={}; Object.keys(capturedRecipeNotify).forEach(k=>{ if(capturedRecipeNotify[k]===false) rn[k]=false; });
       const rm={}; Object.keys(capturedRecipeMenu).forEach(k=>{ if(capturedRecipeMenu[k]===false) rm[k]=false; });
       const rr={}; Object.keys(capturedRecipeRead).forEach(k=>{ if(capturedRecipeRead[k]===true) rr[k]=true; });
-      const rc={ ...capturedRecipeConstraints };
       const rp={ ...capturedRecipeProvider };
       const lowPowerChanged = !!currentSettings.low_power !== setLowPower.checked;
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, recipe_read:rr, recipe_constraints:rc, recipe_provider:rp, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, recipe_read:rr, recipe_provider:rp, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
-      closeModal(settingsOverlay);
+      closeModal(settingsOverlay);   // closes the Constraints panel first, so a half-done edit is tidied
+      rcStore=rcDraft; persistRecipeConstraints(); renderChatCons();
       // warn if the chosen shortcut was not registrable and was replaced
       if(eff.hotkey!==desired.hotkey){ toast(TR.hotkeyFallback.replace('{k}', friendlyHotkey(eff.hotkey))); }
       // Resource saving acts on the arguments WebView2 creates its environment with: it reads them
@@ -5275,7 +5299,7 @@
       const draft=!isNeutral && ktInstrDrafts && ktInstrDrafts[recipeRefOf(activeRecipe)];
       if(draft) instruction.value=draft;
       updateSaveInstr();
-      applyConstraintVisibility();
+      renderChatCons();
     }
     /* Unsaved edits of a recipe's instruction, per recipe, for the current conversation only: switching to another
        recipe and back used to throw the edit away (QA run of 27/09/2026, step 4). Saving turns the edit into the
@@ -5299,6 +5323,7 @@
       } else {
         const t=TR; const name=(t.recipeNames[activeRecipe.key]||activeRecipe.key);
         const id=genId(); customRecipes.push({id,name,instruction:text});
+        copyRecipeCons(recipeRefOf(activeRecipe), 'id:'+id);
         await persistRecipes(); renderCustomRecipes();
         const li=recipesEl.querySelector(`.recipe-custom[data-id="${id}"]`); if(li) selectRecipe(li);
       }
@@ -5405,6 +5430,7 @@
     async function duplicateBuiltin(key){
       const t=TR; const name=(t.recipeNames[key]||key); const instruction=(t.instr[key]||t.defaultInstr);
       const id=genId(); customRecipes.push({id,name,instruction});
+      copyRecipeCons('key:'+key, 'id:'+id);
       await persistRecipes(); renderCustomRecipes();
       const li=recipesEl.querySelector(`.recipe-custom[data-id="${id}"]`); if(li) selectRecipe(li);
     }
@@ -5412,6 +5438,7 @@
       askConfirm(TR.deleteRecipeMsg, async()=>{
         const wasActive=activeRecipe.kind==='id'&&activeRecipe.id===id;
         customRecipes=customRecipes.filter(r=>r.id!==id);
+        if(rcStore.recipes['id:'+id]){ delete rcStore.recipes['id:'+id]; persistRecipeConstraints(); }
         await persistRecipes(); renderCustomRecipes();
         if(wasActive){ const first=recipesEl.querySelector('.recipe[data-key]'); if(first) selectRecipe(first); }
       });
@@ -5419,7 +5446,7 @@
     document.getElementById('addRecipe').addEventListener('click', ()=>{
       recipeModalTarget='builder';
       document.getElementById('recipeName').value=''; document.getElementById('recipeInstr').value='';
-      document.getElementById('recipeNoConstraints').checked=false;
+      renderNewRecipeCons();
       openModal(recipeOverlay); setTimeout(()=>document.getElementById('recipeName').focus(),50);
     });
     document.getElementById('recipeX').addEventListener('click', ()=>closeModal(recipeOverlay));
@@ -5428,8 +5455,8 @@
       const name=document.getElementById('recipeName').value.trim();
       if(!name){ document.getElementById('recipeName').focus(); return; }
       const instr=document.getElementById('recipeInstr').value.trim()||TR.defaultInstr;
-      const noConstraints=document.getElementById('recipeNoConstraints').checked;
-      const id=genId(); customRecipes.push({id,name,instruction:instr,noConstraints});
+      const id=genId(); customRecipes.push({id,name,instruction:instr});
+      rcStore.recipes['id:'+id]=newRecipeConsList(); persistRecipeConstraints();
       await persistRecipes(); renderCustomRecipes(); closeModal(recipeOverlay);   // syncs both lists
       if(recipeModalTarget==='kotodama'){
         const li=ktRecipesEl && ktRecipesEl.querySelector(`.recipe-custom[data-id="${id}"]`);
@@ -5439,118 +5466,384 @@
       }
     });
 
-    /* ===================== CUSTOM FIELDS ===================== */
-    // Extra sections created by the user (besides Length/Tone, which stay fixed).
-    // Each field = {id, label, options:[String], value:Int}. Automatic saving.
-    const fieldsOverlay=document.getElementById('fieldsOverlay');
-    const fieldsBody=document.getElementById('fieldsBody');
-    const controlsEl=document.getElementById('controls');
-    let fieldsSaveTimer=0, renderCFTimer=0;
-
-    async function loadFields(){
-      if(TAURI){ try{ return await invoke('get_fields'); }catch(e){} }
-      try{ return JSON.parse(localStorage.getItem('apb-fields')||'[]'); }catch(e){ return []; }
+    /* ===================== RECIPE CONSTRAINTS: panel, chat row, new recipe =====================
+       One panel (.vp), opened from two places: "Constraints ▾" in Settings -> Recipes and the ⚙ next to the
+       instruction in the chat. One row per constraint: checkbox (sent or suspended), name, the value the
+       recipe's shortcut sends, ✎ to edit it in place (the user's own only: Length, Tone and Answer have fixed
+       options), ✕ to delete it, with Undo. At the bottom "+ Add constraint": a new one, a built-in one the
+       recipe does not have, or a copy of one of "your constraints" (a copy, not a link). In Settings the panel
+       edits a draft (rcDraft) that Save keeps; from the chat every change counts at once.
+       Every change in the chat is saved at once; Settings saves with its own Save button. */
+    let rcDraft=null;   // Settings: copy of rcStore until Save
+    let vpOpen=null;    // { el, anchor, ref, where:'chat'|'settings', editing:<id>|null, addOpen }
+    function vpStore(){ return vpOpen && vpOpen.where==='settings' ? rcDraft : rcStore; }
+    function vpEl(tag, cls, txt){ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!==undefined) e.textContent=txt; return e; }
+    function vpOptionSelect(c, idx){
+      const s=vpEl('select', 'field');
+      consOptions(c).forEach(x=>{ const op=document.createElement('option'); op.textContent=x; s.appendChild(op); });
+      s.selectedIndex=idx;
+      return s;
     }
-    function persistFields(){
-      clearTimeout(fieldsSaveTimer);   // debounce: the editor fires many changes in quick succession
-      fieldsSaveTimer=setTimeout(()=>{
-        if(TAURI){ invoke('save_fields',{fields:customFields}).catch(()=>{}); }
-        else { try{ localStorage.setItem('apb-fields', JSON.stringify(customFields)); }catch(e){} }
-      }, 250);
+    // From the chat a change is saved and shown at once; in Settings it waits for Save.
+    function vpChanged(where){ if(where==='chat'){ persistRecipeConstraints(); renderChatCons(); } }
+    // The recipe's own copy of a constraint (the list becomes the recipe's own on the first change).
+    function vpMut(c){ return consOwn(vpOpen.ref, vpStore()).find(x=>x.id===c.id)||c; }
+    // A constraint created or edited joins "your constraints"; the same name updates the one already there.
+    function rememberMine(store, c){
+      store.mine=store.mine||[];
+      const e={ label:c.label, options:c.options.slice() }, i=store.mine.findIndex(m=>m.label===c.label);
+      if(i>=0) store.mine[i]=e; else store.mine.push(e);
     }
-    // Render the fields as themed dropdowns in the page, after Length/Tone.
-    function renderCustomFields(){
-      controlsEl.querySelectorAll('.control-custom').forEach(el=>el.remove());
-      customFields.forEach(f=>{
-        if(!f.options||!f.options.length) return;   // a field with no options is not shown
-        const ctrl=document.createElement('div'); ctrl.className='control control-custom'; ctrl.dataset.id=f.id;
-        const label=document.createElement('label'); label.textContent=f.label||'';
-        const box=document.createElement('div'); box.className='select';
-        const ico=document.createElement('span'); ico.className='ico'; ico.textContent='◆';
-        const sel=document.createElement('select');
-        f.options.forEach(o=>{ const op=document.createElement('option'); op.textContent=o; sel.appendChild(op); });
-        sel.selectedIndex=Math.min(f.value||0, f.options.length-1);
-        box.appendChild(ico); box.appendChild(sel);
-        ctrl.appendChild(label); ctrl.appendChild(box);
-        controlsEl.appendChild(ctrl);
-        enhanceSelect(sel);
-        sel.addEventListener('change', ()=>{ f.value=sel.selectedIndex; persistFields(); });
-      });
-      applyConstraintVisibility();
-    }
-    function renderCustomFieldsDebounced(){ clearTimeout(renderCFTimer); renderCFTimer=setTimeout(renderCustomFields,300); }
-
-    // Editor: blocks per field (label, options add/rename/delete, reorder, delete field).
-    function renderFieldsEditor(){
-      const t=TR;
-      fieldsBody.innerHTML='';
-      if(!customFields.length){
-        const empty=document.createElement('div'); empty.className='fld-empty'; empty.textContent=t.noFields;
-        fieldsBody.appendChild(empty); return;
+    // An edit left half done: empty options go, a constraint with no name or no option goes; a valid one kept.
+    function vpTidy(o){
+      const store = o.where==='settings' ? rcDraft : rcStore;
+      const list=((store&&store.recipes)||{})[o.ref]; if(!Array.isArray(list)) return;
+      for(let i=list.length-1; i>=0; i--){
+        const c=list[i]; if(c.kind!=='field') continue;
+        c.label=(c.label||'').trim(); c.options=(c.options||[]).map(x=>x.trim()).filter(Boolean);
+        if(!c.label || !c.options.length){ list.splice(i,1); continue; }
+        if(c.id===o.editing) rememberMine(store, c);
       }
-      customFields.forEach((f,idx)=>{
-        const block=document.createElement('div'); block.className='fld-block';
-        const top=document.createElement('div'); top.className='fld-top';
-        const lbl=document.createElement('input'); lbl.type='text'; lbl.className='field'; lbl.value=f.label||''; lbl.placeholder=t.fieldNamePh;
-        lbl.addEventListener('input', ()=>{ f.label=lbl.value; persistFields(); renderCustomFieldsDebounced(); });
-        const up=document.createElement('button'); up.className='fld-mv'; up.textContent='↑'; up.title=t.moveUp; up.disabled=idx===0;
-        up.addEventListener('click', ()=>{ if(idx>0){ const a=customFields; [a[idx-1],a[idx]]=[a[idx],a[idx-1]]; persistFields(); renderFieldsEditor(); renderCustomFields(); } });
-        const down=document.createElement('button'); down.className='fld-mv'; down.textContent='↓'; down.title=t.moveDown; down.disabled=idx===customFields.length-1;
-        down.addEventListener('click', ()=>{ if(idx<customFields.length-1){ const a=customFields; [a[idx+1],a[idx]]=[a[idx],a[idx+1]]; persistFields(); renderFieldsEditor(); renderCustomFields(); } });
-        const del=document.createElement('button'); del.className='fld-del fld-del-text'; del.textContent='✕ '+t.delete;
-        del.addEventListener('click', ()=>{ askConfirm(t.deleteFieldMsg, ()=>{ customFields.splice(idx,1); persistFields(); renderFieldsEditor(); renderCustomFields(); }); });
-        top.appendChild(lbl); top.appendChild(up); top.appendChild(down); top.appendChild(del);
-        block.appendChild(top);
-        const opts=document.createElement('div'); opts.className='fld-opts';
-        (f.options||[]).forEach((opt,oi)=>{
-          const row=document.createElement('div'); row.className='fld-opt';
-          const inp=document.createElement('input'); inp.type='text'; inp.className='field'; inp.value=opt; inp.placeholder=t.optionPh;
-          inp.addEventListener('input', ()=>{ f.options[oi]=inp.value; persistFields(); renderCustomFieldsDebounced(); });
-          const od=document.createElement('button'); od.className='fld-del'; od.textContent='✕'; od.title=t.delete;
-          od.addEventListener('click', ()=>{ f.options.splice(oi,1); if((f.value||0)>=f.options.length) f.value=Math.max(0,f.options.length-1); persistFields(); renderFieldsEditor(); renderCustomFields(); });
-          row.appendChild(inp); row.appendChild(od); opts.appendChild(row);
+      // back to exactly its default (a new constraint abandoned): the recipe keeps following the default
+      if(JSON.stringify(list)===JSON.stringify(defaultConsFor(o.ref))) delete store.recipes[o.ref];
+    }
+    function vpClose(){
+      if(!vpOpen) return;
+      const o=vpOpen; vpOpen=null;
+      vpTidy(o);
+      // the keyboard goes back to the button that opened it
+      const back=o.el.contains(document.activeElement) || document.activeElement===document.body;
+      o.el.remove(); o.anchor.classList.remove('active');
+      if(back && o.anchor.isConnected) o.anchor.focus();
+      document.removeEventListener('mousedown', vpOutside, true);
+      document.removeEventListener('keydown', vpEsc, true);
+      document.removeEventListener('scroll', vpScroll, true);
+      vpChanged(o.where);
+    }
+    function vpOutside(e){
+      if(!vpOpen || vpOpen.el.contains(e.target) || vpOpen.anchor.contains(e.target) || e.target.closest('.vp-toast')) return;
+      vpClose();
+    }
+    // Esc closes the panel only, not the Settings window behind it.
+    function vpEsc(e){ if(e.key==='Escape' && vpOpen){ e.stopPropagation(); e.preventDefault(); vpClose(); } }
+    // Settings: the page scrolling moves the button away from its panel; a list scrolling inside the panel does
+    // not, it only closes an open menu (a fixed menu would drift from its field).
+    function vpScroll(e){
+      if(vpOpen && e.target && e.target.nodeType===1 && vpOpen.el.contains(e.target)){ closeAllCs(); return; }
+      vpClose();
+    }
+    function vpPlace(){
+      const o=vpOpen; if(!o) return;
+      // in the chat the button that opened it may have been redrawn (the empty state): the ⚙ takes its place
+      if(!o.anchor.isConnected){ const g=document.getElementById('ktManageFields'); if(g){ o.anchor=g; g.classList.add('active'); } }
+      const r=o.anchor.getBoundingClientRect(), p=o.el;
+      if(o.where==='chat'){
+        // above the recipe bar, which sits at the bottom of the window, and never over the title bar
+        const bar=document.getElementById('appbar');
+        const minTop=Math.max(8, bar ? bar.getBoundingClientRect().bottom+8 : 8);
+        p.style.maxHeight=Math.max(220, r.top-8-minTop)+'px';
+        p.style.top='auto'; p.style.bottom=(window.innerHeight-r.top+8)+'px';
+      } else {
+        // inside the Settings window, never over its Cancel and Save: below the button, or above it when
+        // there is more room there
+        // the side chosen when it opens stays while it is open: entering an edit must not make it jump
+        const modal=settingsOverlay.querySelector('.modal'), head=modal && modal.querySelector('.modal-head');
+        const foot=modal && modal.querySelector('.modal-foot');
+        const lo=(head ? head.getBoundingClientRect().bottom : 0)+8;
+        const hi=foot ? foot.getBoundingClientRect().top-8 : window.innerHeight-8;
+        const below=hi-(r.bottom+6), above=(r.top-6)-lo;
+        if(!o.dir){ p.style.maxHeight='none'; o.dir = (p.offsetHeight<=below || below>=above) ? 'down' : 'up'; }
+        if(o.dir==='down'){
+          p.style.bottom='auto'; p.style.top=(r.bottom+6)+'px'; p.style.maxHeight=Math.max(160, below)+'px';
+        } else {
+          p.style.top='auto'; p.style.bottom=(window.innerHeight-r.top+6)+'px'; p.style.maxHeight=Math.max(160, above)+'px';
+        }
+      }
+      p.style.left=Math.max(8, Math.min(r.left, window.innerWidth-p.offsetWidth-8))+'px';
+    }
+    function vpOpenFor(anchor, ref, where, opts){
+      opts=opts||{};
+      const same=vpOpen && vpOpen.anchor===anchor;
+      vpClose();
+      if(same && !opts.add) return;
+      const p=vpEl('div', 'vp'); p.setAttribute('role', 'dialog');
+      (where==='settings' ? settingsOverlay : document.body).appendChild(p);
+      vpOpen={ el:p, anchor, ref, where, editing:null, addOpen:!!opts.add };
+      anchor.classList.add('active');
+      vpRender();
+      const first=p.querySelector(opts.add ? '.vp-mi' : '.vp-row input[type=checkbox], .vp-add');
+      if(first) first.focus();
+      setTimeout(()=>{
+        document.addEventListener('mousedown', vpOutside, true);
+        document.addEventListener('keydown', vpEsc, true);
+        if(where==='settings') document.addEventListener('scroll', vpScroll, true);
+      }, 0);
+    }
+    function vpRender(){
+      const o=vpOpen; if(!o) return;
+      const p=o.el, t=TR, list=consFor(o.ref, vpStore());
+      const prev=p.querySelector('.vp-list'), keep=prev ? prev.scrollTop : 0;
+      p.innerHTML='';
+      p.appendChild(vpEl('div', 'vp-head', t.rhVinPopTitle||''));
+      const h=vpEl('div', 'vp-h');
+      h.appendChild(vpEl('span')); h.appendChild(vpEl('span', '', t.vinColName||''));
+      const hv=vpEl('span', 'vp-h-info', t.vinColShortcut||''); hv.title=t.vinColShortcutTitle||''; h.appendChild(hv);
+      h.appendChild(vpEl('span')); h.appendChild(vpEl('span'));
+      p.appendChild(h);
+      const box=vpEl('div', 'vp-list'+(o.editing ? ' editing' : ''));
+      if(!list.length) box.appendChild(vpEl('div', 'vp-empty', t.vinEmptyPop||''));
+      const sels=[];
+      list.forEach(c=>box.appendChild(vpItem(c, sels)));
+      p.appendChild(box);
+      p.appendChild(vpFoot(list));
+      sels.forEach(s=>{ try{ enhanceSelect(s); }catch(e){} });
+      box.scrollTop=keep;
+      vpPlace();
+    }
+    function vpItem(c, sels){
+      const o=vpOpen, t=TR, where=o.where;
+      const it=vpEl('div', 'vp-item'+(o.editing===c.id ? ' editing' : ''));
+      const row=vpEl('div', 'vp-row'+(c.on ? '' : ' off'));
+      const cb=vpEl('input'); cb.type='checkbox'; cb.checked=!!c.on; cb.title=t.vinUse||'';
+      cb.addEventListener('change', ()=>{ vpMut(c).on=cb.checked; row.classList.toggle('off', !cb.checked); vpChanged(where); });
+      row.appendChild(cb);
+      const nm=vpEl('span', 'vp-name', consLabel(c)); nm.title=consLabel(c);
+      row.appendChild(nm);
+      const cell=vpEl('span', 'vp-val');
+      if(c.kind==='resp'){
+        // a result pasted back by a shortcut is always the text only (buildInlinePrompt)
+        const f=vpEl('span', 'vp-fixed', t.respTextOnly||''); f.title=t.vinRespFixed||''; cell.appendChild(f);
+      } else {
+        const s=vpOptionSelect(c, consIndex(c, 'shortcut'));
+        s.addEventListener('change', ()=>{ const m=vpMut(c); m.shortcut=consValueAt(m, s.selectedIndex); vpChanged(where); });
+        cell.appendChild(s); sels.push(s);
+      }
+      row.appendChild(cell);
+      // a disabled button shows no tooltip: the reason sits on its wrapper
+      const edw=vpEl('span', 'vp-ibw');
+      const ed=vpEl('button', 'vp-ib'+(o.editing===c.id ? ' on' : ''), '✎'); ed.type='button';
+      if(c.kind!=='field'){ ed.disabled=true; edw.title=(t.vinFixedOpts||'').replace('{c}', consLabel(c)); }
+      else {
+        ed.title=t.vinEdit||'';
+        ed.addEventListener('click', ()=>{
+          // leaving an edit, by Done or by editing another one, keeps it in "your constraints" too
+          vpTidy(o);
+          if(o.editing===c.id){ o.editing=null; vpRender(); vpChanged(where); return; }
+          vpMut(c); o.editing=c.id; vpRender(); vpFocusEditor();
         });
-        const addOpt=document.createElement('button'); addOpt.className='fld-addopt'; addOpt.textContent=t.addOption;
-        addOpt.addEventListener('click', ()=>{ f.options=f.options||[]; f.options.push(t.newOption+' '+(f.options.length+1)); persistFields(); renderFieldsEditor(); renderCustomFields(); });
-        opts.appendChild(addOpt); block.appendChild(opts);
-        fieldsBody.appendChild(block);
-      });
-    }
-    document.getElementById('manageFields').addEventListener('click', ()=>{ renderFieldsEditor(); openModal(fieldsOverlay); });
-    document.getElementById('ktManageFields').addEventListener('click', ()=>{ renderFieldsEditor(); openModal(fieldsOverlay); });
-    // Right-click on a custom field → Edit (opens editor) / Delete.
-    controlsEl.addEventListener('contextmenu', e=>{
-      const ctrl=e.target.closest('.control-custom'); if(!ctrl) return;
-      e.preventDefault(); e.stopPropagation();
-      const id=ctrl.dataset.id, t=TR;
-      showCtxMenu([
-        { label:t.edit, onClick:()=>{ renderFieldsEditor(); openModal(fieldsOverlay); } },
-        { label:t.delete, danger:true, onClick:()=>requestDeleteField(id) },
-      ], e.clientX, e.clientY);
-    });
-    function requestDeleteField(id){
-      askConfirm(TR.deleteFieldMsg, ()=>{
-        const i=customFields.findIndex(f=>f.id===id); if(i<0) return;
-        customFields.splice(i,1); persistFields(); renderFieldsEditor(); renderCustomFields();
-      });
-    }
-    document.getElementById('fieldsX').addEventListener('click', ()=>closeModal(fieldsOverlay));
-    document.getElementById('fieldsDone').addEventListener('click', ()=>closeModal(fieldsOverlay));
-    fieldsOverlay.addEventListener('click', e=>{ if(e.target===fieldsOverlay) closeModal(fieldsOverlay); });
-    document.getElementById('addFieldBtn').addEventListener('click', ()=>{
-      const t=TR;
-      const f={ id:genId(), label:t.newFieldName, options:[t.newOption+' 1', t.newOption+' 2'], value:0 };
-      customFields.push(f);
-      // The new field belongs to the recipe it was created on, and only to that one (see constraintsForRef).
-      // Not to a recipe that carries no constraints by design (Neutra, Ripeti identico, "no constraints"):
-      // one field there would switch all of them back on.
-      const ref=recipeRefOf(activeRecipe), cur=constraintsForRef(ref);
-      if(ref!=='key:neutral' && cur.length){
-        currentSettings.recipe_constraints={ ...(currentSettings.recipe_constraints||{}), [ref]:cur.concat('f:'+f.id) };
-        persistSettings(currentSettings);
       }
-      persistFields(); renderFieldsEditor(); renderCustomFields();
-    });
+      edw.appendChild(ed); row.appendChild(edw);
+      const del=vpEl('button', 'vp-ib del', '✕'); del.type='button'; del.title=t.vinDelete||'';
+      del.addEventListener('click', ()=>vpDelete(c));
+      row.appendChild(del);
+      it.appendChild(row);
+      // while editing, the name and the shortcut menu follow what is typed
+      const follow=()=>{
+        nm.textContent=consLabel(c); nm.title=nm.textContent;
+        const s=cell.querySelector('select'); if(!s) return;
+        s.innerHTML=''; consOptions(c).forEach(x=>{ const op=document.createElement('option'); op.textContent=x; s.appendChild(op); });
+        s.selectedIndex=consIndex(c, 'shortcut'); if(s.__cs) s.__cs.refresh();
+      };
+      if(o.editing===c.id){ c=vpMut(c); it.appendChild(vpEditor(c, follow)); }
+      return it;
+    }
+    function vpFocusEditor(){
+      const e=vpOpen && vpOpen.el.querySelector('.vp-item.editing'); if(!e) return;
+      // the row and the name being typed in view; Done is reached by scrolling when the window is short
+      e.scrollIntoView({ block:'start' });
+      const i=e.querySelector('.vp-edit input.field'); if(i){ i.focus({ preventScroll:true }); i.select(); }
+    }
+    // Edit in place: name, options (↑ ↓ ✕, Enter adds one below), Done. A renamed option keeps being the chosen
+    // value: a typo fixed must not lose it.
+    function vpEditor(c, follow){
+      const o=vpOpen, t=TR, where=o.where, box=vpEl('div', 'vp-edit');
+      const done=vpEl('button', 'btn primary', t.done||''); done.type='button';
+      const why=vpEl('span', 'vp-why');
+      const valid=()=>!!(c.label||'').trim() && (c.options||[]).some(x=>x && x.trim());
+      const check=()=>{ done.disabled=!valid(); why.textContent=valid() ? '' : (t.vinNeedName||''); };
+      const n=vpEl('div'); n.appendChild(vpEl('label', 'vp-l', t.vinName||''));
+      const ni=vpEl('input', 'field'); ni.type='text'; ni.value=c.label||''; ni.placeholder=t.vinNamePh||'';
+      ni.addEventListener('input', ()=>{ c.label=ni.value; follow(); check(); vpChanged(where); });
+      ni.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); const f=box.querySelector('.vp-opt input'); if(f) f.focus(); } });
+      n.appendChild(ni); box.appendChild(n);
+      const ow=vpEl('div'); ow.appendChild(vpEl('label', 'vp-l', t.vinOptions||''));
+      const ol=vpEl('div', 'vp-opts'); ow.appendChild(ol); box.appendChild(ow);
+      function drawOpts(focusAt){
+        ol.innerHTML='';
+        c.options=c.options||[];
+        c.options.forEach((x, i)=>{
+          const r=vpEl('div', 'vp-opt');
+          const inp=vpEl('input', 'field'); inp.type='text'; inp.value=x; inp.placeholder=t.optionPh||'';
+          inp.addEventListener('input', ()=>{
+            const old=c.options[i]; c.options[i]=inp.value;
+            if(c.shortcut===old) c.shortcut=inp.value;
+            if(c.chat===old) c.chat=inp.value;
+            follow(); check(); vpChanged(where);
+          });
+          inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); c.options.splice(i+1, 0, ''); drawOpts(i+1); } });
+          const up=vpEl('button', 'fld-mv', '↑'); up.type='button'; up.title=t.moveUp||''; up.disabled=i===0;
+          up.addEventListener('click', ()=>{ const a=c.options; [a[i-1], a[i]]=[a[i], a[i-1]]; drawOpts(); follow(); vpChanged(where); });
+          const dn=vpEl('button', 'fld-mv', '↓'); dn.type='button'; dn.title=t.moveDown||''; dn.disabled=i===c.options.length-1;
+          dn.addEventListener('click', ()=>{ const a=c.options; [a[i+1], a[i]]=[a[i], a[i+1]]; drawOpts(); follow(); vpChanged(where); });
+          const rm=vpEl('button', 'fld-del', '✕'); rm.type='button'; rm.title=t.delete||'';
+          rm.addEventListener('click', ()=>{ c.options.splice(i, 1); drawOpts(); follow(); check(); vpChanged(where); });
+          r.appendChild(inp); r.appendChild(up); r.appendChild(dn); r.appendChild(rm);
+          ol.appendChild(r);
+        });
+        const ad=vpEl('button', 'fld-addopt', t.vinAddOption||''); ad.type='button';
+        ad.addEventListener('click', ()=>{ c.options.push(''); drawOpts(c.options.length-1); });
+        ol.appendChild(ad);
+        if(typeof focusAt==='number'){ const ins=ol.querySelectorAll('input.field'); if(ins[focusAt]) ins[focusAt].focus(); }
+      }
+      drawOpts();
+      done.addEventListener('click', ()=>{ if(!valid()) return; vpTidy(o); o.editing=null; vpRender(); vpChanged(where); });
+      const foot=vpEl('div', 'vp-edit-foot'); foot.appendChild(why); foot.appendChild(done); box.appendChild(foot);
+      check();
+      return box;
+    }
+    function vpDelete(c){
+      const o=vpOpen, store=vpStore(), ref=o.ref, where=o.where;
+      const list=consOwn(ref, store), i=list.findIndex(x=>x.id===c.id); if(i<0) return;
+      const gone=list.splice(i, 1)[0];
+      if(o.editing===c.id) o.editing=null;
+      vpRender(); vpChanged(where);
+      toastUndo(TR.vinDeleted||'', ()=>{
+        const l2=consOwn(ref, store); l2.splice(Math.min(i, l2.length), 0, gone);
+        if(vpOpen && vpOpen.ref===ref && vpOpen.where===where) vpRender();
+        // the chat's store, or a Settings draft already saved: it counts at once
+        if(store===rcStore){ persistRecipeConstraints(); renderChatCons(); }
+      });
+    }
+    function vpFoot(list){
+      const o=vpOpen, t=TR, where=o.where, store=vpStore(), f=vpEl('div', 'vp-foot');
+      const b=vpEl('button', 'vp-add'+(o.addOpen ? ' active' : ''), t.vinAdd||''); b.type='button';
+      b.addEventListener('click', ()=>{ o.addOpen=!o.addOpen; vpRender(); if(o.addOpen){ const m=o.el.querySelector('.vp-mi'); if(m) m.focus(); } });
+      f.appendChild(b);
+      if(!o.addOpen) return f;
+      const m=vpEl('div', 'vp-menu');
+      const nw=vpEl('button', 'vp-mi new', t.vinNew||''); nw.type='button';
+      nw.addEventListener('click', ()=>vpAdd({ id:genId(), kind:'field', label:'', options:[''], on:true }, true));
+      m.appendChild(nw);
+      const fixed=FIXED_CONS.filter(k=>!list.some(c=>c.kind===k));
+      if(fixed.length){
+        m.appendChild(vpEl('div', 'vp-mg', t.vinBuiltin||''));
+        fixed.forEach(k=>{
+          const x=vpEl('button', 'vp-mi'); x.type='button'; x.appendChild(vpEl('span', '', consLabel({ kind:k })));
+          x.addEventListener('click', ()=>vpAdd(fixedCons(k), false));
+          m.appendChild(x);
+        });
+      }
+      const mine=(store.mine||[]).filter(s=>!list.some(c=>c.kind==='field' && c.label===s.label));
+      if(mine.length){
+        m.appendChild(vpEl('div', 'vp-mg', t.vinMine||''));
+        mine.forEach(s=>{
+          const r=vpEl('div', 'vp-mi-row');
+          const x=vpEl('button', 'vp-mi'); x.type='button';
+          x.appendChild(vpEl('span', '', s.label));
+          const sm=vpEl('small', '', (s.options||[]).join(', ')); sm.title=sm.textContent; x.appendChild(sm);
+          x.addEventListener('click', ()=>vpAdd({ id:genId(), kind:'field', label:s.label, options:(s.options||[]).slice(), on:true }, false));
+          // out of the list only: the recipes that use it keep their copy
+          const rm=vpEl('button', 'vp-ib del', '✕'); rm.type='button'; rm.title=t.vinMineRemove||'';
+          rm.addEventListener('click', ()=>{ store.mine=(store.mine||[]).filter(z=>z!==s); vpRender(); vpChanged(where); });
+          r.appendChild(x); r.appendChild(rm); m.appendChild(r);
+        });
+      }
+      f.appendChild(m);
+      return f;
+    }
+    function vpAdd(c, edit){
+      const o=vpOpen;
+      consOwn(o.ref, vpStore()).push(c);
+      o.addOpen=false; o.editing=edit ? c.id : null;
+      vpRender(); vpChanged(o.where);
+      const box=o.el.querySelector('.vp-list'); if(box) box.scrollTop=box.scrollHeight;
+      if(edit) vpFocusEditor();
+    }
+    // A short message with Undo, above every window (the in-page toast has no button).
+    let vpToastEl=null, vpToastTimer=0;
+    function toastUndo(msg, undo){
+      if(vpToastEl) vpToastEl.remove();
+      clearTimeout(vpToastTimer);
+      const el=vpEl('div', 'vp-toast'); el.setAttribute('role', 'status');
+      el.appendChild(vpEl('span', '', msg));
+      const b=vpEl('button', '', TR.vinUndo||''); b.type='button';
+      b.addEventListener('click', ()=>{ undo(); el.remove(); vpToastEl=null; clearTimeout(vpToastTimer); });
+      el.appendChild(b);
+      document.body.appendChild(el); vpToastEl=el;
+      vpToastTimer=setTimeout(()=>{ el.remove(); if(vpToastEl===el) vpToastEl=null; }, 6000);
+    }
+
+    /* The chat row: only the active recipe's constraints that are on, each with the value last picked on that
+       recipe. A value that is no longer among the options shows the first one, marked, until a new choice. */
+    function renderChatCons(){
+      const host=document.getElementById('ktConstraints'); if(!host) return;
+      let box=document.getElementById('ktCons');
+      if(!box){ box=vpEl('div', 'kt-cons'); box.id='ktCons'; host.appendChild(box); }
+      box.innerHTML='';
+      const ref=recipeRefOf(activeRecipe), t=TR;
+      if(ref==='key:neutral') return;
+      const list=consFor(ref).filter(c=>c.on && consLabel(c).trim() && consOptions(c).length);
+      if(!list.length){
+        box.appendChild(vpEl('span', 'kt-cons-none', t.vinNone||''));
+        const g=vpEl('button', 'kt-cons-add', t.vinAdd||''); g.type='button';
+        g.addEventListener('click', ()=>vpOpenFor(g, ref, 'chat', { add:true }));
+        box.appendChild(g);
+        return;
+      }
+      list.forEach(c=>{
+        const stale=consStale(c, 'chat');
+        const ctl=vpEl('div', 'control'+(stale ? ' stale' : ''));
+        const lab=vpEl('label', '', consLabel(c)); lab.title=consLabel(c); ctl.appendChild(lab);
+        const sw=vpEl('div', 'select');
+        const s=vpOptionSelect(c, consIndex(c, 'chat')); s.className='';
+        sw.appendChild(s); ctl.appendChild(sw); box.appendChild(ctl);
+        if(stale) ctl.title=(t.vinStale||'').replace('{v}', consText(c, 'chat'));
+        enhanceSelect(s);
+        s.addEventListener('change', ()=>{
+          const own=consOwn(ref).find(x=>x.id===c.id); if(!own) return;
+          own.chat=consValueAt(own, s.selectedIndex);
+          ctl.classList.remove('stale'); ctl.title='';
+          persistRecipeConstraints();
+        });
+      });
+    }
+    function openActiveRecipeCons(btn){ vpOpenFor(btn, recipeRefOf(activeRecipe), 'chat'); }
+    document.getElementById('manageFields').addEventListener('click', e=>openActiveRecipeCons(e.currentTarget));
+    document.getElementById('ktManageFields').addEventListener('click', e=>openActiveRecipeCons(e.currentTarget));
+
+    /* New recipe: which constraints it starts with. Length, Tone and Answer ticked, "your constraints" to tick. */
+    function renderNewRecipeCons(){
+      const box=document.getElementById('recipeCons'); if(!box) return;
+      const t=TR; box.innerHTML='';
+      const item=(text, small, on, data)=>{
+        const l=vpEl('label', 'nr-cons'); const cb=vpEl('input'); cb.type='checkbox'; cb.checked=on;
+        Object.assign(cb.dataset, data);
+        l.appendChild(cb); l.appendChild(vpEl('span', '', text));
+        if(small){ const sm=vpEl('small', '', small); sm.title=small; l.appendChild(sm); }
+        box.appendChild(l);
+      };
+      box.appendChild(vpEl('div', 'vp-mg', t.vinBuiltin||''));
+      FIXED_CONS.forEach(k=>item(consLabel({ kind:k }), '', true, { kind:k }));
+      const mine=rcStore.mine||[];
+      if(mine.length){
+        box.appendChild(vpEl('div', 'vp-mg', t.vinMine||''));
+        mine.forEach((s, i)=>item(s.label, (s.options||[]).join(', '), false, { mine:String(i) }));
+      }
+    }
+    function newRecipeConsList(){
+      const out=[];
+      document.querySelectorAll('#recipeCons input:checked').forEach(cb=>{
+        if(cb.dataset.kind){ out.push(fixedCons(cb.dataset.kind)); return; }
+        const s=(rcStore.mine||[])[+cb.dataset.mine];
+        if(s) out.push({ id:genId(), kind:'field', label:s.label, options:(s.options||[]).slice(), on:true });
+      });
+      return out;
+    }
+    // A recipe made from another one (duplicate, "save as a new recipe") starts with a copy of its constraints.
+    function copyRecipeCons(fromRef, toRef){
+      rcStore.recipes[toRef]=JSON.parse(JSON.stringify(consFor(fromRef)));
+      persistRecipeConstraints();
+    }
 
     /* ===================== BASE EVENTS ===================== */
     document.getElementById('lang').addEventListener('click', async e=>{
@@ -5599,7 +5892,7 @@
     document.addEventListener('keydown', async e=>{
       if(e.key!=='Escape') return;
       if(dlOpen()){ closeDownloads(); return; }
-      const open=[confirmOverlay,recipeOverlay,settingsOverlay,fieldsOverlay].find(o=>o.classList.contains('show'));
+      const open=[confirmOverlay,recipeOverlay,settingsOverlay].find(o=>o.classList.contains('show'));
       if(open){ if(open===settingsOverlay) applyTheme(currentSettings.theme); applyLang(currentSettings.language); closeModal(open); return; }
       if(body.classList.contains('kotodama-open')){ closeKotodama(); return; }
       if(body.classList.contains('provider-open')){ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); }
@@ -5739,6 +6032,11 @@
         const up = below < 200 && above > below;
         cs.classList.toggle('up', up);
         panel.style.maxHeight = Math.max(120, Math.min(260, up?above:below)) + 'px';
+        // inside a list that scrolls (the Constraints panel) the menu is fixed (CSS), so it is placed here
+        if(cs.closest('.vp-list')){
+          Object.assign(panel.style, { left:r.left+'px', right:'auto', width:r.width+'px',
+            top: up ? 'auto' : (r.bottom+5)+'px', bottom: up ? (window.innerHeight-r.top+5)+'px' : 'auto' });
+        }
       }
       trigger.addEventListener('click', e=>{ e.stopPropagation(); const wasOpen=cs.classList.contains('open'); closeAllCs(); if(!wasOpen){ placePanel(); cs.classList.add('open'); } });
       panel.addEventListener('click', e=>{ const it=e.target.closest('.cs-opt'); if(!it) return; e.stopPropagation(); sel.selectedIndex=+it.dataset.i; sel.dispatchEvent(new Event('change',{bubbles:true})); render(); cs.classList.remove('open'); });
@@ -5791,7 +6089,7 @@
     (async function init(){
       currentSettings=await loadSettings();
       customRecipes=await loadRecipes();
-      customFields=await loadFields();
+      rcStore=await loadRecipeConstraints();
       // Language: if the saved one is not valid (first launch = "auto") use the OS language (en fallback).
       osLang=await detectOsLang();
       if(!LANG_CODES.has(currentSettings.language)){
@@ -5806,12 +6104,7 @@
       await applySettings(currentSettings); // async: loads and applies the language
       enhanceSelects();           // after applySettings: the length/tone options exist
       renderCustomRecipes();
-      renderCustomFields();       // custom field dropdowns next to Length/Tone
-      // "Vincoli" (Lunghezza/Tono/Risposta + campi personalizzati): stesso pannello del builder
-      // classico, spostato sotto la tab Ricette di Kotodama -- stessa persistenza (saveUiState),
-      // stesso editor campi (fieldsOverlay), nessuna logica duplicata.
-      { const kc=document.getElementById('ktConstraints'), bc=document.getElementById('controls');
-        if(kc && bc) kc.appendChild(bc); }
+      renderChatCons();           // the active recipe's constraints, under its instruction
       // Istruzione della ricetta attiva: la stessa textarea #instruction del builder classico, ora
       // spostata sopra il composer di Kotodama (barra ricetta) invece che in un pannello a parte --
       // ".panel-head"/".neutral-hint" restano (inutilizzati) nel builder nascosto, non servono qui.
