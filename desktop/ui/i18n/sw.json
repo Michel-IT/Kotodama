@@ -346,5 +346,6 @@
   "vinRespFixed": "Njia fupi hubandika maandishi tu kila wakati.",
   "vinNone": "Hakuna vikwazo",
   "vinEmptyPop": "Hakuna vikwazo: mapishi hutuma maandishi tu.",
-  "vinStale": "Thamani uliyochagua haipo tena: inatumia \"{v}\"."
+  "vinStale": "Thamani uliyochagua haipo tena: inatumia \"{v}\".",
+  "ktSaveFailed": "Historia haikuweza kuhifadhiwa ({e}). Inajaribu tena."
 }

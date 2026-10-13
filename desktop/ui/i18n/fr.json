@@ -346,5 +346,6 @@
   "vinRespFixed": "La combinaison colle toujours le texte seul.",
   "vinNone": "Aucune contrainte",
   "vinEmptyPop": "Aucune contrainte : la recette envoie le texte seul.",
-  "vinStale": "La valeur choisie n'existe plus : utilise \"{v}\"."
+  "vinStale": "La valeur choisie n'existe plus : utilise \"{v}\".",
+  "ktSaveFailed": "L'historique n'a pas pu être enregistré ({e}). Nouvel essai en cours."
 }

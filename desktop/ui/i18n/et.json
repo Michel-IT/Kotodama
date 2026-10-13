@@ -346,5 +346,6 @@
   "vinRespFixed": "Otseparalleel kleebib alati ainult teksti.",
   "vinNone": "Pole piiranguid",
   "vinEmptyPop": "Pole piiranguid: retsept saadab ainult teksti.",
-  "vinStale": "Valitud väärtus on kadunud: kasutatakse \"{v}\"."
+  "vinStale": "Valitud väärtus on kadunud: kasutatakse \"{v}\".",
+  "ktSaveFailed": "Ajalugu ei õnnestunud salvestada ({e}). Proovin uuesti."
 }

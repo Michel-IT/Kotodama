@@ -346,5 +346,6 @@
   "vinRespFixed": "Kombinacija uvijek postavlja samo tekst.",
   "vinNone": "Nema ograničenja",
   "vinEmptyPop": "Nema ograničenja: recept šalje samo tekst.",
-  "vinStale": "Odabrana vrijednost je nestala: koristi se \"{v}\"."
+  "vinStale": "Odabrana vrijednost je nestala: koristi se \"{v}\".",
+  "ktSaveFailed": "Povijest se nije mogla spremiti ({e}). Pokušavam ponovno."
 }

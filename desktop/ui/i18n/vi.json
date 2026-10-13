@@ -346,5 +346,6 @@
   "vinRespFixed": "Phím tắt luôn chỉ dán văn bản.",
   "vinNone": "Không có ràng buộc",
   "vinEmptyPop": "Không có ràng buộc: công thức chỉ gửi văn bản.",
-  "vinStale": "Giá trị đã chọn không còn: đang sử dụng \"{v}\"."
+  "vinStale": "Giá trị đã chọn không còn: đang sử dụng \"{v}\".",
+  "ktSaveFailed": "Không thể lưu lịch sử ({e}). Đang thử lại."
 }

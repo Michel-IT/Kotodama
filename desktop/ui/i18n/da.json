@@ -346,5 +346,6 @@
   "vinRespFixed": "Tastekombinationen indsætter altid kun teksten.",
   "vinNone": "Ingen begrænsninger",
   "vinEmptyPop": "Ingen begrænsninger: opskriften sender kun teksten.",
-  "vinStale": "Den valgte værdi findes ikke længere: bruger \"{v}\"."
+  "vinStale": "Den valgte værdi findes ikke længere: bruger \"{v}\".",
+  "ktSaveFailed": "Historikken kunne ikke gemmes ({e}). Prøver igen."
 }

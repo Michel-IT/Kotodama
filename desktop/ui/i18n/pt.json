@@ -346,5 +346,6 @@
   "vinRespFixed": "A combinação sempre cola apenas o texto.",
   "vinNone": "Sem restrições",
   "vinEmptyPop": "Sem restrições: a receita envia apenas o texto.",
-  "vinStale": "O valor escolhido não existe mais: usando \"{v}\"."
+  "vinStale": "O valor escolhido não existe mais: usando \"{v}\".",
+  "ktSaveFailed": "Não foi possível guardar o histórico ({e}). A tentar de novo."
 }

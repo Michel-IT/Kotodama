@@ -346,5 +346,6 @@
   "vinRespFixed": "Combinația paste întotdeauna doar textul.",
   "vinNone": "Fără constrângeri",
   "vinEmptyPop": "Fără constrângeri: rețeta trimite doar textul.",
-  "vinStale": "Valoarea aleasă a dispărut: se utilizează \"{v}\"."
+  "vinStale": "Valoarea aleasă a dispărut: se utilizează \"{v}\".",
+  "ktSaveFailed": "Istoricul nu a putut fi salvat ({e}). Încerc din nou."
 }

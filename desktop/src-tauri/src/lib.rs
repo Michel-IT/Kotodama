@@ -649,7 +649,11 @@ fn get_kotodama_sessions(app: AppHandle) -> serde_json::Value {
 /// Saves the Kotodama meta-chat sessions.
 #[tauri::command]
 fn save_kotodama_sessions(app: AppHandle, sessions: serde_json::Value) -> Result<(), String> {
-    settings::save_kt_sessions(&app, &sessions)
+    let r = settings::save_kt_sessions(&app, &sessions);
+    if let Err(e) = &r {
+        debug::log(format!("SESSIONS save failed: {e}"));
+    }
+    r
 }
 
 /// Returns every recipe's constraints (built once from the old model on the first start, see settings.rs).

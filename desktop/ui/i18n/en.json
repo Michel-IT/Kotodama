@@ -315,6 +315,7 @@
   "ktCtxNew": "New message:",
   "ktRetry": "Retry",
   "ktRetryAll": "Send again to the ones that did not answer",
+  "ktSaveFailed": "The history could not be saved ({e}). Trying again.",
   "setTabGeneral": "General",
   "setTabShortcuts": "Shortcuts",
   "setTabAppearance": "Appearance",

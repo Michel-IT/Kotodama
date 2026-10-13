@@ -1161,7 +1161,10 @@ const STREAM_WATCH_JS: &str = r##"
             try { window.__ktStreamOpen = (window.__ktStreamOpen || 0) + 1; } catch(e){}
             try { window.__ktStreamEver = (window.__ktStreamEver || 0) + 1; } catch(e){}
             var fwd = netWanted(reqUrl), nid = fwd ? 'f' + (++netSeq) : '', dec = fwd ? new TextDecoder() : null;
-            function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} if (fwd) { try { netSend(nid, reqUrl, dec.decode(), true); } catch(e){} } ended(sb); }
+            // The answer stream of a provider we read from the network, counted apart: the harvest must not call a
+            // silent page "finished" while it is open (see `netOpen` in the harvest).
+            if (fwd) { try { window.__ktNetOpen = (window.__ktNetOpen || 0) + 1; } catch(e){} }
+            function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} if (fwd) { try { window.__ktNetOpen = Math.max(0, (window.__ktNetOpen || 1) - 1); } catch(e){} try { netSend(nid, reqUrl, dec.decode(), true); } catch(e){} } ended(sb); }
             (function pump(){
               mine.read().then(function(r){
                 if (r.done) { closed(); return; }
@@ -1271,20 +1274,32 @@ const STREAM_WATCH_JS: &str = r##"
 /// button), or the button whose icon path starts with a given prefix. Structure only, never the visible label.
 const FIND_ACTION_JS: &str = r##"
 if (!window.__ktFindAction) {
+  // One alternative of the selector: see below.
+  window.__ktFindOne = function(sel){
+    // "row-last:<selector>": the LAST button of the row that holds that element -- for a control with no stable
+    // attribute of its own sitting at the end of an action bar (ChatGPT's former "more actions").
+    if (sel.indexOf('row-last:') === 0) {
+      var anchor = document.querySelectorAll(sel.slice(9));
+      if (!anchor.length) return null;
+      var row = anchor[anchor.length - 1].closest('button, [role="button"]');
+      row = row && row.parentElement;
+      if (!row) return null;
+      var bs = row.querySelectorAll('button, [role="button"]');
+      return bs.length ? bs[bs.length - 1] : null;
+    }
+    var l = document.querySelectorAll(sel);
+    return l.length ? l[l.length - 1].closest('button, [role="button"]') : null;
+  };
+  // `sel` may list alternatives separated by " || ", tried in order: a provider's page changes under us and the
+  // old and the new layout are both in use for a while (ChatGPT, October 2026: the speaker went from a menu item
+  // to a button of its own, and its data-testid attributes disappeared).
   window.__ktFindAction = function(sel, path){
     try {
-      // "row-last:<selector>": the LAST button of the row that holds that element -- for a control with no stable
-      // attribute of its own sitting at the end of an action bar (ChatGPT's "more actions").
-      if (sel && sel.indexOf('row-last:') === 0) {
-        var anchor = document.querySelectorAll(sel.slice(9));
-        if (!anchor.length) return null;
-        var row = anchor[anchor.length - 1].closest('button, [role="button"]');
-        row = row && row.parentElement;
-        if (!row) return null;
-        var bs = row.querySelectorAll('button, [role="button"]');
-        return bs.length ? bs[bs.length - 1] : null;
+      if (sel) {
+        var alts = sel.split(' || ');
+        for (var k = 0; k < alts.length; k++) { var f = window.__ktFindOne(alts[k]); if (f) return f; }
+        return null;
       }
-      if (sel) { var l = document.querySelectorAll(sel); return l.length ? l[l.length - 1].closest('button, [role="button"]') : null; }
       if (path) {
         var ps = document.querySelectorAll('svg path');
         for (var i = ps.length - 1; i >= 0; i--) {
@@ -1430,7 +1445,9 @@ const TTS_JS: &str = r##"
       if (out.length) window.__ktPush({ b: BID, k: KEY, st: 'diag', d: ('TTS-MENU n=' + out.length + ' ' + out.join(' || ')).slice(0, 1500) });
     } catch(e){}
   }, 800);
-  if (!__kt_tts_item) return;
+  // A toggle that reads aloud by itself (ChatGPT, October 2026: `aria-pressed`, no menu) has no item to pick; any
+  // other control may open the menu that holds it (the former "more actions").
+  if (!__kt_tts_item || (b.hasAttribute('aria-pressed') && !b.getAttribute('aria-haspopup'))) return;
   // The control opened a menu: the read-aloud is one of its items.
   var t0 = Date.now();
   (function pick(){
@@ -2461,7 +2478,15 @@ const HARVEST_JS: &str = r##"
         } catch(e){ return false; }
       }
       var doneByEvent = streamEnded && !!txt && !busy && !stillPainting() && stable >= 1;
-      if (doneByEvent || (stable >= neededStable && !busy) || stable >= 10) {
+      // The provider's answer stream is still open: its text can pause for many seconds between bursts while the
+      // model works (measured on ChatGPT, 05/10/2026: no frame for 6.7 s in the middle of a 600-character answer, the
+      // page looked "stable" for 3 polls and the answer was delivered cut at 417 B while the stream went on to
+      // finish it). Stability is only evidence of an end when nothing is still arriving, so while the stream is open
+      // only its close (`doneByEvent`) or a 45-poll stall may end the harvest. Providers with no readable stream
+      // never count here (`__ktNetOpen` stays 0), so their behaviour is unchanged.
+      var netOpen = (window.__ktNetOpen || 0) > 0;
+      var stableEnough = netOpen ? stable >= 45 : ((stable >= neededStable && !busy) || stable >= 10);
+      if (doneByEvent || stableEnough) {
         clearInterval(iv);
         // How long the completion decision took, in polls (~1s each): the number to compare when
         // tuning the thresholds above, instead of guessing from the wall clock.
@@ -3044,7 +3069,14 @@ pub fn kotodama_push(
             if !ok {
                 debug::log(format!("kotodama NETREAD skipped key={k}: net={}B shorter than dom={dom_len}B", a.text.len()));
             }
-            ok
+            // ChatGPT can answer with a small generated interface (October 2026: checklists with buttons, `{#each}`
+            // loops over data, cards with favicons): the network carries its SOURCE, and only the page has the text
+            // it renders. Then the page wins, whatever the lengths.
+            let ui = k == "openai" && dom_len > 0 && crate::netread::carries_generated_ui(&a.text);
+            if ui {
+                debug::log(format!("kotodama NETREAD skipped key={k}: generated interface, the page wins (dom={dom_len}B)"));
+            }
+            ok && !ui
         });
         if let Some(a) = net {
             from_net = true;

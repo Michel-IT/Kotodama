@@ -346,5 +346,6 @@
   "vinRespFixed": "Die Tastenkombi fügt immer nur den Text ein.",
   "vinNone": "Keine Vorgaben",
   "vinEmptyPop": "Keine Vorgaben: das Rezept sendet nur den Text.",
-  "vinStale": "Der gewählte Wert existiert nicht mehr: verwende \"{v}\"."
+  "vinStale": "Der gewählte Wert existiert nicht mehr: verwende \"{v}\".",
+  "ktSaveFailed": "Der Verlauf konnte nicht gespeichert werden ({e}). Neuer Versuch läuft."
 }

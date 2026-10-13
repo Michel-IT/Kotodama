@@ -24,9 +24,15 @@ pub fn tts_button(key: &str) -> (&'static str, &'static str, &'static str) {
     match key {
         "anthropic" => ("[data-testid=\"action-bar-read-aloud\"]", "", ""),
         "deepseek" => ("", "M9.31006 14.8936", ""),
-        // ChatGPT keeps read aloud in the row's last control ("more actions"), which carries no stable attribute of
-        // its own: it is addressed as the last button of the row that holds the copy button, then the menu item.
-        "openai" => ("row-last:[data-testid=\"copy-turn-action-button\"]", "", "[data-testid=\"voice-play-turn-action-button\"]"),
+        // ChatGPT, measured 13/10/2026: read aloud is a button of its own in the answer's row, with no data-testid, and
+        // the only pressable one there that opens no menu (`aria-pressed`; the picture's "favourite" button also has it
+        // but opens a menu). Before, it was an item of the row's last control ("more actions"), addressed as the last
+        // button of the row that holds the copy button, then the menu item: kept as the second alternative.
+        "openai" => (
+            "[data-turn-key] button[aria-pressed]:not([aria-haspopup]) || row-last:[data-testid=\"copy-turn-action-button\"]",
+            "",
+            "[data-testid=\"voice-play-turn-action-button\"]",
+        ),
         _ => ("", "", ""),
     }
 }

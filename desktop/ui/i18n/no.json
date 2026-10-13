@@ -346,5 +346,6 @@
   "vinRespFixed": "Tastekombinasjon limer alltid bare teksten.",
   "vinNone": "Ingen begrensninger",
   "vinEmptyPop": "Ingen begrensninger: oppskriften sender bare teksten.",
-  "vinStale": "Den valgte verdien finnes ikke lenger: bruker \"{v}\"."
+  "vinStale": "Den valgte verdien finnes ikke lenger: bruker \"{v}\".",
+  "ktSaveFailed": "Historikken kunne ikke lagres ({e}). Prøver igjen."
 }

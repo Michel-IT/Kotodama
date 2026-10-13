@@ -377,15 +377,44 @@ struct OpenAi {
     sse: Sse,
     last_path: String,
     last_op: String,
-    cap: Cap,
+    /// What each message (by `c`) is.
+    caps: std::collections::BTreeMap<i64, Cap>,
     ans: NetAnswer,
     /// What `answer()` hands out: `ans` with ChatGPT's block directives removed (see `strip_block_directives`).
     view: NetAnswer,
+    /// The message the next operation applies to: the `c` of the last frame that carried one (it holds until
+    /// another says otherwise, like `p` and `o`), or the one that just opened.
+    cur: i64,
+    /// `c` for an `add` frame that has none (older streams): messages are numbered in the order they open.
+    next_idx: i64,
+    /// The assistant text messages, by `c`. See `answer_text`.
+    texts: std::collections::BTreeMap<i64, String>,
 }
 impl OpenAi {
     fn refresh_view(&mut self) {
+        self.ans.text = self.answer_text();
         self.view = self.ans.clone();
-        self.view.text = strip_block_directives(&self.ans.text);
+        self.view.text = strip_component_tags(&strip_block_directives(&self.ans.text), self.ans.done);
+    }
+    /// The answer is the assistant text messages in the order they opened, each once. Since October 2026 an
+    /// answer with a web search is mirrored: the page streams into a child message (`c` 2, then `c` 9 after the
+    /// search) and every operation is repeated on a second, "logical" message that ends up holding the whole
+    /// text (measured 13/10/2026: both texts of one turn twice over, "Ho effettuHo effettu"). Summing
+    /// every message doubled the answer, so a message whose whole text sits inside another one is a copy of part
+    /// of it and is left out (the later one wins a tie). Streams without mirrors have nothing contained, and
+    /// are summed as before.
+    fn answer_text(&self) -> String {
+        let all: Vec<(&i64, &String)> = self.texts.iter().filter(|(_, t)| !t.is_empty()).collect();
+        let mut out = String::new();
+        for (k, (c, t)) in all.iter().enumerate() {
+            let copy = all.iter().enumerate().any(|(j, (c2, t2))| {
+                j != k && t2.len() >= t.len() && (t2.len() > t.len() || **c2 > **c) && t2.contains(t.as_str())
+            });
+            if !copy {
+                out.push_str(t);
+            }
+        }
+        out
     }
     fn event(&mut self, data: &str) {
         let data = data.trim();
@@ -400,6 +429,9 @@ impl OpenAi {
                 self.ans.done = true;
             }
             return;
+        }
+        if let Some(c) = v.get("c").and_then(Value::as_i64) {
+            self.cur = c;
         }
         self.op(&v);
     }
@@ -416,27 +448,41 @@ impl OpenAi {
         let val = v.get("v");
         if self.last_op == "patch" {
             if let Some(Value::Array(items)) = val {
+                // The operations inside a patch must not become the "previous operation" that a bare `{"v":..}`
+                // frame continues: that is the patch itself (measured 13/10/2026: after a status update inside a
+                // patch, the next bare list of appends was read as a `replace` and its text was lost).
+                let (path, op) = (self.last_path.clone(), self.last_op.clone());
                 for it in items.clone() {
                     self.op(&it);
                 }
+                self.last_path = path;
+                self.last_op = op;
             }
             return;
         }
         let Some(val) = val else { return };
-        if self.last_op == "add" && self.last_path.is_empty() {
+        // A message object opens a message whatever the previous operation was (a group of messages opens with
+        // one explicit `add` and the others follow as bare `{"v":{"message":..}}`).
+        let opens = val.pointer("/message/author").is_some();
+        if opens || (self.last_op == "add" && self.last_path.is_empty()) {
             // A new message opens: decide whether what follows belongs to the answer.
             let m = &val["message"];
             let role = m.pointer("/author/role").and_then(Value::as_str).unwrap_or("");
             let ctype = m.pointer("/content/content_type").and_then(Value::as_str).unwrap_or("");
-            self.cap = match (role, ctype) {
-                ("assistant", "text") => Cap::Text,
+            // A message addressed to a tool (`web.run`) is the call, not something the user reads.
+            let to_user = m.get("recipient").and_then(Value::as_str).map_or(true, |r| r == "all");
+            self.cur = v.get("c").and_then(Value::as_i64).unwrap_or(self.next_idx);
+            self.next_idx = self.cur + 1;
+            let cap = match (role, ctype) {
+                ("assistant", "text") if to_user => Cap::Text,
                 ("assistant", "thoughts") => Cap::Reasoning,
                 _ => Cap::None,
             };
-            if self.cap == Cap::Text {
+            self.caps.insert(self.cur, cap);
+            if cap == Cap::Text {
                 if let Some(part) = m.pointer("/content/parts/0").and_then(Value::as_str) {
                     if !part.is_empty() {
-                        self.ans.text.push_str(part);
+                        self.texts.entry(self.cur).or_default().push_str(part);
                     }
                 }
             }
@@ -445,8 +491,8 @@ impl OpenAi {
         if self.last_op == "append" {
             let Some(text) = val.as_str() else { return };
             if self.last_path.contains("/content/parts/") {
-                match self.cap {
-                    Cap::Text => self.ans.text.push_str(text),
+                match self.caps.get(&self.cur).copied().unwrap_or(Cap::None) {
+                    Cap::Text => self.texts.entry(self.cur).or_default().push_str(text),
                     Cap::Reasoning => self.ans.reasoning.push_str(text),
                     Cap::None => {}
                 }
@@ -499,6 +545,245 @@ fn strip_block_directives(text: &str) -> String {
     let n = lines.len();
     let kept: Vec<&str> = lines.iter().enumerate().filter(|(i, l)| !is_directive(l, *i + 1 == n)).map(|(_, l)| *l).collect();
     kept.join("\n").trim_matches('\n').to_string()
+}
+
+/// ChatGPT writes its rich answers as components that its page draws and never shows as markup (seen October
+/// 2026): `<Entity category="song" value="Dark Horse" .../>` (a linked name, shown as its `value`),
+/// `<AsyncImageGroup query={[...]}/>` and `<AsyncImage .../>` (pictures), `<Cite .../>` (a source chip),
+/// `<WritingBlock ...>...</WritingBlock>` (the canvas around a text), `<Link url title/>`, `<icon name="check-circle"
+/// .../>` (a symbol in a table cell), and layout boxes around cards and comparisons: `<row align=...>`, `<box ...>`,
+/// `<grid>`, `<title size=...>`, `<text>`, `<caption>`, plus whole `<svg viewBox=...>` drawings. Those go and their
+/// text stays. The same characters are also ordinary prose (`A<B`, `i<N`, `Result<T, E>`, "il tag <title>"), and a
+/// cut or mangled answer is worse than a leftover tag, so the rule is strict: only a tag with real attributes
+/// (`name="..."` or `name={...}`) is a component, and then only a known name, a layout name or a self-closed
+/// capitalized one; `<svg>` also needs its `</svg>`; a closing tag goes only if its opening went. Nothing changes inside code (fenced or between backticks). While the answer is still arriving (`done`
+/// false) a component cut at the end is held back; on the finished answer an unclosed `<` is just text.
+fn strip_component_tags(text: &str, done: bool) -> String {
+    const KNOWN: [&str; 6] = ["Entity", "AsyncImageGroup", "AsyncImage", "Cite", "Link", "WritingBlock"];
+    const LAYOUT: [&str; 16] = [
+        "row", "box", "grid", "grid-item", "title", "text", "caption", "icon", "stack", "col", "column", "card",
+        "badge", "divider", "spacer", "svg",
+    ];
+    if !text.contains('<') {
+        return text.to_string();
+    }
+    enum End {
+        At(usize),
+        Unfinished,
+        NotATag,
+    }
+    // End of the tag starting at `s[0] == '<'`: its first '>' outside double quotes and braces (a query can hold
+    // `>` in a string). An apostrophe is ordinary text in Italian, so it never opens a quote. Another '<' or an
+    // empty line before the end means this was not a tag.
+    fn tag_end(s: &str) -> End {
+        let (mut quoted, mut depth) = (false, 0i32);
+        for (i, c) in s.char_indices().skip(1) {
+            if quoted {
+                quoted = c != '"';
+                continue;
+            }
+            match c {
+                '"' => quoted = true,
+                '{' => depth += 1,
+                '}' => depth -= 1,
+                '>' if depth <= 0 => return End::At(i + 1),
+                '<' if depth <= 0 => return End::NotATag,
+                '\n' if depth <= 0 && s[i + 1..].starts_with('\n') => return End::NotATag,
+                _ => {}
+            }
+        }
+        End::Unfinished
+    }
+    fn attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+        let key = format!(" {name}=\"");
+        let at = tag.find(&key)? + key.len();
+        let len = tag[at..].find('"')?;
+        Some(&tag[at..at + len])
+    }
+    fn has_attrs(tag: &str) -> bool {
+        tag.contains("=\"") || tag.contains("={")
+    }
+    // A tag that stood alone on its line leaves no empty line behind: its indentation and line break go too.
+    fn skip_emptied_line(out: &mut String, text: &str, mut i: usize) -> usize {
+        let at_line_start = out.is_empty() || out.trim_end_matches([' ', '\t']).ends_with('\n');
+        let blank = text[i..].len() - text[i..].trim_start_matches([' ', '\t']).len();
+        if at_line_start && (text[i + blank..].starts_with('\n') || i + blank == text.len()) {
+            while out.ends_with([' ', '\t']) {
+                out.pop();
+            }
+            i += blank + usize::from(text[i + blank..].starts_with('\n'));
+        }
+        i
+    }
+    let mut out = String::with_capacity(text.len());
+    let mut open: Vec<String> = Vec::new(); // components taken out and not closed yet
+    let (mut fenced, mut inline_code, mut line_start) = (false, false, true);
+    let mut i = 0;
+    'scan: while i < text.len() {
+        let rest = &text[i..];
+        if line_start && rest.trim_start_matches([' ', '\t']).starts_with("```") {
+            fenced = !fenced;
+        }
+        let c = rest.chars().next().unwrap();
+        line_start = c == '\n';
+        if c == '`' && !fenced {
+            inline_code = !inline_code;
+        }
+        if c == '\n' {
+            inline_code = false; // an inline span never crosses a line
+        }
+        if c == '<' && !fenced && !inline_code {
+            let after = &rest[1..];
+            let closing = after.starts_with('/');
+            let name_src = if closing { &after[1..] } else { after };
+            let name_len = name_src.find(|c: char| !(c.is_ascii_alphanumeric() || c == '-')).unwrap_or(name_src.len());
+            let name = &name_src[..name_len];
+            let known = KNOWN.contains(&name);
+            let layout = LAYOUT.contains(&name);
+            if !name.is_empty() && name_len == name_src.len() {
+                // the text ends inside a tag name: a component still arriving
+                let maybe = KNOWN.iter().chain(LAYOUT.iter()).any(|n| n.starts_with(name));
+                if !done && maybe {
+                    break 'scan;
+                }
+            } else if !name.is_empty() {
+                match tag_end(rest) {
+                    End::Unfinished => {
+                        // held back only near the end of what has arrived: further back it is prose that never closed
+                        let near_end = text.len() - i < 400;
+                        if !done && near_end && (known || layout || name.starts_with(|c: char| c.is_ascii_uppercase())) {
+                            break 'scan; // a component still arriving: held back until it is complete
+                        }
+                    }
+                    End::NotATag => {}
+                    End::At(len) => {
+                        let tag = &rest[..len];
+                        if closing {
+                            if let Some(at) = open.iter().rposition(|n| n == name) {
+                                open.truncate(at);
+                                if name == "title" {
+                                    out.push_str("**");
+                                }
+                                i = skip_emptied_line(&mut out, text, i + len);
+                                continue;
+                            }
+                        } else {
+                            let self_closed = tag.ends_with("/>");
+                            let closes_later = !self_closed && text[i + len..].contains(&format!("</{name}>"));
+                            let capital = name.starts_with(|c: char| c.is_ascii_uppercase());
+                            let component = if name == "svg" {
+                                has_attrs(tag) && (self_closed || closes_later)
+                            } else {
+                                // a name quoted in prose ("il componente <Link>") has no attributes: it stays
+                                (known || layout || (capital && self_closed)) && has_attrs(tag)
+                            };
+                            if name == "svg" && !component && !done && has_attrs(tag) {
+                                break 'scan; // a drawing whose end has not arrived yet
+                            }
+                            if component {
+                                if name == "svg" && !self_closed {
+                                    // a drawing: nothing of it is text
+                                    let end = text[i + len..].find("</svg>").map(|e| i + len + e + "</svg>".len());
+                                    i = skip_emptied_line(&mut out, text, end.unwrap_or(text.len()));
+                                    continue;
+                                }
+                                match name {
+                                    "Entity" => out.push_str(attr(tag, "value").unwrap_or("")),
+                                    "icon" => {
+                                        // A symbol in a table cell carries the answer ("Compatibile": check or cross),
+                                        // so an empty cell would lose it. `check-circle` was seen (13/10/2026).
+                                        let icon = attr(tag, "name").unwrap_or("");
+                                        if icon.starts_with("check") {
+                                            out.push('\u{2713}');
+                                        } else if icon.starts_with('x') || icon.starts_with("close") || icon.starts_with("cross") {
+                                            out.push('\u{2717}');
+                                        }
+                                    }
+                                    "Link" => match (attr(tag, "url"), attr(tag, "title")) {
+                                        (Some(u), Some(t)) => out.push_str(&format!("[{t}]({u})")),
+                                        (Some(x), None) | (None, Some(x)) => out.push_str(x),
+                                        (None, None) => {}
+                                    },
+                                    // the chip sits after the sentence's space: don't leave it dangling before the break
+                                    "Cite" if out.ends_with(' ') => {
+                                        out.pop();
+                                    }
+                                    "title" if !self_closed => out.push_str("**"),
+                                    _ => {}
+                                }
+                                if !self_closed {
+                                    open.push(name.to_string());
+                                }
+                                i = skip_emptied_line(&mut out, text, i + len);
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        out.push(c);
+        i += c.len_utf8();
+    }
+    // layout lines leave runs of blank lines: at most one empty line between paragraphs (code blocks untouched)
+    let mut kept: Vec<&str> = Vec::new();
+    let mut in_code = false;
+    for line in out.split('\n') {
+        if line.trim_start().starts_with("```") {
+            in_code = !in_code;
+        }
+        let blank = !in_code && line.trim().is_empty();
+        if blank && (kept.is_empty() || kept.last().is_some_and(|l| l.trim().is_empty())) {
+            continue;
+        }
+        kept.push(line);
+    }
+    kept.join("\n")
+}
+
+/// True when an answer, after `strip_component_tags`, still carries the source of a generated interface instead of
+/// text: template blocks (`{#each ...}`, `{#if ...}`), event handlers (`onClick=`), `GenUI.` calls, a closing tag,
+/// or a tag with attributes. Seen on ChatGPT on 13/10/2026 (a moving checklist with buttons, cards with favicons):
+/// the network has the program, only the page has what it shows. Code blocks and backtick spans are not looked at.
+pub fn carries_generated_ui(text: &str) -> bool {
+    let mut fenced = false;
+    for line in text.split('\n') {
+        if line.trim_start().starts_with("```") {
+            fenced = !fenced;
+            continue;
+        }
+        if fenced {
+            continue;
+        }
+        // outside inline code: every other piece between backticks
+        for (n, part) in line.split('`').enumerate() {
+            if n % 2 == 1 {
+                continue;
+            }
+            if ["{#each", "{#if", "{/each}", "{/if}", "{:else", "onClick=", "onChange=", "GenUI."].iter().any(|m| part.contains(m)) {
+                return true;
+            }
+            let mut rest = part;
+            while let Some(lt) = rest.find('<') {
+                let after = &rest[lt + 1..];
+                let closing = after.starts_with('/');
+                let name_src = if closing { &after[1..] } else { after };
+                let name_len = name_src.find(|c: char| !(c.is_ascii_alphanumeric() || c == '-')).unwrap_or(name_src.len());
+                if name_len > 0 && name_src.starts_with(|c: char| c.is_ascii_alphabetic()) {
+                    let tag_end = name_src.find('>').unwrap_or(name_src.len());
+                    let body = &name_src[name_len..tag_end];
+                    if closing && name_src[name_len..].starts_with('>') {
+                        return true;
+                    }
+                    if !closing && tag_end < name_src.len() && (body.contains("=\"") || body.contains("={")) {
+                        return true;
+                    }
+                }
+                rest = after;
+            }
+        }
+    }
+    false
 }
 
 /// DeepSeek: SSE carrying a response object and then patches `{p, o, v}`; a patch with only `v` continues
@@ -1180,6 +1465,137 @@ mod tests {
     }
 
     #[test]
+    fn generated_interface_recognised() {
+        // 13/10/2026: a moving checklist and a product card, as their source arrived from the network
+        assert!(carries_generated_ui("{#each phases as phase,i}\n**{phase.title}**\n{/each}"));
+        assert!(carries_generated_ui("<button color=\"secondary\" onClick={()=>setChecked({})}>Azzera</button>"));
+        assert!(carries_generated_ui("Prezzo <favicon url=\"https://www.apple.com\" size=\"24px\"/> 999 euro"));
+        assert!(carries_generated_ui("<grid-item>\nTesto\n</grid-item>"));
+        // plain answers, and code, are not
+        for t in ["Se a<b e b<c allora a<c.", "usa `List<String>` e `{#each x}`", "```html\n<div class=\"x\"></div>\n```", "Vec<T> e Result<T, E>"] {
+            assert!(!carries_generated_ui(t), "{t}");
+        }
+    }
+
+    #[test]
+    fn openai_component_tags_removed() {
+        let strip = |t: &str| strip_component_tags(t, true);
+        // Seen on 08/10 and 13/10/2026: entities, image groups and writing blocks arrived as raw markup in the chat.
+        let entity = "Potrebbe essere <Entity category=\"musical_artist\" value=\"Katy Perry\"/>, nel video di \
+                      <Entity category=\"song\" value=\"Dark Horse\" disambig=\"Katy Perry, 2013\"/>, dove sale.";
+        assert_eq!(strip(entity), "Potrebbe essere Katy Perry, nel video di Dark Horse, dove sale.");
+        let images = "egizia.\n\n<AsyncImageGroup query={[\"Katy Perry > Dark Horse\", \"x\"]}/>\n\nOppure Kylie.";
+        assert_eq!(strip(images), "egizia.\n\nOppure Kylie.");
+        let writing = "<WritingBlock id=\"58321\" variant=\"standard\">Quando scrivo «Tu che ne pensi?».</WritingBlock>";
+        assert_eq!(strip(writing), "Quando scrivo «Tu che ne pensi?».");
+        // still arriving: the unfinished component is held back
+        assert_eq!(strip_component_tags("egizia.\n\n<AsyncImageGroup query={[\"", false), "egizia.\n");
+        assert_eq!(strip_component_tags("Potrebbe essere <Enti", false), "Potrebbe essere ");
+        // a symbol that says something stays as a symbol, one that does not goes
+        assert_eq!(strip("| <icon name=\"check-circle\" color=\"success\" inline /> Sì |"), "| \u{2713} Sì |");
+        assert_eq!(strip("<icon name=\"star\"/> ok"), " ok");
+        // Layout boxes around a card (13/10/2026, «Lionel Messi»): the boxes go, the title stays as bold text.
+        let card = "<row align=\"center\" gap={3}>\n  <box flex=\"1\" gap={1}>\n    <title size=\"lg\">Lionel Messi</title>\n    \
+                    Otto Palloni d'Oro.\n  </box>\n</row>\n\nAltro testo.";
+        assert_eq!(strip(card), "    **Lionel Messi**\n    Otto Palloni d'Oro.\n\nAltro testo.");
+        // A drawing is not text.
+        let svg = "Schema:\n<box border radius=\"lg\"><svg viewBox=\"0 0 10 10\"><g><path d=\"M0 0\"/></g></svg></box>\nFine.";
+        assert_eq!(strip(svg), "Schema:\nFine.");
+        // Prose is never cut or mangled (the cases of the 13/10/2026 review): it all stays as it is, finished or not.
+        for prose in [
+            "se a < b e <div> resta",
+            "Se A<B e B<C allora A<C, quindi l'ordine e' totale.",
+            "Il ciclo va finche' i<N, l'indice parte da zero. Poi altro testo importante.",
+            "Il ciclo for (i=0; i<N; i++) l'ho scritto io. Fine.",
+            "Puoi usare <svg> per disegnare grafica vettoriale. Il resto...",
+            "In Rust usa Result<T, E> oppure HashMap<String, Vec<u8>> per la mappa.",
+            "In Java scrivi Map<String, Integer> m = ...",
+            "Il tag <title> definisce il titolo della pagina, mentre <caption> descrive una tabella.",
+            "Sintassi: echo <text>, poi ORDER BY <column> ordina.",
+            "Lista:\n- <row> e <box> sono layout",
+            "Il componente <Button onClick={f}>Invia</Button> manda il modulo.",
+            "Usa <Title> per il titolo. Ok.",
+            "Usa il componente <Link> di Next.js per navigare.",
+            "Il componente <Cite> e poi testo.",
+            "Scrivi <Entity> nel campo. Fine.",
+            "Metti il titolo tra <title> e </title> nella sezione head.",
+            "usa Vec<T> e `<Entity value=\"x\"/>`",
+            "```jsx\n<Entity value=\"x\"/>\n```\nfine",
+        ] {
+            assert_eq!(strip(prose), prose);
+        }
+        // While it is still arriving, prose that looks like the start of a tag is held back for a moment, never lost:
+        // the finished answer has it all.
+        assert_eq!(strip_component_tags("Se A<B e B<C allora A<C.", false), "Se A<B e B<C allora A");
+        assert_eq!(strip_component_tags("Se A<B e B<C allora A<C.", true), "Se A<B e B<C allora A<C.");
+    }
+
+    /// Frames of the shape captured on 13/10/2026 (conversation with a web search), reduced to what matters: the
+    /// page streams into a child message and every operation is repeated on a "logical" one (`c` 2 and 3 for the
+    /// text before the search, `c` 9 and 3 for the one after it, the tool call and its results in between).
+    fn mirrored_search_frames() -> Vec<String> {
+        let msg = |c: u32, recipient: &str, channel: &str| {
+            format!(
+                r#"{{"v":{{"message":{{"author":{{"role":"assistant"}},"content":{{"content_type":"text","parts":[""]}},"recipient":"{recipient}","channel":{channel}}}}},"c":{c}}}"#
+            )
+        };
+        let app = |c: u32, text: &str| format!(r#"{{"p":"/message/content/parts/0","o":"append","v":{text:?},"c":{c}}}"#);
+        let patch = |c: u32, text: &str| format!(r#"{{"p":"","o":"patch","v":[{{"p":"/message/content/parts/0","o":"append","v":{text:?}}}],"c":{c}}}"#);
+        let mut f = vec![
+            r#"{"p":"","o":"add","v":{"message":{"author":{"role":"user"},"content":{"content_type":"text","parts":["la domanda"]}}},"c":0}"#.to_string(),
+            msg(2, "all", "\"final\""),
+            msg(3, "all", "\"final\""),
+            app(2, "Prima parte"),
+            patch(3, "Prima parte"),
+            app(2, ", poi la ricerca.
+
+"),
+            patch(3, ", poi la ricerca.
+
+"),
+            msg(4, "web.run", "null"),
+            r#"{"v":{"message":{"author":{"role":"tool","name":"web.run"},"content":{"content_type":"text","parts":[""]}}},"c":5}"#.to_string(),
+            msg(9, "all", "\"final\""),
+            // a patch, a status change inside one, then bare lists of operations: they continue the patch
+            r#"{"o":"patch","v":[],"c":4}"#.to_string(),
+            r#"{"v":[{"p":"/message/end_turn","o":"replace","v":null}],"c":3}"#.to_string(),
+            r#"{"v":[{"p":"/message/content/parts/0","o":"append","v":"Seconda parte <Cite ref=\"a\"/>"}],"c":9}"#.to_string(),
+            r#"{"v":[{"p":"/message/content/parts/0","o":"append","v":"Seconda parte <Cite ref=\"a\"/>"}],"c":3}"#.to_string(),
+            app(9, ", fine."),
+            patch(3, ", fine."),
+        ];
+        f.push(r#"{"type":"message_stream_complete"}"#.to_string());
+        f
+    }
+
+    #[test]
+    fn openai_mirrored_messages_counted_once() {
+        // Seen on 13/10/2026: with a web search both texts of the turn came out twice, "Ho effettuHo effettu".
+        let want = "Prima parte, poi la ricerca.
+
+Seconda parte, fine.";
+        let mut r = reader_for("openai", "https://chatgpt.com/backend-api/f/conversation").unwrap();
+        for f in mirrored_search_frames() {
+            r.feed(&format!("event: delta
+data: {f}
+
+"));
+        }
+        assert_eq!(r.answer().text, want);
+        assert!(r.answer().done);
+        // the same stream cut in the middle of a frame, one byte at a time
+        let mut r = reader_for("openai", "https://chatgpt.com/backend-api/f/conversation").unwrap();
+        let all: String = mirrored_search_frames().iter().map(|f| format!("event: delta
+data: {f}
+
+")).collect();
+        for ch in all.chars() {
+            r.feed(&ch.to_string());
+        }
+        assert_eq!(r.answer().text, want);
+    }
+
+    #[test]
     fn openai_writing_block_directives_removed() {
         // Seen on 26/09/2026: a poem arrived as a "writing" block, and its markers ended up in the chat.
         let mut r = reader_for("openai", "https://chatgpt.com/backend-api/f/conversation").unwrap();
@@ -1204,10 +1620,11 @@ mod tests {
             ("zai", "/api/v2/chat/completions", "zai-run3.txt"),
             ("qwen", "/api/v2/chat/completions", "qwen-run3.txt"),
             ("grok", "wss://grok.com/ws/mgw/", "grok-run3.txt"),
+            ("openai", "/backend-api/f/conversation", "openai-run3.txt"),
         ];
         for (k, u, f) in cases {
             if let Some(a) = replay(k, u, f) {
-                eprintln!("--- {k}: done={} skipped={} text={}B reasoning={}B sources={}\n{}", a.done, a.skipped, a.text.len(), a.reasoning.len(), a.sources.len(), a.text.chars().take(400).collect::<String>());
+                eprintln!("--- {k}: done={} skipped={} text={}B reasoning={}B sources={}\n{}", a.done, a.skipped, a.text.len(), a.reasoning.len(), a.sources.len(), a.text.chars().take(4000).collect::<String>());
             }
         }
     }

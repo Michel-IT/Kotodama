@@ -346,5 +346,6 @@
   "vinRespFixed": "Kombinacja klawiszy zawsze wkleją tylko tekst.",
   "vinNone": "Brak ograniczeń",
   "vinEmptyPop": "Brak ograniczeń: przepis wysyła tylko tekst.",
-  "vinStale": "Wybrana wartość już nie istnieje: używam \"{v}\"."
+  "vinStale": "Wybrana wartość już nie istnieje: używam \"{v}\".",
+  "ktSaveFailed": "Nie udało się zapisać historii ({e}). Ponawiam próbę."
 }

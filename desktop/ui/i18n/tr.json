@@ -346,5 +346,6 @@
   "vinRespFixed": "Kısayol her zaman yalnızca metni yapıştırır.",
   "vinNone": "Kısıtlama yok",
   "vinEmptyPop": "Kısıtlama yok: tarif yalnızca metni gönderir.",
-  "vinStale": "Seçilen değer kayboldu: \"{v}\" kullanılıyor."
+  "vinStale": "Seçilen değer kayboldu: \"{v}\" kullanılıyor.",
+  "ktSaveFailed": "Geçmiş kaydedilemedi ({e}). Yeniden deneniyor."
 }

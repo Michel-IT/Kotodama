@@ -346,5 +346,6 @@
   "vinRespFixed": "快捷键总是只粘贴文本。",
   "vinNone": "无约束",
   "vinEmptyPop": "无约束：配方只发送文本。",
-  "vinStale": "选择的值已消失：正在使用\"{v}\"。"
+  "vinStale": "选择的值已消失：正在使用\"{v}\"。",
+  "ktSaveFailed": "无法保存历史记录（{e}）。正在重试。"
 }

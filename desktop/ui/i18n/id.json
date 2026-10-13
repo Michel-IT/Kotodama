@@ -346,5 +346,6 @@
   "vinRespFixed": "Pintasan selalu menempel teks saja.",
   "vinNone": "Tidak ada batasan",
   "vinEmptyPop": "Tidak ada batasan: resep hanya mengirim teks.",
-  "vinStale": "Nilai yang dipilih tidak ada: menggunakan \"{v}\"."
+  "vinStale": "Nilai yang dipilih tidak ada: menggunakan \"{v}\".",
+  "ktSaveFailed": "Riwayat tidak dapat disimpan ({e}). Mencoba lagi."
 }

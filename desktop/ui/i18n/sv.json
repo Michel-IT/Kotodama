@@ -346,5 +346,6 @@
   "vinRespFixed": "Tangentkombinationen klistrar alltid bara texten.",
   "vinNone": "Ingen begränsning",
   "vinEmptyPop": "Ingen begränsning: receptet skickar bara texten.",
-  "vinStale": "Det valda värdet finns inte längre: använder \"{v}\"."
+  "vinStale": "Det valda värdet finns inte längre: använder \"{v}\".",
+  "ktSaveFailed": "Historiken kunde inte sparas ({e}). Försöker igen."
 }

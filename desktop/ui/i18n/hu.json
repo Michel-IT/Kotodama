@@ -346,5 +346,6 @@
   "vinRespFixed": "A kombinációja mindig csak szöveget illeszt be.",
   "vinNone": "Nincs korlát",
   "vinEmptyPop": "Nincs korlát: a recept csak szöveget küld.",
-  "vinStale": "A kiválasztott érték eltűnt: \"{v}\" használata."
+  "vinStale": "A kiválasztott érték eltűnt: \"{v}\" használata.",
+  "ktSaveFailed": "Az előzményeket nem sikerült menteni ({e}). Újrapróbálom."
 }

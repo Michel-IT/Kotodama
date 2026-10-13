@@ -346,5 +346,6 @@
   "vinRespFixed": "Kombinácia klávesov vždy vkliní iba text.",
   "vinNone": "Žiadne obmedzenia",
   "vinEmptyPop": "Žiadne obmedzenia: recept posiela iba text.",
-  "vinStale": "Vybraná hodnota už neexistuje: používam \"{v}\"."
+  "vinStale": "Vybraná hodnota už neexistuje: používam \"{v}\".",
+  "ktSaveFailed": "Históriu sa nepodarilo uložiť ({e}). Skúšam znova."
 }

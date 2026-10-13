@@ -346,5 +346,6 @@
   "vinRespFixed": "Īsinājums vienmēr ielīmē tikai tekstu.",
   "vinNone": "Nav ierobežojumu",
   "vinEmptyPop": "Nav ierobežojumu: recepte sūta tikai tekstu.",
-  "vinStale": "Izvēlētā vērtība pazuda: tiek izmantots \"{v}\"."
+  "vinStale": "Izvēlētā vērtība pazuda: tiek izmantots \"{v}\".",
+  "ktSaveFailed": "Vēsturi neizdevās saglabāt ({e}). Mēģinu vēlreiz."
 }

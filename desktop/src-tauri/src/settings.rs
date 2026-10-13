@@ -8,7 +8,8 @@ use tauri::{AppHandle, Manager};
 
 /// Serializes writes to disk: saves can be started from background threads
 /// (see `lib.rs`); this lock prevents two concurrent writes from overlapping
-/// and corrupting the file.
+/// and corrupting the file. Taken with `unwrap_or_else(into_inner)`: a panic in one write must not poison
+/// the lock and make every later save of every file fail until the app restarts.
 fn io_lock() -> &'static Mutex<()> {
     static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
     LOCK.get_or_init(|| Mutex::new(()))
@@ -292,7 +293,7 @@ pub fn save(app: &AppHandle, s: &Settings) -> Result<(), String> {
     crate::debug::log(format!("settings SAVE: always_on_top={}", s.always_on_top));
     let path = settings_path(app)?;
     let json = serde_json::to_string_pretty(s).map_err(|e| e.to_string())?;
-    let _guard = io_lock().lock().unwrap();
+    let _guard = io_lock().lock().unwrap_or_else(|e| e.into_inner());
     fs::write(path, json).map_err(|e| e.to_string())
 }
 
@@ -315,7 +316,7 @@ pub fn load_recipes(app: &AppHandle) -> Vec<Recipe> {
 pub fn save_recipes(app: &AppHandle, recipes: &[Recipe]) -> Result<(), String> {
     let path = recipes_path(app)?;
     let json = serde_json::to_string_pretty(recipes).map_err(|e| e.to_string())?;
-    let _guard = io_lock().lock().unwrap();
+    let _guard = io_lock().lock().unwrap_or_else(|e| e.into_inner());
     fs::write(path, json).map_err(|e| e.to_string())
 }
 
@@ -491,7 +492,7 @@ pub fn load_recipe_constraints(app: &AppHandle, s: &Settings) -> Result<RecipeCo
 pub fn save_recipe_constraints(app: &AppHandle, rc: &RecipeConstraints) -> Result<(), String> {
     let path = recipe_constraints_path(app)?;
     let json = serde_json::to_string_pretty(rc).map_err(|e| e.to_string())?;
-    let _guard = io_lock().lock().unwrap();
+    let _guard = io_lock().lock().unwrap_or_else(|e| e.into_inner());
     fs::write(path, json).map_err(|e| e.to_string())
 }
 
@@ -515,7 +516,7 @@ pub fn load_kt_sessions(app: &AppHandle) -> serde_json::Value {
 pub fn save_kt_sessions(app: &AppHandle, sessions: &serde_json::Value) -> Result<(), String> {
     let path = kt_sessions_path(app)?;
     let json = serde_json::to_string(sessions).map_err(|e| e.to_string())?; // compact: can be large
-    let _guard = io_lock().lock().unwrap();
+    let _guard = io_lock().lock().unwrap_or_else(|e| e.into_inner());
     fs::write(path, json).map_err(|e| e.to_string())
 }
 

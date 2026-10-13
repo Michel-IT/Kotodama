@@ -1904,7 +1904,7 @@
       setGesture:'Double right-click', setGestureHint:'Two quick right-clicks open the recipe menu in any program.',
       rhColMenu:'Menu', rhMenuTitle:'Show this recipe in the double right-click menu', trayRestart:'Restart',
       rhColRead:'Read', rhReadTitle:'Reads the answer aloud as soon as it arrives.',
-      vinAdd:"+ Add constraint", vinNew:"New constraint", vinBuiltin:"Built-in", vinMine:"Your constraints", vinMineRemove:"Remove from your constraints", vinNewRecipeCons:"Recipe constraints", vinColName:"Constraint", vinColShortcut:"From shortcut", vinColShortcutTitle:"The value this recipe's shortcut sends.", vinName:"Name", vinNamePh:"Constraint name", vinOptions:"Options", vinAddOption:"+ Add option", vinNeedName:"A name and at least one option are needed.", vinEdit:"Edit constraint", vinDelete:"Delete constraint", vinDeleted:"Constraint deleted", vinUndo:"Undo", vinUse:"Use this constraint", vinFixedOpts:"The options of {c} are fixed.", vinRespFixed:"The shortcut always pastes the text only.", vinNone:"No constraints", vinEmptyPop:"No constraints: the recipe sends the text only.", vinStale:"The chosen value is gone: using \"{v}\".", rhColVincoli:'Constraints', rhColProvider:'Provider', rhKeyTitle:'The combination that runs the recipe on the selected text.', rhVinTitle:'The ones the recipe adds to the text when you run it from a shortcut.', rhProvTitle:'The one the recipe uses when you run it from a shortcut.', rhNotifyHeadTitle:'Shows the notice while the recipe works.', rhMenuHeadTitle:'Puts the recipe in the double right-click menu.', rhVinPopTitle:"This recipe's constraints", rhNeutralNoCons:'Neutral sends the text as it is, with no constraints.', rhProvDefaultShort:'Default',
+      vinAdd:"+ Add constraint", vinNew:"New constraint", vinBuiltin:"Built-in", vinMine:"Your constraints", vinMineRemove:"Remove from your constraints", vinNewRecipeCons:"Recipe constraints", vinColName:"Constraint", vinColShortcut:"From shortcut", vinColShortcutTitle:"The value this recipe's shortcut sends.", vinName:"Name", vinNamePh:"Constraint name", vinOptions:"Options", vinAddOption:"+ Add option", vinNeedName:"A name and at least one option are needed.", vinEdit:"Edit constraint", vinDelete:"Delete constraint", vinDeleted:"Constraint deleted", vinUndo:"Undo", vinUse:"Use this constraint", vinFixedOpts:"The options of {c} are fixed.", vinRespFixed:"The shortcut always pastes the text only.", vinNone:"No constraints", vinEmptyPop:"No constraints: the recipe sends the text only.", vinStale:"The chosen value is gone: using \"{v}\".", ktSaveFailed:"The history could not be saved ({e}). Trying again.", rhColVincoli:'Constraints', rhColProvider:'Provider', rhKeyTitle:'The combination that runs the recipe on the selected text.', rhVinTitle:'The ones the recipe adds to the text when you run it from a shortcut.', rhProvTitle:'The one the recipe uses when you run it from a shortcut.', rhNotifyHeadTitle:'Shows the notice while the recipe works.', rhMenuHeadTitle:'Puts the recipe in the double right-click menu.', rhVinPopTitle:"This recipe's constraints", rhNeutralNoCons:'Neutral sends the text as it is, with no constraints.', rhProvDefaultShort:'Default',
       provColBar:'In the bar', provColDefault:'Default',
       setProvidersBarHint2:'Every provider, one row each: whether it appears in the "+" menu, whether it opens private chats, and which one is your default.',
       setAdmin:'Start as administrator', setAdminHint:'Needed to work inside windows opened as administrator. Windows asks for confirmation.',
@@ -2424,6 +2424,7 @@
     const ktPendingByBid={};
     let ktTurnByBid={};          // broadcast id -> turn object (routes answers into the right turn)
     let ktSaveTimer=null;
+    let ktSaveFailing=false;     // the last save of the history failed: the user has been told, retrying
     async function ktLoadAll(){
       let read=[];
       if(TAURI){ try{ const v=await invoke('get_kotodama_sessions'); read=Array.isArray(v)?v:[]; }catch(e){ read=[]; } }
@@ -2441,7 +2442,12 @@
       ktSaveTimer=setTimeout(()=>{
         ktAllSessions.sort((a,b)=>(b.updated||0)-(a.updated||0));
         if(ktAllSessions.length>200) ktAllSessions.length=200;   // cap: drop the oldest
-        if(TAURI) invoke('save_kotodama_sessions',{sessions:ktAllSessions}).catch(()=>{});
+        // A save that fails is said, once, and tried again: from 10/10/2026 every save failed for three days without
+        // a word, and the conversations of those days were lost when the app was closed.
+        if(TAURI) invoke('save_kotodama_sessions',{sessions:ktAllSessions}).then(()=>{ ktSaveFailing=false; }).catch(e=>{
+          if(!ktSaveFailing){ ktSaveFailing=true; toast((TR.ktSaveFailed||'').replace('{e}', String(e).slice(0, 160))); }
+          clearTimeout(ktSaveTimer); ktSaveTimer=setTimeout(ktPersist, 30000);
+        });
         else { try{ localStorage.setItem('kotodama.sessions', JSON.stringify(ktAllSessions)); }catch(e){} }
       }, 800);
     }

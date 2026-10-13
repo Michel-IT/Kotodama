@@ -346,5 +346,6 @@
   "vinRespFixed": "L'accés directe sempre enganxa només el text.",
   "vinNone": "Sense restriccions",
   "vinEmptyPop": "Sense restriccions: la recepta envia només el text.",
-  "vinStale": "El valor seleccionat ha desaparegut: usant «{v}»."
+  "vinStale": "El valor seleccionat ha desaparegut: usant «{v}».",
+  "ktSaveFailed": "No s'ha pogut desar l'historial ({e}). Ho torno a provar."
 }
