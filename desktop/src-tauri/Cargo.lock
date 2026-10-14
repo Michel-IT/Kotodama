@@ -2333,6 +2333,7 @@ version = "0.1.8"
 dependencies = [
  "core-foundation",
  "core-graphics",
+ "miniz_oxide",
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",

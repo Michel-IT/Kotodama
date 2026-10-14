@@ -347,5 +347,6 @@
   "vinNone": "Fără constrângeri",
   "vinEmptyPop": "Fără constrângeri: rețeta trimite doar textul.",
   "vinStale": "Valoarea aleasă a dispărut: se utilizează \"{v}\".",
-  "ktSaveFailed": "Istoricul nu a putut fi salvat ({e}). Încerc din nou."
+  "ktSaveFailed": "Istoricul nu a putut fi salvat ({e}). Încerc din nou.",
+  "trayCopyLast": "Copiază ultimul răspuns"
 }

@@ -87,7 +87,12 @@ const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
     // kept so an older build of their UI still matches. Captured live 2026-08-18 -- with neither
     // matching, the chain fell back to the whole message wrapper and harvested the screen-reader
     // label and the reasoning block along with the answer.
-    ("anthropic", r#".font-claude-response, .font-claude-message"#, r#"div[data-is-streaming="true"]"#),
+    // Since October 2026 neither class exists any more (measured 14/10/2026 on the page itself): each message is
+    // `[data-testid="assistant-message"]` (it carries `data-is-streaming`, which is the busy marker) and the text
+    // of the reply sits in a block with `data-perf-reply-text` / `.standard-markdown`, apart from the message's
+    // status pill ("Searched the web"), its screen-reader heading and its action bar with the time. The block, not
+    // the message, is the answer. The old classes stay for an older build of their page.
+    ("anthropic", r#"[data-testid="assistant-message"] [data-perf-reply-text], [data-testid="assistant-message"] .standard-markdown, .font-claude-response, .font-claude-message"#, r#"div[data-is-streaming="true"]"#),
     ("gemini", r#"message-content, .model-response-text"#, ""),
     ("perplexity", r#"main .prose"#, r#"button[aria-label*="stop" i]"#),
     ("deepseek", r#".ds-markdown"#, ""),
@@ -173,6 +178,38 @@ fn net_url_js(key: &str) -> String {
     crate::netread::url_pattern(key)
         .and_then(|p| serde_json::to_string(p).ok())
         .unwrap_or_else(|| "null".into())
+}
+/// Debug only: the last per-reader summary logged, so a change shows and a steady state does not.
+fn net_work_dbg() -> &'static Mutex<HashMap<(String, String), String>> {
+    static S: OnceLock<Mutex<HashMap<(String, String), String>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashMap::new()))
+}
+/// What the page was last told about the provider writing (see `Reader::working`), per (broadcast, provider).
+fn net_work() -> &'static Mutex<HashMap<(String, String), bool>> {
+    static S: OnceLock<Mutex<HashMap<(String, String), bool>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashMap::new()))
+}
+/// Passes the provider's own "writing / stopped" signal, read from its stream, on to the DOM harvest -- for a
+/// provider whose answer stream stays open between answers (Claude's timeline), so no response opens or closes and
+/// the harvest's usual signals do not exist. While it writes: the send did reach the provider (`__ktStreamEver`, else
+/// 30 s without text read as "never sent", which a long reasoning is) and text that pauses is not an end
+/// (`__ktNetOpen`, as for ChatGPT: only 45 still polls or the end event may close it). When it stops: the end event
+/// the harvest waits for (`__ktStreamEnd`). Only changes are sent.
+fn tell_page_work(window: &Window, bid: &str, key: &str, work: Option<bool>) {
+    let Some(now) = work else { return };
+    let prev = net_work().lock().unwrap().insert((bid.to_string(), key.to_string()), now);
+    if prev == Some(now) {
+        return;
+    }
+    debug::log(format!("kotodama NET working key={key} bid={bid} -> {now}"));
+    let js = if now {
+        "window.__ktStreamEver=(window.__ktStreamEver||0)+1;window.__ktNetOpen=1;"
+    } else {
+        "window.__ktNetOpen=0;if(window.__ktStreamEnd)window.__ktStreamEnd();"
+    };
+    if let Some(wv) = window.get_webview(&crate::browser::provider_label(key)) {
+        let _ = wv.eval(js);
+    }
 }
 /// The complete answer read from the network for this provider, if any reader saw its end with text.
 fn net_answer(bid: &str, key: &str) -> Option<crate::netread::NetAnswer> {
@@ -901,6 +938,57 @@ const RESPONSE_ADOPT_JS: &str = r##"
 })();
 "##;
 
+/// Claude keeps its conversation's timeline stream open BEFORE a message is sent and reconnects it on its own
+/// schedule (measured 14/10/2026: the page opened a fresh one at some sends and kept the previous one at others,
+/// so a second turn had no new request to watch). A wrapper installed at the time of the send would only see
+/// the streams opened after it, and the answer travels on that stream (netread.rs, `ClaudeTimeline`).
+/// So this tap goes in at document start, like the other initialization scripts of the provider tab: for the
+/// timeline request only, it keeps a tee of the body and hands each chunk to `window.__ktTlSink` when STREAM_WATCH_JS
+/// has set one (from the first injection on) -- until then the chunks are dropped. The page keeps its own
+/// untouched copy of the body. Nothing is sent, altered or repeated.
+const CLAUDE_TIMELINE_TAP_JS: &str = r##"
+(function(){
+  if (window.__ktTlTap) return;
+  window.__ktTlTap = true;
+  try {
+    var of = window.fetch;
+    if (typeof of !== 'function') return;
+    var seq = 0;
+    window.fetch = function(input){
+      var p = of.apply(this, arguments);
+      try {
+        var url = ''; try { url = (input && typeof input === 'object' && 'url' in input) ? input.url : String(input || ''); } catch(e){}
+        if (url.indexOf('ConversationService/StreamTimeline') < 0) return p;
+        return p.then(function(res){
+          try {
+            if (!res || !res.body || typeof res.body.tee !== 'function' || !window.__ktAdoptBody) return res;
+            var pair = res.body.tee(), mine = pair[0].getReader(), sid = ++seq;
+            function tell(bytes, end){ var s = window.__ktTlSink; if (s) { try { s(sid, bytes, end, url); } catch(e){} } }
+            (function pump(){
+              mine.read().then(function(r){
+                if (r.done) { tell(null, true); return; }
+                tell(r.value, false);
+                pump();
+              }, function(){ tell(null, true); });
+            })();
+            return window.__ktAdoptBody(res, pair[1]);
+          } catch(e) { return res; }
+        });
+      } catch(e) { return p; }
+    };
+  } catch(e){}
+})();
+"##;
+
+/// Script a provider's tab needs from the very first byte of its page, beyond the common ones (`create_tab`).
+pub fn early_provider_js(key: &str) -> Option<String> {
+    // KOTO_NO_NETREAD (debug) turns the network reading off, and with it the tap.
+    if key == "anthropic" && std::env::var("KOTO_NO_NETREAD").is_err() {
+        return Some(format!("{RESPONSE_ADOPT_JS}{CLAUDE_TIMELINE_TAP_JS}"));
+    }
+    None
+}
+
 /// DISCOVERY probe (debug only, `KOTO_NETPROBE=1`): wraps the page's own network APIs to learn how a
 /// provider actually streams its answer, so the harvest can be driven by REAL EVENTS instead of
 /// polling the DOM and inferring the end from text stability (measured: 6s of pure waiting after the
@@ -968,15 +1056,20 @@ const NET_PROBE_JS: &str = r##"
             return (window.__ktAdoptBody ? window.__ktAdoptBody(res, ap[1]) : res);
           } catch(e) { return res; }
         }
-        if (!/event-stream|ndjson|octet-stream|stream|json|text\/plain/i.test(ct) || !res.body || !res.body.tee) return res;
+        if (!/event-stream|ndjson|octet-stream|stream|json|text\/plain|proto/i.test(ct) || !res.body || !res.body.tee) return res;
         try {
           var pair = res.body.tee();
+          // Protobuf bodies (Claude's ConversationService) are binary: keep the exact bytes, as base64.
+          var bin = /proto/i.test(ct);
           var mine = pair[0].getReader(), bytes = 0, dec = new TextDecoder();
           (function pump(){
             mine.read().then(function(r){
               if (r.done) { cap({ kind: 'fetch', id: id, ev: 'end', bytes: bytes }); return; }
               bytes += (r.value && r.value.length) || 0;
-              if (bytes <= PER_REQ) cap({ kind: 'fetch', id: id, ev: 'chunk', data: dec.decode(r.value, { stream: true }).slice(0, PER_CHUNK) });
+              if (bytes <= PER_REQ) {
+                if (bin) { var bs = ''; for (var q = 0; q < r.value.length; q++) bs += String.fromCharCode(r.value[q]); cap({ kind: 'fetch', id: id, ev: 'chunk', b64: btoa(bs) }); }
+                else cap({ kind: 'fetch', id: id, ev: 'chunk', data: dec.decode(r.value, { stream: true }).slice(0, PER_CHUNK) });
+              }
               pump();
             }, function(err){ cap({ kind: 'fetch', id: id, ev: 'error', err: String(err) }); });
           })();
@@ -1127,6 +1220,18 @@ const STREAM_WATCH_JS: &str = r##"
     if (end) { q.end = true; if (netTimer) clearTimeout(netTimer); netFlush(); return; }
     if (!netTimer) netTimer = setTimeout(netFlush, 60);
   }
+  // Claude's timeline stream (CLAUDE_TIMELINE_TAP_JS, installed with the page): binary protobuf, so its bytes
+  // travel as base64, ONE LINE PER CHUNK (a padded base64 string cannot be glued to the next one), and the stream
+  // is not a "streaming response" for the counters above -- it stays open between answers, so its closing means
+  // nothing about ours. Only what arrives after our send is forwarded (netWanted).
+  function b64(u8){
+    var s = '';
+    for (var i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  window.__ktTlSink = function(sid, bytes, end, url){
+    try { if (netWanted(url)) netSend('t' + sid, url, bytes ? b64(bytes) + '\n' : '', !!end); } catch(e){}
+  };
   try {
     var of = window.fetch;
     if (typeof of !== 'function') return;
@@ -1560,7 +1665,12 @@ const HARVEST_JS: &str = r##"
       return el.matches('form, [role="textbox"], [class*="query-bar" i]');
     } catch(e){ return false; }
   }
+  // Claude: its selector is verified and the generic chain below is worse than nothing there. While the model
+  // reasons there is no reply block yet, and `[class*="assistant" i]` then matched the chat list in the sidebar:
+  // "ora" / "1 minuto fa" was delivered as the answer (measured 01/10 and 05/10/2026, voce 59).
+  var STRICT_ANS = KEY === 'anthropic';
   function getAnswerEl(){
+    if (STRICT_ANS) { var s = lastMatch(ANS_SEL, true); return isInputArea(s) ? null : s; }
     var el = lastMatch(ANS_SEL, true)
         || lastMatch('[data-message-author-role="assistant"]')
         || lastMatch('[class*="assistant" i]')
@@ -2900,6 +3010,8 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     login_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_readers().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_partials().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    net_work().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    net_work_dbg().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_finish_armed().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     // Total wall-clock from the broadcast being registered to the answer being handed to the UI. Read
     // together with HARVEST-DONE's `sinceLastChangeMs` it splits the wait into "the model was still
@@ -2977,7 +3089,14 @@ fn schedule_net_finish(window: Window, bid: String, key: String) {
             .lock()
             .unwrap()
             .get(&(bid.clone(), key.clone()))
-            .and_then(|rs| rs.values().map(|r| r.answer().text.clone()).max_by_key(|t| t.len()))
+            // a reader whose end is explicit counts only while its answer is still finished: Claude can go busy
+            // again between two steps of the same answer, and a text taken then would be cut
+            .and_then(|rs| {
+                rs.values()
+                    .filter(|r| !r.done_is_explicit() || r.answer().done)
+                    .map(|r| r.answer().text.clone())
+                    .max_by_key(|t| t.len())
+            })
             .unwrap_or_default();
         if text.trim().is_empty() {
             return;
@@ -3201,6 +3320,7 @@ fn handle_push(
             }
             if end {
                 r.end();
+                debug::log(format!("kotodama NET stream closed key={key} id={id} text={}B done={}", r.answer().text.len(), r.answer().done));
             }
         }
         // Live preview straight from the provider's own stream: the text as the model writes it, in its own
@@ -3213,7 +3333,19 @@ fn handle_push(
         // truncated answer as complete.
         let stream_done =
             readers.values().any(|r| r.done_is_explicit() && r.answer().done && !r.answer().text.trim().is_empty());
+        let work = readers.values().filter_map(|r| r.working()).fold(None, |acc: Option<bool>, w| Some(acc.unwrap_or(false) || w));
+        if debug::enabled() && readers.values().any(|r| r.working().is_some()) {
+            let mut v: Vec<String> = readers.iter().map(|(i, r)| format!("{i}={:?}/{}", r.working(), r.answer().done)).collect();
+            v.sort();
+            let v = v.join(" ");
+            let mut last = net_work_dbg().lock().unwrap();
+            if last.get(&(bid.clone(), key.clone())) != Some(&v) {
+                debug::log(format!("kotodama NET readers key={key} {v}"));
+                last.insert((bid.clone(), key.clone()), v);
+            }
+        }
         drop(map);
+        tell_page_work(window, &bid, &key, work);
         // Armed only while the answer is still owed: a stream frame arriving after delivery would otherwise leave
         // an entry that nothing removes (finish_key, which clears it, has already run).
         let still_owed = broadcasts().lock().unwrap().get(&bid).map(|bc| bc.pending.contains(&key)).unwrap_or(false);

@@ -347,5 +347,6 @@
   "vinNone": "Nav ierobežojumu",
   "vinEmptyPop": "Nav ierobežojumu: recepte sūta tikai tekstu.",
   "vinStale": "Izvēlētā vērtība pazuda: tiek izmantots \"{v}\".",
-  "ktSaveFailed": "Vēsturi neizdevās saglabāt ({e}). Mēģinu vēlreiz."
+  "ktSaveFailed": "Vēsturi neizdevās saglabāt ({e}). Mēģinu vēlreiz.",
+  "trayCopyLast": "Kopēt pēdējo atbildi"
 }

@@ -347,5 +347,6 @@
   "vinNone": "Ingen begrænsninger",
   "vinEmptyPop": "Ingen begrænsninger: opskriften sender kun teksten.",
   "vinStale": "Den valgte værdi findes ikke længere: bruger \"{v}\".",
-  "ktSaveFailed": "Historikken kunne ikke gemmes ({e}). Prøver igen."
+  "ktSaveFailed": "Historikken kunne ikke gemmes ({e}). Prøver igen.",
+  "trayCopyLast": "Kopiér det seneste svar"
 }

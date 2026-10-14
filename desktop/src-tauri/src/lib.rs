@@ -43,6 +43,9 @@ pub struct AppState {
     /// Tray "Open" / "Quit" items, to localize their text at runtime (set_tray_labels).
     pub open_item: Mutex<Option<MenuItem<Wry>>>,
     pub quit_item: Mutex<Option<MenuItem<Wry>>>,
+    /// Tray "Copy the last answer": the item (enabled once there is an answer) and the answer it copies.
+    pub copy_last_item: Mutex<Option<MenuItem<Wry>>>,
+    pub last_answer: Mutex<Option<String>>,
     /// Localized labels for the native provider context menu (set_provider_menu_labels).
     pub menu_labels: Mutex<browser::MenuLabels>,
     /// Inline transform in progress (one at a time).
@@ -607,10 +610,22 @@ fn mark_provider_known(app: AppHandle, key: String) {
     set_provider_known(&app, &key, true);
 }
 
-/// Localizes the tray labels (Open / Start-on-login / Always-on-top / Quit) in the app language.
+/// Localizes the tray labels (Open / Copy the last answer / Start-on-login / Always-on-top / Restart / Quit) in the
+/// app language.
 /// Called by the frontend at startup and on every language change.
 #[tauri::command]
-fn set_tray_labels(app: AppHandle, open: String, autostart: String, always_on_top: String, restart: String, quit: String) {
+fn set_tray_labels(
+    app: AppHandle,
+    open: String,
+    autostart: String,
+    always_on_top: String,
+    restart: String,
+    quit: String,
+    copy_last: Option<String>,
+) {
+    if let (Some(t), Some(i)) = (copy_last, app.state::<AppState>().copy_last_item.lock().unwrap().as_ref()) {
+        let _ = i.set_text(t);
+    }
     if let Some(i) = app.state::<AppState>().open_item.lock().unwrap().as_ref() {
         let _ = i.set_text(open);
     }
@@ -625,6 +640,17 @@ fn set_tray_labels(app: AppHandle, open: String, autostart: String, always_on_to
     }
     if let Some(i) = app.state::<AppState>().quit_item.lock().unwrap().as_ref() {
         let _ = i.set_text(quit);
+    }
+}
+
+/// The last answer that arrived (chat or shortcut), for the tray's "Copy the last answer".
+#[tauri::command]
+fn set_last_answer(app: AppHandle, text: String) {
+    let st = app.state::<AppState>();
+    *st.last_answer.lock().unwrap() = Some(text);
+    let item = st.copy_last_item.lock().unwrap().clone();
+    if let Some(i) = item {
+        let _ = i.set_enabled(true);
     }
 }
 
@@ -1394,12 +1420,15 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
         let g = st.settings.lock().unwrap();
         (g.language == "it", g.always_on_top)
     };
-    let (open_lbl, auto_lbl, aot_lbl, restart_lbl, quit_lbl) = if it {
-        ("Apri", "Apri al login", "Sempre in primo piano", "Riavvia", "Esci")
+    let (open_lbl, copy_lbl, auto_lbl, aot_lbl, restart_lbl, quit_lbl) = if it {
+        ("Apri", "Copia l'ultima risposta", "Apri al login", "Sempre in primo piano", "Riavvia", "Esci")
     } else {
-        ("Open", "Start on login", "Always on top", "Restart", "Quit")
+        ("Open", "Copy the last answer", "Start on login", "Always on top", "Restart", "Quit")
     };
     let open_i = MenuItem::with_id(app, "open", open_lbl, true, None::<&str>)?;
+    // The last answer, to the clipboard without opening the window (an idea taken from Handy's "copy the last
+    // transcription"). Greyed out until an answer has arrived in this run.
+    let copy_i = MenuItem::with_id(app, "copylast", copy_lbl, false, None::<&str>)?;
     let login_i = CheckMenuItem::with_id(app, "autostart", auto_lbl, true, autostart_on, None::<&str>)?;
     let aot_i = CheckMenuItem::with_id(app, "alwaysontop", aot_lbl, true, always_on_top_on, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
@@ -1407,7 +1436,7 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
     // startup (resource saving), and the quickest fix after an update.
     let restart_i = MenuItem::with_id(app, "restart", restart_lbl, true, None::<&str>)?;
     let quit_i = MenuItem::with_id(app, "quit", quit_lbl, true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open_i, &login_i, &aot_i, &sep, &restart_i, &quit_i])?;
+    let menu = Menu::with_items(app, &[&open_i, &copy_i, &login_i, &aot_i, &sep, &restart_i, &quit_i])?;
 
     // Store items: sync check + localize text at runtime.
     {
@@ -1417,6 +1446,7 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
         st.open_item.lock().unwrap().replace(open_i.clone());
         st.quit_item.lock().unwrap().replace(quit_i.clone());
         st.restart_item.lock().unwrap().replace(restart_i.clone());
+        st.copy_last_item.lock().unwrap().replace(copy_i.clone());
     }
 
     let mut builder = TrayIconBuilder::with_id("main-tray")
@@ -1472,6 +1502,15 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
                 }
             }
             "restart" => relaunch(app),
+            "copylast" => {
+                let text = app.state::<AppState>().last_answer.lock().unwrap().clone();
+                if let Some(text) = text {
+                    *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(text.clone());
+                    if let Err(e) = app.state::<Clipboard>().write_text(text) {
+                        debug::log(format!("tray copy-last failed: {e}"));
+                    }
+                }
+            }
             "quit" => app.exit(0),
             _ => {}
         })
@@ -1619,6 +1658,8 @@ pub fn run() {
             always_on_top_item: Mutex::new(None),
             open_item: Mutex::new(None),
             quit_item: Mutex::new(None),
+            copy_last_item: Mutex::new(None),
+            last_answer: Mutex::new(None),
             menu_labels: Mutex::new(browser::MenuLabels::default()),
             inline_busy: AtomicBool::new(false),
             inline_suppress_toast: AtomicBool::new(false),
@@ -2246,6 +2287,7 @@ pub fn run() {
             save_recipes,
             get_recipe_constraints,
             save_recipe_constraints,
+            set_last_answer,
             check_for_update,
             install_update,
         ])

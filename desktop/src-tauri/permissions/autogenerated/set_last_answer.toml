@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-last-answer"
+description = "Enables the set_last_answer command without any pre-configured scope."
+commands.allow = ["set_last_answer"]
+
+[[permission]]
+identifier = "deny-set-last-answer"
+description = "Denies the set_last_answer command without any pre-configured scope."
+commands.deny = ["set_last_answer"]

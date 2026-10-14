@@ -1904,7 +1904,7 @@
       setGesture:'Double right-click', setGestureHint:'Two quick right-clicks open the recipe menu in any program.',
       rhColMenu:'Menu', rhMenuTitle:'Show this recipe in the double right-click menu', trayRestart:'Restart',
       rhColRead:'Read', rhReadTitle:'Reads the answer aloud as soon as it arrives.',
-      vinAdd:"+ Add constraint", vinNew:"New constraint", vinBuiltin:"Built-in", vinMine:"Your constraints", vinMineRemove:"Remove from your constraints", vinNewRecipeCons:"Recipe constraints", vinColName:"Constraint", vinColShortcut:"From shortcut", vinColShortcutTitle:"The value this recipe's shortcut sends.", vinName:"Name", vinNamePh:"Constraint name", vinOptions:"Options", vinAddOption:"+ Add option", vinNeedName:"A name and at least one option are needed.", vinEdit:"Edit constraint", vinDelete:"Delete constraint", vinDeleted:"Constraint deleted", vinUndo:"Undo", vinUse:"Use this constraint", vinFixedOpts:"The options of {c} are fixed.", vinRespFixed:"The shortcut always pastes the text only.", vinNone:"No constraints", vinEmptyPop:"No constraints: the recipe sends the text only.", vinStale:"The chosen value is gone: using \"{v}\".", ktSaveFailed:"The history could not be saved ({e}). Trying again.", rhColVincoli:'Constraints', rhColProvider:'Provider', rhKeyTitle:'The combination that runs the recipe on the selected text.', rhVinTitle:'The ones the recipe adds to the text when you run it from a shortcut.', rhProvTitle:'The one the recipe uses when you run it from a shortcut.', rhNotifyHeadTitle:'Shows the notice while the recipe works.', rhMenuHeadTitle:'Puts the recipe in the double right-click menu.', rhVinPopTitle:"This recipe's constraints", rhNeutralNoCons:'Neutral sends the text as it is, with no constraints.', rhProvDefaultShort:'Default',
+      vinAdd:"+ Add constraint", vinNew:"New constraint", vinBuiltin:"Built-in", vinMine:"Your constraints", vinMineRemove:"Remove from your constraints", vinNewRecipeCons:"Recipe constraints", vinColName:"Constraint", vinColShortcut:"From shortcut", vinColShortcutTitle:"The value this recipe's shortcut sends.", vinName:"Name", vinNamePh:"Constraint name", vinOptions:"Options", vinAddOption:"+ Add option", vinNeedName:"A name and at least one option are needed.", vinEdit:"Edit constraint", vinDelete:"Delete constraint", vinDeleted:"Constraint deleted", vinUndo:"Undo", vinUse:"Use this constraint", vinFixedOpts:"The options of {c} are fixed.", vinRespFixed:"The shortcut always pastes the text only.", vinNone:"No constraints", vinEmptyPop:"No constraints: the recipe sends the text only.", vinStale:"The chosen value is gone: using \"{v}\".", ktSaveFailed:"The history could not be saved ({e}). Trying again.", trayCopyLast:"Copy the last answer", rhColVincoli:'Constraints', rhColProvider:'Provider', rhKeyTitle:'The combination that runs the recipe on the selected text.', rhVinTitle:'The ones the recipe adds to the text when you run it from a shortcut.', rhProvTitle:'The one the recipe uses when you run it from a shortcut.', rhNotifyHeadTitle:'Shows the notice while the recipe works.', rhMenuHeadTitle:'Puts the recipe in the double right-click menu.', rhVinPopTitle:"This recipe's constraints", rhNeutralNoCons:'Neutral sends the text as it is, with no constraints.', rhProvDefaultShort:'Default',
       provColBar:'In the bar', provColDefault:'Default',
       setProvidersBarHint2:'Every provider, one row each: whether it appears in the "+" menu, whether it opens private chats, and which one is your default.',
       setAdmin:'Start as administrator', setAdminHint:'Needed to work inside windows opened as administrator. Windows asks for confirmation.',
@@ -2068,8 +2068,8 @@
       renderCustomRecipes();
       setActiveInstruction();
       recomputeHintFit();   // the hint length changes with the language → recompute whether it fits
-      // Localizza le voci della tray (Apri / Avvia col sistema / Esci) nella lingua corrente.
-      if(TAURI){ try{ invoke('set_tray_labels', { open:t.open, autostart:t.setAutostart, alwaysOnTop:t.setAlwaysOnTop, restart:t.trayRestart, quit:t.quit }); }catch(e){} }
+      // The tray menu in the current language (Open, Copy the last answer, Start on login, Always on top, Restart, Quit).
+      if(TAURI){ try{ invoke('set_tray_labels', { open:t.open, autostart:t.setAutostart, alwaysOnTop:t.setAlwaysOnTop, restart:t.trayRestart, quit:t.quit, copyLast:t.trayCopyLast }); }catch(e){} }
       // Localize the NATIVE provider editing context menu (muda's predefined items are English-only otherwise).
       if(TAURI){ try{ invoke('set_provider_menu_labels', { labels:{ copy:t.copy, cut:t.cut, paste:t.paste, selectAll:t.selectAll, copyUrl:t.copyUrl } }); }catch(e){} }
     }
@@ -3056,6 +3056,7 @@
       const text=(d.text||'').trim();
       if((st==='done'||st==='timeout') && text){
         invoke('inline_finish',{text}).catch(()=>{});
+        invoke('set_last_answer',{text}).catch(()=>{});
         if(st==='done' && d.key) invoke('mark_provider_known',{key:d.key}).catch(()=>{}); // same signal as ktOnAnswer
       }
       else invoke('inline_fail',{reason:st}).catch(()=>{});
@@ -4259,6 +4260,8 @@
       // A real answer = proof of an active login there: remember it so future "chiedi a tutti"
       // chats default to it too (see ktLoadSel). No-op on the Rust side if already known.
       if(st==='done' && TAURI) invoke('mark_provider_known',{key:d.key}).catch(()=>{});
+      // the tray's "Copy the last answer" copies this one (plain text, as the card's Copy)
+      if(st==='done' && TAURI && (d.text||'').trim()) invoke('set_last_answer',{text:(d.text||'').trim()}).catch(()=>{});
       ktMaybeAutoRead(d, st, turn);
       const ref=ktCards[`${d.broadcastId}:${d.key}`]; if(!ref) return;
       if(restored){

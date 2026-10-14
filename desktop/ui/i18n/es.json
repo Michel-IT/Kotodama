@@ -347,5 +347,6 @@
   "vinNone": "Sin restricciones",
   "vinEmptyPop": "Sin restricciones: la receta envía solo el texto.",
   "vinStale": "El valor elegido ya no existe: usando \"{v}\".",
-  "ktSaveFailed": "No se pudo guardar el historial ({e}). Lo intento de nuevo."
+  "ktSaveFailed": "No se pudo guardar el historial ({e}). Lo intento de nuevo.",
+  "trayCopyLast": "Copiar la última respuesta"
 }

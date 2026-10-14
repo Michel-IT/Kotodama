@@ -48,13 +48,22 @@ pub trait Reader: Send {
     fn done_is_explicit(&self) -> bool {
         false
     }
+    /// For a provider whose answer stream stays open between answers: `Some(true)` while the provider says it is
+    /// writing, `Some(false)` once it said it stopped, `None` before it has said anything about this send. The
+    /// caller tells the page (it has no other way to see it, no response is open or closed) so that the DOM
+    /// harvest neither gives up on a long silence nor ends on a pause of the text.
+    fn working(&self) -> Option<bool> {
+        None
+    }
 }
 
 /// The answer endpoint of a provider, as a JavaScript regular expression source: the page observer forwards
 /// only requests whose URL matches it. Kept next to `reader_for`, which recognises the same URLs.
 pub fn url_pattern(key: &str) -> Option<&'static str> {
     Some(match key {
-        "anthropic" => "/completion(\\?|$)",
+        // Claude: the old `/completion` SSE, and since October 2026 the conversation's timeline stream (see
+        // `ClaudeTimeline`): the answer no longer travels in the reply to the send request.
+        "anthropic" => "/completion(\\?|$)|ConversationService/StreamTimeline",
         // ChatGPT: /backend-api/f/conversation (and the plain /backend-api/conversation), never the history list.
         "openai" => "/backend-api/(f/)?conversation(\\?|$)",
         "deepseek" => "/chat/completion",
@@ -72,6 +81,7 @@ pub fn url_pattern(key: &str) -> Option<&'static str> {
 /// other request the page makes (telemetry, history, settings).
 pub fn reader_for(key: &str, url: &str) -> Option<Box<dyn Reader>> {
     let r: Box<dyn Reader> = match key {
+        "anthropic" if url.contains("ConversationService/StreamTimeline") => Box::new(ClaudeTimeline::default()),
         "anthropic" if url.contains("/completion") => Box::new(Claude::default()),
         "openai" if url.contains("/conversation") => Box::new(OpenAi::default()),
         "deepseek" if url.contains("/chat/completion") => Box::new(DeepSeek::default()),
@@ -356,6 +366,355 @@ impl Reader for Claude {
     }
     fn answer(&self) -> &NetAnswer {
         &self.ans
+    }
+}
+
+/// A protobuf field value: only the two wire types the timeline uses are kept, fixed-width ones are skipped.
+enum Pb<'a> {
+    Num(u64),
+    Bytes(&'a [u8]),
+}
+
+/// Parses one protobuf message into its (field, value) pairs, in order. `None` when the bytes are not a message.
+fn pb_parse(b: &[u8]) -> Option<Vec<(u32, Pb<'_>)>> {
+    fn varint(b: &[u8], i: &mut usize) -> Option<u64> {
+        let (mut r, mut shift) = (0u64, 0u32);
+        loop {
+            let c = *b.get(*i)?;
+            *i += 1;
+            if shift >= 64 {
+                return None;
+            }
+            r |= ((c & 127) as u64) << shift;
+            if c & 128 == 0 {
+                return Some(r);
+            }
+            shift += 7;
+        }
+    }
+    let (mut out, mut i) = (Vec::new(), 0usize);
+    while i < b.len() {
+        let key = varint(b, &mut i)?;
+        let field = (key >> 3) as u32;
+        match key & 7 {
+            0 => out.push((field, Pb::Num(varint(b, &mut i)?))),
+            1 => {
+                i = i.checked_add(8).filter(|e| *e <= b.len())?;
+            }
+            2 => {
+                let len = usize::try_from(varint(b, &mut i)?).ok()?;
+                let end = i.checked_add(len)?;
+                out.push((field, Pb::Bytes(b.get(i..end)?)));
+                i = end;
+            }
+            5 => {
+                i = i.checked_add(4).filter(|e| *e <= b.len())?;
+            }
+            _ => return None,
+        }
+    }
+    Some(out)
+}
+/// Every length-delimited value of field `n`.
+fn pb_all<'a>(f: &[(u32, Pb<'a>)], n: u32) -> Vec<&'a [u8]> {
+    f.iter()
+        .filter_map(|(k, v)| match v {
+            Pb::Bytes(b) if *k == n => Some(*b),
+            _ => None,
+        })
+        .collect()
+}
+/// Every nested message of field `n`.
+fn pb_msgs<'a>(f: &[(u32, Pb<'a>)], n: u32) -> Vec<Vec<(u32, Pb<'a>)>> {
+    pb_all(f, n).into_iter().filter_map(pb_parse).collect()
+}
+fn pb_text(f: &[(u32, Pb<'_>)], n: u32) -> Option<String> {
+    pb_all(f, n).first().map(|b| String::from_utf8_lossy(b).into_owned())
+}
+fn pb_num(f: &[(u32, Pb<'_>)], n: u32) -> Option<u64> {
+    f.iter().find_map(|(k, v)| match v {
+        Pb::Num(x) if *k == n => Some(*x),
+        _ => None,
+    })
+}
+
+/// A gzip member to its bytes (header per RFC 1952, raw deflate, 8-byte trailer ignored). Bounded: a frame of the
+/// timeline is a few kilobytes.
+fn gunzip(b: &[u8]) -> Option<Vec<u8>> {
+    if b.len() < 18 || b[0] != 0x1f || b[1] != 0x8b || b[2] != 8 {
+        return None;
+    }
+    let flags = b[3];
+    let mut i = 10usize;
+    if flags & 4 != 0 {
+        let n = u16::from_le_bytes([*b.get(i)?, *b.get(i + 1)?]) as usize;
+        i += 2 + n;
+    }
+    for bit in [8u8, 16] {
+        if flags & bit != 0 {
+            while *b.get(i)? != 0 {
+                i += 1;
+            }
+            i += 1;
+        }
+    }
+    if flags & 2 != 0 {
+        i += 2;
+    }
+    miniz_oxide::inflate::decompress_to_vec_with_limit(b.get(i..b.len().checked_sub(8)?)?, 8_000_000).ok()
+}
+
+/// One content block of the timeline: text (`kind` 2), reasoning (1), or something else (tool calls).
+#[derive(Default)]
+struct TlBlock {
+    group: String,
+    kind: u64,
+    text: String,
+    thinking: String,
+    /// First seen as a state snapshot (the text so far), so every delta after it completes the text.
+    from_snapshot: bool,
+    /// The provider marked the block finished (a snapshot with field 4 = 1): its text is the whole text.
+    finished: bool,
+}
+
+/// Claude since October 2026. The reply to the send request (`PerformAction`) is empty and the answer is pushed
+/// on the conversation's timeline stream, `ConversationService/StreamTimeline` (Connect protocol over HTTP/2:
+/// a sequence of frames, each a flags byte -- 1 = gzip, 2 = trailer -- a big-endian length and a protobuf message;
+/// an empty heartbeat every 20 s and a trailer "cadence" that closes the stream now and then, the page then
+/// reopens it). The page observer forwards the received bytes as base64, one line per chunk.
+///
+/// What a message holds (field numbers measured on 14/10/2026 over text, reasoning, web search and a second turn):
+/// `1` = event, with `1.1` = state changes and `1.2` = a delta. State: `2` conversation (`3` = 2 while it writes, 1
+/// when idle), `3` message (`1` id, `3` role: 1 user, 2 assistant), `4` group of blocks (`1` id, `2` message), `5`
+/// block (`1` id, `2` group, `9` text so far, `10.1` kind: 1 reasoning / 2 text, `12.1` reasoning so far, `11`
+/// citations). Delta: `1` block, `2` text to append, `6.1` reasoning to append, `4` a citation.
+///
+/// The end is the conversation going back to idle after it was seen writing (`done_is_explicit`): the stream
+/// itself closes for other reasons too.
+#[derive(Default)]
+struct ClaudeTimeline {
+    /// Base64 lines not yet complete.
+    lines: String,
+    /// Decoded bytes not yet forming a whole frame.
+    buf: Vec<u8>,
+    roles: std::collections::HashMap<String, u64>,
+    /// Group id -> message id.
+    groups: std::collections::HashMap<String, String>,
+    blocks: std::collections::HashMap<String, TlBlock>,
+    /// Block ids in the order they first appeared.
+    order: Vec<String>,
+    busy_seen: bool,
+    /// A delta of text or reasoning arrived on this stream: it is following an answer being written, even when it
+    /// was opened after the conversation had gone busy (the page reconnects it now and then, 14/10/2026: a stream
+    /// that opened 20 s into a 25 s essay began with a delta and never saw the "busy" state).
+    live_seen: bool,
+    idle: bool,
+    /// The transport closed: what this stream said last is no longer true.
+    closed: bool,
+    ans: NetAnswer,
+}
+impl ClaudeTimeline {
+    fn block_mut(&mut self, id: &str) -> &mut TlBlock {
+        if !self.blocks.contains_key(id) {
+            self.order.push(id.to_string());
+        }
+        self.blocks.entry(id.to_string()).or_default()
+    }
+    /// A snapshot is the text so far; one that is a stale prefix of what the deltas already built is ignored.
+    fn snapshot(cur: &mut String, snap: String) {
+        if !(cur.len() > snap.len() && cur.starts_with(&snap)) {
+            *cur = snap;
+        }
+    }
+    fn cite(&mut self, c: &[(u32, Pb<'_>)]) {
+        let image = pb_msgs(c, 6).first().and_then(|x| pb_text(x, 4));
+        if let Some(url) = pb_text(c, 3) {
+            push_source(&mut self.ans.sources, &pb_text(c, 2).unwrap_or_default(), &url, image);
+        }
+    }
+    fn state(&mut self, st: &[(u32, Pb<'_>)]) {
+        for c in pb_msgs(st, 2) {
+            match pb_num(&c, 3) {
+                Some(2) => {
+                    self.busy_seen = true;
+                    self.idle = false;
+                }
+                Some(1) => self.idle = true,
+                _ => {}
+            }
+        }
+        for m in pb_msgs(st, 3) {
+            if let (Some(id), Some(role)) = (pb_text(&m, 1), pb_num(&m, 3)) {
+                self.roles.insert(id, role);
+            }
+        }
+        for g in pb_msgs(st, 4) {
+            if let (Some(id), Some(msg)) = (pb_text(&g, 1), pb_text(&g, 2)) {
+                self.groups.insert(id, msg);
+            }
+        }
+        for b in pb_msgs(st, 5) {
+            let Some(id) = pb_text(&b, 1) else { continue };
+            let is_new = !self.blocks.contains_key(&id);
+            let group = pb_text(&b, 2);
+            let kind = pb_msgs(&b, 10).first().and_then(|t| pb_num(t, 1));
+            let text = pb_text(&b, 9);
+            let thinking = pb_msgs(&b, 12).first().and_then(|t| pb_text(t, 1));
+            let fin = pb_num(&b, 4) == Some(1);
+            let blk = self.block_mut(&id);
+            if is_new {
+                blk.from_snapshot = true;
+            }
+            blk.finished |= fin;
+            if let Some(g) = group {
+                blk.group = g;
+            }
+            if let Some(k) = kind {
+                blk.kind = k;
+            }
+            if let Some(t) = text {
+                Self::snapshot(&mut blk.text, t);
+            }
+            if let Some(t) = thinking {
+                Self::snapshot(&mut blk.thinking, t);
+            }
+            for c in pb_msgs(&b, 11) {
+                self.cite(&c);
+            }
+        }
+    }
+    fn delta(&mut self, d: &[(u32, Pb<'_>)]) {
+        let Some(id) = pb_text(d, 1) else { return };
+        let text = pb_text(d, 2);
+        let thinking = pb_msgs(d, 6).first().and_then(|t| pb_text(t, 1));
+        self.live_seen |= text.is_some() || thinking.is_some();
+        let blk = self.block_mut(&id);
+        if let Some(t) = text {
+            if blk.kind == 0 {
+                blk.kind = 2;
+            }
+            blk.text.push_str(&t);
+        }
+        if let Some(t) = thinking {
+            if blk.kind == 0 {
+                blk.kind = 1;
+            }
+            blk.thinking.push_str(&t);
+        }
+        for c in pb_msgs(d, 4) {
+            self.cite(&c);
+        }
+    }
+    fn frame(&mut self, flags: u8, body: &[u8]) {
+        if flags & 2 != 0 {
+            return; // trailer (JSON): "cadence" or an error status, nothing of the answer
+        }
+        let plain;
+        let body = if flags & 1 != 0 {
+            match gunzip(body) {
+                Some(v) => {
+                    plain = v;
+                    &plain[..]
+                }
+                None => {
+                    self.ans.skipped += 1;
+                    return;
+                }
+            }
+        } else {
+            body
+        };
+        let Some(top) = pb_parse(body) else {
+            self.ans.skipped += 1;
+            return;
+        };
+        for ev in pb_msgs(&top, 1) {
+            for st in pb_msgs(&ev, 1) {
+                self.state(&st);
+            }
+            for d in pb_msgs(&ev, 2) {
+                self.delta(&d);
+            }
+        }
+    }
+    /// The answer is the text blocks of the assistant's message in the order they opened (a user's own block is
+    /// left out by its message's role), the reasoning the reasoning blocks.
+    fn refresh(&mut self) {
+        let (mut text, mut reasoning, mut whole) = (String::new(), String::new(), true);
+        for id in &self.order {
+            let b = &self.blocks[id];
+            if self.groups.get(&b.group).and_then(|m| self.roles.get(m)) == Some(&1) {
+                continue;
+            }
+            let (into, piece) = match b.kind {
+                2 => (&mut text, &b.text),
+                1 => (&mut reasoning, &b.thinking),
+                _ => continue,
+            };
+            if !piece.is_empty() {
+                // text we only know from deltas lacks whatever came before the first one, until the block's final snapshot
+                whole &= b.kind != 2 || b.from_snapshot || b.finished;
+                if !into.is_empty() {
+                    into.push_str("\n\n");
+                }
+                into.push_str(piece);
+            }
+        }
+        self.ans.done = (self.busy_seen || self.live_seen) && self.idle && whole && !text.trim().is_empty();
+        self.ans.text = text;
+        self.ans.reasoning = reasoning;
+    }
+    fn bytes(&mut self, b: &[u8]) {
+        self.buf.extend_from_slice(b);
+        while self.buf.len() >= 5 {
+            let len = u32::from_be_bytes([self.buf[1], self.buf[2], self.buf[3], self.buf[4]]) as usize;
+            if len > 64_000_000 {
+                self.buf.clear(); // not a Connect stream any more: drop it rather than wait for 4 GB
+                self.ans.skipped += 1;
+                break;
+            }
+            if self.buf.len() < 5 + len {
+                break;
+            }
+            let flags = self.buf[0];
+            let body: Vec<u8> = self.buf[5..5 + len].to_vec();
+            self.buf.drain(..5 + len);
+            self.frame(flags, &body);
+        }
+        self.refresh();
+    }
+}
+impl Reader for ClaudeTimeline {
+    fn feed(&mut self, chunk: &str) {
+        self.lines.push_str(chunk);
+        while let Some(i) = self.lines.find('\n') {
+            let line: String = self.lines.drain(..=i).collect();
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+            match crate::audio::base64_decode(line) {
+                Some(b) => self.bytes(&b),
+                None => self.ans.skipped += 1,
+            }
+        }
+    }
+    fn end(&mut self) {
+        self.closed = true;
+    }
+    fn answer(&self) -> &NetAnswer {
+        &self.ans
+    }
+    fn done_is_explicit(&self) -> bool {
+        true
+    }
+    fn working(&self) -> Option<bool> {
+        // closed while still writing: that says nothing any more (the answer goes on in another stream); closed after
+        // the idle state: it did stop -- and the last chunk and the close often arrive in the same batch
+        if self.closed && !self.idle {
+            return None;
+        }
+        (self.busy_seen || self.live_seen).then_some(!self.idle)
     }
 }
 
@@ -1613,6 +1972,13 @@ data: {f}
     fn captured_streams() {
         let cases = [
             ("anthropic", "/api/o/chat_conversations/c/completion", "anthropic-run3.txt"),
+            // October 2026: the timeline stream, as the page forwards it (base64 lines)
+            ("anthropic", TIMELINE_URL, "anthropic-timeline-cap2.txt"),
+            ("anthropic", TIMELINE_URL, "anthropic-timeline-cap4.txt"),
+            ("anthropic", TIMELINE_URL, "anthropic-timeline-cap5.txt"),
+            ("anthropic", TIMELINE_URL, "anthropic-timeline-cap6.txt"),
+            // a stream the page opened in the middle of an essay (joined mid-answer)
+            ("anthropic", TIMELINE_URL, "anthropic-timeline-cap7.txt"),
             ("deepseek", "/api/v0/chat/completion", "deepseek-run3.txt"),
             ("gemini", "/StreamGenerate", "gemini-run3.txt"),
             ("mistral", "/api/chat", "mistral-run3.txt"),
@@ -1627,5 +1993,288 @@ data: {f}
                 eprintln!("--- {k}: done={} skipped={} text={}B reasoning={}B sources={}\n{}", a.done, a.skipped, a.text.len(), a.reasoning.len(), a.sources.len(), a.text.chars().take(4000).collect::<String>());
             }
         }
+    }
+
+    // ---- Claude's timeline stream (ConversationService/StreamTimeline), October 2026 ----
+    //
+    // Protobuf in Connect framing (5-byte header: flags, big-endian length; flag 1 = gzip, flag 2 = trailer),
+    // forwarded by the page observer as base64, one line per received chunk. The frames are built here with a
+    // tiny encoder in the shape measured on 14/10/2026; the `REAL_*` bodies are captured frames (ids only).
+    const TIMELINE_URL: &str = "https://claude.ai/claudeai-rpc/anthropic.bard.api.v1alpha.ConversationService/StreamTimeline";
+    const REAL_BLOCK: &str = "cblk_000000000000000000000001";
+
+    fn varint(mut n: u64) -> Vec<u8> {
+        let mut o = Vec::new();
+        loop {
+            let b = (n & 127) as u8;
+            n >>= 7;
+            if n == 0 {
+                o.push(b);
+                return o;
+            }
+            o.push(b | 128);
+        }
+    }
+    fn pb_len(field: u32, body: &[u8]) -> Vec<u8> {
+        let mut o = varint(((field as u64) << 3) | 2);
+        o.extend(varint(body.len() as u64));
+        o.extend_from_slice(body);
+        o
+    }
+    fn pb_str(field: u32, s: &str) -> Vec<u8> {
+        pb_len(field, s.as_bytes())
+    }
+    fn pb_num(field: u32, v: u64) -> Vec<u8> {
+        let mut o = varint((field as u64) << 3);
+        o.extend(varint(v));
+        o
+    }
+    fn cat(parts: &[Vec<u8>]) -> Vec<u8> {
+        parts.iter().flatten().copied().collect()
+    }
+    /// One event of the stream: `state` parts (field 1) and an optional delta (field 2), wrapped as the server does.
+    fn tl_frame(state: &[Vec<u8>], delta: Option<Vec<u8>>) -> Vec<u8> {
+        let mut ev = pb_str(10, "1791960000000-0");
+        ev.extend(pb_num(11, 1));
+        if !state.is_empty() {
+            ev.extend(pb_len(1, &cat(state)));
+        }
+        if let Some(d) = delta {
+            ev.extend(pb_len(2, &d));
+        }
+        pb_len(1, &ev)
+    }
+    fn conv(status: u64) -> Vec<u8> {
+        pb_len(2, &cat(&[pb_str(1, "conv-1"), pb_num(3, status)]))
+    }
+    fn message(id: &str, role: u64) -> Vec<u8> {
+        pb_len(3, &cat(&[pb_str(1, id), pb_str(2, "conv-1"), pb_num(3, role)]))
+    }
+    fn group(id: &str, msg: &str, kind: u64) -> Vec<u8> {
+        pb_len(4, &cat(&[pb_str(1, id), pb_str(2, msg), pb_num(4, kind)]))
+    }
+    /// A block snapshot. `kind` 1 = reasoning (text in field 12.1), 2 = text (field 9).
+    fn block(id: &str, grp: &str, kind: u64, text: &str) -> Vec<u8> {
+        let mut b = cat(&[pb_str(1, id), pb_str(2, grp), pb_len(10, &pb_num(1, kind))]);
+        if !text.is_empty() {
+            b.extend(if kind == 1 { pb_len(12, &pb_str(1, text)) } else { pb_str(9, text) });
+        }
+        pb_len(5, &b)
+    }
+    fn delta(id: &str, text: &str) -> Vec<u8> {
+        cat(&[pb_str(1, id), pb_str(2, text)])
+    }
+    fn connect(flags: u8, body: &[u8]) -> Vec<u8> {
+        let mut o = vec![flags];
+        o.extend((body.len() as u32).to_be_bytes());
+        o.extend_from_slice(body);
+        o
+    }
+    fn b64_line(bytes: &[u8]) -> String {
+        const A: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let mut s = String::new();
+        for c in bytes.chunks(3) {
+            let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
+            for i in 0..4 {
+                if i <= c.len() {
+                    s.push(A[(n >> (18 - 6 * i) & 63) as usize] as char);
+                } else {
+                    s.push('=');
+                }
+            }
+        }
+        s.push('\n');
+        s
+    }
+    fn hex(s: &str) -> Vec<u8> {
+        (0..s.len() / 2).map(|i| u8::from_str_radix(&s[2 * i..2 * i + 2], 16).unwrap()).collect()
+    }
+    /// A whole answer as the page forwards it: reasoning, then text, with the user's own message echoed first.
+    fn timeline_answer() -> Vec<Vec<u8>> {
+        vec![
+            tl_frame(&[conv(2)], None),
+            // the user's own message: role 1, a text block that must never end up in the answer
+            tl_frame(&[conv(2), message("u1", 1), group("g-user", "u1", 1), block("b-user", "g-user", 2, "la domanda")], None),
+            tl_frame(&[conv(2), message("a1", 2), group("g-think", "a1", 2), block("b-think", "g-think", 1, "")], None),
+            tl_frame(&[], Some(cat(&[pb_str(1, "b-think"), pb_len(6, &pb_str(1, "Verifico i dati"))]))),
+            tl_frame(&[group("g-text", "a1", 1), block("b-text", "g-text", 2, "**Ri")], None),
+            tl_frame(&[], Some(delta("b-text", "sposta** in due"))),
+            tl_frame(&[], Some(delta("b-text", " righe\n\nFine."))),
+            // a citation attached to the text
+            tl_frame(
+                &[],
+                Some(cat(&[
+                    pb_str(1, "b-text"),
+                    pb_len(4, &cat(&[pb_str(1, "c1"), pb_str(2, "Titolo"), pb_str(3, "https://example.org/a"), pb_len(6, &pb_str(4, "https://example.org/f.png"))])),
+                ])),
+            ),
+            tl_frame(&[block("b-text", "g-text", 2, "**Risposta** in due righe\n\nFine.")], None),
+            tl_frame(&[conv(1)], None),
+        ]
+    }
+    fn feed_frames(r: &mut Box<dyn Reader>, frames: &[Vec<u8>]) {
+        for f in frames {
+            r.feed(&b64_line(&connect(0, f)));
+        }
+    }
+
+    #[test]
+    fn claude_timeline_answer_reasoning_and_end() {
+        let mut r = reader_for("anthropic", TIMELINE_URL).expect("a reader for StreamTimeline");
+        let frames = timeline_answer();
+        assert_eq!(r.working(), None);
+        feed_frames(&mut r, &frames[..frames.len() - 1]);
+        assert_eq!(r.working(), Some(true));
+        // everything is there, but the conversation is still busy: not finished
+        assert_eq!(r.answer().text, "**Risposta** in due righe\n\nFine.");
+        assert!(!r.answer().done);
+        feed_frames(&mut r, &frames[frames.len() - 1..]);
+        assert_eq!(r.working(), Some(false));
+        assert!(r.answer().done);
+        assert!(r.done_is_explicit());
+        assert_eq!(r.answer().text, "**Risposta** in due righe\n\nFine.");
+        assert_eq!(r.answer().reasoning, "Verifico i dati");
+        assert_eq!(r.answer().sources.len(), 1);
+        assert_eq!(r.answer().sources[0].url, "https://example.org/a");
+        assert_eq!(r.answer().skipped, 0);
+    }
+
+    #[test]
+    fn claude_timeline_deltas_alone_build_the_text() {
+        // A stream that carries no final snapshot: the deltas are the text.
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(
+            &mut r,
+            &[
+                tl_frame(&[conv(2), message("a1", 2), group("g", "a1", 1), block("b", "g", 2, "")], None),
+                tl_frame(&[], Some(delta("b", "Ciao "))),
+                tl_frame(&[], Some(delta("b", "mondo"))),
+                tl_frame(&[conv(1)], None),
+            ],
+        );
+        assert_eq!(r.answer().text, "Ciao mondo");
+        assert!(r.answer().done);
+    }
+
+    #[test]
+    fn claude_timeline_cut_anywhere() {
+        // The page batches chunks every 60 ms: a line, a frame or a multi-byte letter can be cut anywhere.
+        let all: String = timeline_answer().iter().map(|f| b64_line(&connect(0, f))).collect();
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        for ch in all.chars() {
+            r.feed(&ch.to_string());
+        }
+        assert_eq!(r.answer().text, "**Risposta** in due righe\n\nFine.");
+        assert!(r.answer().done);
+        // a stream joined mid-answer: no message or group record, only a delta with accented letters
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(&mut r, &[tl_frame(&[conv(2)], None), tl_frame(&[], Some(delta("b", "è già")))]);
+        assert_eq!(r.answer().text, "è già");
+    }
+
+    #[test]
+    fn claude_timeline_idle_before_busy_is_not_an_end() {
+        // A stream opened between turns starts idle; that is not the end of OUR answer.
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(&mut r, &[tl_frame(&[conv(1)], None)]);
+        assert!(!r.answer().done);
+        assert_eq!(r.working(), None);
+        // ... and the heartbeat (an empty message every 20 s) is harmless
+        r.feed(&b64_line(&connect(0, &hex("0a023200"))));
+        assert!(!r.answer().done);
+        assert_eq!(r.answer().text, "");
+        assert_eq!(r.answer().skipped, 0);
+    }
+
+    #[test]
+    fn claude_timeline_busy_again_reopens_the_answer() {
+        // Tool use: the conversation can go idle between steps; a later busy frame means it is not over.
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(
+            &mut r,
+            &[tl_frame(&[conv(2), message("a1", 2), group("g", "a1", 1), block("b", "g", 2, "Prima")], None), tl_frame(&[conv(1)], None)],
+        );
+        assert!(r.answer().done);
+        feed_frames(&mut r, &[tl_frame(&[conv(2)], None)]);
+        assert!(!r.answer().done);
+    }
+
+    #[test]
+    fn claude_timeline_gzip_and_trailer_frames() {
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(&mut r, &[tl_frame(&[conv(2), message("a1", 2), group("g", "a1", 1), block(REAL_BLOCK, "g", 2, "Un treno")], None)]);
+        // the captured delta " incrociano alle 10", gzip-compressed (flag 1), then the trailer (flag 2)
+        let gz = hex("1f8b080000000000020ae3f20e12e4e23734b734b43433b03036343734d73588601432e1924d4ecac98e37c00e0c85841532f3928bf2933313f3f21512737252150c0d0001952ce44d000000");
+        r.feed(&b64_line(&connect(1, &gz)));
+        r.feed(&b64_line(&connect(2, br#"{"metadata":{"Stream-Close-Reason":["cadence"]}}"#)));
+        assert_eq!(r.answer().text, "Un treno incrociano alle 10");
+        assert_eq!(r.answer().skipped, 0);
+    }
+
+
+    /// A block snapshot flagged finished (field 4 = 1), as the last snapshot of a block is.
+    fn block_final(id: &str, grp: &str, text: &str) -> Vec<u8> {
+        let mut b = cat(&[pb_str(1, id), pb_str(2, grp), pb_num(4, 1), pb_len(10, &pb_num(1, 2))]);
+        b.extend(pb_str(9, text));
+        pb_len(5, &b)
+    }
+
+    #[test]
+    fn claude_timeline_joined_mid_answer() {
+        // 14/10/2026: the page reconnects the stream while Claude writes. The new one starts with a delta, never
+        // sees the conversation turn busy, and ends with the block's final snapshot and the idle state.
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(&mut r, &[tl_frame(&[], Some(delta("b", "fine del saggio.")))]);
+        assert_eq!(r.working(), Some(true));
+        assert!(!r.answer().done);
+        feed_frames(&mut r, &[tl_frame(&[block_final("b", "g", "Tutto il saggio: fine del saggio.")], None), tl_frame(&[conv(1)], None)]);
+        assert_eq!(r.working(), Some(false));
+        assert_eq!(r.answer().text, "Tutto il saggio: fine del saggio.");
+        assert!(r.answer().done);
+    }
+
+    #[test]
+    fn claude_timeline_tail_only_is_not_a_whole_answer() {
+        // The same stream without the final snapshot would hand out the last words as if they were the answer.
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(&mut r, &[tl_frame(&[], Some(delta("b", "fine del saggio."))), tl_frame(&[conv(1)], None)]);
+        assert_eq!(r.answer().text, "fine del saggio.");
+        assert!(!r.answer().done);
+    }
+
+    #[test]
+    fn claude_timeline_closed_stream_says_nothing() {
+        // A stream that closed mid-answer must not keep the page waiting for an end that will arrive on another one.
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(&mut r, &[tl_frame(&[conv(2)], None)]);
+        assert_eq!(r.working(), Some(true));
+        r.end();
+        assert_eq!(r.working(), None);
+        // ... unless it had already stopped: then the close changes nothing
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(&mut r, &[tl_frame(&[conv(2)], None), tl_frame(&[conv(1)], None)]);
+        r.end();
+        assert_eq!(r.working(), Some(false));
+    }
+
+    // Captured 14/10/2026 (ids only): a group and the text block opening, a delta, a later snapshot.
+    const REAL_OPEN: &str = "0ab50152110a0f313739313936303833313638302d3058010a9d0122470a1d646772705f303030303030303030303030303030303030303030303033122430303030303030302d303030302d343030302d383030302d30303030303030303030303020012a520a1d63626c6b5f303030303030303030303030303030303030303030303031121d646772705f3030303030303030303030303030303030303030303030324a0e2a2a526973706f7374613a20736952020802";
+    const REAL_DELTA: &str = "0a4b52110a0f313739313936303833313731372d30580112340a1d63626c6b5f303030303030303030303030303030303030303030303031121320696e63726f6369616e6f20616c6c65203130";
+    const REAL_SNAPSHOT: &str = "0ae40152110a0f313739313936303833313937322d3158010acc012ac9010a1d63626c6b5f303030303030303030303030303030303030303030303031121d646772705f3030303030303030303030303030303030303030303030324a81012a2a526973706f7374613a20736920696e63726f6369616e6f20616c6c652031303a35323a34352063697263612c2061203330382c3235206b6d20646120526f6d612e2a2a0a0a2a2a50617373616767692a2a0a0a312e202a2a56616e74616767696f2064656c207472656e6f20646120526f6d612e2a2a20506172746520333052020802c00103";
+
+    #[test]
+    fn claude_timeline_captured_frames() {
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        r.feed(&b64_line(&connect(0, &tl_frame(&[conv(2)], None))));
+        r.feed(&b64_line(&connect(0, &hex(REAL_OPEN))));
+        assert_eq!(r.answer().text, "**Risposta: si");
+        r.feed(&b64_line(&connect(0, &hex(REAL_DELTA))));
+        assert_eq!(r.answer().text, "**Risposta: si incrociano alle 10");
+        r.feed(&b64_line(&connect(0, &hex(REAL_SNAPSHOT))));
+        assert!(r.answer().text.starts_with("**Risposta: si incrociano alle 10:52:45 circa"));
+        assert!(!r.answer().done);
+        r.feed(&b64_line(&connect(0, &tl_frame(&[conv(1)], None))));
+        assert!(r.answer().done);
+        assert_eq!(r.answer().skipped, 0);
     }
 }

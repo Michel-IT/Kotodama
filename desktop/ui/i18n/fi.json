@@ -347,5 +347,6 @@
   "vinNone": "Ei rajoituksia",
   "vinEmptyPop": "Ei rajoituksia: resepti lähettää vain tekstin.",
   "vinStale": "Valittu arvo ei ole enää olemassa: käytetään \"{v}\".",
-  "ktSaveFailed": "Historiaa ei voitu tallentaa ({e}). Yritetään uudelleen."
+  "ktSaveFailed": "Historiaa ei voitu tallentaa ({e}). Yritetään uudelleen.",
+  "trayCopyLast": "Kopioi viimeisin vastaus"
 }

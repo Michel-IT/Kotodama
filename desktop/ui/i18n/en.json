@@ -316,6 +316,7 @@
   "ktRetry": "Retry",
   "ktRetryAll": "Send again to the ones that did not answer",
   "ktSaveFailed": "The history could not be saved ({e}). Trying again.",
+  "trayCopyLast": "Copy the last answer",
   "setTabGeneral": "General",
   "setTabShortcuts": "Shortcuts",
   "setTabAppearance": "Appearance",

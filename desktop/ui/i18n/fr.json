@@ -347,5 +347,6 @@
   "vinNone": "Aucune contrainte",
   "vinEmptyPop": "Aucune contrainte : la recette envoie le texte seul.",
   "vinStale": "La valeur choisie n'existe plus : utilise \"{v}\".",
-  "ktSaveFailed": "L'historique n'a pas pu être enregistré ({e}). Nouvel essai en cours."
+  "ktSaveFailed": "L'historique n'a pas pu être enregistré ({e}). Nouvel essai en cours.",
+  "trayCopyLast": "Copier la dernière réponse"
 }

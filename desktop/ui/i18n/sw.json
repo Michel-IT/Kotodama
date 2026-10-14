@@ -347,5 +347,6 @@
   "vinNone": "Hakuna vikwazo",
   "vinEmptyPop": "Hakuna vikwazo: mapishi hutuma maandishi tu.",
   "vinStale": "Thamani uliyochagua haipo tena: inatumia \"{v}\".",
-  "ktSaveFailed": "Historia haikuweza kuhifadhiwa ({e}). Inajaribu tena."
+  "ktSaveFailed": "Historia haikuweza kuhifadhiwa ({e}). Inajaribu tena.",
+  "trayCopyLast": "Nakili jibu la mwisho"
 }

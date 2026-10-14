@@ -57,6 +57,7 @@
     "allow-save-recipes",
     "allow-get-recipe-constraints",
     "allow-save-recipe-constraints",
+    "allow-set-last-answer",
     "allow-check-for-update",
     "allow-install-update",
     "allow-quit-app",

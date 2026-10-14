@@ -347,5 +347,6 @@
   "vinNone": "Geen beperkingen",
   "vinEmptyPop": "Geen beperkingen: het recept verzendt alleen de tekst.",
   "vinStale": "De gekozen waarde bestaat niet meer: gebruik \"{v}\".",
-  "ktSaveFailed": "De geschiedenis kon niet worden opgeslagen ({e}). Nieuwe poging."
+  "ktSaveFailed": "De geschiedenis kon niet worden opgeslagen ({e}). Nieuwe poging.",
+  "trayCopyLast": "Laatste antwoord kopiëren"
 }

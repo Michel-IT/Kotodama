@@ -757,6 +757,12 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
                 _ => true,
             }
         });
+    // Claude's answer streams on a request the page keeps open before any send: its tap has to be in from the
+    // first byte of the page (see CLAUDE_TIMELINE_TAP_JS).
+    let builder = match crate::kotodama::early_provider_js(key) {
+        Some(js) => builder.initialization_script(js),
+        None => builder,
+    };
     // WebView2 args are set process-wide in lib.rs::run() (WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS),
     // so every webview shares identical arguments; setting them per-webview would blank it.
     let _child = window

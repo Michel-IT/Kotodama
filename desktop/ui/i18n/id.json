@@ -347,5 +347,6 @@
   "vinNone": "Tidak ada batasan",
   "vinEmptyPop": "Tidak ada batasan: resep hanya mengirim teks.",
   "vinStale": "Nilai yang dipilih tidak ada: menggunakan \"{v}\".",
-  "ktSaveFailed": "Riwayat tidak dapat disimpan ({e}). Mencoba lagi."
+  "ktSaveFailed": "Riwayat tidak dapat disimpan ({e}). Mencoba lagi.",
+  "trayCopyLast": "Salin jawaban terakhir"
 }
