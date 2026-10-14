@@ -3991,10 +3991,155 @@ pub fn kotodama_cancel(window: Window, broadcast_id: String) -> Result<(), Strin
     for key in stuck {
         pending_injections().lock().unwrap().remove(&key);
         chunk_bufs().lock().unwrap().remove(&(broadcast_id.clone(), key.clone()));
+        stop_provider_page(&window, &key);
         finish_key(&window, &broadcast_id, &key, "cancelled", "", false, "");
     }
     Ok(())
 }
+
+/// Structural CSS selectors of a provider's own "stop generating" control, tried in order before the generic
+/// search in `STOP_JS`. Measured live on 14/10/2026 (never the visible label, which follows the UI language):
+/// Claude `data-testid="chat-input-stop"`; Gemini's send button host gets the class `stop` while it writes.
+/// ChatGPT dropped `data-testid="stop-button"` that day (the control has only an aria-label), Grok and Perplexity
+/// have no stable attribute at all: those are found by the solid-square icon, in `STOP_JS`.
+fn stop_selectors(key: &str) -> &'static str {
+    match key {
+        "openai" => r#"button[data-testid="stop-button"]"#,
+        "anthropic" => r#"[data-testid="chat-input-stop"]"#,
+        "gemini" => r#".send-button.stop button"#,
+        "zai" => r#"button.rounded-full.bg-black"#,
+        "kimi" => r#".send-button-container.stop"#,
+        "meta" => r#"[data-testid="composer-stop-button"]"#,
+        _ => "",
+    }
+}
+
+/// Presses the provider's own stop control on its page and disarms our scripts there. Without this a "Stop" in
+/// Kotodama only closed Kotodama's card: the provider kept writing, and the next message's harvest saw the
+/// previous answer still changing and delivered that text as its own (measured: 19764 bytes for "reply only OK").
+/// A provider with no stop control found is logged, not guessed at.
+fn stop_provider_page(window: &Window, key: &str) {
+    let Some(wv) = window.get_webview(&browser::provider_label(key)) else { return };
+    browser::resume_provider(window, key, true);
+    let js = format!(
+        "var __kt_stop_sel = {}; var __kt_stop_key = {}; var __kt_stop_diag = {};{}",
+        serde_json::to_string(stop_selectors(key)).unwrap_or_else(|_| "\"\"".into()),
+        serde_json::to_string(key).unwrap_or_else(|_| "\"\"".into()),
+        crate::debug::enabled(),
+        STOP_JS
+    );
+    if wv.eval(&js).is_err() {
+        debug::log(format!("kotodama stop key={key}: eval failed"));
+    }
+}
+
+/// Runs in the provider page. (1) Disarms our own loops: the harvest and the fill loop each stop when their id is
+/// no longer the current one, so a send that has not gone out yet cannot go out after Stop. (2) Clicks the
+/// provider's stop control: the provider's structural selector, then any button whose test id names "stop", then
+/// the icon next to the composer: a sprite whose id names "stop" (Perplexity), or a single filled square (ChatGPT,
+/// Grok; copy/menu icons are drawn with several shapes, a send arrow is not filled).
+const STOP_JS: &str = r##"
+(function(){
+  try { window.__ktBid = '__ktCancelled'; window.__ktFillRun = '__ktCancelled'; } catch(e){}
+  function ok(b){
+    if (!b || b.offsetParent === null || b.disabled || b.getAttribute('aria-disabled') === 'true') return false;
+    var r = b.getBoundingClientRect(); return r.width > 0 && r.height > 0;
+  }
+  function firstVisible(sel){
+    if (!sel) return null;
+    try { var l = document.querySelectorAll(sel); for (var i = 0; i < l.length; i++) if (ok(l[i])) return l[i]; } catch(e){}
+    return null;
+  }
+  function composer(){
+    var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'], best = null;
+    for (var i = 0; i < sels.length; i++) {
+      var l = document.querySelectorAll(sels[i]);
+      for (var j = 0; j < l.length; j++) if (l[j].offsetParent !== null) best = l[j];
+      if (best) return best;
+    }
+    return null;
+  }
+  // Sprite icons (`<use href="#...-stop-filled">`, Perplexity) carry no shape to measure, but the symbol id is an
+  // internal name, not UI text, so it does not change with the language.
+  function stopNamedIcon(btn){
+    var u = btn.querySelectorAll('svg use');
+    for (var i = 0; i < u.length; i++) {
+      var h = (u[i].getAttribute('href') || u[i].getAttribute('xlink:href') || '');
+      if (/stop/i.test(h)) return true;
+    }
+    return false;
+  }
+  // True when the button's icon is ONE shape that fills (almost) its whole square box.
+  function solidSquare(b){
+    var svg = b.querySelector('svg'); if (!svg) return false;
+    var shapes = svg.querySelectorAll('path,rect,circle,polygon');
+    if (shapes.length !== 1) return false;
+    var e = shapes[0];
+    if (e.tagName === 'rect') { var w = +e.getAttribute('width'), h = +e.getAttribute('height'); return !!(w && h && Math.abs(w / h - 1) < .1); }
+    if (e.tagName !== 'path') return false;
+    try {
+      var bb = e.getBBox(); if (!bb.width || Math.abs(bb.width / bb.height - 1) > .15) return false;
+      var cv = document.createElement('canvas').getContext('2d'), P = new Path2D(e.getAttribute('d') || ''), n = 0;
+      for (var a = 0; a < 20; a++) for (var c = 0; c < 20; c++)
+        if (cv.isPointInPath(P, bb.x + (a + .5) * bb.width / 20, bb.y + (c + .5) * bb.height / 20)) n++;
+      return n / 400 > .88;
+    } catch(x){ return false; }
+  }
+  function find(){
+    var how = 'provider-selector', b = firstVisible(__kt_stop_sel);
+    if (!b) { how = 'testid'; b = firstVisible('button[data-testid*="stop" i], [role="button"][data-testid*="stop" i]'); }
+    // The icon search only once our message has gone out (or something is being written): at rest the slot holds
+    // other controls (voice, attach), and a square-ish one there must not be pressed (review of 14/10/2026).
+    if (!b && busy()) {
+      how = 'icon';
+      // The send/stop slot is often outside the editable element itself (ChatGPT: 166px to its right), so the box is
+      // the enclosing form when there is one, else the editable grown sideways.
+      var c = composer(), f = c && c.closest('form'), cr = c ? (f || c).getBoundingClientRect() : null;
+      if (cr) {
+        var all = document.querySelectorAll('button,[role="button"]');
+        for (var i = 0; i < all.length && !b; i++) {
+          var x = all[i]; if (!ok(x)) continue;
+          var r = x.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+          // Near the composer only: the page has other square-ish icons (sidebar, message actions).
+          if (cy < cr.top - 100 || cy > cr.bottom + 100 || cx < cr.left - 60 || cx > cr.right + (f ? 60 : 300)) continue;
+          if (stopNamedIcon(x) || solidSquare(x)) b = x;
+        }
+      }
+    }
+    return b ? { b: b, how: how } : null;
+  }
+  // a send in the last 20 s counts as "out": __ktSentAt stays from earlier turns, an old one must not open the search
+  function busy(){ return (window.__ktStreamOpen || 0) > 0 || (!!window.__ktSentAt && Date.now() - window.__ktSentAt < 20000); }
+  function report(msg){
+    try { if (__kt_stop_diag && window.__ktPush) window.__ktPush({ b: '__ktCancelled', k: __kt_stop_key, st: 'diag', d: 'STOP ' + msg }); } catch(e){}
+  }
+  function press(h){ try { h.b.click(); window.__ktStopHold = Date.now(); window.__ktStopHoldLogged = false; } catch(e){} }
+  var hit = find();
+  if (hit) press(hit);
+  report(hit ? 'clicked via ' + hit.how : 'no stop control found yet');
+  // A click is not always taken: Gemini ignores it while it is still "thinking" (measured 14/10/2026, Stop pressed
+  // ~10 s in: the control stayed and the whole essay arrived anyway). So the control is looked for again, every
+  // second, and pressed again while it is still there. It ends when it is gone, after 10 s, or as soon as another
+  // send/harvest takes over the page (it must never stop the NEXT answer).
+  // Pressed in the second between our send and the provider's first words, the control may not be there yet (measured
+  // on ChatGPT 14/10/2026, Stop at 1.5 s: nothing found, the essay arrived anyway): it is looked for again every
+  // second while our message is out, until it appears.
+  var tries = 0, iv = setInterval(function(){
+    if (window.__ktBid !== '__ktCancelled' || ++tries > 10) { clearInterval(iv); report('gave up after ' + (tries - 1) + ' retries'); return; }
+    var again = find();
+    if (!again) {
+      if (hit) { clearInterval(iv); report('stopped after ' + tries + ' retries'); }
+      else if (!busy()) { clearInterval(iv); report('nothing was sent: nothing to stop'); }
+      return;
+    }
+    if (!hit) { hit = again; press(again); report('clicked via ' + again.how + ' after ' + tries + ' s'); return; }
+    // an icon match is pressed again only while something is still being written: a control that merely looks like a
+    // stop button does not vanish after a click, and must not be pressed ten times
+    if (again.how === 'icon' && !((window.__ktStreamOpen || 0) > 0)) { clearInterval(iv); report('stream closed after ' + tries + ' retries'); return; }
+    try { again.b.click(); } catch(e){}
+  }, 1000);
+})();
+"##;
 
 #[cfg(test)]
 mod provider_hosts_tests {
@@ -4023,5 +4168,40 @@ mod provider_hosts_tests {
         assert!(!super::on_provider_site(Some(&u("https://accounts.google.com/v3/signin/identifier"))));
         assert!(!super::on_provider_site(Some(&u("https://accounts.x.ai/sign-in"))));
         assert!(!super::on_provider_site(None));
+    }
+}
+
+#[cfg(test)]
+mod stop_tests {
+    /// The stop control must be found without reading the interface language: no selector may name a visible label,
+    /// and the script may not look at the text of any element.
+    #[test]
+    fn stop_lookup_is_language_independent() {
+        for key in ["openai", "anthropic", "gemini", "grok", "perplexity", "zai", "kimi", "meta", "deepseek", "unknown"] {
+            let sel = super::stop_selectors(key);
+            assert!(!sel.contains("aria-label"), "{key}: {sel}");
+            assert!(!sel.contains(":contains"), "{key}: {sel}");
+        }
+        for banned in ["innerText", "textContent", "aria-label", "title="] {
+            assert!(!super::STOP_JS.contains(banned), "STOP_JS reads {banned}");
+        }
+    }
+
+    /// Stop must disarm the page's own loops (no send after Stop) before pressing the provider's control, and the
+    /// retry must end when another send takes the page over (it may never stop the next answer).
+    #[test]
+    fn stop_disarms_then_presses_and_retry_yields() {
+        let js = super::STOP_JS;
+        let disarm = js.find("window.__ktBid = '__ktCancelled'").expect("disarms the harvest");
+        assert!(js.contains("window.__ktFillRun = '__ktCancelled'"));
+        assert!(disarm < js.find(".click()").expect("presses the control"));
+        assert!(js.contains("window.__ktBid !== '__ktCancelled'"), "retry must yield to a newer injection");
+    }
+
+    /// Providers whose stop control has a stable structural hook keep it in the table (measured 14/10/2026).
+    #[test]
+    fn stop_table_has_measured_providers() {
+        assert_eq!(super::stop_selectors("anthropic"), r#"[data-testid="chat-input-stop"]"#);
+        assert_eq!(super::stop_selectors("gemini"), ".send-button.stop button");
     }
 }

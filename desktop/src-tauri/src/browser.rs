@@ -1399,6 +1399,20 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
     if (composerHasOurText(el)) {
       sawOurText = true;
       if (!send) { fdiag('exit: paste-only, text in place'); clearInterval(iv); return; }
+      // After "Ferma" some providers only stop drawing: the request keeps running on their server and the page drops
+      // (or never shows) a message sent into that conversation meanwhile (measured on Gemini, 14/10/2026: the new
+      // question vanished from the page and its answer never rendered). STOP_JS leaves `__ktStopHold`; the first
+      // send waits until no stream is open any more, for at most 25 s (under the ~30 s after which the page calls a
+      // send that never streamed a failure), and these ticks do not eat the fill budget.
+      if (submits === 0 && window.__ktStopHold) {
+        if ((window.__ktStreamOpen || 0) > 0 && Date.now() - window.__ktStopHold < 25000) {
+          ticks--;
+          if (!window.__ktStopHoldLogged) { window.__ktStopHoldLogged = true; fdiag('waiting for the stopped answer to finish on the provider side'); }
+          return;
+        }
+        fdiag('stopped answer finished, sending (waited ' + (Date.now() - window.__ktStopHold) + ' ms since Stop)');
+        window.__ktStopHold = 0; window.__ktStopHoldLogged = false;
+      }
       if (ticks - lastSubmit >= 3) {                          // throttle attempts (~1.2s)
         if (submits >= MAX_SUBMITS) { fdiag('exit: attempt cap'); clearInterval(iv); return; }
         lastSubmit = ticks; submits++;
