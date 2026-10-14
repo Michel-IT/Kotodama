@@ -347,6 +347,6 @@
   "vinNone": "无约束",
   "vinEmptyPop": "无约束：配方只发送文本。",
   "vinStale": "选择的值已消失：正在使用\"{v}\"。",
-  "ktSaveFailed": "无法保存历史记录（{e}）。正在重试。",
+  "ktSaveFailed": "无法保存历史记录：{e}。正在重试。",
   "trayCopyLast": "复制最后一个回答"
 }

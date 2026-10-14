@@ -484,7 +484,7 @@ fn handle_audio_push(window: &Window, key: &str, raw: &str) {
             // A finished file is saved as it came; raw packets are wrapped in an Ogg Opus stream first.
             let (bytes, ext, ms) = if !cap.file.is_empty() {
                 let ext = crate::audio::container_ext(&cap.file_ct).unwrap_or("bin");
-                (cap.file.clone(), ext, 0u64)
+                (cap.file.clone(), ext, crate::audio::file_duration_ms(ext, &cap.file))
             } else {
                 let serial = req.bytes().fold(0u32, |h, b| h.wrapping_mul(31).wrapping_add(b as u32));
                 match crate::audio::ogg_opus(&cap.packets, serial) {
@@ -1237,6 +1237,7 @@ const STREAM_WATCH_JS: &str = r##"
     if (typeof of !== 'function') return;
     window.fetch = function(input){
       var p = of.apply(this, arguments);
+      var arguments_ = arguments;
       try {
         if (!window.__ktSentAt) return p;              // nothing sent yet: not our stream
         var reqUrl = ''; try { reqUrl = (input && typeof input === 'object' && 'url' in input) ? input.url : String(input || ''); } catch(e){}
@@ -1248,7 +1249,11 @@ const STREAM_WATCH_JS: &str = r##"
             if (res.status === 401) { try { window.__ktAuthFail = Date.now(); } catch(e){} }
             // 429 after our send: the provider's own rate limit refused the message (captured on Mistral: "Messages
             // limit reached" over the composer). A limit, not a window to close and not a sign-in.
-            if (res.status === 429) { try { window.__ktRateLimited = Date.now(); } catch(e){} }
+            // Only a request that carries data can be the refusal of our message. Measured 14/10/2026 on ChatGPT: its
+            // history list answered 429 right after the send ("Unable to load history"), the card closed as a limit in
+            // 2 s, and the answer then arrived on the page.
+            var reqMethod = String((arguments_ && arguments_[1] && arguments_[1].method) || (input && typeof input === 'object' && input.method) || 'GET').toUpperCase();
+            if (res.status === 429 && reqMethod !== 'GET' && reqMethod !== 'HEAD') { try { window.__ktRateLimited = Date.now(); } catch(e){} }
             var ct = (res.headers && res.headers.get('content-type')) || '';
             if (!STREAMY.test(ct) || !res.body || typeof res.body.tee !== 'function') return res;
             var pair = res.body.tee();
@@ -1304,7 +1309,7 @@ const STREAM_WATCH_JS: &str = r##"
   function noteCaptcha(u){ try { if (window.__ktSentAt && CAPTCHA_URL.test(String(u || ''))) window.__ktCaptchaAt = window.__ktCaptchaAt || Date.now(); } catch(e){} }
   try {
     var XO = XMLHttpRequest.prototype.open, XS = XMLHttpRequest.prototype.send;
-    XMLHttpRequest.prototype.open = function(m, u){ try { this.__ktUrl = String(u || ''); } catch(e){} return XO.apply(this, arguments); };
+    XMLHttpRequest.prototype.open = function(m, u){ try { this.__ktUrl = String(u || ''); this.__ktMethod = String(m || 'GET').toUpperCase(); } catch(e){} return XO.apply(this, arguments); };
     XMLHttpRequest.prototype.send = function(){
       var xhr = this;
       try {
@@ -1318,7 +1323,7 @@ const STREAM_WATCH_JS: &str = r##"
                 if (all.length > xseen || xhr.readyState === 4) { var part = all.slice(xseen); xseen = all.length; netSend(xid, xhr.__ktUrl, part, xhr.readyState === 4); }
               }
               if (xhr.readyState === 2 && xhr.status === 401) { try { window.__ktAuthFail = Date.now(); } catch(e){} }
-              if (xhr.readyState === 2 && xhr.status === 429) { try { window.__ktRateLimited = Date.now(); } catch(e){} }
+              if (xhr.readyState === 2 && xhr.status === 429 && xhr.__ktMethod !== 'GET' && xhr.__ktMethod !== 'HEAD') { try { window.__ktRateLimited = Date.now(); } catch(e){} }
               if (xhr.readyState === 2 && !counted) {
                 var ct = xhr.getResponseHeader('content-type') || '';
                 if (STREAMY.test(ct) || STREAM_URL.test(xhr.__ktUrl || '')) { counted = true; xhr.__ktOpenBid = opened(); }
@@ -1704,6 +1709,24 @@ const HARVEST_JS: &str = r##"
   var CHROME_SEL = 'button, [role="button"], [role="toolbar"], [role="menu"], [role="menuitem"],'
     + ' [role="tab"], [role="tablist"], select, input, textarea, [data-testid="TurnStatus"],'
     + ' [data-testid="chatgpt-writing-block"] header';
+  // Is this node a control whose text is NOT part of the answer? A plain control carries one label ("Copy",
+  // "Monthly", "Reset"). A generated interface also builds its cards and section headers out of pressable
+  // boxes (measured 14/10/2026 on ChatGPT: plan cards with name, price and size; checklist area headers with
+  // their "0 / 5" counter): two or more separate blocks of text inside one control is content, and is kept.
+  // Structure only, no label is read.
+  var CONTROL_SEL = 'button, [role="button"], [role="tab"], [role="menuitem"]';
+  function isChrome(n){
+    try {
+      if (!n.matches(CHROME_SEL)) return false;
+      if (!n.matches(CONTROL_SEL)) return true;
+      var blocks = n.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li'), withText = 0;
+      for (var i = 0; i < blocks.length && withText < 2; i++) {
+        if (blocks[i].querySelector('p,div,h1,h2,h3,h4,h5,h6,li')) continue;   // a leaf block only
+        if ((blocks[i].textContent || '').trim()) withText++;
+      }
+      return withText < 2;
+    } catch(e){ return false; }
+  }
   // Reads the answer's text while SKIPPING that chrome. Hiding the controls and re-reading
   // innerText does not work -- measured: with three controls hidden the string came back byte for
   // byte identical, because innerText serves a value the engine had already computed. So the text
@@ -1724,7 +1747,7 @@ const HARVEST_JS: &str = r##"
         var c = node.childNodes[i];
         if (c.nodeType === 3) { out += c.textContent; continue; }
         if (c.nodeType !== 1) continue;
-        try { if (c.matches(CHROME_SEL)) continue; } catch(e){}
+        if (isChrome(c)) continue;
         var cs = null;
         try { cs = window.getComputedStyle(c); } catch(e){}
         if (cs && (cs.display === 'none' || cs.visibility === 'hidden')) continue;
@@ -1788,7 +1811,9 @@ const HARVEST_JS: &str = r##"
   // italic, inline code, headings, ordered/unordered lists, blockquotes, links.
   function elToMd(el){
     if (!el) return '';
-    function esc(s){ return (s||'').replace(/[*_`]/g, '\\$&'); }
+    // Only what the Markdown renderer reads as markup is escaped: an underscore inside a word (snake_case) is
+    // plain text for it, and a backslash there would show in every copy of the answer.
+    function esc(s){ return (s||'').replace(/[*`]/g, '\\$&'); }
     // Text as the page SHOWS it: whitespace in the HTML source (indentation, line breaks between tags) is
     // not content and collapses to one space, unless the element preserves it (white-space: pre*), where a
     // line break is a real line break. The style is read once per parent element.
@@ -1802,22 +1827,50 @@ const HARVEST_JS: &str = r##"
       return keep ? n.textContent : n.textContent.replace(/\s+/g, ' ');
     }
     var INLINE_TAGS = /^(a|b|strong|i|em|code|span|sup|sub|mark|u|s|small|abbr|time|label)$/;
+    // What the page does not show is not answer: Claude hides its in-answer buttons with CSS, and a control with two
+    // text blocks (isChrome lets those through as content) would otherwise end up in the text.
+    function hiddenEl(n){
+      if (n.hidden) return true;
+      try { var cs = getComputedStyle(n); return cs.display === 'none' || cs.visibility === 'hidden'; } catch(e){ return false; }
+    }
     function hasBlock(n){
       try { return !!n.querySelector('p,div,pre,table,ul,ol,blockquote,h1,h2,h3,h4,h5,h6,li'); } catch(e){ return false; }
     }
+    // Bold and italic markers hug the words: "**Pixel **" is not bold in Markdown, so spaces move outside.
+    function wrapMd(mark, inner){
+      var m = inner.match(/^(\s*)([\s\S]*?)(\s*)$/);
+      return m[2] ? m[1] + mark + m[2] + mark + m[3] : inner;
+    }
+    // ONE node. Taking the node's children instead (as the loop below does for a parent) dropped the node's own
+    // bold, italic and link whenever it sat directly under a paragraph (measured 14/10/2026: "a **b** [c](x)"
+    // came out "a b c").
+    function inlineOne(n){
+      if (n.nodeType === 3) return esc(visText(n));
+      if (n.nodeType !== 1 || hiddenEl(n)) return '';
+      var tag = n.tagName.toLowerCase();
+      // A figure the reader typed or the page filled in a table cell (a generated interface's editable weights)
+      // is the cell's content; every other control is chrome.
+      if (tag === 'input' && /^(text|number)$/i.test(n.type || 'text') && n.value && n.closest && n.closest('td,th')) return esc(n.value);
+      // Same rule as the block path: a control's label is not part of the answer.
+      if (isChrome(n)) return '';
+      if (tag === 'br') return '\n';
+      if (tag === 'code') return '`' + n.textContent + '`';
+      // ChatGPT's generated interfaces mark bold with an attribute on a span (no <strong>)
+      if (tag === 'strong' || tag === 'b' || (n.hasAttribute && n.hasAttribute('data-d-default-strong'))) return wrapMd('**', inlineMd(n));
+      if (tag === 'em' || tag === 'i') return wrapMd('*', inlineMd(n));
+      if (tag === 'a') { var href = n.getAttribute('href') || ''; return '[' + inlineMd(n) + '](' + href + ')'; }
+      var inner = inlineMd(n);
+      // Spans laid out as boxes (a flex row of "name" and "1200 g") have no space between them in the markup and
+      // came out glued ("Zaino 40-50 L1200 g"). Checked for plain spans/divs only, and never for the word
+      // spans of a streaming answer: the style lookup would run for every word on every preview.
+      if (inner && (tag === 'span' || tag === 'div') && !n.hasAttribute('data-d-text-flow')) {
+        try { if (/^(block|flex|grid|list-item|table|inline-block|inline-flex|inline-grid)/.test(getComputedStyle(n).display)) return ' ' + inner + ' '; } catch(e){}
+      }
+      return inner;
+    }
     function inlineMd(node){
       var out = '';
-      node.childNodes.forEach(function(n){
-        if (n.nodeType === 3) { out += esc(visText(n)); return; }
-        if (n.nodeType !== 1) return;
-        var tag = n.tagName.toLowerCase();
-        if (tag === 'br') { out += '\n'; return; }
-        if (tag === 'code') { out += '`' + n.textContent + '`'; return; }
-        if (tag === 'strong' || tag === 'b') { out += '**' + inlineMd(n) + '**'; return; }
-        if (tag === 'em' || tag === 'i') { out += '*' + inlineMd(n) + '*'; return; }
-        if (tag === 'a') { var href = n.getAttribute('href') || ''; out += '[' + inlineMd(n) + '](' + href + ')'; return; }
-        out += inlineMd(n);
-      });
+      node.childNodes.forEach(function(n){ out += inlineOne(n); });
       return out;
     }
     // Consecutive inline content (text, links, bold, <br>) is gathered into ONE paragraph and flushed when a
@@ -1826,15 +1879,15 @@ const HARVEST_JS: &str = r##"
     function blockMd(node, depth){
       var out = [], buf = '';
       function flush(){
-        var t = buf.replace(/[ \t]*\n[ \t]*/g, '\n').trim();
+        var t = buf.replace(/[ \t]*\n[ \t]*/g, '\n').replace(/ {2,}/g, ' ').trim();
         if (t) out.push(t);
         buf = '';
       }
       node.childNodes.forEach(function(n){
         if (n.nodeType === 3) { buf += esc(visText(n)); return; }
-        if (n.nodeType !== 1) return;
+        if (n.nodeType !== 1 || hiddenEl(n)) return;
         // Same rule as the plain-text path: a control's label is not part of the answer.
-        try { if (n.matches && n.matches(CHROME_SEL)) return; } catch(e){}
+        if (isChrome(n)) return;
         var tag = n.tagName.toLowerCase();
         if (tag === 'br') { buf += '\n'; return; }
         // Mistral renders tables as an interactive card (sortable headers, no <table> in the painted DOM) and
@@ -1851,7 +1904,7 @@ const HARVEST_JS: &str = r##"
         // Inline content stays in the current paragraph, unless it wraps blocks (custom elements such as
         // Gemini's wrappers around a table), which must be walked as blocks or the table is flattened.
         var isBlock = /^(h[1-6]|pre|blockquote|ul|ol|table|p|div)$/.test(tag) || (!INLINE_TAGS.test(tag) && hasBlock(n));
-        if (!isBlock) { buf += inlineMd(n); return; }
+        if (!isBlock) { buf += inlineOne(n); return; }
         flush();
         if (/^h[1-6]$/.test(tag)) { out.push('#'.repeat(+tag[1]) + ' ' + inlineMd(n).trim()); return; }
         if (tag === 'pre') {
@@ -1869,7 +1922,7 @@ const HARVEST_JS: &str = r##"
           n.querySelectorAll(':scope > li').forEach(function(li){
             i++;
             var marker = tag === 'ol' ? (i + '. ') : '- ';
-            out.push('  '.repeat(depth) + marker + inlineMd(li).trim());
+            out.push('  '.repeat(depth) + marker + inlineMd(li).replace(/ {2,}/g, ' ').trim());
           });
           return;
         }
@@ -1877,7 +1930,7 @@ const HARVEST_JS: &str = r##"
           var rows = n.querySelectorAll('tr'), lines = [];
           rows.forEach(function(tr, ri){
             var cells = tr.querySelectorAll('th,td');
-            var cellTxt = Array.prototype.map.call(cells, function(c){ return inlineMd(c).trim().replace(/\|/g, '\\|'); });
+            var cellTxt = Array.prototype.map.call(cells, function(c){ return inlineMd(c).replace(/\s*\n\s*/g, ' ').replace(/ {2,}/g, ' ').trim().replace(/\|/g, '\\|'); });
             lines.push('| ' + cellTxt.join(' | ') + ' |');
             if (ri === 0) lines.push('| ' + cellTxt.map(function(){ return '---'; }).join(' | ') + ' |');
           });
@@ -2125,6 +2178,22 @@ const HARVEST_JS: &str = r##"
     liveStop();   // before clearing __ktBid: the final answer supersedes any pending preview
     window.__ktBid = null;
     txt = txt || '';
+    // The text of a page-read answer IS its Markdown (tables as tables, headings, lists, bold): the walk that
+    // joins text nodes (cleanAnswerText) puts every table cell on a line of its own (measured 14/10/2026 on a
+    // ChatGPT price table). It wins only if it LOSES NO WORDS the plain reading has: every word of the plain text,
+    // counted with repetitions, must be in the Markdown, with an allowance of 1% and never more than 2 words (a lost
+    // card title is one or two words: a percentage alone hid it on a long answer). Otherwise the plain text stays
+    // and `md` goes as before.
+    if (md) {
+      var mdTxt = sanitizeAnswer(md);
+      if (mdTxt && txt) {
+        var wordsOf = function(x){ return x.match(/[\p{L}\p{N}]+/gu) || []; };
+        var have = Object.create(null), plainWords = wordsOf(txt), lost = 0;
+        wordsOf(mdTxt).forEach(function(w){ have[w] = (have[w] || 0) + 1; });
+        plainWords.forEach(function(w){ if (have[w] > 0) have[w]--; else lost++; });
+        if (lost <= 2 && lost * 100 <= plainWords.length) { txt = mdTxt; md = mdTxt; }
+      } else if (mdTxt) { txt = mdTxt; md = mdTxt; }
+    }
     var MAXC = 150000, trunc = 0;
     if (txt.length > MAXC) { txt = txt.slice(0, MAXC); trunc = 1; }
     var hasIpc = !!(window.__TAURI__ && window.__TAURI__.core && typeof window.__TAURI__.core.invoke === 'function');
@@ -3140,6 +3209,25 @@ pub fn on_result_url(window: &Window, u: &Url) {
     handle_push(window, bid, key, st, seq, total, data, len, trunc, None);
 }
 
+/// Length of an answer as it reads, without the addresses of its Markdown links: the page's text now comes as
+/// Markdown, and `[name](https://long/address)` is not more answer than `name`. The network-vs-page comparison
+/// (a network answer much shorter than the page is an incomplete one) must not be fooled by them.
+fn visible_len(md: &str) -> usize {
+    let mut n = md.len();
+    let mut rest = md;
+    while let Some(at) = rest.find("](") {
+        let after = &rest[at + 2..];
+        match after.find(')') {
+            Some(end) => {
+                n -= end + 2; // the "(", the address and the ")" after the "]"
+                rest = &after[end + 1..];
+            }
+            None => break,
+        }
+    }
+    n
+}
+
 /// Direct-IPC delivery from the provider webview (`window.__TAURI__.core.invoke('kotodama_push',
 /// ...)`), preferred by the injected script's `__ktPush` helper whenever the Tauri bridge is
 /// available in that page. Same wire shape as the navigation-sentinel fallback, just as real
@@ -3182,7 +3270,7 @@ pub fn kotodama_push(
         // Safety net: a network answer much SHORTER than what the page shows is incomplete (a reader that saw only
         // part of a multi-request answer -- measured on Claude with web search: 811 B from the network, 1553 B in
         // the page). Markdown makes the network text longer, never shorter, so below 70% the page wins.
-        let dom_len = d.as_deref().map(str::len).unwrap_or(0);
+        let dom_len = d.as_deref().map(visible_len).unwrap_or(0);
         let net = net_answer(&b, &k).filter(|a| {
             let ok = st != "done" || dom_len == 0 || a.text.len() * 10 >= dom_len * 7;
             if !ok {
@@ -4168,6 +4256,18 @@ mod provider_hosts_tests {
         assert!(!super::on_provider_site(Some(&u("https://accounts.google.com/v3/signin/identifier"))));
         assert!(!super::on_provider_site(Some(&u("https://accounts.x.ai/sign-in"))));
         assert!(!super::on_provider_site(None));
+    }
+}
+
+#[cfg(test)]
+mod visible_len_tests {
+    #[test]
+    fn link_addresses_do_not_count() {
+        assert_eq!(super::visible_len("plain text"), 10);
+        assert_eq!(super::visible_len("[Idealo](https://www.idealo.it/a/b.html) e"), "[Idealo] e".len());
+        assert_eq!(super::visible_len("| [A](http://x) | [B](http://y) |"), "| [A] | [B] |".len());
+        // an unclosed address is counted as it is
+        assert_eq!(super::visible_len("[A](http://x"), "[A](http://x".len());
     }
 }
 

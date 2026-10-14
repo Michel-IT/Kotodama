@@ -347,6 +347,6 @@
   "vinNone": "Pole piiranguid",
   "vinEmptyPop": "Pole piiranguid: retsept saadab ainult teksti.",
   "vinStale": "Valitud väärtus on kadunud: kasutatakse \"{v}\".",
-  "ktSaveFailed": "Ajalugu ei õnnestunud salvestada ({e}). Proovin uuesti.",
+  "ktSaveFailed": "Ajalugu ei õnnestunud salvestada: {e}. Proovin uuesti.",
   "trayCopyLast": "Kopeeri viimane vastus"
 }

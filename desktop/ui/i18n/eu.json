@@ -347,6 +347,6 @@
   "vinNone": "Murrizketarik gabe",
   "vinEmptyPop": "Murrizketarik gabe: errezeptak testua soilik bidaltzen du.",
   "vinStale": "Aukeratutako balioa desagertu da: \"{v}\" erabiltzen.",
-  "ktSaveFailed": "Ezin izan da historia gorde ({e}). Berriro saiatzen.",
+  "ktSaveFailed": "Ezin izan da historia gorde: {e}. Berriro saiatzen.",
   "trayCopyLast": "Kopiatu azken erantzuna"
 }

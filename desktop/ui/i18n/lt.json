@@ -347,6 +347,6 @@
   "vinNone": "Nėra apribojimų",
   "vinEmptyPop": "Nėra apribojimų: receptas siunčia tik tekstą.",
   "vinStale": "Pasirinkta reikšmė dingo: naudojama \"{v}\".",
-  "ktSaveFailed": "Istorijos išsaugoti nepavyko ({e}). Bandau dar kartą.",
+  "ktSaveFailed": "Istorijos išsaugoti nepavyko: {e}. Bandau dar kartą.",
   "trayCopyLast": "Kopijuoti paskutinį atsakymą"
 }

@@ -918,7 +918,7 @@ fn strip_block_directives(text: &str) -> String {
 /// capitalized one; `<svg>` also needs its `</svg>`; a closing tag goes only if its opening went. Nothing changes inside code (fenced or between backticks). While the answer is still arriving (`done`
 /// false) a component cut at the end is held back; on the finished answer an unclosed `<` is just text.
 fn strip_component_tags(text: &str, done: bool) -> String {
-    const KNOWN: [&str; 6] = ["Entity", "AsyncImageGroup", "AsyncImage", "Cite", "Link", "WritingBlock"];
+    const KNOWN: [&str; 7] = ["Entity", "AsyncImageGroup", "AsyncImage", "Cite", "Link", "WritingBlock", "CodeBlock"];
     const LAYOUT: [&str; 16] = [
         "row", "box", "grid", "grid-item", "title", "text", "caption", "icon", "stack", "col", "column", "card",
         "badge", "divider", "spacer", "svg",
@@ -926,6 +926,8 @@ fn strip_component_tags(text: &str, done: bool) -> String {
     if !text.contains('<') {
         return text.to_string();
     }
+    let fenced_text = codeblocks_to_fences(text);
+    let text = fenced_text.as_str();
     enum End {
         At(usize),
         Unfinished,
@@ -975,7 +977,8 @@ fn strip_component_tags(text: &str, done: bool) -> String {
         i
     }
     let mut out = String::with_capacity(text.len());
-    let mut open: Vec<String> = Vec::new(); // components taken out and not closed yet
+    // components taken out and not closed yet, each with what its closing tag leaves behind
+    let mut open: Vec<(String, String)> = Vec::new();
     let (mut fenced, mut inline_code, mut line_start) = (false, false, true);
     let mut i = 0;
     'scan: while i < text.len() {
@@ -1018,11 +1021,9 @@ fn strip_component_tags(text: &str, done: bool) -> String {
                     End::At(len) => {
                         let tag = &rest[..len];
                         if closing {
-                            if let Some(at) = open.iter().rposition(|n| n == name) {
+                            if let Some(at) = open.iter().rposition(|(n, _)| n == name) {
+                                out.push_str(&open[at].1);
                                 open.truncate(at);
-                                if name == "title" {
-                                    out.push_str("**");
-                                }
                                 i = skip_emptied_line(&mut out, text, i + len);
                                 continue;
                             }
@@ -1030,13 +1031,22 @@ fn strip_component_tags(text: &str, done: bool) -> String {
                             let self_closed = tag.ends_with("/>");
                             let closes_later = !self_closed && text[i + len..].contains(&format!("</{name}>"));
                             let capital = name.starts_with(|c: char| c.is_ascii_uppercase());
-                            let component = if name == "svg" {
+                            // `<caption>` arrives bare, on a line of its own, under a table (measured 14/10/2026); a
+                            // bare tag quoted in prose is never alone on its line.
+                            let bare_caption = name == "caption"
+                                && !has_attrs(tag)
+                                && (out.is_empty() || out.trim_end_matches([' ', '\t']).ends_with('\n'))
+                                && (closes_later || !done);
+                            let component = if bare_caption {
+                                true
+                            } else if name == "svg" {
                                 has_attrs(tag) && (self_closed || closes_later)
                             } else {
                                 // a name quoted in prose ("il componente <Link>") has no attributes: it stays
                                 (known || layout || (capital && self_closed)) && has_attrs(tag)
                             };
-                            if name == "svg" && !component && !done && has_attrs(tag) {
+                            // held back only while it can still be a drawing arriving: near the end, like any tag
+                            if name == "svg" && !component && !done && has_attrs(tag) && text.len() - i < 400 {
                                 break 'scan; // a drawing whose end has not arrived yet
                             }
                             if component {
@@ -1060,6 +1070,16 @@ fn strip_component_tags(text: &str, done: bool) -> String {
                                     }
                                     "Link" => match (attr(tag, "url"), attr(tag, "title")) {
                                         (Some(u), Some(t)) => out.push_str(&format!("[{t}]({u})")),
+                                        // `<Link url="...">Idealo</Link>` (measured 14/10/2026, a table of shops): the
+                                        // name is the body, so it becomes the text of the link; printing the address
+                                        // alone left "https://...htmlIdealo" glued together.
+                                        // on a finished answer only with its `</Link>` further on, or a lone "[" would stay
+                                        (Some(u), None) if !self_closed && (!done || text[i + len..].contains("</Link>")) => {
+                                            out.push('[');
+                                            open.push((name.to_string(), format!("]({u})")));
+                                            i = skip_emptied_line(&mut out, text, i + len);
+                                            continue;
+                                        }
                                         (Some(x), None) | (None, Some(x)) => out.push_str(x),
                                         (None, None) => {}
                                     },
@@ -1071,7 +1091,7 @@ fn strip_component_tags(text: &str, done: bool) -> String {
                                     _ => {}
                                 }
                                 if !self_closed {
-                                    open.push(name.to_string());
+                                    open.push((name.to_string(), if name == "title" { "**".to_string() } else { String::new() }));
                                 }
                                 i = skip_emptied_line(&mut out, text, i + len);
                                 continue;
@@ -1100,6 +1120,73 @@ fn strip_component_tags(text: &str, done: bool) -> String {
     kept.join("\n")
 }
 
+/// ChatGPT sends a code block as `<CodeBlock language="text" editable>` ... `</CodeBlock>` (measured 14/10/2026, an
+/// ASCII diagram): the page draws the box, the network has the tag. It becomes the fenced block it stands for, so
+/// the diagram keeps its box and its spacing. Only a tag that starts its line counts, outside any fence; a block
+/// still arriving is fenced from its first line.
+fn codeblocks_to_fences(text: &str) -> String {
+    if !text.contains("<CodeBlock") {
+        return text.to_string();
+    }
+    let mut out = String::with_capacity(text.len() + 16);
+    let (mut fenced, mut inside) = (false, false);
+    for raw in text.split_inclusive('\n') {
+        let mut line = raw;
+        if !inside {
+            if line.trim_start().starts_with("```") {
+                fenced = !fenced;
+            }
+            let t = line.trim_start();
+            if !fenced && t.starts_with("<CodeBlock") {
+                // end of the opening tag: its first '>' outside double quotes
+                let (mut quoted, mut end) = (false, None);
+                for (i, c) in t.char_indices() {
+                    match c {
+                        '"' => quoted = !quoted,
+                        '>' if !quoted => {
+                            end = Some(i);
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+                if let Some(end) = end {
+                    let tag = &t[..end];
+                    let lang = tag.find("language=\"").and_then(|a| {
+                        let v = &tag[a + 10..];
+                        v.find('"').map(|e| &v[..e])
+                    });
+                    out.push_str("```");
+                    out.push_str(lang.unwrap_or("").trim());
+                    out.push('\n');
+                    inside = true;
+                    let after = &t[end + 1..];
+                    line = after.strip_prefix("\r\n").or_else(|| after.strip_prefix('\n')).unwrap_or(after);
+                    if line.is_empty() {
+                        continue;
+                    }
+                }
+            }
+        }
+        if inside {
+            if let Some(at) = line.find("</CodeBlock>") {
+                out.push_str(&line[..at]);
+                if !out.ends_with('\n') {
+                    out.push('\n');
+                }
+                out.push_str("```");
+                out.push_str(&line[at + "</CodeBlock>".len()..]);
+                inside = false;
+            } else {
+                out.push_str(line);
+            }
+            continue;
+        }
+        out.push_str(line);
+    }
+    out
+}
+
 /// True when an answer, after `strip_component_tags`, still carries the source of a generated interface instead of
 /// text: template blocks (`{#each ...}`, `{#if ...}`), event handlers (`onClick=`), `GenUI.` calls, a closing tag,
 /// or a tag with attributes. Seen on ChatGPT on 13/10/2026 (a moving checklist with buttons, cards with favicons):
@@ -1120,6 +1207,11 @@ pub fn carries_generated_ui(text: &str) -> bool {
                 continue;
             }
             if ["{#each", "{#if", "{/each}", "{/if}", "{:else", "onClick=", "onChange=", "GenUI."].iter().any(|m| part.contains(m)) {
+                return true;
+            }
+            // A value the page fills in from its own data and the network never resolves: `{turn116917product7.displayed_price}`
+            // in a price table (measured 14/10/2026). The page has the real figure.
+            if part.match_indices("{turn").any(|(at, _)| part[at + 5..].starts_with(|c: char| c.is_ascii_digit())) {
                 return true;
             }
             let mut rest = part;
@@ -1887,6 +1979,66 @@ mod tests {
         // the finished answer has it all.
         assert_eq!(strip_component_tags("Se A<B e B<C allora A<C.", false), "Se A<B e B<C allora A");
         assert_eq!(strip_component_tags("Se A<B e B<C allora A<C.", true), "Se A<B e B<C allora A<C.");
+    }
+
+    #[test]
+    fn openai_codeblock_becomes_a_fence() {
+        // Measured 14/10/2026 (an ASCII diagram): the network has `<CodeBlock>`, the answer must keep its box.
+        let raw = "Ecco lo schema:\n\n<CodeBlock language=\"text\" editable>\n  +----+\n  | A  |\n  +----+\n</CodeBlock>\n\nSpiegazione <qui>.";
+        let want = "Ecco lo schema:\n\n```text\n  +----+\n  | A  |\n  +----+\n```\n\nSpiegazione <qui>.";
+        assert_eq!(strip_component_tags(raw, true), want);
+        assert!(!carries_generated_ui(&strip_component_tags(raw, true)));
+        // still arriving: fenced from its first line, nothing of the tag shows
+        assert_eq!(
+            strip_component_tags("Ecco:\n<CodeBlock language=\"python\">\nprint(1)\n", false),
+            "Ecco:\n```python\nprint(1)\n"
+        );
+        assert_eq!(strip_component_tags("Ecco:\n<CodeBl", false), "Ecco:\n");
+        // no language, and a tag quoted in a fence or in prose is left alone
+        assert_eq!(strip_component_tags("<CodeBlock>\nx<y\n</CodeBlock>", true), "```\nx<y\n```");
+        let quoted = "```html\n<CodeBlock language=\"x\">\n```\nfine";
+        assert_eq!(strip_component_tags(quoted, true), quoted);
+    }
+
+    #[test]
+    fn openai_link_with_body_keeps_its_name() {
+        // Measured 14/10/2026 (a table of shops): "https://...htmlMediaWorld" came out with the name glued on.
+        let row = "| WH-CH520 | <Link url=\"https://www.mediaworld.it/a.html?x=1\">MediaWorld</Link> |";
+        assert_eq!(strip_component_tags(row, true), "| WH-CH520 | [MediaWorld](https://www.mediaworld.it/a.html?x=1) |");
+        // still arriving: the name shows as it comes, the address is added when the tag closes
+        assert_eq!(strip_component_tags("| <Link url=\"https://a.it/\">Media", false), "| [Media");
+        // a self-closed one and one with a title keep their old form
+        assert_eq!(strip_component_tags("<Link url=\"https://a.it/\"/> e", true), "https://a.it/ e");
+        assert_eq!(strip_component_tags("<Link url=\"https://a.it/\" title=\"A\"/>", true), "[A](https://a.it/)");
+    }
+
+    #[test]
+    fn openai_bare_caption_under_a_table() {
+        let t = "| a | b |\n|---|---|\n| 1 | 2 |\n\n<caption>Prezzi IVA inclusa. <Cite refs={[\"x\"]}/></caption>\n\nFine.";
+        let out = strip_component_tags(t, true);
+        assert_eq!(out, "| a | b |\n|---|---|\n| 1 | 2 |\n\nPrezzi IVA inclusa.\n\nFine.");
+        assert!(!carries_generated_ui(&out));
+        // quoted mid-sentence it stays
+        let prose = "Il tag <caption> descrive una tabella e </caption> la chiude.";
+        assert_eq!(strip_component_tags(prose, true), prose);
+    }
+
+    #[test]
+    fn unresolved_page_values_mean_generated_interface() {
+        // Measured 14/10/2026: a price table whose cells were `{turn116917product7.displayed_price}`.
+        assert!(carries_generated_ui("| Pixel 10 | **{turn116917product7.displayed_price}** |"));
+        assert!(!carries_generated_ui("In Svelte scrivi {turnover} e {turn} qui."));
+        assert!(!carries_generated_ui("```\n{turn116917product7.price}\n```"));
+    }
+
+    #[test]
+    fn unclosed_svg_is_held_back_only_near_the_end() {
+        // An `<svg ...>` that never closes must not hide the rest of the answer until the delivery.
+        let tail = "x".repeat(600);
+        let t = format!("Schema: <svg viewBox=\"0 0 10 10\"> {tail}");
+        assert_eq!(strip_component_tags(&t, false), t);
+        // a drawing that has just started is still held back
+        assert_eq!(strip_component_tags("Schema: <svg viewBox=\"0 0 10 10\"> <g>", false), "Schema: ");
     }
 
     /// Frames of the shape captured on 13/10/2026 (conversation with a web search), reduced to what matters: the

@@ -347,6 +347,6 @@
   "vinNone": "Sense restriccions",
   "vinEmptyPop": "Sense restriccions: la recepta envia només el text.",
   "vinStale": "El valor seleccionat ha desaparegut: usant «{v}».",
-  "ktSaveFailed": "No s'ha pogut desar l'historial ({e}). Ho torno a provar.",
+  "ktSaveFailed": "No s'ha pogut desar l'historial: {e}. Ho torno a provar.",
   "trayCopyLast": "Copia l'última resposta"
 }

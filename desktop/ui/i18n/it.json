@@ -315,7 +315,7 @@
   "ktCtxNew": "Nuovo messaggio:",
   "ktRetry": "Riprova",
   "ktRetryAll": "Rimanda a chi non ha risposto",
-  "ktSaveFailed": "La cronologia non si è potuta salvare ({e}). Riprovo.",
+  "ktSaveFailed": "La cronologia non si è potuta salvare: {e}. Riprovo.",
   "trayCopyLast": "Copia l'ultima risposta",
   "setTabGeneral": "Generale",
   "setTabShortcuts": "Scorciatoie",

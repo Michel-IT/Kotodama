@@ -347,6 +347,6 @@
   "vinNone": "Brak ograniczeń",
   "vinEmptyPop": "Brak ograniczeń: przepis wysyła tylko tekst.",
   "vinStale": "Wybrana wartość już nie istnieje: używam \"{v}\".",
-  "ktSaveFailed": "Nie udało się zapisać historii ({e}). Ponawiam próbę.",
+  "ktSaveFailed": "Nie udało się zapisać historii: {e}. Ponawiam próbę.",
   "trayCopyLast": "Kopiuj ostatnią odpowiedź"
 }

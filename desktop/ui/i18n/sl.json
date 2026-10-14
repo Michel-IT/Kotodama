@@ -347,6 +347,6 @@
   "vinNone": "Ni omejitev",
   "vinEmptyPop": "Ni omejitev: recept pošlje samo besedilo.",
   "vinStale": "Izbrana vrednost je izginila: uporablja se \"{v}\".",
-  "ktSaveFailed": "Zgodovine ni bilo mogoče shraniti ({e}). Poskušam znova.",
+  "ktSaveFailed": "Zgodovine ni bilo mogoče shraniti: {e}. Poskušam znova.",
   "trayCopyLast": "Kopiraj zadnji odgovor"
 }

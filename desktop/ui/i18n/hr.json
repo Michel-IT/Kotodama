@@ -347,6 +347,6 @@
   "vinNone": "Nema ograničenja",
   "vinEmptyPop": "Nema ograničenja: recept šalje samo tekst.",
   "vinStale": "Odabrana vrijednost je nestala: koristi se \"{v}\".",
-  "ktSaveFailed": "Povijest se nije mogla spremiti ({e}). Pokušavam ponovno.",
+  "ktSaveFailed": "Povijest se nije mogla spremiti: {e}. Pokušavam ponovno.",
   "trayCopyLast": "Kopiraj zadnji odgovor"
 }

@@ -90,6 +90,42 @@ pub fn base64_decode(s: &str) -> Option<Vec<u8>> {
     Some(out)
 }
 
+/// Length in milliseconds of a finished audio file, read from its own frame headers, or 0 when the container is
+/// not one we can read (the player still plays it; only the length is unknown). ChatGPT's read-aloud is an AAC
+/// stream in ADTS frames (measured 14/10/2026: `ms` stayed 0 because only raw Opus packets had a length).
+pub fn file_duration_ms(ext: &str, bytes: &[u8]) -> u64 {
+    match ext {
+        "aac" => adts_duration_ms(bytes).unwrap_or(0),
+        _ => 0,
+    }
+}
+
+/// Duration of an ADTS AAC stream: every frame carries 1024 samples per raw data block, and its header holds
+/// the frame length, so the whole file is walked frame by frame (no estimate from the bitrate: an encoder with
+/// a variable rate would make that wrong). A stream that stops making sense stops the count where it is.
+pub fn adts_duration_ms(b: &[u8]) -> Option<u64> {
+    const RATES: [u64; 13] = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350];
+    let (mut i, mut samples, mut rate) = (0usize, 0u64, 0u64);
+    while i + 7 <= b.len() {
+        // sync word 0xFFF, layer 00
+        if b[i] != 0xFF || b[i + 1] & 0xF6 != 0xF0 {
+            break;
+        }
+        let r = *RATES.get(((b[i + 2] >> 2) & 0x0f) as usize)?;
+        if rate != 0 && r != rate {
+            break; // a different rate mid-stream is not the same file
+        }
+        rate = r;
+        let len = (((b[i + 3] & 3) as usize) << 11) | ((b[i + 4] as usize) << 3) | ((b[i + 5] >> 5) as usize);
+        if len < 7 {
+            break;
+        }
+        samples += 1024 * ((b[i + 6] & 3) as u64 + 1);
+        i += len;
+    }
+    (rate != 0 && samples > 0).then(|| samples * 1000 / rate)
+}
+
 /// Samples at 48 kHz carried by one Opus packet, read from its TOC byte (RFC 6716, section 3.1).
 pub fn packet_samples(p: &[u8]) -> Option<u64> {
     let toc = *p.first()?;
@@ -211,6 +247,24 @@ mod tests {
         assert_eq!(base64_decode("TQ==").unwrap(), b"M");
         assert!(base64_decode("T").is_none());
         assert!(base64_decode("T$==").is_none());
+    }
+
+    #[test]
+    fn adts_duration() {
+        // 100 frames of 24 kHz AAC-LC (sampling index 6), 20 bytes each: 100 * 1024 / 24000 = 4.266 s
+        let mut f = Vec::new();
+        for _ in 0..100 {
+            f.extend_from_slice(&[0xFF, 0xF9, 0x58, 0x40, 20 >> 3, ((20 & 7) << 5) as u8 | 0x1F, 0xFC]);
+            f.extend_from_slice(&[0u8; 13]);
+        }
+        assert_eq!(adts_duration_ms(&f), Some(4266));
+        assert_eq!(file_duration_ms("aac", &f), 4266);
+        // a file cut in the middle of a frame counts the whole frames before it
+        assert_eq!(adts_duration_ms(&f[..20 * 50 + 5]), Some(2133));
+        // not ADTS, or a container we cannot read: unknown, never a made-up length
+        assert_eq!(adts_duration_ms(b"ID3 this is not an ADTS stream"), None);
+        assert_eq!(file_duration_ms("mp3", &f), 0);
+        assert_eq!(file_duration_ms("aac", &[]), 0);
     }
 
     #[test]

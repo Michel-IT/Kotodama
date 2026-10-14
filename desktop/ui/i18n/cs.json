@@ -347,6 +347,6 @@
   "vinNone": "Žádná omezení",
   "vinEmptyPop": "Žádná omezení: recept posílá jen text.",
   "vinStale": "Vybraná hodnota již neexistuje: používám \"{v}\".",
-  "ktSaveFailed": "Historii se nepodařilo uložit ({e}). Zkouším to znovu.",
+  "ktSaveFailed": "Historii se nepodařilo uložit: {e}. Zkouším to znovu.",
   "trayCopyLast": "Kopírovat poslední odpověď"
 }
