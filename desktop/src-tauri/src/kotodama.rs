@@ -169,6 +169,13 @@ fn net_finish_armed() -> &'static Mutex<HashSet<(String, String)>> {
 /// turn stayed "in progress" until the next send cancelled it ("Interrupted" next to a visible answer).
 /// A provider changing its page must never again leave a finished answer hanging.
 const NET_FINISH_GRACE: std::time::Duration = std::time::Duration::from_millis(3000);
+/// The same fall-back for a provider whose stream has no end marker of its own (the transport closing is the only
+/// end there is), and only for the providers listed in `NET_ORPHAN_KEYS`: their page can fail to RENDER an answer
+/// the stream delivered whole. Measured 15/10/2026 on Gemini: after Ferma the next question was answered on the
+/// network in 2 s ("105") and the page never showed it, so the card waited out the 180 s budget. Much longer than
+/// the explicit-end grace because a closed transport is weaker evidence of a finished answer than a marker.
+const NET_ORPHAN_GRACE: std::time::Duration = std::time::Duration::from_millis(20000);
+const NET_ORPHAN_KEYS: &[&str] = &["gemini"];
 /// JS literal for `window.__ktNetUrl`: the provider's answer endpoint pattern, or null (reading from the
 /// network off for this provider, or disabled with KOTO_NO_NETREAD to compare against the DOM).
 fn net_url_js(key: &str) -> String {
@@ -188,6 +195,27 @@ fn net_work_dbg() -> &'static Mutex<HashMap<(String, String), String>> {
 fn net_work() -> &'static Mutex<HashMap<(String, String), bool>> {
     static S: OnceLock<Mutex<HashMap<(String, String), bool>>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(HashMap::new()))
+}
+/// The stream (reader id) whose "writing / stopped" state changed last, per (broadcast, provider). Several streams of
+/// one conversation can be open at once (Claude re-opens its timeline now and then, and the old one may stay open):
+/// each says what it saw, and the one that spoke last knows the present, see `pick_working`.
+fn net_work_owner() -> &'static Mutex<HashMap<(String, String), String>> {
+    static S: OnceLock<Mutex<HashMap<(String, String), String>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashMap::new()))
+}
+/// What the page is told about the provider writing, from the state of each open stream (`(id, working)`).
+/// An OR over the streams made the answer's end wait for ALL of them: a stream that opened mid-answer and never
+/// saw the idle state (or the old one left open) kept it "writing" after the one that follows the answer had
+/// said "stopped", and the end came 3 s late from the grace delivery (`NET_FINISH_GRACE`) instead of from the
+/// event. The stream that changed last wins while it still has a state; when it has none (closed while writing)
+/// the old rule applies.
+fn pick_working(states: &[(String, Option<bool>)], owner: Option<&str>) -> Option<bool> {
+    if let Some(o) = owner {
+        if let Some((_, Some(w))) = states.iter().find(|(id, _)| id == o) {
+            return Some(*w);
+        }
+    }
+    states.iter().filter_map(|(_, w)| *w).fold(None, |acc: Option<bool>, w| Some(acc.unwrap_or(false) || w))
 }
 /// Passes the provider's own "writing / stopped" signal, read from its stream, on to the DOM harvest -- for a
 /// provider whose answer stream stays open between answers (Claude's timeline), so no response opens or closes and
@@ -912,7 +940,20 @@ fn net_probe_js() -> &'static str {
 const RESPONSE_ADOPT_JS: &str = r##"
 (function(){
   if (window.__ktAdoptBody) return;
-  window.__ktAdoptBody = function adopt(res, stream){
+  // `onCancel` (optional): called when the page cancels ITS half of the tee. A tee only releases the connection
+  // when both halves are cancelled, so our own copy kept a stream the page had given up on downloading (a long-lived
+  // one, such as Claude's timeline, stayed open for good). Wrapping the page's half in a pass-through stream is how
+  // the cancel is seen; it changes nothing else (chunks, close and errors travel as they are).
+  window.__ktAdoptBody = function adopt(res, stream, onCancel){
+    if (typeof onCancel === 'function' && typeof ReadableStream === 'function') {
+      try {
+        var rd = stream.getReader();
+        stream = new ReadableStream({
+          pull: function(c){ return rd.read().then(function(r){ if (r.done) c.close(); else c.enqueue(r.value); }); },
+          cancel: function(reason){ try { onCancel(reason); } catch(e){} return rd.cancel(reason); }
+        });
+      } catch(e){}
+    }
     var init = { status: res.status, statusText: res.statusText, headers: res.headers };
     var inner = new Response(stream, init);
     try {
@@ -971,7 +1012,7 @@ const CLAUDE_TIMELINE_TAP_JS: &str = r##"
                 pump();
               }, function(){ tell(null, true); });
             })();
-            return window.__ktAdoptBody(res, pair[1]);
+            return window.__ktAdoptBody(res, pair[1], function(){ try { mine.cancel(); } catch(e){} });
           } catch(e) { return res; }
         });
       } catch(e) { return p; }
@@ -1205,17 +1246,25 @@ const STREAM_WATCH_JS: &str = r##"
   var NET_URL = null;
   try { if (window.__ktNetUrl) NET_URL = new RegExp(window.__ktNetUrl); } catch(e){}
   var netSeq = 0, netQueue = {}, netTimer = null;
+  // Stream ids carry a per-document tag: the counters restart at 1 in every document, and a reload in the middle of
+  // a send made the new page's first stream take the id of the old page's one, so the reader of the old stream
+  // (half a frame in its buffer) was fed the new stream's bytes (measured 15/10/2026 on Claude).
+  var DOC = Math.random().toString(36).slice(2, 7);
   function netWanted(u){ return !!(NET_URL && window.__ktSentAt && NET_URL.test(String(u || ''))); }
   function netFlush(){
     netTimer = null;
     var ids = Object.keys(netQueue);
     for (var i = 0; i < ids.length; i++) {
       var q = netQueue[ids[i]]; delete netQueue[ids[i]];
-      try { window.__TAURI__.core.invoke('kotodama_push', { b: __kt_bid, k: __kt_key, st: 'net', d: JSON.stringify({ id: ids[i], url: q.url, data: q.data, end: q.end }) }).catch(function(){}); } catch(e){}
+      // The send the stream belongs to, fixed when it OPENED: a stopped answer's stream can keep arriving while
+      // the next message is already out, and under the page-wide current id its frames were counted as the NEW
+      // answer (measured 15/10/2026 on Gemini: the essay stopped with Ferma came back as the answer to the next
+      // question). Rust ignores frames of a send that is no longer owed.
+      try { window.__TAURI__.core.invoke('kotodama_push', { b: q.bid || __kt_bid, k: __kt_key, st: 'net', d: JSON.stringify({ id: ids[i], url: q.url, data: q.data, end: q.end }) }).catch(function(){}); } catch(e){}
     }
   }
-  function netSend(id, url, data, end){
-    var q = netQueue[id] || (netQueue[id] = { url: String(url || ''), data: '', end: false });
+  function netSend(id, url, data, end, bid){
+    var q = netQueue[id] || (netQueue[id] = { url: String(url || ''), data: '', end: false, bid: bid || __kt_bid });
     if (data) q.data += data;
     if (end) { q.end = true; if (netTimer) clearTimeout(netTimer); netFlush(); return; }
     if (!netTimer) netTimer = setTimeout(netFlush, 60);
@@ -1230,7 +1279,7 @@ const STREAM_WATCH_JS: &str = r##"
     return btoa(s);
   }
   window.__ktTlSink = function(sid, bytes, end, url){
-    try { if (netWanted(url)) netSend('t' + sid, url, bytes ? b64(bytes) + '\n' : '', !!end); } catch(e){}
+    try { if (netWanted(url)) netSend('t' + DOC + sid, url, bytes ? b64(bytes) + '\n' : '', !!end); } catch(e){}
   };
   try {
     var of = window.fetch;
@@ -1270,19 +1319,19 @@ const STREAM_WATCH_JS: &str = r##"
             var sb = window.__ktBid;
             try { window.__ktStreamOpen = (window.__ktStreamOpen || 0) + 1; } catch(e){}
             try { window.__ktStreamEver = (window.__ktStreamEver || 0) + 1; } catch(e){}
-            var fwd = netWanted(reqUrl), nid = fwd ? 'f' + (++netSeq) : '', dec = fwd ? new TextDecoder() : null;
+            var fwd = netWanted(reqUrl), nid = fwd ? 'f' + DOC + (++netSeq) : '', dec = fwd ? new TextDecoder() : null, nbid = __kt_bid;
             // The answer stream of a provider we read from the network, counted apart: the harvest must not call a
             // silent page "finished" while it is open (see `netOpen` in the harvest).
             if (fwd) { try { window.__ktNetOpen = (window.__ktNetOpen || 0) + 1; } catch(e){} }
-            function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} if (fwd) { try { window.__ktNetOpen = Math.max(0, (window.__ktNetOpen || 1) - 1); } catch(e){} try { netSend(nid, reqUrl, dec.decode(), true); } catch(e){} } ended(sb); }
+            function closed(){ try { window.__ktStreamOpen = Math.max(0, (window.__ktStreamOpen || 1) - 1); } catch(e){} if (fwd) { try { window.__ktNetOpen = Math.max(0, (window.__ktNetOpen || 1) - 1); } catch(e){} try { netSend(nid, reqUrl, dec.decode(), true, nbid); } catch(e){} } ended(sb); }
             (function pump(){
               mine.read().then(function(r){
                 if (r.done) { closed(); return; }
-                if (fwd) { try { netSend(nid, reqUrl, dec.decode(r.value, { stream: true }), false); } catch(e){} }
+                if (fwd) { try { netSend(nid, reqUrl, dec.decode(r.value, { stream: true }), false, nbid); } catch(e){} }
                 pump();
               }, function(){ closed(); });
             })();
-            return window.__ktAdoptBody(res, pair[1]);
+            return window.__ktAdoptBody(res, pair[1], function(){ try { mine.cancel(); } catch(e){} });
           } catch(e) { return res; }
         });
       } catch(e) { return p; }
@@ -1315,12 +1364,12 @@ const STREAM_WATCH_JS: &str = r##"
       try {
         noteCaptcha(xhr.__ktUrl);
         if (window.__ktSentAt) {
-          var counted = false, xfwd = netWanted(xhr.__ktUrl), xid = xfwd ? 'x' + (++netSeq) : '', xseen = 0;
+          var counted = false, xfwd = netWanted(xhr.__ktUrl), xid = xfwd ? 'x' + DOC + (++netSeq) : '', xseen = 0, xbid = __kt_bid;
           xhr.addEventListener('readystatechange', function(){
             try {
               if (xfwd && xhr.readyState >= 3 && (xhr.responseType === '' || xhr.responseType === 'text')) {
                 var all = xhr.responseText || '';
-                if (all.length > xseen || xhr.readyState === 4) { var part = all.slice(xseen); xseen = all.length; netSend(xid, xhr.__ktUrl, part, xhr.readyState === 4); }
+                if (all.length > xseen || xhr.readyState === 4) { var part = all.slice(xseen); xseen = all.length; netSend(xid, xhr.__ktUrl, part, xhr.readyState === 4, xbid); }
               }
               if (xhr.readyState === 2 && xhr.status === 401) { try { window.__ktAuthFail = Date.now(); } catch(e){} }
               if (xhr.readyState === 2 && xhr.status === 429 && xhr.__ktMethod !== 'GET' && xhr.__ktMethod !== 'HEAD') { try { window.__ktRateLimited = Date.now(); } catch(e){} }
@@ -1344,7 +1393,7 @@ const STREAM_WATCH_JS: &str = r##"
         try {
           // Message-level protocol markers of a response lifecycle on a long-lived socket (Grok): the socket
           // itself stays open between answers, so only these events say "started" and "finished".
-          var wid = 'w' + (++netSeq);
+          var wid = 'w' + DOC + (++netSeq);
           ws.addEventListener('message', function(ev){
             try {
               if (!window.__ktSentAt || typeof ev.data !== 'string') return;
@@ -1831,8 +1880,61 @@ const HARVEST_JS: &str = r##"
       return q.length > 0 && q.slice(0, 60) === SENT_SQ.slice(0, 60);
     } catch(e){ return false; }
   }
+  // The send is marked as out (Rust's mark after the fill pressed Enter, or a re-injection that knows it) but the
+  // page we are on never shows our message and no response stream ever opened: the send was lost with the page
+  // it went from (measured 15/10/2026 on Perplexity: the tab was taken to a sign-in site and back 3.5 s after the
+  // send; the fresh page held no conversation and its own heading, "You're incognito", was delivered as "done").
+  // Whatever such a page shows is not a reply. The message is looked for by its first 40 characters, whitespace
+  // collapsed (a long message can be shown cut, never from another place than its start), anywhere in the page.
+  // It only counts as lost after LOST_SEND_MS of the page being loaded and in this state, so a conversation that
+  // takes its time to render its history is not mistaken for it. Never resent: Rust's "one send" rule stays.
+  var LOST_SEND_MS = 10000, ownSeen = false, lostSince = 0, lostCheckedAt = 0, lostState = '';
+  // Letters and digits only, lower case: the page may show our message with its Markdown rendered (`# `, `**`,
+  // `1.`, code fences) or its punctuation changed, which a literal comparison of the first characters mistook for
+  // "not there" (a visible answer was then discarded). A ~20-character slice from the MIDDLE of the message,
+  // normalised the same way, is looked for in the page's text.
+  function alnum(x){ return String(x || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ''); }
+  function ownProbe(){
+    var n = alnum(SENT);
+    if (n.length <= 20) return n;
+    var at = Math.floor((n.length - 20) / 2);
+    return n.slice(at, at + 20);
+  }
+  // 'na' = the guard does not apply, 'ok' = our message is on the page, 'box' = still in the composer (the page is
+  // taking its time: the old 30 s path decides, this guard never counts), 'missing' = nowhere.
+  function ownMsgState(){
+    try {
+      if (ownSeen) return 'ok';
+      if (!guardReady || REGEN || !SENT_SQ || window.__ktStreamEver || (window.__ktStreamOpen || 0) > 0
+          || !(KNOWN_SENT || window.__ktEnterPressed)) { lostSince = 0; return 'na'; }
+      var now = Date.now();
+      if (now - lostCheckedAt < 500) return lostState;
+      lostCheckedAt = now;
+      var st = 'missing';
+      if (document.readyState !== 'complete') st = 'na';
+      else {
+        var probe = ownProbe(), cv = composerVal();
+        // our message still sitting in the composer is not "on the page" (a rich composer is part of body.innerText)
+        if (cv !== null && probe && alnum(cv).indexOf(probe) !== -1) st = 'box';
+        else if (probe && alnum(document.body ? document.body.innerText : '').indexOf(probe) !== -1) { ownSeen = true; st = 'ok'; }
+        // A sign-in wall or control on the page is the better explanation: the message is not lost "somewhere", the
+        // provider wants a sign-in. Reported as that (see lostLogin), never as a failed send, and never before the
+        // login detection's own checks have had their time.
+        else if (loginHintPresent() || authWallPresent()) st = 'login';
+      }
+      if (st !== 'missing' && st !== 'login') lostSince = 0; else if (!lostSince) lostSince = now;
+      if (st !== lostState) { try { fdiagArm('OWNMSG ' + lostState + '->' + st + ' known=' + KNOWN_SENT + ' enter=' + !!window.__ktEnterPressed + ' ever=' + (window.__ktStreamEver || 0)); } catch(e){} }
+      return (lostState = st);
+    } catch(e){ return 'na'; }
+  }
+  function ownMessageMissing(){ var s = ownMsgState(); return s === 'missing' || s === 'box' || s === 'login'; }
+  // The message is nowhere on a page that shows a sign-in: that is a missing login (the block the user is shown).
+  function lostLogin(){ return ownMsgState() === 'login' && lostSince > 0 && Date.now() - lostSince >= LOST_SEND_MS; }
+  // Lost only when it has been nowhere for LOST_SEND_MS. Never while the message sits in the composer: the fill loop
+  // may still be pressing Enter and the provider may yet take it.
+  function sendLost(){ return ownMsgState() === 'missing' && lostSince > 0 && Date.now() - lostSince >= LOST_SEND_MS; }
   function answerTxt(){
-    if (heldBeforeSend() || ownTextStillInComposer()) return '';
+    if (heldBeforeSend() || ownTextStillInComposer() || ownMessageMissing()) return '';
     var el = getAnswerEl();
     return sanitizeAnswer(el ? (el.innerText || '') : '');
   }
@@ -2252,6 +2354,15 @@ const HARVEST_JS: &str = r##"
     if (window.__ktBid !== BID) return;
     liveStop();   // before clearing __ktBid: the final answer supersedes any pending preview
     window.__ktBid = null;
+    // The send is over: nothing the page streams from here on belongs to us. `__ktSentAt` is what the stream
+    // observers test before copying anything to Rust, so left set it kept forwarding every chunk of Claude's
+    // long-lived timeline for as long as the page lived (measured 15/10/2026: still set 28 s after the delivery),
+    // and it made a later Ferma think a send was out. The next send sets it again when it presses Enter.
+    try { window.__ktSentAt = 0; } catch(e){}
+    // A send declared failed must not go out afterwards: the fill loop presses Enter up to 25 times and stops only
+    // on its own run id, which a delivery did not touch (the message could leave 12-30 s later while the card said
+    // "failed", and a retry then posted it twice).
+    if (st === 'sendfail') { try { window.__ktFillRun = '__ktCancelled'; } catch(e){} }
     txt = txt || '';
     // The text of a page-read answer IS its Markdown (tables as tables, headings, lists, bold): the walk that
     // joins text nodes (cleanAnswerText) puts every table cell on a line of its own (measured 14/10/2026 on a
@@ -2369,8 +2480,11 @@ const HARVEST_JS: &str = r##"
     // Blocked: tell the UI, keep watching, and stop the clocks -- the time the user spends solving a check
     // or signing in must not run out the budgets below.
     var blk = currentBlock(armTries);
+    if (!blk && lostLogin()) blk = 'login';
     if (syncBlock(blk)) { clearInterval(armIv); return; }
-    if (blk) { armT0 = Date.now(); if (armTries > 40) armTries = 40; return; }
+    if (blk) { armT0 = Date.now(); if (blk !== 'login') lostSince = 0; if (armTries > 40) armTries = 40; return; }
+    // The message we sent is not on this page and nothing streamed: the send was lost (see ownMessageMissing).
+    if (sendLost()) { clearInterval(armIv); fdiagArm('EXIT send-lost (arming) known=' + KNOWN_SENT + ' enter=' + !!window.__ktEnterPressed + ' url=' + location.pathname); setTimeout(function(){ deliver('sendfail', ''); }, 300); return; }
     // Arms the stream watcher as soon as the message is known to be out. Needed because on `?q=`
     // providers the URL itself sends, so our fill script exits without ever pressing Enter and never
     // sets `__ktSentAt` -- which left exactly the fastest providers falling back to text stability
@@ -2858,9 +2972,11 @@ const HARVEST_JS: &str = r##"
       // A page without a composer that never took our message can show text that is not an answer (Copilot's
       // notice), so for that case the block check runs even with text on the page.
       var hblk = (txt && (window.__ktEnterPressed || window.__ktStreamEver || composerVal() !== null)) ? '' : currentBlock(polls);
+      if (!hblk && lostLogin()) hblk = 'login';
       if (!hblk && polls > 45 && !txt && !window.__ktStreamEver && loginHintPresent()) hblk = 'login';
       if (syncBlock(hblk)) { clearInterval(iv); return; }
-      if (hblk) { t0 = Date.now(); return; }
+      if (hblk) { t0 = Date.now(); if (hblk !== 'login') lostSince = 0; return; }
+      if (sendLost()) { clearInterval(iv); fdiagArm('EXIT send-lost (harvest) known=' + KNOWN_SENT + ' enter=' + !!window.__ktEnterPressed + ' url=' + location.pathname); deliver('sendfail', ''); return; }
       // Signed out: say so early instead of waiting out the whole budget. Measured: the decision
       // is taken HERE, not in the arming loop (EXIT harvest-180s txtLen=0 hint=true), because the
       // page does carry some text that hands the arming loop over before the answer exists. Three
@@ -3025,7 +3141,7 @@ const TEMP_PROBE_JS: &str = r##"
 fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp: bool) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     let prelude = format!(
-        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktLimitHit = 0; window.__ktRateLimited = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url}; window.__ktFreshBaseline = {fresh_baseline};",
+        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktLimitHit = 0; window.__ktRateLimited = 0; window.__ktSentAt = 0; window.__ktEnterPressed = false; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url}; window.__ktFreshBaseline = {fresh_baseline};",
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
         serde_json::to_string(key).map_err(|e| e.to_string())?,
         serde_json::to_string(ans).map_err(|e| e.to_string())?,
@@ -3164,6 +3280,7 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     net_readers().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_partials().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_work().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    net_work_owner().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_work_dbg().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_finish_armed().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     // Total wall-clock from the broadcast being registered to the answer being handed to the UI. Read
@@ -3231,9 +3348,9 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
 /// `NET_FINISH_GRACE` of the stream's end. `finish_key` hands out one outcome per (broadcast, provider),
 /// so whichever comes first wins and the other is dropped; the text is read again at the deadline because
 /// the stream may have grown since it ended (a closing frame after the end marker).
-fn schedule_net_finish(window: Window, bid: String, key: String) {
+fn schedule_net_finish(window: Window, bid: String, key: String, grace: std::time::Duration) {
     std::thread::spawn(move || {
-        std::thread::sleep(NET_FINISH_GRACE);
+        std::thread::sleep(grace);
         let still_pending = broadcasts().lock().unwrap().get(&bid).map(|bc| bc.pending.contains(&key)).unwrap_or(false);
         if !still_pending {
             return; // the page delivered it: the normal path
@@ -3256,7 +3373,7 @@ fn schedule_net_finish(window: Window, bid: String, key: String) {
         }
         debug::log(format!(
             "kotodama NET-FINISH key={key} bid={bid}: stream ended, page did not deliver within {} ms, answer taken from the stream",
-            NET_FINISH_GRACE.as_millis()
+            grace.as_millis()
         ));
         finish_key(&window, &bid, &key, "done", &text, false, &text);
     });
@@ -3545,13 +3662,26 @@ fn handle_push(
                 }
             }
         }
+        let mut orphan_finish = false;
         if let Some(r) = readers.get_mut(&id) {
+            let before = r.working();
             if !chunk.is_empty() {
                 r.feed(chunk);
             }
             if end {
                 r.end();
                 debug::log(format!("kotodama NET stream closed key={key} id={id} text={}B done={}", r.answer().text.len(), r.answer().done));
+            }
+            let after = r.working();
+            if after.is_some() && after != before {
+                net_work_owner().lock().unwrap().insert((bid.clone(), key.clone()), id.clone());
+            }
+            // A stream without an end marker of its own closed with an answer: if the page never delivers it,
+            // the stream does, much later (see NET_ORPHAN_GRACE).
+            if end && !r.done_is_explicit() && r.answer().done && !r.answer().text.trim().is_empty()
+                && NET_ORPHAN_KEYS.contains(&key.as_str())
+            {
+                orphan_finish = true;
             }
         }
         // Live preview straight from the provider's own stream: the text as the model writes it, in its own
@@ -3564,7 +3694,9 @@ fn handle_push(
         // truncated answer as complete.
         let stream_done =
             readers.values().any(|r| r.done_is_explicit() && r.answer().done && !r.answer().text.trim().is_empty());
-        let work = readers.values().filter_map(|r| r.working()).fold(None, |acc: Option<bool>, w| Some(acc.unwrap_or(false) || w));
+        let owner = net_work_owner().lock().unwrap().get(&(bid.clone(), key.clone())).cloned();
+        let states: Vec<(String, Option<bool>)> = readers.iter().map(|(i, r)| (i.clone(), r.working())).collect();
+        let work = pick_working(&states, owner.as_deref());
         if debug::enabled() && readers.values().any(|r| r.working().is_some()) {
             let mut v: Vec<String> = readers.iter().map(|(i, r)| format!("{i}={:?}/{}", r.working(), r.answer().done)).collect();
             v.sort();
@@ -3581,7 +3713,9 @@ fn handle_push(
         // an entry that nothing removes (finish_key, which clears it, has already run).
         let still_owed = broadcasts().lock().unwrap().get(&bid).map(|bc| bc.pending.contains(&key)).unwrap_or(false);
         if stream_done && still_owed && net_finish_armed().lock().unwrap().insert((bid.clone(), key.clone())) {
-            schedule_net_finish(window.clone(), bid.clone(), key.clone());
+            schedule_net_finish(window.clone(), bid.clone(), key.clone(), NET_FINISH_GRACE);
+        } else if orphan_finish && still_owed && net_finish_armed().lock().unwrap().insert((bid.clone(), key.clone())) {
+            schedule_net_finish(window.clone(), bid.clone(), key.clone(), NET_ORPHAN_GRACE);
         }
         if !text.trim().is_empty() {
             let now = std::time::Instant::now();
@@ -4318,6 +4452,8 @@ pub fn kotodama_cancel(window: Window, broadcast_id: String) -> Result<(), Strin
 fn stop_selectors(key: &str) -> &'static str {
     match key {
         "openai" => r#"button[data-testid="stop-button"]"#,
+        // (Claude's other layout has no test id: STOP_JS looks for its `aria-keyshortcuts="Escape"` button NEXT TO
+        // THE COMPOSER, see `find()`.)
         "anthropic" => r#"[data-testid="chat-input-stop"]"#,
         "gemini" => r#".send-button.stop button"#,
         "zai" => r#"button.rounded-full.bg-black"#,
@@ -4401,6 +4537,23 @@ const STOP_JS: &str = r##"
   function find(){
     var how = 'provider-selector', b = firstVisible(__kt_stop_sel);
     if (!b) { how = 'testid'; b = firstVisible('button[data-testid*="stop" i], [role="button"][data-testid*="stop" i]'); }
+    // Claude's layout without a test id (15/10/2026, served side by side with the other): the interrupt button
+    // carries `aria-keyshortcuts="Escape"` (a protocol attribute, not a label). Only in the composer's own band,
+    // beside the field, and never inside a dialog or panel: other controls advertise Escape too (close, deny).
+    if (!b) {
+      how = 'shortcut';
+      var cz = composer(), czr = cz ? cz.getBoundingClientRect() : null;
+      if (czr) {
+        var ks = document.querySelectorAll('button[aria-keyshortcuts="Escape"]');
+        for (var ki = 0; ki < ks.length && !b; ki++) {
+          var kb = ks[ki]; if (!ok(kb)) continue;
+          if (kb.closest('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog, aside, nav')) continue;
+          var kr = kb.getBoundingClientRect(), ky = kr.top + kr.height / 2, kx = kr.left + kr.width / 2;
+          if (ky < czr.top - 40 || ky > czr.bottom + 60 || kx < czr.left - 20 || kx > czr.right + 20) continue;
+          b = kb;
+        }
+      }
+    }
     // The icon search only once our message has gone out (or something is being written): at rest the slot holds
     // other controls (voice, attach), and a square-ish one there must not be pressed (review of 14/10/2026).
     if (!b && busy()) {
@@ -4438,7 +4591,8 @@ const STOP_JS: &str = r##"
   // on ChatGPT 14/10/2026, Stop at 1.5 s: nothing found, the essay arrived anyway): it is looked for again every
   // second while our message is out, until it appears.
   var tries = 0, iv = setInterval(function(){
-    if (window.__ktBid !== '__ktCancelled' || ++tries > 10) { clearInterval(iv); report('gave up after ' + (tries - 1) + ' retries'); return; }
+    if (window.__ktBid !== '__ktCancelled') { clearInterval(iv); report('next send took the page over after ' + tries + ' retries'); return; }
+    if (++tries > 10) { clearInterval(iv); report('gave up after ' + (tries - 1) + ' retries'); return; }
     var again = find();
     if (!again) {
       if (hit) { clearInterval(iv); report('stopped after ' + tries + ' retries'); }
@@ -4575,6 +4729,75 @@ mod stop_tests {
     #[test]
     fn stop_table_has_measured_providers() {
         assert_eq!(super::stop_selectors("anthropic"), r#"[data-testid="chat-input-stop"]"#);
+        assert!(super::STOP_JS.contains(r#"button[aria-keyshortcuts="Escape"]"#));
         assert_eq!(super::stop_selectors("gemini"), ".send-button.stop button");
+    }
+}
+
+#[cfg(test)]
+mod net_work_tests {
+    use super::pick_working;
+    fn st(v: &[(&str, Option<bool>)]) -> Vec<(String, Option<bool>)> {
+        v.iter().map(|(i, w)| (i.to_string(), *w)).collect()
+    }
+
+    /// Two streams open together: the one that followed the answer says "stopped" and an older one never saw the idle
+    /// state. The end must not wait for the old one.
+    #[test]
+    fn the_stream_that_spoke_last_decides() {
+        assert_eq!(pick_working(&st(&[("t1", Some(true)), ("t2", Some(false))]), Some("t2")), Some(false));
+        assert_eq!(pick_working(&st(&[("t1", Some(false)), ("t2", Some(true))]), Some("t2")), Some(true));
+    }
+
+    /// The old rule is the fallback: no owner yet, or the owner closed while writing (no state any more).
+    #[test]
+    fn without_a_live_owner_any_writing_stream_counts() {
+        assert_eq!(pick_working(&st(&[("t1", Some(true)), ("t2", Some(false))]), None), Some(true));
+        assert_eq!(pick_working(&st(&[("t1", Some(true)), ("t2", None)]), Some("t2")), Some(true));
+        assert_eq!(pick_working(&st(&[("t1", Some(false)), ("t2", None)]), Some("t2")), Some(false));
+        assert_eq!(pick_working(&st(&[("t1", None), ("t2", None)]), Some("t1")), None);
+        assert_eq!(pick_working(&st(&[]), None), None);
+    }
+}
+
+#[cfg(test)]
+mod send_scope_tests {
+    /// What the page streams after a send is delivered must not be forwarded as ours, and the next send must not
+    /// inherit the previous one's instant: `__ktSentAt` is what every stream observer tests.
+    #[test]
+    fn delivery_and_new_injection_clear_the_send_instant() {
+        let js = super::HARVEST_JS;
+        let d = js.find("function deliver(").expect("deliver");
+        let z = js[d..].find("window.__ktSentAt = 0").expect("deliver clears the send instant");
+        let end = js[d..].find("window.__ktPush({ b: BID, k: KEY, st: st, s: 0").expect("the delivery push");
+        assert!(z < end, "cleared before the result is pushed");
+        let inject = super::build_inject_js("b9-test", "openai", "hello", false, false).unwrap();
+        assert!(inject.contains("window.__ktSentAt = 0; window.__ktEnterPressed = false;"));
+    }
+
+    /// A stream belongs to the send that was current when it OPENED, and its id is unique across documents.
+    #[test]
+    fn streams_are_bound_to_their_send_and_document() {
+        let js = super::STREAM_WATCH_JS;
+        assert!(js.contains("var DOC = Math.random()"));
+        for id in ["'f' + DOC +", "'x' + DOC +", "'w' + DOC +", "'t' + DOC +"] {
+            assert!(js.contains(id), "stream id without the document tag: {id}");
+        }
+        assert!(js.contains("b: q.bid || __kt_bid"), "frames travel under the id of the send the stream opened in");
+        assert!(js.contains("nbid = __kt_bid") && js.contains("xbid = __kt_bid"));
+    }
+
+    /// A send marked as out whose message never shows on the page ends as a lost send, in both loops.
+    #[test]
+    fn a_lost_send_is_an_outcome_not_page_text() {
+        let js = super::HARVEST_JS;
+        assert!(js.contains("function ownMessageMissing()"));
+        assert!(js.contains("EXIT send-lost (arming)") && js.contains("EXIT send-lost (harvest)"));
+        // never decided by the visible text of the interface: only by our own message
+        let f = js.find("var LOST_SEND_MS").unwrap();
+        let body = &js[f..f + 3600];
+        assert!(body.contains("function ownProbe()") && body.contains("'box'"));
+        // a send declared failed also stops the fill loop
+        assert!(js.contains("if (st === 'sendfail') { try { window.__ktFillRun = '__ktCancelled'; }"));
     }
 }
