@@ -367,7 +367,7 @@ pub fn kotodama_regenerate(window: Window, old_bid: String, new_bid: String, key
     );
     let (ans, busy) = selectors_for(&key);
     let prelude = format!(
-        "var __apb_text = {}; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = false; var __kt_fast = {fast}; var __kt_sent = true; var __kt_regen = true; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktNetUrl = {net_url}; var __kt_regen_sel = {}; var __kt_regen_path = {}; var __kt_regen_item = {};",
+        "var __apb_text = {}; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = false; var __kt_fast = {fast}; var __kt_sent = true; var __kt_regen = true; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktLimitHit = 0; window.__ktRateLimited = 0; window.__ktNetUrl = {net_url}; var __kt_regen_sel = {}; var __kt_regen_path = {}; var __kt_regen_item = {};",
         serde_json::to_string(&text).map_err(|e| e.to_string())?,
         serde_json::to_string(&new_bid).map_err(|e| e.to_string())?,
         serde_json::to_string(&key).map_err(|e| e.to_string())?,
@@ -1349,6 +1349,10 @@ const STREAM_WATCH_JS: &str = r##"
             try {
               if (!window.__ktSentAt || typeof ev.data !== 'string') return;
               if (netWanted(u)) netSend(wid, u, ev.data, false);
+              // The provider's own limit signal inside the stream (Grok, measured 15/10/2026: `"stream_error":{"kind":
+              // "usage_limit_reached"`, then `response.done` with status "incomplete"). A protocol constant, not a
+              // visible text. Unlike a 429 it arrives AFTER a stream opened, so it gets its own flag.
+              if (ev.data.indexOf('usage_limit_reached') >= 0) { try { window.__ktLimitHit = Date.now(); } catch(e){} }
               if (ev.data.indexOf('"type":"response.created"') >= 0) ws.__ktOpenBid = opened();
               if (ev.data.indexOf('"type":"response.done"') >= 0) closedOne(ws.__ktOpenBid);
             } catch(e){}
@@ -1595,10 +1599,16 @@ const HARVEST_JS: &str = r##"
     return o.split(' ').filter(Boolean).join(' ');
   }
   var SENT_SQ = squash(SENT);
+  // A message-row clock ("7:14 PM") printed BEFORE or after the text: Perplexity, signed out and refused, shows only
+  // our own question under its time, and "7:14 PM <question>" was delivered as the answer (reported 14/10/2026).
+  // Same digits-and-colon rule as the trailing-timestamp cleanup, so it holds in every language.
+  var CLOCK_RX = /\d{1,2}:\d{2}(:\d{2})?\s*(am|pm)?/gi;
   function isOwnText(t){
     if (!SENT_SQ) return false;
     var q = squash(t);
     if (q === SENT_SQ) return true;
+    var nq = squash(q.replace(CLOCK_RX, ' '));
+    if (nq === SENT_SQ) return true;
     // our whole text plus a few interface words around it (edit, copy labels)
     return q.length <= SENT_SQ.length + 30 && q.slice(0, SENT_SQ.length) === SENT_SQ;
   }
@@ -1673,7 +1683,10 @@ const HARVEST_JS: &str = r##"
   // Claude: its selector is verified and the generic chain below is worse than nothing there. While the model
   // reasons there is no reply block yet, and `[class*="assistant" i]` then matched the chat list in the sidebar:
   // "ora" / "1 minuto fa" was delivered as the answer (measured 01/10 and 05/10/2026, voce 59).
-  var STRICT_ANS = KEY === 'anthropic';
+  // Gemini too (14/10/2026, signed out): with the page still showing its welcome ("Meet Gemini, your personal AI
+  // assistant") the generic chain matched `[class*="assistant" i]` (the welcome's own container) and the harvest
+  // delivered the greeting by stability while the fill was still held. Its own selector (`message-content`) is verified.
+  var STRICT_ANS = KEY === 'anthropic' || KEY === 'gemini';
   function getAnswerEl(){
     if (STRICT_ANS) { var s = lastMatch(ANS_SEL, true); return isInputArea(s) ? null : s; }
     var el = lastMatch(ANS_SEL, true)
@@ -1797,7 +1810,29 @@ const HARVEST_JS: &str = r##"
     if (noStamp) t = noStamp;
     return t;
   }
+  // Our message is held back (a provider's temporary-chat toggle is being looked for before the fill may type): a
+  // FRESH page has no answer yet, whatever it shows is its own welcome. The hold lasts up to ~9 s and a harvest
+  // that started inside it used to count that text as stable (measured 14/10/2026, Gemini signed out).
+  function heldBeforeSend(){
+    return FRESH && !KNOWN_SENT && !window.__ktEnterPressed && !window.__ktStreamEver && !!(window.__ktHoldFill || window.__ktHoldAttach);
+  }
+  // The composer still holds exactly our message, no response stream ever opened: the provider did NOT take it
+  // (a sign-up sheet in the way, a refused request), and whatever the page shows is not the reply. Measured
+  // 14/10/2026 on Perplexity with its request refused: the fill marked the send, the field kept our text, and the
+  // page's own sr-only heading ("What should we work on?") was delivered as "done". Only after the first snapshot
+  // (initialAnswer), so a warm page's previous answer is still recorded as it is.
+  var guardReady = false;
+  function ownTextStillInComposer(){
+    try {
+      if (!guardReady || KNOWN_SENT || window.__ktStreamEver || REGEN || !SENT_SQ) return false;
+      var v = composerVal();
+      if (v === null) return false;
+      var q = squash(v);
+      return q.length > 0 && q.slice(0, 60) === SENT_SQ.slice(0, 60);
+    } catch(e){ return false; }
+  }
   function answerTxt(){
+    if (heldBeforeSend() || ownTextStillInComposer()) return '';
     var el = getAnswerEl();
     return sanitizeAnswer(el ? (el.innerText || '') : '');
   }
@@ -2010,6 +2045,10 @@ const HARVEST_JS: &str = r##"
       if (KEY === 'anthropic' && p.indexOf('/login') !== -1) return true;
       if (KEY === 'deepseek' && p.indexOf('/sign_in') !== -1) return true;
       if (KEY === 'poe' && p.indexOf('/login') !== -1) return true;
+      // Z.ai sends a signed-out visitor whose message was refused back to its own sign-in page (reported
+      // 14/10/2026: the card sat on /auth until the 180 s budget ran out). Prefix match, path only. Not yet seen
+      // live in this session (the profile used here is served by the captcha instead): hypothesis from the report.
+      if (KEY === 'zai' && (p === '/auth' || p.indexOf('/auth/') === 0)) return true;
     } catch(e){}
     return false;
   }
@@ -2053,6 +2092,7 @@ const HARVEST_JS: &str = r##"
   var authWallWhy = '';
   // Time the page gets, after our send, to open its response stream before ChatGPT's login buttons count as a wall.
   var OPENAI_WALL_MS = 10000;
+  var LOGIN_SHEET_MS = 5000;
   function authWallPresent(){
     authWallWhy = '';
     // A response stream opened after our send means the provider accepted the message from a working
@@ -2065,6 +2105,20 @@ const HARVEST_JS: &str = r##"
       // mounts its captcha host on every page), and their mere presence says nothing about the session.
       if (visibleMatch('input[type="password"]')) { authWallWhy = 'password'; return true; }
       if (visibleMatch('[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]')) { authWallWhy = 'captcha'; return true; }
+      // A sign-in SHEET: a login control marked by the developer (testid) INSIDE a visible modal dialog. Perplexity,
+      // signed out and refused, covers the page with `[data-testid="login-modal"]` (inside a role=dialog, measured
+      // 14/10/2026) and the answer never starts; its composer is still on the page, so the "no composer" rule below
+      // never fired. No "sent" condition: the sheet swallows the fill's submit, so no Enter is ever recorded. Counts
+      // only once the page has had LOGIN_SHEET_MS to open a response stream: the same sheet also shows over a thread that does answer (a stream then ends the
+      // wait, see the top of this function), and an immediate verdict would flash "sign in" on a working turn.
+      if (Date.now() - Math.max(window.__ktSentAt || 0, t0) > LOGIN_SHEET_MS) {   // max: __ktSentAt survives from the previous turn
+        var sheets = document.querySelectorAll('[data-testid*="login" i], [data-testid*="sign-in" i], [data-testid*="signup" i]');
+        for (var si = 0; si < sheets.length; si++) {
+          if (!sheets[si].closest('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog[open]')) continue;
+          var sr = sheets[si].getBoundingClientRect();
+          if (sr.width > 0 && sr.height > 0) { authWallWhy = 'login-sheet'; return true; }
+        }
+      }
       // Some providers (observed: Meta AI) show NEITHER a password field nor a captcha when
       // signed out -- just a visible "log in"/"sign in" control and no composer anywhere on
       // the page. Matched by testid/id substring (developer-set, language-independent, same
@@ -2114,11 +2168,21 @@ const HARVEST_JS: &str = r##"
      this, each of them ended the card, and the user had to retry after fixing it. ---- */
   var blockPushed = '', blockSince = 0, BLOCK_MAX_MS = 20 * 60 * 1000;
   // Returns true when the block has lasted too long and the card was closed with it as the outcome.
+  // A NEW block reason must hold for BLOCK_DEBOUNCE_MS before it is announced: the sign-in sheet or a 401 of an
+  // optional call can be on screen for a second while the provider is already answering (measured 14/10/2026:
+  // a 0.5-2 s "sign in" flash on Gemini and Perplexity before real answers). A stream opening ends the reason
+  // (currentBlock returns '' then), so the flash never reaches the card; a real wall costs this much delay.
+  var BLOCK_DEBOUNCE_MS = 2500, pendingReason = '', pendingSince = 0;
   function syncBlock(reason){
+    if (!reason) pendingReason = '';   // every empty reading restarts the clock: two short flashes are not one block
     if (reason !== blockPushed) {
+      if (reason) {
+        if (pendingReason !== reason) { pendingReason = reason; pendingSince = Date.now(); return false; }
+        if (Date.now() - pendingSince < BLOCK_DEBOUNCE_MS) return false;
+      }
       blockPushed = reason;
       blockSince = reason ? Date.now() : 0;
-      fdiagArm((reason ? 'BLOCKED ' + reason : 'UNBLOCKED'));
+      fdiagArm((reason ? 'BLOCKED ' + reason + (authWallWhy ? ' why=' + authWallWhy : '') : 'UNBLOCKED'));
       // IPC only: the navigation fallback of __ktPush would reload the very page the user has to act on.
       try { window.__TAURI__.core.invoke('kotodama_push', { b: BID, k: KEY, st: reason ? 'blocked' : 'unblocked', d: reason || '' }).catch(function(){}); } catch(e){}
     }
@@ -2141,6 +2205,17 @@ const HARVEST_JS: &str = r##"
       return !!(top.closest && top.closest('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog[open]'));
     } catch(e){ return false; }
   }
+  // The dialog covering the composer is a sign-in sheet: it holds a developer-marked login control, a password
+  // field or an e-mail field (Perplexity's "Sign up below" sheet asks for an e-mail). Structure only, any language.
+  function coverIsSignIn(){
+    try {
+      var c = findComposerEl(); if (!c) return false;
+      var r = c.getBoundingClientRect();
+      var top = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 20));
+      var dlg = top && top.closest && top.closest('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog[open]');
+      return !!(dlg && dlg.querySelector('[data-testid*="login" i], [data-testid*="sign-in" i], [data-testid*="signup" i], input[type="password"], input[type="email"], input[autocomplete="email"], input[autocomplete="username"]'));
+    } catch(e){ return false; }
+  }
   var noComposerTicks = 0;
   var CAPTCHA_SEL = '[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]';
   // Only while nothing has come back: once a response stream opened, the provider has the message.
@@ -2150,7 +2225,7 @@ const HARVEST_JS: &str = r##"
     // leaving on different conditions made Kimi flap blocked/unblocked every couple of seconds.
     if (blockPushed === 'login' && (loginHintPresent() || authWallPresent())) return 'login';
     if (blockPushed === 'captcha' && (visibleMatch(CAPTCHA_SEL) || window.__ktCaptchaAt)) return 'captcha';
-    if (blockPushed === 'overlay' && composerCovered()) return 'overlay';
+    if (blockPushed === 'overlay' && composerCovered()) return coverIsSignIn() ? 'login' : 'overlay';
     if (blockPushed === 'setup' && composerVal() === null) return 'setup';
     if (authWallPresent()) return authWallWhy === 'captcha' ? 'captcha' : 'login';
     if (clockTicks > 6 && (visibleMatch(CAPTCHA_SEL) || (window.__ktCaptchaAt && Date.now() - window.__ktCaptchaAt > 15000))) return 'captcha';
@@ -2158,7 +2233,7 @@ const HARVEST_JS: &str = r##"
     // API refusing the session. Either alone is not enough (logged-in pages carry "sign in with another
     // account" links; a 401 can come from an optional feature).
     if (window.__ktAuthFail && loginHintPresent()) return 'login';
-    if (clockTicks > 10 && composerCovered()) return 'overlay';
+    if (clockTicks > 10 && composerCovered()) return coverIsSignIn() ? 'login' : 'overlay';
     // A loaded page that offers no composer at all and never took our message: a welcome, consent or setup
     // screen that needs a click from the user. Measured on Copilot: no editable element anywhere, no dialog,
     // only its privacy notice -- which was then delivered as the "answer".
@@ -2225,6 +2300,7 @@ const HARVEST_JS: &str = r##"
   // and even FINISH answering before this script runs, so snapshotting would swallow the
   // whole answer. Warm turns: snapshot the previous answer so we wait for the new one.
   var initialAnswer = FRESH ? '' : answerTxt();
+  guardReady = true;
   var sawText = false, armTries = 0, authCensusSent = false;
   // One-time diagnostic (debug log only, via the existing 'diag' push): inventories every
   // visible <a>/<button> whose text/attrs look login-related, so a provider that shows a
@@ -2286,7 +2362,7 @@ const HARVEST_JS: &str = r##"
     if (composerVal() !== null) armTries++;
     // Absolute ceiling, so a page that never produces a composer cannot wait forever.
     // A message we KNOW went out and that produced nothing in 180s is a timeout, not a failed send.
-    if (Date.now() - armT0 > 180000) { clearInterval(armIv); fdiagArm('EXIT arm-180s hint=' + loginHintPresent() + ' streamEver=' + (window.__ktStreamEver||0) + ' armTries=' + armTries); census(); setTimeout(function(){ deliver(loginHintPresent() ? 'login' : (KNOWN_SENT ? 'timeout' : 'sendfail'), ''); }, 300); return; }
+    if (Date.now() - armT0 > 180000) { clearInterval(armIv); fdiagArm('EXIT arm-180s hint=' + loginHintPresent() + ' streamEver=' + (window.__ktStreamEver||0) + ' armTries=' + armTries); census(); setTimeout(function(){ deliver((loginHintPresent() && !window.__ktStreamEver) ? 'login' : (KNOWN_SENT || window.__ktStreamEver ? 'timeout' : 'sendfail'), ''); }, 300); return; }
     authCensus();
     // A visible captcha is not a missing login: the session is fine, the provider wants a human check
     // before it takes this message. Saying "sign in" sent the user to the wrong fix (captured on Z.ai).
@@ -2307,6 +2383,11 @@ const HARVEST_JS: &str = r##"
     // says so, but it is never reached when the refusal comes INSTEAD of an answer: the arming loop ran out
     // its budget and reported a failed send, which is false and sends the user looking for the wrong fix
     // (captured on Claude, 429 `rate_limit_error` on the completion endpoint -> `sendfail` after 33s).
+    if (window.__ktLimitHit && window.__ktLimitHit >= (window.__ktSentAt || 0) && !cur) {
+      clearInterval(armIv); fdiagArm('EXIT limit-in-stream (arming)');
+      setTimeout(function(){ deliver('limit', ''); }, 300);
+      return;
+    }
     if (window.__ktRateLimited && !window.__ktStreamEver && !cur) {
       clearInterval(armIv); fdiagArm('EXIT rate-limit (arming)');
       setTimeout(function(){ deliver('limit', ''); }, 300);
@@ -2770,6 +2851,8 @@ const HARVEST_JS: &str = r##"
       // The provider refused the message for its usage limit: say so at once (the user can only wait or upgrade,
       // so this is an outcome, not a block to queue).
       if (!txt && !window.__ktStreamEver && window.__ktRateLimited) { clearInterval(iv); fdiagArm('EXIT rate-limit'); deliver('limit', ''); return; }
+      // The limit was announced inside a stream that did open (Grok): no text, and the provider said why.
+      if (!txt && window.__ktLimitHit && window.__ktLimitHit >= (window.__ktSentAt || 0)) { clearInterval(iv); fdiagArm('EXIT limit-in-stream'); deliver('limit', ''); return; }
       // Same block handling as the arming loop, for blocks that appear after the message was handed over
       // (measured on Z.ai: the slider puzzle shows about 4s after Enter). Clock frozen while blocked.
       // A page without a composer that never took our message can show text that is not an answer (Copilot's
@@ -2786,7 +2869,7 @@ const HARVEST_JS: &str = r##"
       // login control visible on the page. It only chooses the MESSAGE of an outcome that is
       // already a failure, so it cannot cost a working answer.
 
-      if (Date.now() - t0 > 180000) { clearInterval(iv); fdiagArm('EXIT harvest-180s txtLen=' + (txt||'').length + ' hint=' + loginHintPresent()); deliver(txt ? 'timeout' : (loginHintPresent() ? 'login' : 'error'), txt ? (sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt) : txt, txt ? elToMd(getAnswerEl()) : ''); return; }
+      if (Date.now() - t0 > 180000) { clearInterval(iv); fdiagArm('EXIT harvest-180s txtLen=' + (txt||'').length + ' hint=' + loginHintPresent()); deliver(txt ? 'timeout' : ((loginHintPresent() && !window.__ktStreamEver) ? 'login' : 'error'), txt ? (sanitizeAnswer(cleanAnswerText(getAnswerEl())) || txt) : txt, txt ? elToMd(getAnswerEl()) : ''); return; }
       if (!sentCensus && polls === 15 && !txt) { sentCensus = true; census(); }
       if (polls % 3 === 0) { window.__ktPush({ b: BID, k: KEY, st: 'progress', len: txt.length }); }
     }
@@ -2942,7 +3025,7 @@ const TEMP_PROBE_JS: &str = r##"
 fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp: bool) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     let prelude = format!(
-        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url}; window.__ktFreshBaseline = {fresh_baseline};",
+        "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktLimitHit = 0; window.__ktRateLimited = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url}; window.__ktFreshBaseline = {fresh_baseline};",
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
         serde_json::to_string(key).map_err(|e| e.to_string())?,
         serde_json::to_string(ans).map_err(|e| e.to_string())?,
@@ -3005,7 +3088,7 @@ fn build_resume_js(
         // `window.__ktDiag` must be set HERE too: without it, all the fill-loop diagnostics stayed
         // silent in exactly the path where they are needed -- the resume after a navigation (providers
         // whose temporary chat is a click DO navigate).
-        "var __apb_text = {}; var __kt_head = {}; var __apb_send = true; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true; var __kt_fast = {fast}; var __kt_sent = {sent}; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url}; window.__ktFreshBaseline = {fresh_baseline};",
+        "var __apb_text = {}; var __kt_head = {}; var __apb_send = true; var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = true; var __kt_fast = {fast}; var __kt_sent = {sent}; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktLimitHit = 0; window.__ktRateLimited = 0; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url}; window.__ktFreshBaseline = {fresh_baseline};",
         serde_json::to_string(text).map_err(|e| e.to_string())?,
         serde_json::to_string(&head).map_err(|e| e.to_string())?,
         serde_json::to_string(broadcast_id).map_err(|e| e.to_string())?,
@@ -3077,6 +3160,7 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     // An outcome ends any block on this provider for this broadcast, and its network readers.
     blocked_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     login_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    offsite_blocks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_readers().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_partials().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     net_work().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
@@ -3209,6 +3293,53 @@ pub fn on_result_url(window: &Window, u: &Url) {
     handle_push(window, bid, key, st, seq, total, data, len, trunc, None);
 }
 
+/// Providers whose network reader does not carry the cards the page renders around an answer.
+const NET_WITHOUT_CARDS: &[&str] = &["gemini"];
+
+/// Does the page carry text the stream lacks (a card: a title, a note)? Both texts lose the Markdown syntax, the
+/// case, the spaces and the punctuation, and are compared in groups of 4 characters rather than words, so it works
+/// in languages written without spaces (Japanese, Chinese) and the stream's `**bold**` against the page's plain
+/// text is no difference. The page has a card when at least `CARD_MISSING_MIN` groups are missing AND they are
+/// 8% or more of the page's text: a title or a note of a translation is far over both, a code block's one-word
+/// language label inside a long answer is not.
+fn page_has_cards(net: &str, dom: &str) -> bool {
+    const N: usize = 4;
+    let (lost, total) = text_missing(net, dom, N);
+    lost >= CARD_MISSING_MIN && lost * 100 >= total * 8
+}
+/// `(groups of the page's text missing from the stream's, groups of the page's text)`.
+fn text_missing(net: &str, dom: &str, n: usize) -> (usize, usize) {
+    // Markdown syntax characters are not alphanumeric, so this already drops asterisks, backticks, # and |. The
+    // numbers of a numbered list ("1. ", "2) ") are in the stream and not in the page's text: dropped from both, or
+    // every item of a list would look like text the stream lacks.
+    let norm = |t: &str| -> Vec<char> {
+        let mut out = Vec::new();
+        for line in t.lines() {
+            let l = line.trim_start();
+            let digits = l.chars().take_while(|c| c.is_ascii_digit()).count();
+            let rest = &l[digits..];
+            let body = if digits > 0 && digits <= 3 && (rest.starts_with(". ") || rest.starts_with(") ")) { &rest[2..] } else { line };
+            out.extend(body.chars().filter(|c| c.is_alphanumeric()).flat_map(|c| c.to_lowercase()));
+        }
+        out
+    };
+    let grams = |v: &[char]| -> Vec<String> { v.windows(n).map(|w| w.iter().collect::<String>()).collect() };
+    let mut have: HashMap<String, usize> = HashMap::new();
+    for g in grams(&norm(net)) {
+        *have.entry(g).or_insert(0) += 1;
+    }
+    let (mut lost, mut total) = (0, 0);
+    for g in grams(&norm(dom)) {
+        total += 1;
+        match have.get_mut(&g) {
+            Some(c) if *c > 0 => *c -= 1,
+            _ => lost += 1,
+        }
+    }
+    (lost, total)
+}
+const CARD_MISSING_MIN: usize = 5;
+
 /// Length of an answer as it reads, without the addresses of its Markdown links: the page's text now comes as
 /// Markdown, and `[name](https://long/address)` is not more answer than `name`. The network-vs-page comparison
 /// (a network answer much shorter than the page is an incomplete one) must not be fooled by them.
@@ -3258,7 +3389,10 @@ pub fn kotodama_push(
     // The answer read from the network wins when it is complete: the provider's own Markdown, exact, with
     // reasoning and sources kept apart. The DOM reading stays the fallback for everything else.
     let mut from_net = false;
-    if s == Some(0) && matches!(st.as_str(), "done" | "timeout" | "error" | "sendfail") {
+    // "login" and "captcha" are in the list because they are guesses made from the page: a provider whose own response
+    // stream delivered a complete answer did take the message (Gemini, 14/10/2026: the card closed with "login" after
+    // 180 s although the network held the whole text). The network answer wins; with none, the verdict stands.
+    if s == Some(0) && matches!(st.as_str(), "done" | "timeout" | "error" | "sendfail" | "login" | "captcha") {
         if crate::debug::enabled() {
             if let Some(rs) = net_readers().lock().unwrap().get(&(b.clone(), k.clone())) {
                 for (id, r) in rs {
@@ -3279,11 +3413,20 @@ pub fn kotodama_push(
             // ChatGPT can answer with a small generated interface (October 2026: checklists with buttons, `{#each}`
             // loops over data, cards with favicons): the network carries its SOURCE, and only the page has the text
             // it renders. Then the page wins, whatever the lengths.
+            // Gemini's stream does not carry its cards (a translation's "Translation" title and its notes, measured
+            // 15/10/2026: net 424 B against 552 B on the page, 77%, so the length rule above let the stream win and
+            // the card was lost). Words the page shows and the stream lacks mean the page has more: it wins. Only for
+            // providers whose reader is known to miss cards: elsewhere the words missing from the stream are the
+            // source names and chips the page adds around an answer that is complete.
+            let cards = st == "done" && NET_WITHOUT_CARDS.contains(&k.as_str()) && d.as_deref().map(|dom| page_has_cards(&a.text, dom)).unwrap_or(false);
+            if cards {
+                debug::log(format!("kotodama NETREAD skipped key={k}: the page shows words the stream lacks (cards), the page wins"));
+            }
             let ui = k == "openai" && dom_len > 0 && crate::netread::carries_generated_ui(&a.text);
             if ui {
                 debug::log(format!("kotodama NETREAD skipped key={k}: generated interface, the page wins (dom={dom_len}B)"));
             }
-            ok && !ui
+            ok && !ui && !cards
         });
         if let Some(a) = net {
             from_net = true;
@@ -3707,6 +3850,80 @@ pub fn provider_login_probe(window: Window, key: String, needs_login: bool) {
     }
 }
 
+/// The broadcast (if any) that still waits for an answer from this provider's tab.
+fn owed_broadcast(key: &str) -> Option<String> {
+    let waiting = |bid: &str| broadcasts().lock().unwrap().get(bid).map(|bc| bc.pending.contains(key)).unwrap_or(false);
+    if let Some((bid, _, _)) = active_harvests().lock().unwrap().get(key).cloned() {
+        if waiting(&bid) {
+            return Some(bid);
+        }
+    }
+    let queued = pending_injections().lock().unwrap().get(key).map(|i| i.broadcast_id.clone());
+    queued.filter(|bid| waiting(bid))
+}
+
+/// Blocks announced by Rust (the tab left the provider's site), as opposed to the page's own `blocked` push. Only
+/// these are lifted when the tab is back on the site.
+fn offsite_blocks() -> &'static Mutex<HashSet<(String, String)>> {
+    static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+/// How long a tab must stay off the provider's site before it counts as a sign-in wall. Technical hops (Google's
+/// account step for a connected Gemini, a session renewal, a payment page) are back within a second or two and
+/// must not show "sign in" nor, worse, make the resume send the message again.
+const OFFSITE_LOGIN_GRACE: std::time::Duration = std::time::Duration::from_secs(4);
+
+/// The tab left the provider's site while a broadcast waits on it: after `OFFSITE_LOGIN_GRACE`, if it is still
+/// away, the broadcast is marked blocked by a sign-in (same state and event as the page's own `blocked` push,
+/// so the card and the watchdog treat it alike). Once per block. The "already sent" mark is NOT touched: if the
+/// message went out before the hop it must not go out again (Mistral keeps the prompt itself across its
+/// sign-in); `login_marks` is set only for a message that never left, so the resume sends it, once.
+fn announce_login_block<R: Runtime>(app: &tauri::AppHandle<R>, key: &str) {
+    let Some(bid) = owed_broadcast(key) else { return };
+    let app = app.clone();
+    let key = key.to_string();
+    std::thread::spawn(move || {
+        std::thread::sleep(OFFSITE_LOGIN_GRACE);
+        let still_away = app
+            .get_webview(&browser::provider_label(&key))
+            .map(|w| !on_provider_site(w.url().ok().as_ref()))
+            .unwrap_or(false);
+        // the same broadcast must still be the one waiting
+        if !still_away || owed_broadcast(&key).as_deref() != Some(bid.as_str()) {
+            return;
+        }
+        let pair = (bid.clone(), key.clone());
+        if !offsite_blocks().lock().unwrap().insert(pair.clone()) {
+            return;
+        }
+        blocked_marks().lock().unwrap().insert(pair.clone());
+        if !already_sent(&bid, &key) {
+            login_marks().lock().unwrap().insert(pair);
+        }
+        debug::log(format!("kotodama blocked key={key} bid={bid} reason=login (tab left for a sign-in page)"));
+        let _ = app.emit(
+            "app://kotodama-blocked",
+            serde_json::json!({ "broadcastId": bid, "key": key, "blocked": true, "reason": "login" }),
+        );
+    });
+}
+
+/// The tab is back on the provider's site: lifts a block announced by `announce_login_block`.
+fn lift_offsite_block<R: Runtime>(app: &tauri::AppHandle<R>, bid: &str, key: &str) {
+    let pair = (bid.to_string(), key.to_string());
+    if !offsite_blocks().lock().unwrap().remove(&pair) {
+        return;
+    }
+    blocked_marks().lock().unwrap().remove(&pair);
+    login_marks().lock().unwrap().remove(&pair);
+    debug::log(format!("kotodama unblocked key={key} bid={bid} reason=login (tab back on the provider site)"));
+    let _ = app.emit(
+        "app://kotodama-blocked",
+        serde_json::json!({ "broadcastId": bid, "key": key, "blocked": false, "reason": "login" }),
+    );
+}
+
 /// Page finished loading: if this provider has a pending injection, run it now.
 /// The fill script itself polls ~20s for the composer, so SPA hydration after
 /// `Finished` is already tolerated — no extra retry needed here.
@@ -3729,10 +3946,17 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
     // an owed harvest stays as it is and resumes on the page-load that brings the tab back.
     if !on_provider_site(webview.url().ok().as_ref()) {
         debug::log(format!("kotodama page_finished key={key}: off the provider site, sends and harvests held"));
+        // A broadcast is waiting on this provider and its tab left for another site: that is a sign-in page (Mistral,
+        // measured 15/10/2026: the send bounced to v2.auth.mistral.ai/login and the card stayed silent for 200 s, then
+        // "error"). Say "login" for every provider, but only if the tab is still away after a few seconds (a technical
+        // hop must not look like a sign-in), and without ever sending a message again that had already gone out;
+        // coming back to the provider's site lifts it (see the resume below).
+        announce_login_block(&webview.app_handle(), key);
         return;
     }
     let inj = pending_injections().lock().unwrap().remove(key);
     if let Some(inj) = inj {
+        lift_offsite_block(&webview.app_handle(), &inj.broadcast_id, key);
         debug::log(format!("kotodama inject (on load) key={key} bid={}", inj.broadcast_id));
         match build_inject_js(&inj.broadcast_id, key, &inj.text, inj.fresh, inj.temp) {
             Ok(js) => {
@@ -3761,6 +3985,7 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
             // Back on the provider's site after a sign-in wall: the block is over as far as we know (a wall
             // still there is pushed again by the resumed script), and the message goes out again, once.
             let pair = (bid.clone(), key.to_string());
+            lift_offsite_block(&webview.app_handle(), &bid, key);
             if login_marks().lock().unwrap().remove(&pair) {
                 blocked_marks().lock().unwrap().remove(&pair);
                 sent_marks().lock().unwrap().remove(&pair);
@@ -4261,6 +4486,54 @@ mod provider_hosts_tests {
 
 #[cfg(test)]
 mod visible_len_tests {
+    #[test]
+    fn card_text_missing_from_the_stream_is_counted() {
+        let net = "Tomorrow I'll go to the market to buy bread, cheese and two bottles of red wine for dinner.";
+        // the page adds a title and a note the stream does not carry
+        assert!(super::page_has_cards(net, &format!("Standard Translation
+
+{net}
+Formality: neutral, suitable for everyday use.")));
+        // same text: nothing missing; case, markdown and spacing are not differences
+        assert!(!super::page_has_cards(net, net));
+        assert!(!super::page_has_cards("**Hello** World `again` | # ok", "hello world AGAIN ok"));
+        // a one-word label (code block language) inside a long answer is not a card
+        let long = "The function reads the file line by line and returns the number of words it found in it. ".repeat(6);
+        assert!(!super::page_has_cards(&long, &format!("Python
+{long}")));
+    }
+
+    #[test]
+    fn numbered_lists_are_not_a_card() {
+        // the stream carries "1. " at the start of each item, the page's text does not
+        let net = "Ecco i passaggi:
+1. Taglia le verdure in cubetti piccoli
+2. Falle rosolare con olio e cipolla
+3. Aggiungi il brodo e cuoci a lungo
+4. Servi caldo con un filo d'olio
+5. Conserva il resto in frigorifero";
+        let page = "Ecco i passaggi:
+Taglia le verdure in cubetti piccoli
+Falle rosolare con olio e cipolla
+Aggiungi il brodo e cuoci a lungo
+Servi caldo con un filo d'olio
+Conserva il resto in frigorifero";
+        assert!(!super::page_has_cards(net, page));
+        // and a card is still seen on top of a list
+        assert!(super::page_has_cards(net, &format!("Ricetta della nonna, versione veloce
+{page}
+Nota: si conserva due giorni.")));
+    }
+
+    #[test]
+    fn markdown_in_a_language_without_spaces_is_not_a_difference() {
+        // the stream's bold and inline code against the page's plain text: the stream was right
+        assert!(!super::page_has_cards("東京は**日本の首都**です。`API`を使います。", "東京は日本の首都です。APIを使います。"));
+        // a card title the stream lacks is still caught
+        assert!(super::page_has_cards("東京は日本の首都です。", "標準の翻訳
+東京は日本の首都です。"));
+    }
+
     #[test]
     fn link_addresses_do_not_count() {
         assert_eq!(super::visible_len("plain text"), 10);
