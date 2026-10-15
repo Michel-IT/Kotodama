@@ -103,6 +103,42 @@ fn restart_app(app: AppHandle) {
     relaunch(&app);
 }
 
+/// A lone Alt (or a lone F10: same message) makes Windows send WM_SYSCOMMAND/SC_KEYMENU with
+/// lParam == 0 and put the thread in "system menu mode": the next keystroke is eaten and the
+/// WebView2 child stops answering input until Esc. Kotodama's window has no menu bar, so that
+/// mode has nothing to offer. Swallow exactly that message; Alt+Space (SC_KEYMENU with
+/// lParam == ' ', the window menu), Alt+F4, Alt+Left and every Ctrl+Alt+... combination are
+/// separate paths and are left alone. Subclassing the top-level HWND covers the provider
+/// child webviews too, because they are children of it.
+#[cfg(windows)]
+fn suppress_lone_alt_menu(hwnd_raw: isize) {
+    use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+    use windows::Win32::UI::Shell::{DefSubclassProc, SetWindowSubclass};
+    use windows::Win32::UI::WindowsAndMessaging::{SC_KEYMENU, WM_SYSCOMMAND};
+
+    unsafe extern "system" fn proc(
+        hwnd: HWND,
+        msg: u32,
+        wparam: WPARAM,
+        lparam: LPARAM,
+        _id: usize,
+        _data: usize,
+    ) -> LRESULT {
+        // The low 4 bits of wParam are used internally by the system.
+        if msg == WM_SYSCOMMAND && (wparam.0 & 0xFFF0) == SC_KEYMENU as usize && lparam.0 == 0 {
+            return LRESULT(0);
+        }
+        unsafe { DefSubclassProc(hwnd, msg, wparam, lparam) }
+    }
+
+    // Not undone with RemoveWindowSubclass: the three windows are created once by tauri.conf.json and only ever
+    // hidden, never destroyed, and the subclass holds no data.
+    let ok = unsafe { SetWindowSubclass(HWND(hwnd_raw as *mut core::ffi::c_void), Some(proc), 0x4B4F_414C, 0) };
+    if !ok.as_bool() {
+        debug::log(format!("lone-Alt guard: SetWindowSubclass failed for hwnd {hwnd_raw:#x}"));
+    }
+}
+
 /// Argument a relaunched copy receives, carrying the PID of the copy that launched it.
 #[cfg(windows)]
 const RELAUNCH_ARG: &str = "--relaunch-after=";
@@ -1759,6 +1795,16 @@ pub fn run() {
                         restore_gesture_target();
                     }
                 });
+            }
+
+            // A lone Alt must not put a window in system-menu mode (it freezes input until Esc).
+            #[cfg(windows)]
+            for label in ["main", "toast", "menuhost"] {
+                if let Some(w) = app.get_webview_window(label) {
+                    if let Ok(h) = w.hwnd() {
+                        suppress_lone_alt_menu(h.0 as isize);
+                    }
+                }
             }
 
             // Main window lifecycle + show IMMEDIATELY: the first paint arrives
