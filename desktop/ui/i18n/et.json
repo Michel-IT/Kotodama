@@ -348,5 +348,7 @@
   "vinEmptyPop": "Pole piiranguid: retsept saadab ainult teksti.",
   "vinStale": "Valitud väärtus on kadunud: kasutatakse \"{v}\".",
   "ktSaveFailed": "Ajalugu ei õnnestunud salvestada: {e}. Proovin uuesti.",
-  "trayCopyLast": "Kopeeri viimane vastus"
+  "trayCopyLast": "Kopeeri viimane vastus",
+  "ktAttachOnlyPrompt": "Vaata lisatud faili (või faile) ja ütle mulle, mida see sisaldab.",
+  "ktAttachFailed": "Fail ei jõudnud teenusesse {p}, seega sõnumit ei saadetud: see oleks läinud ilma manuseta. Saada see uuesti."
 }

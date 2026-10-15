@@ -348,5 +348,7 @@
   "vinEmptyPop": "Murrizketarik gabe: errezeptak testua soilik bidaltzen du.",
   "vinStale": "Aukeratutako balioa desagertu da: \"{v}\" erabiltzen.",
   "ktSaveFailed": "Ezin izan da historia gorde: {e}. Berriro saiatzen.",
-  "trayCopyLast": "Kopiatu azken erantzuna"
+  "trayCopyLast": "Kopiatu azken erantzuna",
+  "ktAttachOnlyPrompt": "Begiratu erantsitako fitxategiari (edo fitxategiei) eta esan zer duen.",
+  "ktAttachFailed": "Fitxategia ez da {p}-ra iritsi, beraz mezua ez da bidali: eranskinik gabe joango zen. Bidali berriro."
 }

@@ -263,6 +263,8 @@
   "ktAttachRemove": "Remove",
   "ktAttachTooBig": "File too large (max 10 MB):",
   "ktAttachTooMany": "At most 5 files per message",
+  "ktAttachOnlyPrompt": "Look at the attached file(s) and tell me what they contain.",
+  "ktAttachFailed": "The file did not reach {p}, so the message was not sent: it would have gone without the attachment. Send it again.",
   "ktRailTitle": "Messages in this conversation",
   "ktTabAnswers": "Answers",
   "ktTabLinks": "Links",

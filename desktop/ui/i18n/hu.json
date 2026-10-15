@@ -348,5 +348,7 @@
   "vinEmptyPop": "Nincs korlát: a recept csak szöveget küld.",
   "vinStale": "A kiválasztott érték eltűnt: \"{v}\" használata.",
   "ktSaveFailed": "Az előzményeket nem sikerült menteni: {e}. Újrapróbálom.",
-  "trayCopyLast": "Utolsó válasz másolása"
+  "trayCopyLast": "Utolsó válasz másolása",
+  "ktAttachOnlyPrompt": "Nézd meg a csatolt fájlt (vagy fájlokat), és mondd el, mi van benne.",
+  "ktAttachFailed": "A fájl nem jutott el a(z) {p} szolgáltatóhoz, ezért az üzenet nem lett elküldve: melléklet nélkül ment volna el. Küldd el újra."
 }

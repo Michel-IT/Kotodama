@@ -348,5 +348,7 @@
   "vinEmptyPop": "Keine Vorgaben: das Rezept sendet nur den Text.",
   "vinStale": "Der gewählte Wert existiert nicht mehr: verwende \"{v}\".",
   "ktSaveFailed": "Der Verlauf konnte nicht gespeichert werden: {e}. Neuer Versuch läuft.",
-  "trayCopyLast": "Letzte Antwort kopieren"
+  "trayCopyLast": "Letzte Antwort kopieren",
+  "ktAttachOnlyPrompt": "Sieh dir die angehängte Datei (oder die angehängten Dateien) an und sag mir, was sie enthält.",
+  "ktAttachFailed": "Die Datei ist bei {p} nicht angekommen, daher wurde die Nachricht nicht gesendet: Sie wäre ohne Anhang abgegangen. Sende sie erneut."
 }

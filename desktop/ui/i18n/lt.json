@@ -348,5 +348,7 @@
   "vinEmptyPop": "Nėra apribojimų: receptas siunčia tik tekstą.",
   "vinStale": "Pasirinkta reikšmė dingo: naudojama \"{v}\".",
   "ktSaveFailed": "Istorijos išsaugoti nepavyko: {e}. Bandau dar kartą.",
-  "trayCopyLast": "Kopijuoti paskutinį atsakymą"
+  "trayCopyLast": "Kopijuoti paskutinį atsakymą",
+  "ktAttachOnlyPrompt": "Pažiūrėk į pridėtą failą (arba failus) ir pasakyk, kas jame yra.",
+  "ktAttachFailed": "Failas nepasiekė {p}, todėl žinutė neišsiųsta: ji būtų išėjusi be priedo. Siųskite dar kartą."
 }

@@ -263,6 +263,8 @@
   "ktAttachRemove": "Rimuovi",
   "ktAttachTooBig": "File troppo grande (max 10 MB):",
   "ktAttachTooMany": "Al massimo 5 file per messaggio",
+  "ktAttachOnlyPrompt": "Guarda il file allegato (o i file allegati) e dimmi cosa contiene.",
+  "ktAttachFailed": "Il file non è arrivato a {p}, quindi il messaggio non è stato inviato: sarebbe partito senza l'allegato. Invialo di nuovo.",
   "ktRailTitle": "Messaggi di questa conversazione",
   "ktTabAnswers": "Risposte",
   "ktTabLinks": "Link",

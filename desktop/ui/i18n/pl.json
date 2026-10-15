@@ -348,5 +348,7 @@
   "vinEmptyPop": "Brak ograniczeń: przepis wysyła tylko tekst.",
   "vinStale": "Wybrana wartość już nie istnieje: używam \"{v}\".",
   "ktSaveFailed": "Nie udało się zapisać historii: {e}. Ponawiam próbę.",
-  "trayCopyLast": "Kopiuj ostatnią odpowiedź"
+  "trayCopyLast": "Kopiuj ostatnią odpowiedź",
+  "ktAttachOnlyPrompt": "Spójrz na załączony plik (lub pliki) i powiedz mi, co zawiera.",
+  "ktAttachFailed": "Plik nie dotarł do {p}, więc wiadomość nie została wysłana: poszłaby bez załącznika. Wyślij ją ponownie."
 }

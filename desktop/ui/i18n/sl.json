@@ -348,5 +348,7 @@
   "vinEmptyPop": "Ni omejitev: recept pošlje samo besedilo.",
   "vinStale": "Izbrana vrednost je izginila: uporablja se \"{v}\".",
   "ktSaveFailed": "Zgodovine ni bilo mogoče shraniti: {e}. Poskušam znova.",
-  "trayCopyLast": "Kopiraj zadnji odgovor"
+  "trayCopyLast": "Kopiraj zadnji odgovor",
+  "ktAttachOnlyPrompt": "Poglej priloženo datoteko (ali datoteke) in mi povej, kaj vsebuje.",
+  "ktAttachFailed": "Datoteka ni prišla do {p}, zato sporočilo ni bilo poslano: odšlo bi brez priloge. Pošljite ga znova."
 }

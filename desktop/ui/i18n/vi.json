@@ -348,5 +348,7 @@
   "vinEmptyPop": "Không có ràng buộc: công thức chỉ gửi văn bản.",
   "vinStale": "Giá trị đã chọn không còn: đang sử dụng \"{v}\".",
   "ktSaveFailed": "Không thể lưu lịch sử: {e}. Đang thử lại.",
-  "trayCopyLast": "Sao chép câu trả lời cuối"
+  "trayCopyLast": "Sao chép câu trả lời cuối",
+  "ktAttachOnlyPrompt": "Hãy xem tệp đính kèm (hoặc các tệp đính kèm) và cho tôi biết nội dung của nó.",
+  "ktAttachFailed": "Tệp không đến được {p}, nên tin nhắn chưa được gửi: nó sẽ đi mà không có tệp đính kèm. Hãy gửi lại."
 }

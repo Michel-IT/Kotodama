@@ -129,6 +129,36 @@ const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
 /// fails for the same reason: in the NEW page the message is not there, so it "looks unsent". Marked
 /// by the fill loop at the instant it pressed Enter, read before re-injecting: whoever arrives later
 /// harvests the answer and does NOT send.
+/// (broadcast, provider) pairs whose send was refused because an attachment never showed up in the provider's
+/// composer. The page only sends the code `ATTACH_FAIL_CODE`; the wording is the UI's (`ktAttachFailed`).
+fn attach_fail_marks() -> &'static Mutex<HashSet<(String, String)>> {
+    static S: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashSet::new()))
+}
+const ATTACH_FAIL_CODE: &str = "@attach";
+/// True for the page's "the files did not arrive, nothing was sent" delivery.
+fn is_attach_failure(st: &str, d: Option<&str>) -> bool {
+    st == "sendfail" && d == Some(ATTACH_FAIL_CODE)
+}
+/// Providers whose page may still receive a late upload after an attachment failure (a slow file that shows up in the
+/// composer after the last check): the next send to them must land on a NEW page, never on that one, or the late
+/// file would travel with an unrelated message.
+fn dirty_pages() -> &'static Mutex<HashSet<String>> {
+    static S: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashSet::new()))
+}
+/// Both delivery paths (IPC and the navigation fallback) go through `handle_push`, which calls this first: when the
+/// delivery is the attachment-failure code it marks (bid, key) and strips the code from the data, so the card
+/// carries no text. Returns whether it was one.
+fn take_attach_failure(bid: &str, key: &str, st: &str, data: &mut Option<String>) -> bool {
+    if !is_attach_failure(st, data.as_deref()) {
+        return false;
+    }
+    attach_fail_marks().lock().unwrap().insert((bid.to_string(), key.to_string()));
+    *data = Some(String::new());
+    true
+}
+
 /// (broadcast, provider) pairs currently waiting on the user (human check, sign-in, window over the
 /// composer). The watchdog leaves them alone: the time spent solving a check is not a silent page.
 fn blocked_marks() -> &'static Mutex<HashSet<(String, String)>> {
@@ -648,14 +678,39 @@ fn attach_js(broadcast_id: &str) -> String {
 }
 
 /// Hands the attached files to the provider page the way the page itself accepts them: through its own file
-/// input (as if picked in its dialog), or, when it has none, as a drop on its composer. Holds the text fill
-/// until the upload had time to start; the page uploads with its own session as usual.
+/// input (as if picked in its dialog), or, when it has none, as a paste/drop on its composer. Holds the text fill
+/// until the attachment is VERIFIED in the composer; the page uploads with its own session as usual.
+///
+/// Rules, from a defect measured on 15/10/2026 (ChatGPT, new chat, image: 6 of 9 isolated sends reached the
+/// provider as text only, the answer being "I can't see any attached file"):
+///  1. Wait for a composer that is really there. ChatGPT first paints a plain `<textarea>` shell with no file input
+///     and swaps it for its ProseMirror editor a moment later; files handed to the shell are dropped on the floor
+///     while the old code logged "via paste" as a success. A composer that is a bare TEXTAREA is not ready until
+///     the page offers a file input; a rich editor with no file input (Gemini creates it only on demand) is ready
+///     after a short grace.
+///  2. Verify with evidence that belongs to THIS file, never to the page finishing its own business: a new
+///     blob:/data: preview or image in the composer's region (compared as a set with what was there before), or
+///     the file's name showing up there (tolerant: entities decoded, extension dropped, truncated prefix).
+///     Structure only, never visible words, which change with the interface language.
+///  3. Never send without them. If the evidence does not come after the retries (each by a different route, never
+///     while the previous upload is still climbing) the send is declared failed: the page sends only the CODE
+///     '@attach'; the wording is the UI's, in the user's language.
+///  4. One cycle per page: a newer cycle cancels the older one (like `__ktFillRun`), and the older one can neither
+///     release the newer one's hold nor declare a failure on a message that already left.
 const ATTACH_JS: &str = r##"
 (function(){
   var files = window.__ktFiles;
   if (!files || !files.length || window.__ktFilesDone === __kt_bid) return;
+  // Already declared failed for this broadcast (a re-injection after the failure): the message must not go out.
+  if (window.__ktFilesFailed === __kt_bid) { try { window.__ktFillRun = '__ktCancelled'; window.__ktBid = null; } catch(e){} return; }
+  var BID = __kt_bid;
+  var RUN = 'a' + Date.now() + '-' + Math.random();
+  window.__ktAttachRun = RUN;
   window.__ktHoldAttach = true;
-  function diag(m){ try { if (window.__ktDiag) window.__TAURI__.core.invoke('kotodama_push', { b: __kt_bid, k: __kt_key, st: 'diag', d: 'ATTACH ' + m }).catch(function(){}); } catch(e){} }
+  function current(){ return window.__ktAttachRun === RUN; }
+  function diag(m){ try { if (window.__ktDiag) window.__TAURI__.core.invoke('kotodama_push', { b: BID, k: __kt_key, st: 'diag', d: 'ATTACH ' + m }).catch(function(){}); } catch(e){} }
+  var totalBytes = 0;
+  files.forEach(function(f){ totalBytes += Math.floor((f.b64 || '').length * 3 / 4); });
   function toFiles(){
     return files.map(function(f){
       var bin = atob(f.b64), u = new Uint8Array(bin.length);
@@ -667,7 +722,12 @@ const ATTACH_JS: &str = r##"
     var sels = ['textarea:not([readonly])', '[contenteditable="true"]', 'div[role="textbox"]'];
     // Never ChatGPT's open document block: its title <textarea> and body are editable too (same exclusion as
     // pickComposer in browser.rs and findComposerEl below), and an attachment dropped there never reaches the chat.
-    for (var i = 0; i < sels.length; i++) { var e = document.querySelectorAll(sels[i]); for (var j = e.length - 1; j >= 0; j--) if (e[j].offsetParent !== null && !e[j].closest('[data-testid="chatgpt-writing-block"]')) return e[j]; }
+    for (var i = 0; i < sels.length; i++) { var e = document.querySelectorAll(sels[i]); for (var j = e.length - 1; j >= 0; j--) {
+      var r = e[j].getBoundingClientRect();
+      // Not Quill's hidden clipboard sink (Gemini: a contenteditable DIV.ql-clipboard, last in the document, which the
+      // search took for the composer so every hand-over went to a node nobody reads) nor anything too small to type in.
+      if (e[j].offsetParent !== null && r.width >= 40 && r.height >= 12 && !e[j].classList.contains('ql-clipboard') && !e[j].closest('[aria-hidden="true"]') && !e[j].closest('[data-testid="chatgpt-writing-block"]')) return e[j];
+    } }
     return null;
   }
   function fileInput(){
@@ -679,38 +739,206 @@ const ATTACH_JS: &str = r##"
     }
     return best || ins[0] || null;
   }
-  var t0 = Date.now();
-  var iv = setInterval(function(){
-    if (window.__ktBid && window.__ktBid !== __kt_bid) { clearInterval(iv); window.__ktHoldAttach = false; return; }
-    var c = composer();
-    if (!c) { if (Date.now() - t0 > 20000) { clearInterval(iv); window.__ktHoldAttach = false; diag('no composer, text sent without files'); } return; }
-    clearInterval(iv);
-    var list = toFiles(), dt = new DataTransfer();
-    list.forEach(function(f){ dt.items.add(f); });
-    var input = fileInput(), how = 'none';
+  // The composer's own region: its form, else the nearest ancestor that also holds the page's file input (where
+  // the provider keeps the composer's previews and chips: on Claude the chip sits 6 levels above the editor, next
+  // to its input), else up to 8 levels up. It never goes up to an ancestor that already holds the conversation
+  // (messages), where a preview of an older message would pass for ours.
+  function scopeOf(c){
+    var f = c.closest('form');
+    if (f) return f;
+    var inp = fileInput(), limit = 8, s = c;
+    for (var i = 0; i < limit && s.parentElement && s.parentElement !== document.body; i++) {
+      var p = s.parentElement;
+      if (p.querySelector('[data-message-author-role], article, [data-testid*="conversation-turn" i]')) break;
+      s = p;
+      if (inp && s.contains(inp)) break;
+    }
+    return s;
+  }
+  function decode(s){
+    try { var t = document.createElement('textarea'); t.innerHTML = String(s); return t.value; } catch(e){ return String(s); }
+  }
+  function norm(s){ try { return decode(s).normalize('NFC').toLowerCase(); } catch(e){ return String(s).toLowerCase(); } }
+  // Everything the region shows or carries as text: its text and its attribute values (alt, title, aria-label...).
+  function haystack(sc){
+    var parts = [sc.textContent || ''];
     try {
-      if (input) {
-        input.files = dt.files;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-        how = 'input';
-      } else {
-        // No file input on the page (captured on Gemini: its input only exists after opening the upload menu).
-        // A paste into the composer is what the editor handles for files; a drop is the last resort.
-        c.focus();
-        var pasted = c.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
-        if (pasted) {
-          ['dragenter', 'dragover', 'drop'].forEach(function(t){ c.dispatchEvent(new DragEvent(t, { bubbles: true, cancelable: true, dataTransfer: dt })); });
-          how = 'drop';
-        } else {
-          how = 'paste';
+      var all = sc.querySelectorAll('*'), n = Math.min(all.length, 600);
+      for (var i = 0; i < n; i++) { var at = all[i].attributes; for (var j = 0; j < at.length; j++) if (at[j].name !== 'class' && at[j].name !== 'd' && at[j].value.length < 300) parts.push(at[j].value); }
+    } catch(e){}
+    return norm(parts.join('\n'));
+  }
+  // Names a camera, a screenshot tool or a paste gives to many different files: seeing one on the page proves nothing.
+  var GENERIC = /^(image|img|immagine|screenshot|screen shot|schermata|scan|scansione|foto|photo|picture|pasted|incollato|download|file|document|documento|untitled)([\s_\-.()0-9]*|[\s_\-]?\d.*)$/i;
+  function nameHit(h, name){
+    var n = norm(name); if (!n) return false;
+    if (GENERIC.test(n.replace(/\.[a-z0-9]{1,6}$/, ''))) return false;
+    if (h.indexOf(n) >= 0) return true;
+    var base = n.replace(/\.[a-z0-9]{1,6}$/, '');
+    if (base.length >= 3 && h.indexOf(base) >= 0) return true;
+    // Chips shorten long names ("very-long-na..."): the first characters stand for the file.
+    return base.length >= 14 && h.indexOf(base.slice(0, 12)) >= 0;
+  }
+  // What the region holds that can belong to a file: the sources of its media (compared as a set), the progress
+  // bars of an upload, and which of our names are in sight.
+  function snapshot(c, fixed){
+    var s = { src: {}, names: [], progress: 0, srcN: 0 };
+    try {
+      // The region measured before the hand-over is the one measured after it (a menu's input can disappear
+      // meanwhile and with it the way the region was found).
+      var sc = (fixed && fixed.isConnected && fixed.contains(c)) ? fixed : scopeOf(c);
+      s.scope = sc;
+      sc.querySelectorAll('img, video, source, canvas').forEach(function(e){
+        var u = e.currentSrc || e.getAttribute('src') || ''; if (!u) return;
+        // A page's own images (icons, avatars, logos) are not previews: unless the source is a blob:/data: URL, an
+        // image counts only once loaded and big enough to be a preview, never while it is still loading.
+        if (!/^(blob|data):/.test(u) && e.tagName === 'IMG' && !(e.complete && e.naturalWidth >= 24)) return;
+        s.src[u.slice(0, 300)] = 1; s.srcN++;
+      });
+      s.progress = sc.querySelectorAll('[role="progressbar"], progress, [aria-busy="true"]').length;
+      var h = haystack(sc);
+      files.forEach(function(f, i){ s.names[i] = nameHit(h, f.name); });
+    } catch(e){}
+    return s;
+  }
+  // New evidence specific to the files: a media source that was not there before, or one of our names that was not.
+  function gained(before, now){
+    var why = '';
+    Object.keys(now.src).forEach(function(u){ if (!before.src[u] && !why) why = 'new media ' + u.slice(0, 40); });
+    now.names.forEach(function(v, i){ if (v && !before.names[i] && !why) why = 'name of file ' + (i + 1); });
+    return why;
+  }
+  function hand(how, c, input, dt){
+    if (how === 'input') {
+      input.files = dt.files;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if (how === 'paste') {
+      c.focus();
+      c.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt }));
+    } else {
+      ['dragenter', 'dragover', 'drop'].forEach(function(t){ c.dispatchEvent(new DragEvent(t, { bubbles: true, cancelable: true, dataTransfer: dt })); });
+    }
+  }
+  // Some editors create their file input only when the upload menu opens (Gemini: four hidden inputs appear when the
+  // "+" menu is opened, measured 15/10/2026). The trigger is the first menu button inside the composer's region,
+  // found by `aria-haspopup`, not by its label; the menu is closed again once the files are handed over.
+  function menuButton(c){
+    try {
+      // Up to 8 levels (the "+" of Gemini sits 6 above its editor), still never into the conversation.
+      var s = c.closest('form') || c, b = null;
+      for (var i = 0; i < 8 && !b && s.parentElement && s.parentElement !== document.body; i++) {
+        b = s.querySelector('button[aria-haspopup="menu"], [role="button"][aria-haspopup="menu"]');
+        if (b) break;
+        var p = s.parentElement;
+        if (p.querySelector('[data-message-author-role], article, [data-testid*="conversation-turn" i]')) break;
+        s = p;
+      }
+      // Never a button that would submit the form it sits in.
+      if (b && b.tagName === 'BUTTON' && b.closest('form') && b.getAttribute('type') !== 'button') return null;
+      return b;
+    } catch(e){ return null; }
+  }
+  var menuBtn = null, menuTried = false, menuUntil = 0;
+  // A late upload cannot be taken back from here (the files come from the provider's own widgets); what is done is
+  // emptying the page's file inputs. Rust marks the page as dirty so the next send starts on a new one.
+  function scrubInputs(){
+    try { document.querySelectorAll('input[type="file"]').forEach(function(i){ try { i.value = ''; } catch(e){} }); } catch(e){}
+  }
+  function closeMenu(){
+    try { if (menuBtn && menuBtn.getAttribute('aria-expanded') === 'true') menuBtn.click(); } catch(e){}
+  }
+  function release(ms){ setTimeout(function(){ if (current()) window.__ktHoldAttach = false; }, ms); }
+  // The text must never go out without its files. The page only says THAT it failed (a code); the user-facing
+  // wording belongs to the UI. `why` stays in the debug log.
+  function fail(why){
+    if (!current()) return;
+    // The message already left (a newer cycle, a resume): nothing to declare, the send is a fact.
+    if (window.__ktEnterPressed || window.__ktFilesDone === BID) { window.__ktHoldAttach = false; return; }
+    window.__ktFilesFailed = BID;
+    diag('FAILED ' + why + ': files were not attached, the message is NOT sent');
+    try { window.__ktFillRun = '__ktCancelled'; } catch(e){}
+    try { if (window.__ktBid === BID) window.__ktBid = null; } catch(e){}
+    window.__ktHoldAttach = false;
+    closeMenu();
+    scrubInputs();
+    try { window.__ktPush({ b: BID, k: __kt_key, st: 'sendfail', s: 0, n: 1, tr: false, d: '@attach', md: '', cp: false, se: false }); } catch(e){}
+  }
+  var t0 = Date.now(), seenAt = 0, attempt = 0, phase = 'ready', verifyUntil = 0, hardUntil = 0, before = null, how = '', input = null, c = null;
+  var MAX_ATTEMPTS = 4;
+  // Absolute ceiling for the whole cycle, whatever the phase.
+  var CEILING_MS = 75000;
+  // A composer with no file input is waited for: ChatGPT's shell textarea the longest (hydration of a cold page
+  // behind several others), a rich editor only a short grace (the input is created on demand there).
+  var READY_SHELL_MS = 25000, READY_RICH_MS = 4000;
+  // How long one hand-over may take to show its preview. A big file takes longer to show up, and a second copy of a
+  // file still on its way up is worse than a late verdict: the wait grows with the size, and while an upload
+  // progress indicator is on screen it is extended (up to the hard limit).
+  var VERIFY_MS = 8000 + Math.min(12000, Math.round(totalBytes / 1e6 * 1500));
+  var iv = setInterval(function(){
+    if (!current()) { clearInterval(iv); return; }
+    if ((window.__ktBid && window.__ktBid !== BID) || window.__ktFillRun === '__ktCancelled') { clearInterval(iv); window.__ktHoldAttach = false; closeMenu(); return; }
+    var now = Date.now();
+    if (now - t0 > CEILING_MS) { clearInterval(iv); fail('ceiling of ' + CEILING_MS + ' ms reached'); return; }
+    if (phase === 'ready') {
+      c = composer();
+      if (!c) { if (now - t0 > 30000) { clearInterval(iv); fail('no composer on the page'); } return; }
+      if (!seenAt) seenAt = now;
+      input = fileInput();
+      var shell = c.tagName === 'TEXTAREA';
+      var waited = now - seenAt, limit = shell ? READY_SHELL_MS : READY_RICH_MS;
+      // Ready: the page offers a file input and the composer is not a just-seen shell; or the grace is over.
+      if (!(input && !(shell && waited < 1500)) && waited < limit) return;
+      phase = 'hand';
+    }
+    if (phase === 'menuwait') {
+      input = fileInput();
+      if (!input && now < menuUntil) return;
+      phase = 'hand';
+    }
+    if (phase === 'hand') {
+      c = composer() || c; input = fileInput();
+      if (!input && !menuTried) {
+        menuTried = true;
+        menuBtn = menuButton(c);
+        if (menuBtn) {
+          try { menuBtn.click(); menuUntil = now + 2500; phase = 'menuwait'; diag('opened the upload menu to get a file input'); return; } catch(e){}
         }
       }
-    } catch(e) { how = 'error ' + e; }
-    window.__ktFilesDone = __kt_bid;
-    diag('files=' + list.length + ' via ' + how);
-    // Time for the page to take the files and start uploading before the text goes in and Enter is pressed.
-    setTimeout(function(){ window.__ktHoldAttach = false; }, 3000 + 1500 * list.length);
+      attempt++;
+      var routes = input ? ['input', 'paste', 'drop', 'input'] : ['paste', 'drop', 'paste', 'drop'];
+      how = routes[Math.min(attempt, routes.length) - 1];
+      if (how === 'input' && !input) how = 'paste';
+      before = snapshot(c);
+      var dt = new DataTransfer();
+      toFiles().forEach(function(f){ dt.items.add(f); });
+      try { hand(how, c, input, dt); } catch(e){ diag('attempt ' + attempt + ' via ' + how + ' threw ' + e); }
+      diag('attempt ' + attempt + ' files=' + files.length + ' via ' + how + ' composer=' + c.tagName + ' input=' + (!!input) + ' media=' + before.srcN + ' wait=' + VERIFY_MS);
+      verifyUntil = Date.now() + VERIFY_MS;
+      hardUntil = Date.now() + VERIFY_MS + 15000;
+      phase = 'verify';
+      return;
+    }
+    if (phase === 'verify') {
+      var cc = composer() || c;
+      var snap = snapshot(cc, before && before.scope);
+      var why = gained(before, snap);
+      if (why) {
+        clearInterval(iv);
+        closeMenu();
+        window.__ktFilesDone = BID;
+        diag('files=' + files.length + ' via ' + how + ' verified (' + why + ', attempt ' + attempt + ', ' + (Date.now() - t0) + ' ms)');
+        // The preview is on screen, so the upload has started: a short pause, then the text goes in.
+        release(1200 + 600 * files.length);
+        return;
+      }
+      if (Date.now() < verifyUntil) return;
+      // Still climbing (a progress indicator the region did not have before): do not hand the files over again.
+      if (snap.progress > before.progress && Date.now() < hardUntil) return;
+      diag('attempt ' + attempt + ' via ' + how + ' not verified (media ' + snap.srcN + ', was ' + before.srcN + ')');
+      if (attempt >= MAX_ATTEMPTS) { clearInterval(iv); fail('no evidence of the file in the composer after ' + attempt + ' attempts'); return; }
+      phase = 'hand';
+    }
   }, 400);
 })();
 "##;
@@ -2470,7 +2698,8 @@ const HARVEST_JS: &str = r##"
     // once. Measured on a 10-provider broadcast from cold: the last in the queue (Qwen, Z.ai) were
     // declared `sendfail` at 45-49s having simply not reached their own composer yet -- the very same
     // providers answer fine when sent to alone. So the clock only runs once there is a composer.
-    if (composerVal() !== null) armTries++;
+    // The time spent verifying an attachment is not the provider's: the clock waits for the attach hold too.
+    if (composerVal() !== null && !window.__ktHoldAttach) armTries++;
     // Absolute ceiling, so a page that never produces a composer cannot wait forever.
     // A message we KNOW went out and that produced nothing in 180s is a timeout, not a failed send.
     if (Date.now() - armT0 > 180000) { clearInterval(armIv); fdiagArm('EXIT arm-180s hint=' + loginHintPresent() + ' streamEver=' + (window.__ktStreamEver||0) + ' armTries=' + armTries); census(); setTimeout(function(){ deliver((loginHintPresent() && !window.__ktStreamEver) ? 'login' : (KNOWN_SENT || window.__ktStreamEver ? 'timeout' : 'sendfail'), ''); }, 300); return; }
@@ -3273,6 +3502,12 @@ fn build_resume_js(
 /// Marks (bid, key) answered: removes it from the broadcast, emits `app://kotodama-answer`
 /// and, when the broadcast empties, `app://kotodama-finished`. Duplicate calls are no-ops.
 fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, truncated: bool, md: &str) {
+    let attach_failed = attach_fail_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    if attach_failed {
+        // The page may get the file late: it is not reused (no warm tab, no follow-up into it).
+        dirty_pages().lock().unwrap().insert(key.to_string());
+        prewarmed().lock().unwrap().remove(key);
+    }
     // An outcome ends any block on this provider for this broadcast, and its network readers.
     blocked_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
     login_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
@@ -3337,7 +3572,7 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     set_conv(window, key, (status == "done").then_some(bid));
     let _ = window.emit(
         "app://kotodama-answer",
-        serde_json::json!({ "broadcastId": bid, "key": key, "status": status, "text": text, "truncated": truncated, "md": md }),
+        serde_json::json!({ "broadcastId": bid, "key": key, "status": status, "text": text, "truncated": truncated, "md": md, "reason": if attach_failed { "attach" } else { "" } }),
     );
     if all_done {
         let _ = window.emit("app://kotodama-finished", serde_json::json!({ "broadcastId": bid }));
@@ -3503,13 +3738,16 @@ pub fn kotodama_push(
     let mut st = st;
     let mut d = d;
     let mut md = md;
+    // An attachment that never reached the composer: no text travels, the card says why from its own wording.
+    // (the marking itself is in `handle_push`, shared with the navigation fallback)
+    let attach_failed = s == Some(0) && is_attach_failure(&st, d.as_deref());
     // The answer read from the network wins when it is complete: the provider's own Markdown, exact, with
     // reasoning and sources kept apart. The DOM reading stays the fallback for everything else.
     let mut from_net = false;
     // "login" and "captcha" are in the list because they are guesses made from the page: a provider whose own response
     // stream delivered a complete answer did take the message (Gemini, 14/10/2026: the card closed with "login" after
     // 180 s although the network held the whole text). The network answer wins; with none, the verdict stands.
-    if s == Some(0) && matches!(st.as_str(), "done" | "timeout" | "error" | "sendfail" | "login" | "captcha") {
+    if !attach_failed && s == Some(0) && matches!(st.as_str(), "done" | "timeout" | "error" | "sendfail" | "login" | "captcha") {
         if crate::debug::enabled() {
             if let Some(rs) = net_readers().lock().unwrap().get(&(b.clone(), k.clone())) {
                 for (id, r) in rs {
@@ -3616,6 +3854,11 @@ fn handle_push(
     trunc: bool,
     md: Option<String>,
 ) {
+    let mut data = data;
+    let mut md = md;
+    if take_attach_failure(&bid, &key, &st, &mut data) {
+        md = Some(String::new());
+    }
     // Network capture from the discovery probe (KOTO_NETPROBE): one JSON record per line, per provider.
     if st == "netcap" {
         if debug::enabled() {
@@ -4192,6 +4435,8 @@ pub async fn kotodama_broadcast(
         }
     }
     for key in &keys {
+        // A page left dirty by an attachment failure is never typed into again: this send navigates for real.
+        let new_chat = new_chat || dirty_pages().lock().unwrap().remove(key.as_str());
         // The page is about to move on from the answer it shows: read aloud is no longer about that answer.
         set_conv(&window, key, None);
         // One in-flight harvest per provider: kill any previous one (different bid).
@@ -4799,5 +5044,119 @@ mod send_scope_tests {
         assert!(body.contains("function ownProbe()") && body.contains("'box'"));
         // a send declared failed also stops the fill loop
         assert!(js.contains("if (st === 'sendfail') { try { window.__ktFillRun = '__ktCancelled'; }"));
+    }
+}
+
+/// The attachment contract: nothing leaves without its files, and the page never carries user-facing words.
+#[cfg(test)]
+mod attach_tests {
+    #[test]
+    fn page_sends_a_code_not_a_sentence() {
+        let js = super::ATTACH_JS;
+        assert!(js.contains("d: '@attach'"));
+        assert!(js.contains(&format!("'{}'", super::ATTACH_FAIL_CODE)) || js.contains("@attach"));
+        assert!(!js.contains("did not reach") && !js.contains("Send it again"), "no English sentence in the page script");
+        // the technical reason stays in the debug log
+        assert!(js.contains("diag('FAILED ' + why"));
+    }
+
+    #[test]
+    fn failure_marks_the_flag_stops_fill_and_harvest() {
+        let js = super::ATTACH_JS;
+        let f = js.find("function fail(why)").unwrap();
+        let body = &js[f..f + 1100];
+        assert!(body.contains("window.__ktFilesFailed = BID"));
+        assert!(body.contains("window.__ktFillRun = '__ktCancelled'"));
+        assert!(body.contains("window.__ktBid = null"));
+        assert!(body.contains("st: 'sendfail'"));
+        // a failure never declares itself on a message that already left, nor from a superseded cycle
+        assert!(body.contains("if (!current()) return;") && body.contains("window.__ktEnterPressed"));
+        // a finished or failed cycle is not run again for the same broadcast
+        assert!(js.contains("window.__ktFilesFailed === __kt_bid"));
+    }
+
+    #[test]
+    fn cycles_do_not_release_each_other() {
+        let js = super::ATTACH_JS;
+        assert!(js.contains("window.__ktAttachRun = RUN"));
+        let f = js.find("function release(ms)").unwrap();
+        assert!(js[f..f + 160].contains("if (current()) window.__ktHoldAttach = false"));
+    }
+
+    #[test]
+    fn there_is_an_absolute_ceiling_and_an_attempt_cap() {
+        let js = super::ATTACH_JS;
+        assert!(js.contains("var CEILING_MS = 75000"));
+        assert!(js.contains("now - t0 > CEILING_MS"));
+        assert!(js.contains("var MAX_ATTEMPTS = 4"));
+    }
+
+    #[test]
+    fn the_arming_clock_waits_for_the_attach_hold() {
+        assert!(super::HARVEST_JS.contains("if (composerVal() !== null && !window.__ktHoldAttach) armTries++;"));
+    }
+
+    #[test]
+    fn evidence_is_specific_and_scoped() {
+        let js = super::ATTACH_JS;
+        // blob counting stays inside the composer's region
+        assert!(!js.contains("document.querySelectorAll('img[src^=\"blob:\"]')"));
+        assert!(js.contains("function gained(before, now)"));
+        assert!(js.contains("limit = 8, s = c") && js.contains("snapshot(cc, before && before.scope)"));
+    }
+
+    #[test]
+    fn generic_names_prove_nothing_and_loading_images_do_not_count() {
+        let js = super::ATTACH_JS;
+        assert!(js.contains("var GENERIC = /^(image|img|immagine|screenshot"));
+        assert!(js.contains("if (GENERIC.test(n.replace("));
+        assert!(js.contains("!(e.complete && e.naturalWidth >= 24)"));
+        // a re-injection after the failure keeps the fill cancelled
+        assert!(js.contains("if (window.__ktFilesFailed === __kt_bid) { try { window.__ktFillRun = '__ktCancelled'; window.__ktBid = null;"));
+    }
+
+    #[test]
+    fn both_delivery_paths_mark_the_failure_and_strip_the_code() {
+        let mut d = Some("@attach".to_string());
+        assert!(super::take_attach_failure("b-test", "k-test", "sendfail", &mut d));
+        assert_eq!(d.as_deref(), Some(""));
+        assert!(super::attach_fail_marks().lock().unwrap().remove(&("b-test".to_string(), "k-test".to_string())));
+        let mut other = Some("hello".to_string());
+        assert!(!super::take_attach_failure("b-test", "k-test", "sendfail", &mut other));
+        assert_eq!(other.as_deref(), Some("hello"));
+        assert!(super::attach_fail_marks().lock().unwrap().is_empty() || !super::attach_fail_marks().lock().unwrap().contains(&("b-test".to_string(), "k-test".to_string())));
+        // the fallback path really goes through handle_push, where the check lives
+        let src = include_str!("kotodama.rs");
+        let hp = src.find("fn handle_push(").unwrap();
+        assert!(src[hp..hp + 700].contains("take_attach_failure(&bid, &key, &st, &mut data)"));
+    }
+
+    #[test]
+    fn a_dirty_page_is_taken_once() {
+        super::dirty_pages().lock().unwrap().insert("k-dirty".to_string());
+        assert!(super::dirty_pages().lock().unwrap().remove("k-dirty"));
+        assert!(!super::dirty_pages().lock().unwrap().remove("k-dirty"));
+    }
+
+    #[test]
+    fn attach_failure_detection() {
+        assert!(super::is_attach_failure("sendfail", Some("@attach")));
+        assert!(!super::is_attach_failure("sendfail", Some("")));
+        assert!(!super::is_attach_failure("done", Some("@attach")));
+        assert!(!super::is_attach_failure("sendfail", None));
+    }
+
+    /// The script must at least parse: wrapped in a function, checked by node when it is available.
+    #[test]
+    fn the_script_parses() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("kt_attach_check.js");
+        let src = format!("function __f(__kt_bid, __kt_key){{{}}}", super::ATTACH_JS);
+        std::fs::write(&path, src).unwrap();
+        match std::process::Command::new("node").arg("--check").arg(&path).output() {
+            Ok(o) => assert!(o.status.success(), "node --check: {}", String::from_utf8_lossy(&o.stderr)),
+            Err(_) => eprintln!("node not available, syntax check skipped"),
+        }
+        let _ = std::fs::remove_file(path);
     }
 }

@@ -348,5 +348,7 @@
   "vinEmptyPop": "Hakuna vikwazo: mapishi hutuma maandishi tu.",
   "vinStale": "Thamani uliyochagua haipo tena: inatumia \"{v}\".",
   "ktSaveFailed": "Historia haikuweza kuhifadhiwa: {e}. Inajaribu tena.",
-  "trayCopyLast": "Nakili jibu la mwisho"
+  "trayCopyLast": "Nakili jibu la mwisho",
+  "ktAttachOnlyPrompt": "Tazama faili iliyoambatishwa (au faili zilizoambatishwa) na uniambie kilichomo.",
+  "ktAttachFailed": "Faili haikufika kwa {p}, kwa hiyo ujumbe haukutumwa: ungeenda bila kiambatisho. Utume tena."
 }

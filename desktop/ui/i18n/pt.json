@@ -348,5 +348,7 @@
   "vinEmptyPop": "Sem restrições: a receita envia apenas o texto.",
   "vinStale": "O valor escolhido não existe mais: usando \"{v}\".",
   "ktSaveFailed": "Não foi possível guardar o histórico: {e}. A tentar de novo.",
-  "trayCopyLast": "Copiar a última resposta"
+  "trayCopyLast": "Copiar a última resposta",
+  "ktAttachOnlyPrompt": "Olha para o ficheiro anexado (ou ficheiros anexados) e diz-me o que contém.",
+  "ktAttachFailed": "O arquivo não chegou a {p}, então a mensagem não foi enviada: ela teria saído sem o anexo. Envie de novo."
 }

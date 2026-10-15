@@ -348,5 +348,7 @@
   "vinEmptyPop": "无约束：配方只发送文本。",
   "vinStale": "选择的值已消失：正在使用\"{v}\"。",
   "ktSaveFailed": "无法保存历史记录：{e}。正在重试。",
-  "trayCopyLast": "复制最后一个回答"
+  "trayCopyLast": "复制最后一个回答",
+  "ktAttachOnlyPrompt": "请查看附加的文件，并告诉我里面有什么。",
+  "ktAttachFailed": "文件未能传到 {p}，因此消息没有发送：否则它会不带附件发出。请重新发送。"
 }

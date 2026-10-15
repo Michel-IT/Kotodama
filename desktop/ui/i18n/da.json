@@ -348,5 +348,7 @@
   "vinEmptyPop": "Ingen begrænsninger: opskriften sender kun teksten.",
   "vinStale": "Den valgte værdi findes ikke længere: bruger \"{v}\".",
   "ktSaveFailed": "Historikken kunne ikke gemmes: {e}. Prøver igen.",
-  "trayCopyLast": "Kopiér det seneste svar"
+  "trayCopyLast": "Kopiér det seneste svar",
+  "ktAttachOnlyPrompt": "Se på den vedhæftede fil (eller filer), og fortæl mig, hvad den indeholder.",
+  "ktAttachFailed": "Filen nåede ikke frem til {p}, så beskeden blev ikke sendt: den ville være gået afsted uden vedhæftningen. Send den igen."
 }

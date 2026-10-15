@@ -348,5 +348,7 @@
   "vinEmptyPop": "Kısıtlama yok: tarif yalnızca metni gönderir.",
   "vinStale": "Seçilen değer kayboldu: \"{v}\" kullanılıyor.",
   "ktSaveFailed": "Geçmiş kaydedilemedi: {e}. Yeniden deneniyor.",
-  "trayCopyLast": "Son yanıtı kopyala"
+  "trayCopyLast": "Son yanıtı kopyala",
+  "ktAttachOnlyPrompt": "Ekli dosyaya (veya dosyalara) bak ve içinde ne olduğunu söyle.",
+  "ktAttachFailed": "Dosya {p} tarafına ulaşmadı, bu yüzden ileti gönderilmedi: ek olmadan gidecekti. Yeniden gönderin."
 }

@@ -1841,6 +1841,8 @@
     // on demand from ui/i18n/<code>.json (lazy → light/fast app, not 50 languages in memory). =====
     const EN = {
       _htmlLang:'en',
+      ktAttachOnlyPrompt:'Look at the attached file(s) and tell me what they contain.',
+      ktAttachFailed:'The file did not reach {p}, so the message was not sent: it would have gone without the attachment. Send it again.',
       recipes:'Recipes', instructions:'Instructions', length:'Length', tone:'Tone',
       providerLabel:'AI Provider',
       providerOpenHint:'Double-click to open · right-click for options',
@@ -2199,7 +2201,7 @@
     function buildPrompt(){ return wrapForActiveRecipe(content.value.trim()); }
     // The active recipe's instruction around the text, then only the constraints THIS recipe carries, with the
     // values last picked in the chat on it. The chat send and the classic builder both go through here.
-    function wrapForActiveRecipe(text){
+    function wrapForActiveRecipe(text, noBody){
       const t=TR;
       // Ricetta "Neutra": invia il testo cosi' com'e' (nessuna istruzione, nessun vincolo).
       if(activeRecipe.kind==='key' && activeRecipe.key==='neutral') return text;
@@ -2207,7 +2209,9 @@
       // "be short" and "be professional" contradict "repeat word for word", and a provider that takes style
       // seriously rewrites the text (measured: Claude rewrote, ChatGPT obeyed).
       const ref=recipeRefOf(activeRecipe);
-      const body=instruction.value.trim()+'\n\n"""\n'+text+'\n"""';
+      // `noBody`: the message is an attachment alone, there is no text to put between the quotes
+      if(noBody && !instruction.value.trim()) return text;
+      const body=noBody ? instruction.value.trim() : instruction.value.trim()+'\n\n"""\n'+text+'\n"""';
       const lines=consLines(ref, 'chat');
       let out=body+(lines.length ? '\n\n'+t.constraints+'\n'+lines.join('\n') : '');
       // Risposta = "Solo testo": append the answer-only constraint (clean output)
@@ -2775,7 +2779,7 @@
           const foot=card.querySelector('.kt-card-foot'); foot.hidden=false;
           foot.appendChild(ktActs(ktCopyBtn(()=>text)));
         } else {
-          body.classList.add('empty'); body.textContent=ktStatusLabel(st);
+          body.classList.add('empty'); body.textContent=(a.reason==='attach' ? ktAttachMsg(key) : ktStatusLabel(st));
           // Same as ktOnAnswer: offer to open the provider tab when there's no text to show
           // (login/error) -- otherwise reopening an old session leaves no way to act on it.
           const foot=card.querySelector('.kt-card-foot');
@@ -3462,6 +3466,11 @@
                   title:'', created:Date.now(), updated:Date.now(), turns:[] };
       renderKtSessions();   // persisted only at the first send
     }
+    // The send was refused because the file never showed up in the provider's composer: the page only reports a
+    // code (d.reason === 'attach'), the sentence is this one, in the interface language.
+    function ktAttachMsg(key){
+      return (TR.ktAttachFailed||'').replace('{p}', (PROVIDERS[key] && PROVIDERS[key].name) || key);
+    }
     function ktStatusLabel(st, extra){
       const t=TR;
       if(st==='pending') return t.ktPending;
@@ -4077,7 +4086,9 @@
       for(const f of list){
         if(ktAttach.length>=KT_ATTACH_MAX){ toast(TR.ktAttachTooMany||''); break; }
         if(f.ok===false || (f.size||0)>KT_ATTACH_MAX_BYTES){ toast((TR.ktAttachTooBig||'')+' '+f.name); continue; }
-        if(ktAttach.some(a=>(f.path && a.path===f.path) || (!f.path && a.name===f.name && a.size===f.size))) continue;
+        // Pasted screenshots all arrive as "image.png": same name and even same size are not the same image, so
+        // inline data is compared by content (a path by path); only a true duplicate is skipped.
+        if(ktAttach.some(a=>f.path ? a.path===f.path : (a.data && f.data ? a.data===f.data : (a.name===f.name && a.size===f.size)))) continue;
         ktAttach.push(f);
       }
       ktRenderAttach();
@@ -4244,10 +4255,10 @@
           restored=prev.pop();
           turn.answers[d.key]={ ...restored };
           if(prev.length) turn.answers[d.key].prev=prev;
-          if(st!=='cancelled') toast(TR.ktRegenFailed||'');
+          if(st!=='cancelled') toast(d.reason==='attach' ? ktAttachMsg(d.key) : (TR.ktRegenFailed||''));
           d={ ...d, status:'done', text:restored.text||'', md:restored.md||'' };
         } else {
-          turn.answers[d.key]={ status:st, text:(d.text||'').trim(), md:d.md||'' };
+          turn.answers[d.key]={ status:st, text:(d.text||'').trim(), md:d.md||'', ...(d.reason?{reason:d.reason}:{}) };
           if(prev.length) turn.answers[d.key].prev=prev;
           if(ex && ex.sources && ex.sources.length) turn.answers[d.key].sources=ex.sources;
           if(ex && ex.reasoning) turn.answers[d.key].reasoning=ex.reasoning;
@@ -4297,7 +4308,7 @@
         ref.foot.hidden=false;
       } else {
         ref.body.classList.add('empty');
-        ref.body.textContent = st==='captcha' ? TR.ktCaptcha : ktStatusLabel(st);   // the full sentence in the body
+        ref.body.textContent = st==='captcha' ? TR.ktCaptcha : (d.reason==='attach' ? ktAttachMsg(d.key) : ktStatusLabel(st));   // the full sentence in the body
         // login/error: offer to open the provider tab to fix it (login, cookies...). Unambiguous
         // "Accedi"/"Log in" label specifically for 'login' -- generic "Apri provider" otherwise.
         const t=TR, k=d.key;
@@ -4357,9 +4368,21 @@
       // While answers are still coming the button is Stop: a new message would be typed into provider pages
       // that are still generating.
       if(ktIsBusy()){ ktStopAll(); return; }
-      const t=TR, text=ktInput.value.trim();
+      const t=TR;
+      let text=ktInput.value.trim();
       const keys=[...ktLoadSel()];
-      if(!text) return;
+      // Attachments with no text used to do nothing at all (a pasted image and Enter: silent). The page of every
+      // provider accepts an image-only message, but Kotodama's send, history title and "already sent" mark are
+      // all keyed on a text, so the message carries a neutral request in the interface language instead.
+      if(!text && !ktAttach.length) return;
+      // With a recipe the message is the recipe's own instruction around the attachment (a screenshot and "Traduci"
+      // translates the text in it); without one, the neutral request below is the message.
+      const attachOnly=!text;
+      if(!text){
+        // The neutral request comes from the dictionary only: a missing key sends nothing rather than a made-up text.
+        if(!t.ktAttachOnlyPrompt) return;
+        text=t.ktAttachOnlyPrompt;
+      }
       if(!keys.length){
         // Inexperienced user typed something with zero providers selected -- Invio would
         // otherwise silently do nothing (just a toast). Open the "+" menu directly so they
@@ -4410,7 +4433,7 @@
       // canonical/saved one) exactly like the builder's own buildPrompt() -- editing without
       // hitting "Salva" still applies to the send, saving only persists it for reuse later.
       // Only the constraints the recipe carries (Settings -> Ricette), as buildPrompt does.
-      const sendText = wrapForActiveRecipe(text);
+      const sendText = wrapForActiveRecipe(text, attachOnly);
       if(sendText!==text) turn.sendText=sendText;   // a retry resends exactly this (recipe + constraints)
       // The pre-warmed page is being consumed by this very send: re-arm, so the NEXT message
       // pre-warms again on its first keystroke.

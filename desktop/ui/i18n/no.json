@@ -348,5 +348,7 @@
   "vinEmptyPop": "Ingen begrensninger: oppskriften sender bare teksten.",
   "vinStale": "Den valgte verdien finnes ikke lenger: bruker \"{v}\".",
   "ktSaveFailed": "Historikken kunne ikke lagres: {e}. Prøver igjen.",
-  "trayCopyLast": "Kopier siste svar"
+  "trayCopyLast": "Kopier siste svar",
+  "ktAttachOnlyPrompt": "Se på den vedlagte filen (eller filene) og fortell meg hva den inneholder.",
+  "ktAttachFailed": "Filen nådde ikke {p}, så meldingen ble ikke sendt: den ville gått av gårde uten vedlegget. Send den på nytt."
 }

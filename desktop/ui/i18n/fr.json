@@ -348,5 +348,7 @@
   "vinEmptyPop": "Aucune contrainte : la recette envoie le texte seul.",
   "vinStale": "La valeur choisie n'existe plus : utilise \"{v}\".",
   "ktSaveFailed": "L'historique n'a pas pu être enregistré : {e}. Nouvel essai en cours.",
-  "trayCopyLast": "Copier la dernière réponse"
+  "trayCopyLast": "Copier la dernière réponse",
+  "ktAttachOnlyPrompt": "Regarde le fichier joint (ou les fichiers joints) et dis-moi ce qu'il contient.",
+  "ktAttachFailed": "Le fichier n'est pas arrivé chez {p}, le message n'a donc pas été envoyé : il serait parti sans la pièce jointe. Renvoyez-le."
 }

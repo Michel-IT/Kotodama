@@ -348,5 +348,7 @@
   "vinEmptyPop": "Žiadne obmedzenia: recept posiela iba text.",
   "vinStale": "Vybraná hodnota už neexistuje: používam \"{v}\".",
   "ktSaveFailed": "Históriu sa nepodarilo uložiť: {e}. Skúšam znova.",
-  "trayCopyLast": "Kopírovať poslednú odpoveď"
+  "trayCopyLast": "Kopírovať poslednú odpoveď",
+  "ktAttachOnlyPrompt": "Pozri sa na priložený súbor (alebo súbory) a povedz mi, čo obsahuje.",
+  "ktAttachFailed": "Súbor sa k {p} nedostal, preto sa správa neodoslala: odišla by bez prílohy. Odošlite ju znova."
 }

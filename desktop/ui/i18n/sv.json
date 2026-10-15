@@ -348,5 +348,7 @@
   "vinEmptyPop": "Ingen begränsning: receptet skickar bara texten.",
   "vinStale": "Det valda värdet finns inte längre: använder \"{v}\".",
   "ktSaveFailed": "Historiken kunde inte sparas: {e}. Försöker igen.",
-  "trayCopyLast": "Kopiera senaste svaret"
+  "trayCopyLast": "Kopiera senaste svaret",
+  "ktAttachOnlyPrompt": "Titta på den bifogade filen (eller filerna) och berätta vad den innehåller.",
+  "ktAttachFailed": "Filen nådde inte {p}, så meddelandet skickades inte: det hade gått iväg utan bilagan. Skicka det igen."
 }

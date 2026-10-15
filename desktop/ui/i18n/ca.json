@@ -348,5 +348,7 @@
   "vinEmptyPop": "Sense restriccions: la recepta envia només el text.",
   "vinStale": "El valor seleccionat ha desaparegut: usant «{v}».",
   "ktSaveFailed": "No s'ha pogut desar l'historial: {e}. Ho torno a provar.",
-  "trayCopyLast": "Copia l'última resposta"
+  "trayCopyLast": "Copia l'última resposta",
+  "ktAttachOnlyPrompt": "Mira el fitxer adjunt (o els fitxers adjunts) i digues-me què conté.",
+  "ktAttachFailed": "El fitxer no ha arribat a {p}, així que el missatge no s'ha enviat: hauria sortit sense l'adjunt. Torna'l a enviar."
 }
