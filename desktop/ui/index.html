@@ -2205,7 +2205,7 @@
     // values last picked in the chat on it. The chat send and the classic builder both go through here.
     function wrapForActiveRecipe(text, noBody){
       const t=TR;
-      // Ricetta "Neutra": invia il testo cosi' com'e' (nessuna istruzione, nessun vincolo).
+      // "Neutral" recipe: the text goes out as it is (no instruction, no constraints).
       if(activeRecipe.kind==='key' && activeRecipe.key==='neutral') return text;
       // Recipes whose instruction IS the whole job (repeat this text unchanged) carry no constraints by default:
       // "be short" and "be professional" contradict "repeat word for word", and a provider that takes style
@@ -2490,7 +2490,8 @@
         if(!q) return true;
         if((s.title||'').toLowerCase().includes(q)) return true;
         if(ktSessionRecipeName(s).toLowerCase().includes(q)) return true;
-        return (s.turns||[]).some(t=>(t.text||'').toLowerCase().includes(q)
+        // an attachment-only turn's text is the neutral request, not something the user wrote: its file names are searched instead
+        return (s.turns||[]).some(t=>((t.attachOnly ? (t.files||[]).join(' ') : (t.text||''))).toLowerCase().includes(q)
           || Object.values(t.answers||{}).some(a=>((a&&a.text)||'').toLowerCase().includes(q)));
       });
       if(!items.length){ const e=document.createElement('div'); e.className='kt-empty'; e.textContent=TR.ktNoSessions; list.appendChild(e); return; }
@@ -2712,7 +2713,9 @@
         btn.hidden=!ktRetryable(turn).length;
       }
     }
-    function ktUserMsg(text, files, getTurn){
+    // `attachOnly`: the message is an attachment alone. The neutral request it carries is only there so the send has a
+    // text; the user did not write it, so the bubble shows the files and no text (and nothing to copy).
+    function ktUserMsg(text, files, getTurn, attachOnly){
       const m=document.createElement('div'); m.className='kt-umsg';
       if(files && files.length){
         const fl=document.createElement('div'); fl.className='kt-umsg-files';
@@ -2720,7 +2723,7 @@
         m.appendChild(fl);
       }
       const u=document.createElement('div'); u.className='kt-user'; u.textContent=text;
-      const acts=ktActs(ktCopyBtn(()=>text));
+      const acts=attachOnly ? ktActs() : ktActs(ktCopyBtn(()=>text));
       if(getTurn){
         const rs=document.createElement('button'); rs.type='button'; rs.className='kt-icon-btn kt-resend'; rs.innerHTML=KT_ICON_RESEND;
         rs.title=TR.ktRetryAll||''; rs.setAttribute('aria-label', TR.ktRetryAll||''); rs.hidden=true;
@@ -2729,7 +2732,8 @@
         // Registered once the turn exists (a live turn is created right after its message is drawn).
         setTimeout(()=>{ const turn=getTurn(); if(turn){ ktResendBtns.set(turn, rs); ktSyncAllRetry(); } }, 0);
       }
-      m.appendChild(u); m.appendChild(acts);
+      if(!attachOnly) m.appendChild(u);
+      m.appendChild(acts);
       return m;
     }
     // Width of the shared column (--kt-col in the CSS), taken from the WIDEST turn in the thread: every
@@ -2748,7 +2752,7 @@
     // Rebuilds one SAVED turn in the thread (final cards, no spinners). Failed cards get
     // the ⟳ retry too: they are registered under a synthetic bid so ktRetryKey can reuse them.
     function ktRenderSavedTurn(turn){
-      ktThread.appendChild(ktUserMsg(turn.text||'', turn.files, ()=>turn));
+      ktThread.appendChild(ktUserMsg(turn.text||'', turn.files, ()=>turn, !!turn.attachOnly));
       const grid=document.createElement('div'); grid.className='kt-grid';
       ktSetGridCols(grid, Object.keys(turn.answers||{}).length);
       const svBid='sv'+(ktSeq++);
@@ -2839,8 +2843,10 @@
       const t=TR, parts=[];
       ktSession.turns.forEach(tr=>{
         if(tr===excludeTurn) return;                   // exclude the turn being (re)sent now
-        parts.push(t.ktCtxUser+' '+(tr.text||''));
         const a=(tr.answers||{})[key];
+        // an attachment-only message is the neutral request plus a file: a provider that has no answer to it never
+        // received the file, and "Look at the attached file" with no file would only mislead it
+        if(!(tr.attachOnly && !(a&&a.text))) parts.push(t.ktCtxUser+' '+(tr.text||''));
         if(a&&a.text) parts.push(t.ktCtxYou+' '+a.text.replace(/\s+/g,' ').slice(0,600));
       });
       if(!parts.length) return newText;
@@ -2885,7 +2891,9 @@
     // Same shape as ktContextPrompt, with only what was missed: the provider already has the rest in its chat.
     function ktCatchUpPrompt(missed, newText){
       const t=TR;
-      const ctx=missed.map(tr=>t.ktCtxUser+' '+(tr.text||'')).join('\n');
+      const seen=missed.filter(tr=>!tr.attachOnly);   // it never got those files: see ktContextPrompt
+      if(!seen.length) return newText;
+      const ctx=seen.map(tr=>t.ktCtxUser+' '+(tr.text||'')).join('\n');
       return t.ktCtxIntro+'\n'+ctx+'\n\n'+t.ktCtxNew+' '+newText;
     }
     async function ktDispatchKey(bid, key, text, ctxTurn, freshFlag){
@@ -3968,7 +3976,7 @@
     function ktGroupHead(turn, i){
       const h=document.createElement('div'); h.className='kt-group-h';
       const t=document.createElement('span'); t.className='kt-group-t'; t.textContent='#'+(i+1);
-      const q=document.createElement('span'); q.className='kt-group-q'; q.textContent=(turn.text||'').replace(/\s+/g,' ').slice(0,90);
+      const q=document.createElement('span'); q.className='kt-group-q'; q.textContent=(turn.attachOnly && turn.files && turn.files.length ? turn.files.join(', ') : (turn.text||'')).replace(/\s+/g,' ').slice(0,90);
       const w=document.createElement('span'); w.className='kt-group-w';
       // Conversations saved before turns carried their own time fall back to the first thing that arrived in them.
       const when=turn.at || Object.values(turn.answers||{}).flatMap(a=>(a.audio||[]).map(x=>x.at)).filter(Boolean)[0];
@@ -4189,8 +4197,8 @@
       ref.createdAt=Date.now();
       ktCards[`${bid}:${key}`]=ref;
     }
-    function ktAppendTurn(bid, text, keys, files){
-      ktThread.appendChild(ktUserMsg(text, files, ()=>ktTurnByBid[bid]));
+    function ktAppendTurn(bid, text, keys, files, attachOnly){
+      ktThread.appendChild(ktUserMsg(text, files, ()=>ktTurnByBid[bid], !!attachOnly));
       const grid=document.createElement('div'); grid.className='kt-grid';
       ktSetGridCols(grid, keys.length);
       keys.forEach(key=>ktPendingCard(grid, bid, key));
@@ -4403,16 +4411,17 @@
         try{ await invoke('kotodama_set_attachments',{ broadcastId:bid, files:files.map(f=>({ name:f.name, path:f.path||null, data:f.data||null, mime:f.mime||null })) }); }
         catch(e){ toast(`${t.openError}: ${e}`); }
       }
-      const turnGrid=ktAppendTurn(bid, text, keys, files.map(f=>f.name));
+      const turnGrid=ktAppendTurn(bid, text, keys, files.map(f=>f.name), attachOnly);
       keys.forEach(k=>ktMarkPending(bid, k));
       ktInput.value=''; ktAutoGrow(); ktInput.focus();
       // session bookkeeping: append the turn, title from the first message, persist
       const recipeRef = activeRecipe.kind==='key' ? 'key:'+activeRecipe.key : 'id:'+activeRecipe.id;
       const turn={ text, answers:{}, at:Date.now(), recipe:recipeRef, recipeName:recipeNameFor(recipeRef) };
-      if(files.length) turn.files=files.map(f=>f.name);
+      if(files.length){ turn.files=files.map(f=>f.name); if(attachOnly) turn.attachOnly=true; }
       keys.forEach(k=>{ turn.answers[k]={status:'pending', text:''}; });
       const hadTurns=ktSession.turns.length>0;
-      if(!ktSession.title) ktSession.title=text.replace(/\s+/g,' ').slice(0,48);
+      // the title of a conversation that starts from an attachment alone is the file names, not the neutral request
+      if(!ktSession.title) ktSession.title=(attachOnly && files.length ? files.map(f=>f.name).join(', ') : text).replace(/\s+/g,' ').slice(0,48);
       ktSession.turns.push(turn); ktSession.updated=Date.now();
       if(!ktAllSessions.includes(ktSession)) ktAllSessions.unshift(ktSession);
       ktTurnByBid[bid]=turn;
