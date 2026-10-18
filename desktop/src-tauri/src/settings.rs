@@ -505,11 +505,73 @@ fn kt_sessions_path(app: &AppHandle) -> Result<PathBuf, String> {
 /// Load the Kotodama meta-chat sessions ('[]' if missing/error). The payload is opaque
 /// (owned and versioned by the frontend), so it stays a raw JSON value on this side.
 pub fn load_kt_sessions(app: &AppHandle) -> serde_json::Value {
-    kt_sessions_path(app)
-        .and_then(|p| fs::read_to_string(p).map_err(|e| e.to_string()))
-        .ok()
-        .and_then(|s| serde_json::from_str(&s).ok())
+    let Ok(path) = kt_sessions_path(app) else { return serde_json::Value::Array(Vec::new()) };
+    let parse = |p: &std::path::Path| -> Option<serde_json::Value> {
+        let v: serde_json::Value = serde_json::from_str(&fs::read_to_string(p).ok()?).ok()?;
+        v.is_array().then_some(v)
+    };
+    // A file that cannot be read or parsed (a write cut short, a restore of the wrong file) must not make the whole
+    // history vanish: the newest daily copy is read instead.
+    parse(&path)
+        .or_else(|| kt_backups(&path).into_iter().rev().find_map(|b| parse(&b)))
         .unwrap_or_else(|| serde_json::Value::Array(Vec::new()))
+}
+
+/// How many daily copies of the history are kept.
+const KT_BACKUPS_KEPT: usize = 7;
+
+/// The daily copies of the history, oldest first (the name carries the day number, zero padded).
+fn kt_backups(path: &std::path::Path) -> Vec<PathBuf> {
+    let Some(dir) = path.parent().map(|d| d.join("history-backup")) else { return Vec::new() };
+    let mut v: Vec<PathBuf> = fs::read_dir(dir)
+        .map(|r| r.filter_map(|e| e.ok()).map(|e| e.path()).filter(|p| p.extension().map_or(false, |x| x == "json")).collect())
+        .unwrap_or_default();
+    v.sort();
+    v
+}
+
+/// Writes `data` beside `path` and renames it over: a crash or a full disk in the middle of the write leaves the
+/// previous file whole instead of a truncated one.
+fn write_atomic(path: &std::path::Path, data: &str) -> Result<(), String> {
+    let tmp = path.with_extension("json.tmp");
+    fs::write(&tmp, data).map_err(|e| e.to_string())?;
+    // An antivirus or an indexer can hold the old file for a moment: a few short retries before giving up, so the
+    // user is not told about a lock that lasts a fraction of a second.
+    let mut last = String::new();
+    for attempt in 0..4 {
+        match fs::rename(&tmp, path) {
+            Ok(()) => return Ok(()),
+            Err(e) => last = e.to_string(),
+        }
+        if attempt < 3 {
+            std::thread::sleep(std::time::Duration::from_millis(60));
+        }
+    }
+    let _ = fs::remove_file(&tmp);
+    Err(last)
+}
+
+/// Once a day, before the first save over it, keeps a copy of the history file as it stands (best-effort: a copy
+/// that fails never stops the save). The last `KT_BACKUPS_KEPT` days are kept.
+fn kt_daily_backup(path: &std::path::Path) {
+    if !path.is_file() {
+        return;
+    }
+    let day = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() / 86400)
+        .unwrap_or(0);
+    let Some(dir) = path.parent().map(|d| d.join("history-backup")) else { return };
+    let copy = dir.join(format!("kotodama-sessions-{day:06}.json"));
+    if copy.exists() || fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    if fs::copy(path, &copy).is_ok() {
+        let all = kt_backups(path);
+        for old in all.iter().take(all.len().saturating_sub(KT_BACKUPS_KEPT)) {
+            let _ = fs::remove_file(old);
+        }
+    }
 }
 
 /// Save the Kotodama meta-chat sessions to disk.
@@ -517,12 +579,31 @@ pub fn save_kt_sessions(app: &AppHandle, sessions: &serde_json::Value) -> Result
     let path = kt_sessions_path(app)?;
     let json = serde_json::to_string(sessions).map_err(|e| e.to_string())?; // compact: can be large
     let _guard = io_lock().lock().unwrap_or_else(|e| e.into_inner());
-    fs::write(path, json).map_err(|e| e.to_string())
+    kt_daily_backup(&path);
+    write_atomic(&path, &json)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn history_is_written_whole_and_copied_once_a_day() {
+        let dir = std::env::temp_dir().join(format!("koto-hist-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("kotodama-sessions.json");
+        write_atomic(&path, "[1]").unwrap();
+        kt_daily_backup(&path);
+        write_atomic(&path, "[1,2]").unwrap();
+        kt_daily_backup(&path); // same day: the first copy stays
+        let copies = kt_backups(&path);
+        assert_eq!(copies.len(), 1);
+        assert_eq!(fs::read_to_string(&copies[0]).unwrap(), "[1]");
+        assert_eq!(fs::read_to_string(&path).unwrap(), "[1,2]");
+        assert!(!dir.join("kotodama-sessions.json.tmp").exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
 
     /// The shipped shortcuts must follow the platform: macOS on Ctrl+Cmd (Option is a dead-key
     /// modifier there and Ctrl+Alt+Space is the system input-source switcher), everyone else on

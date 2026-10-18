@@ -475,6 +475,241 @@ struct TlBlock {
     from_snapshot: bool,
     /// The provider marked the block finished (a snapshot with field 4 = 1): its text is the whole text.
     finished: bool,
+    /// What a widget tool block (a translation card, ...) shows, rebuilt from its structured payload (field 13).
+    /// The page draws it inside an isolated iframe, so the page reading never sees it: this is the only copy.
+    widget: String,
+}
+
+/// The words a widget block of the timeline displays, from its structured payload (field `13`). The translation
+/// card (`mcp__widgets__translation_display_v0`, measured 16/10/2026) is `13.33` = { `1` source language name,
+/// `2` target language name, `5` original, `6` translation, `8` title } and comes out as the same text the block's
+/// own field `9` carries when it has one: title, "source -> target", original, translation. Any other widget gives
+/// its plain-text leaves (several words, no markup) so a card of a kind we have not seen is not silently dropped;
+/// markup and code (a generated interface) are left to the page, which is where those are readable.
+fn widget_text(blk: &[(u32, Pb<'_>)]) -> String {
+    fn leaves(f: &[(u32, Pb<'_>)], depth: u32, out: &mut Vec<String>) {
+        for (_, v) in f {
+            let Pb::Bytes(b) = v else { continue };
+            // bytes that are readable text are text; anything else is tried as a nested message
+            let text = std::str::from_utf8(b).ok().filter(|t| !t.chars().any(|c| c.is_control() && c != '\n' && c != '\t'));
+            match (text, pb_parse(b).filter(|m| !m.is_empty() && depth < 6)) {
+                (None, Some(m)) => leaves(&m, depth + 1, out),
+                (Some(t), _) => {
+                    let t = t.trim().to_string();
+                    let plain = t.contains(char::is_whitespace) && !t.contains('<') && !t.contains('{');
+                    if plain && !out.contains(&t) {
+                        out.push(t);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    // Only the widget tools: field 13 is the input of ANY tool block (a web search carries its query there), and
+    // that is not an answer. Two families are measured: the `mcp__widgets__` tools (name in field 15, payload in
+    // `13.33`) and the `visualize` server (`visualize:show_widget`, 18/10/2026: field 15 is only its display name,
+    // "visualize: Show widget"; the tool is identified by `13.26.5` = "visualize").
+    let widgets_family = pb_text(blk, 15).map_or(false, |n| n.starts_with("mcp__widgets__"));
+    let mut parts: Vec<String> = Vec::new();
+    for w in pb_msgs(blk, 13) {
+        if let Some(t) = visualize_text(&w) {
+            parts.push(t);
+            continue;
+        }
+        if !widgets_family {
+            continue;
+        }
+        let card = pb_msgs(&w, 33).into_iter().find(|c| pb_text(c, 5).is_some() && pb_text(c, 6).is_some());
+        if let Some(c) = card {
+            let t = |n: u32| pb_text(&c, n).filter(|x| !x.trim().is_empty());
+            if let Some(title) = t(8) {
+                parts.push(title);
+            }
+            if let (Some(a), Some(b)) = (t(1), t(2)) {
+                parts.push(format!("{a} → {b}"));
+            }
+            parts.extend(t(5));
+            parts.extend(t(6));
+        } else {
+            leaves(&w, 0, &mut parts);
+        }
+    }
+    parts.join("\n\n")
+}
+
+/// The words of a `visualize:show_widget` call (measured 18/10/2026): `13.26` = { `1` tool id, `5` server
+/// "visualize", `2` the input as JSON once the call is complete, `13` the same JSON while it is still being
+/// written }. The input's `widget_code` is the HTML the page draws in an isolated iframe (a card with several
+/// sentences, say), so its visible text is the only readable copy. Only the complete input (`2`) is read: the
+/// streaming one is cut mid-markup. None when this is not that tool, or the input is not complete yet.
+fn visualize_text(w: &[(u32, Pb<'_>)]) -> Option<String> {
+    let call = pb_msgs(w, 26).into_iter().find(|c| pb_text(c, 5).as_deref() == Some("visualize"))?;
+    let input: Value = serde_json::from_str(&pb_text(&call, 2)?).ok()?;
+    let text = html_text(input.get("widget_code")?.as_str()?);
+    (!text.is_empty()).then_some(text)
+}
+
+/// The visible text of a small HTML fragment: tags dropped, one line per block element, the contents of elements the
+/// reader does not see (`style`, `script`, `svg`, `template`, `noscript`, anything marked `sr-only`, comments) left
+/// out, entities decoded. A tag ends at the first `>` OUTSIDE its quoted attributes (`onclick="x>0"` is one tag), a
+/// hidden element is skipped to its own closing tag even when others of the same name are nested inside, and a `<`
+/// that does not start a tag stays as text.
+fn html_text(html: &str) -> String {
+    const BLOCK: [&str; 14] = ["p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "td", "th", "section"];
+    const VOID: [&str; 8] = ["br", "hr", "img", "input", "meta", "link", "col", "wbr"];
+    const HIDDEN: [&str; 5] = ["style", "script", "svg", "template", "noscript"];
+    let (mut out, mut i) = (String::new(), 0usize);
+    // the hidden element we are inside: its name and how many same-name elements are open within it
+    let mut skip: Option<(String, usize)> = None;
+    while i < html.len() {
+        let rest = &html[i..];
+        if !rest.starts_with('<') {
+            let n = rest.find('<').unwrap_or(rest.len());
+            if skip.is_none() {
+                out.push_str(&rest[..n]);
+            }
+            i += n;
+            continue;
+        }
+        if rest.starts_with("<!--") {
+            // a comment ends at "-->" whatever it contains
+            i += rest.find("-->").map_or(rest.len(), |e| e + 3);
+            continue;
+        }
+        let next = rest[1..].chars().next();
+        if !matches!(next, Some(c) if c.is_ascii_alphabetic() || c == '/' || c == '!') {
+            if skip.is_none() {
+                out.push('<');
+            }
+            i += 1;
+            continue;
+        }
+        // end of the tag: the first '>' that is not inside a quoted attribute value (a quote opens only right after
+        // '=', so a stray apostrophe in a bare word does not keep the tag open)
+        let mut quote: Option<char> = None;
+        let mut end = None;
+        let mut prev = ' ';
+        for (at, c) in rest.char_indices().skip(1) {
+            match (quote, c) {
+                (Some(q), c) if c == q => quote = None,
+                (None, '"') | (None, '\'') if prev == '=' => quote = Some(c),
+                (None, '>') => {
+                    end = Some(at);
+                    break;
+                }
+                _ => {}
+            }
+            if !c.is_whitespace() || quote.is_some() {
+                prev = c;
+            }
+        }
+        let Some(end) = end else { break };
+        let tag = &rest[1..end];
+        i += end + 1;
+        let closing = tag.starts_with('/');
+        let name: String = tag.trim_start_matches('/').chars().take_while(|c| c.is_ascii_alphanumeric()).collect::<String>().to_lowercase();
+        // `script` and `style` hold raw text: nothing inside is a tag, the slash of `<script/>` means nothing, and the
+        // element ends at the first `</script` / `</style` whatever the code in between looks like
+        if !closing && (name == "script" || name == "style" || name == "noscript") {
+            // (ASCII lowercasing keeps every byte offset). Like a browser, the element ends at `</name` followed by
+            // a space, '/' or '>': `</scripts` inside the code is still code.
+            let lower = html[i..].to_ascii_lowercase();
+            let needle = format!("</{name}");
+            let (mut from, mut at) = (0, lower.len());
+            while let Some(p) = lower[from..].find(&needle) {
+                let after = lower[from + p + needle.len()..].chars().next();
+                if after.map_or(true, |c| c.is_whitespace() || c == '/' || c == '>') {
+                    at = from + p;
+                    break;
+                }
+                from += p + needle.len();
+            }
+            i += at;
+            continue;
+        }
+        let self_closed = tag.ends_with('/') || VOID.contains(&name.as_str());
+        if let Some((until, depth)) = &mut skip {
+            if name == *until && !self_closed {
+                if closing {
+                    if *depth == 0 {
+                        skip = None;
+                    } else {
+                        *depth -= 1;
+                    }
+                } else {
+                    *depth += 1;
+                }
+            }
+            continue;
+        }
+        let screen_reader_only = tag.split(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == '=').any(|w| w == "sr-only");
+        if !closing && !self_closed && (HIDDEN.contains(&name.as_str()) || screen_reader_only) {
+            skip = Some((name, 0));
+            continue;
+        }
+        if BLOCK.contains(&name.as_str()) {
+            out.push('\n');
+        }
+    }
+    let out = decode_entities(&out);
+    out.lines().map(|l| l.split_whitespace().collect::<Vec<_>>().join(" ")).filter(|l| !l.is_empty()).collect::<Vec<_>>().join("\n")
+}
+
+/// HTML entities in one pass (so `&amp;lt;` becomes `&lt;` and no further): the numeric ones and the few named ones
+/// a generated card uses. An unknown name stays as written.
+fn decode_entities(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some(at) = rest.find('&') {
+        out.push_str(&rest[..at]);
+        rest = &rest[at..];
+        let decoded = rest[1..].find(';').filter(|&e| e <= 10).and_then(|e| {
+            let name = &rest[1..1 + e];
+            let ch = match name {
+                "nbsp" => Some(' '),
+                "lt" => Some('<'),
+                "gt" => Some('>'),
+                "quot" => Some('"'),
+                "apos" => Some('\''),
+                "amp" => Some('&'),
+                "rarr" => Some('→'),
+                "larr" => Some('←'),
+                "mdash" | "ndash" => Some('-'),
+                "hellip" => Some('…'),
+                "eacute" => Some('é'),
+                "egrave" => Some('è'),
+                "agrave" => Some('à'),
+                "ograve" => Some('ò'),
+                "ugrave" => Some('ù'),
+                "igrave" => Some('ì'),
+                _ => name
+                    .strip_prefix("#x")
+                    .or_else(|| name.strip_prefix("#X"))
+                    .filter(|h| !h.is_empty() && h.chars().all(|c| c.is_ascii_hexdigit()))
+                    .and_then(|h| u32::from_str_radix(h, 16).ok())
+                    .or_else(|| {
+                        name.strip_prefix('#')
+                            .filter(|d| !d.is_empty() && d.chars().all(|c| c.is_ascii_digit()))
+                            .and_then(|d| d.parse::<u32>().ok())
+                    })
+                    .filter(|&n| n != 0)
+                    .and_then(char::from_u32),
+            };
+            ch.map(|c| (c, e + 2))
+        });
+        match decoded {
+            Some((c, used)) => {
+                out.push(if c == '\u{a0}' { ' ' } else { c });
+                rest = &rest[used..];
+            }
+            None => {
+                out.push('&');
+                rest = &rest[1..];
+            }
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 /// Claude since October 2026. The reply to the send request (`PerformAction`) is empty and the answer is pushed
@@ -560,6 +795,7 @@ impl ClaudeTimeline {
             let kind = pb_msgs(&b, 10).first().and_then(|t| pb_num(t, 1));
             let text = pb_text(&b, 9);
             let thinking = pb_msgs(&b, 12).first().and_then(|t| pb_text(t, 1));
+            let widget = widget_text(&b);
             let fin = pb_num(&b, 4) == Some(1);
             let blk = self.block_mut(&id);
             if is_new {
@@ -577,6 +813,9 @@ impl ClaudeTimeline {
             }
             if let Some(t) = thinking {
                 Self::snapshot(&mut blk.thinking, t);
+            }
+            if !widget.is_empty() {
+                blk.widget = widget;
             }
             for c in pb_msgs(&b, 11) {
                 self.cite(&c);
@@ -646,10 +885,17 @@ impl ClaudeTimeline {
             if self.groups.get(&b.group).and_then(|m| self.roles.get(m)) == Some(&1) {
                 continue;
             }
-            let (into, piece) = match b.kind {
-                2 => (&mut text, &b.text),
-                1 => (&mut reasoning, &b.thinking),
-                _ => continue,
+            // A widget block that carries no text of its own (no field 9) still shows words on the page, inside an
+            // iframe nobody can read but this stream: its payload is part of the answer, in its place in the order.
+            let widget_only = b.kind != 1 && b.text.is_empty() && !b.widget.is_empty();
+            let (into, piece) = if widget_only {
+                (&mut text, &b.widget)
+            } else {
+                match b.kind {
+                    2 => (&mut text, &b.text),
+                    1 => (&mut reasoning, &b.thinking),
+                    _ => continue,
+                }
             };
             if !piece.is_empty() {
                 // text we only know from deltas lacks whatever came before the first one, until the block's final snapshot
@@ -2363,6 +2609,180 @@ data: {f}
         assert_eq!(r.answer().skipped, 0);
     }
 
+
+    /// A widget tool block as the timeline sends it (measured 16/10/2026, `mcp__widgets__translation_display_v0`): no
+    /// kind, a title, the structured payload in field 13 and, when `with_text`, a text fallback in field 9.
+    fn translation_widget(id: &str, grp: &str, with_text: bool) -> Vec<u8> {
+        let card = cat(&[
+            pb_str(1, "Inglese"),
+            pb_str(2, "Italiano"),
+            pb_str(3, "en"),
+            pb_str(4, "it"),
+            pb_str(5, "Threat detected.\nOne more finding."),
+            pb_str(6, "Minaccia rilevata.\nUn altro riscontro."),
+            pb_str(8, "Traduzione dell'avviso"),
+        ]);
+        let mut b = cat(&[pb_str(1, id), pb_str(2, grp), pb_num(4, 1), pb_len(13, &pb_len(33, &card)), pb_str(15, "mcp__widgets__translation_display_v0")]);
+        if with_text {
+            b.extend(cat(&[pb_str(9, "TESTO DEL BLOCCO"), pb_len(10, &pb_num(1, 2))]));
+        }
+        pb_len(5, &b)
+    }
+
+    #[test]
+    fn claude_timeline_translation_widget_without_text_is_read_from_its_payload() {
+        // The page draws the card in an isolated iframe: when the block has no field 9 the payload is the only copy.
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(
+            &mut r,
+            &[
+                tl_frame(&[conv(2)], None),
+                tl_frame(&[conv(2), message("a1", 2), group("g-w", "a1", 2), translation_widget("b-w", "g-w", false)], None),
+                tl_frame(&[group("g-text", "a1", 1), block_final("b-text", "g-text", "Ho lasciato invariati i termini tecnici.")], None),
+                tl_frame(&[conv(1)], None),
+            ],
+        );
+        assert_eq!(
+            r.answer().text,
+            "Traduzione dell'avviso\n\nInglese → Italiano\n\nThreat detected.\nOne more finding.\n\nMinaccia rilevata.\nUn altro riscontro.\n\nHo lasciato invariati i termini tecnici."
+        );
+        assert!(r.answer().done);
+    }
+
+    #[test]
+    fn claude_timeline_widget_with_its_own_text_is_not_doubled() {
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(
+            &mut r,
+            &[
+                tl_frame(&[conv(2)], None),
+                tl_frame(&[conv(2), message("a1", 2), group("g-w", "a1", 2), translation_widget("b-w", "g-w", true)], None),
+                tl_frame(&[group("g-text", "a1", 1), block_final("b-text", "g-text", "Commento.")], None),
+                tl_frame(&[conv(1)], None),
+            ],
+        );
+        assert_eq!(r.answer().text, "TESTO DEL BLOCCO\n\nCommento.");
+    }
+
+    #[test]
+    fn html_text_keeps_code_out_and_reads_what_is_shown() {
+        // '>' inside a quoted attribute does not end the tag
+        assert_eq!(html_text("<p>Total</p><button onclick=\"go(x>0)\">Calc</button>"), "Total\nCalc");
+        assert_eq!(html_text("<button onclick=\"() => run()\">Run</button><p>Hi there</p>"), "Run\nHi there");
+        // a comment is skipped whatever it contains
+        assert_eq!(html_text("<!-- note > here --><p>Text</p>"), "Text");
+        // hidden elements, nested ones of the same name, and a void element carrying the marker
+        assert_eq!(html_text("<div class=\"sr-only\"><div>in</div>leak</div><p>shown</p>"), "shown");
+        assert_eq!(html_text("<svg><svg>inner</svg>chart label</svg><p>shown</p>"), "shown");
+        assert_eq!(html_text("<input class=\"sr-only\" id=\"a\"><p>Visible answer text</p>"), "Visible answer text");
+        assert_eq!(html_text("<template>tpl</template><noscript>raw</noscript><style>p{}</style><p>ok</p>"), "ok");
+        // a bare '<' is text, entities are decoded once
+        assert_eq!(html_text("<p>5 < 6 and more</p>"), "5 < 6 and more");
+        assert_eq!(html_text("<p>caff&egrave; &#8594; &#x27;a&#x27; &amp;lt; &unknown;</p>"), "caffè → 'a' &lt; &unknown;");
+        // script and style are raw text: no tag inside them, the slash of `<script/>` means nothing
+        assert_eq!(html_text("<script>for(let i=0;i<items.length;i++){el.innerHTML += '<li>'+items[i]+'</li>'}</script><p>shown</p>"), "shown");
+        assert_eq!(html_text("<script>var s=\"<script>\";</script><p>shown</p>"), "shown");
+        assert_eq!(html_text("<script src=\"a.js\"/>var secret=1;</script><p>shown</p>"), "shown");
+        assert_eq!(html_text("<STYLE>p>a{}</STYLE><p>shown</p>"), "shown");
+        // `not-sr-only` is visible; a stray apostrophe outside a value does not hold the tag open
+        assert_eq!(html_text("<span class=\"not-sr-only\">visible</span>"), "visible");
+        assert_eq!(html_text("<a title='it's'>x</a><script>if(a>b){}</script><p>shown</p>"), "x\nshown");
+        // the closing tag needs a delimiter after its name; noscript is raw text too
+        assert_eq!(html_text("<script>var t=\"</scripts>\"; LEAKED_CODE</script><p>shown</p>"), "shown");
+        assert_eq!(html_text("<style>a::after{content:\"</styled>\"} LEAKED_CSS{}</style><p>shown</p>"), "shown");
+        assert_eq!(html_text("<noscript>a<b</noscript><p>shown</p>"), "shown");
+        // numeric entities: no NUL, no sign
+        assert_eq!(html_text("<p>a&#0;b &#+65; &#x+41; &#65;</p>"), "a&#0;b &#+65; &#x+41; A");
+        // malformed input never panics
+        for t in ["<", "<>", "</", "<p", "<p class=\"x", "héllo 日本<b>x", "&", "&#99999999999;"] {
+            let _ = html_text(t);
+        }
+    }
+
+    #[test]
+    fn claude_timeline_other_tools_are_not_answer_text() {
+        // a web search block carries its query in field 13: that is the tool's input, never part of the answer
+        let payload = pb_len(7, &cat(&[pb_str(1, "orari treni Roma Milano domani mattina")]));
+        let b = pb_len(5, &cat(&[pb_str(1, "b-s"), pb_str(2, "g-s"), pb_num(4, 1), pb_len(13, &payload), pb_str(15, "web_search")]));
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(
+            &mut r,
+            &[
+                tl_frame(&[conv(2)], None),
+                tl_frame(&[conv(2), message("a1", 2), group("g-s", "a1", 2), b], None),
+                tl_frame(&[group("g-text", "a1", 1), block_final("b-text", "g-text", "Ecco gli orari.")], None),
+                tl_frame(&[conv(1)], None),
+            ],
+        );
+        assert_eq!(r.answer().text, "Ecco gli orari.");
+    }
+
+    /// The `visualize:show_widget` block as the timeline sends it (measured 18/10/2026, invented data): field 15 is
+    /// only a display name, `13.26` holds the call. While it is written the input is in `13.26.13` (cut mid-markup),
+    /// once complete in `13.26.2`.
+    fn visualize_widget(id: &str, grp: &str, input_field: u32, input: &str) -> Vec<u8> {
+        let call = cat(&[pb_str(1, "visualize:show_widget"), pb_str(5, "visualize"), pb_str(12, "show_widget"), pb_str(input_field, input)]);
+        pb_len(5, &cat(&[pb_str(1, id), pb_str(2, grp), pb_len(13, &pb_len(26, &call)), pb_str(15, "visualize: Show widget")]))
+    }
+
+    #[test]
+    fn claude_timeline_visualize_widget_text_enters_the_answer() {
+        let code = "<h2 class=\"sr-only\">Card description</h2><style>.a{color:red}</style><div><p>A dog, in two sentences</p>\n<p>English</p><p>The dog runs.</p><div><p>Italiano</p><p>Il cane corre.</p></div></div><div><p>English</p><p>He wags &amp; waits.</p><p>Scodinzola e aspetta.</p></div>";
+        let input = serde_json::json!({"title": "dog_card", "loading_messages": ["Preparing"], "widget_code": code}).to_string();
+        let partial = &input[..input.len() - 40];
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(
+            &mut r,
+            &[
+                tl_frame(&[conv(2)], None),
+                // streaming snapshot (cut input) first: it must add nothing
+                tl_frame(&[conv(2), message("a1", 2), group("g-w", "a1", 2), visualize_widget("b-w", "g-w", 13, partial)], None),
+                tl_frame(&[visualize_widget("b-w", "g-w", 2, &input)], None),
+                tl_frame(&[group("g-text", "a1", 1), block_final("b-text", "g-text", "Ecco la scheda.")], None),
+                tl_frame(&[conv(1)], None),
+            ],
+        );
+        assert_eq!(
+            r.answer().text,
+            "A dog, in two sentences\nEnglish\nThe dog runs.\nItaliano\nIl cane corre.\nEnglish\nHe wags & waits.\nScodinzola e aspetta.\n\nEcco la scheda."
+        );
+        assert!(r.answer().done);
+    }
+
+    #[test]
+    fn claude_timeline_other_server_call_with_html_input_is_not_answer_text() {
+        // same shape as show_widget but another server (a web search, say): its input is never part of the answer
+        let call = cat(&[pb_str(1, "web_search"), pb_str(5, "web"), pb_str(2, r#"{"query":"orari treni","widget_code":"<p>no</p>"}"#)]);
+        let b = pb_len(5, &cat(&[pb_str(1, "b-s"), pb_str(2, "g-s"), pb_len(13, &pb_len(26, &call)), pb_str(15, "web_search")]));
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(
+            &mut r,
+            &[
+                tl_frame(&[conv(2)], None),
+                tl_frame(&[conv(2), message("a1", 2), group("g-s", "a1", 2), b], None),
+                tl_frame(&[group("g-text", "a1", 1), block_final("b-text", "g-text", "Ecco gli orari.")], None),
+                tl_frame(&[conv(1)], None),
+            ],
+        );
+        assert_eq!(r.answer().text, "Ecco gli orari.");
+    }
+
+    #[test]
+    fn claude_timeline_unknown_widget_gives_plain_text_but_never_markup() {
+        let payload = pb_len(7, &cat(&[pb_str(1, "A short note for you"), pb_str(2, "<div class=\"x\">html source</div>"), pb_str(3, "single")]));
+        let b = pb_len(5, &cat(&[pb_str(1, "b-w"), pb_str(2, "g-w"), pb_num(4, 1), pb_len(13, &payload), pb_str(15, "mcp__widgets__other_v0")]));
+        let mut r = reader_for("anthropic", TIMELINE_URL).unwrap();
+        feed_frames(
+            &mut r,
+            &[
+                tl_frame(&[conv(2)], None),
+                tl_frame(&[conv(2), message("a1", 2), group("g-w", "a1", 2), b], None),
+                tl_frame(&[group("g-text", "a1", 1), block_final("b-text", "g-text", "Fine.")], None),
+                tl_frame(&[conv(1)], None),
+            ],
+        );
+        assert_eq!(r.answer().text, "A short note for you\n\nFine.");
+    }
 
     /// A block snapshot flagged finished (field 4 = 1), as the last snapshot of a block is.
     fn block_final(id: &str, grp: &str, text: &str) -> Vec<u8> {

@@ -317,6 +317,40 @@ fn win_park_offscreen(hwnd_raw: isize) -> (i32, i32) {
     }
 }
 
+/// Is the window still where `win_park_offscreen` put it (far beyond any monitor)?
+#[cfg(windows)]
+fn win_is_parked(hwnd_raw: isize) -> bool {
+    use windows::Win32::Foundation::{HWND, RECT};
+    use windows::Win32::UI::WindowsAndMessaging::GetWindowRect;
+    unsafe {
+        let mut r = RECT::default();
+        let ok = GetWindowRect(HWND(hwnd_raw as *mut core::ffi::c_void), &mut r).is_ok();
+        // when the position cannot be read the old behaviour (hide) is kept
+        !ok || r.left >= 30000
+    }
+}
+
+/// If the window's restored ("normal") rectangle is still the parked one, moves it to (x,y) keeping its size and its
+/// current show state (maximized stays maximized).
+#[cfg(windows)]
+fn win_fix_normal_pos(hwnd_raw: isize, x: i32, y: i32) {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{GetWindowPlacement, SetWindowPlacement, WINDOWPLACEMENT};
+    unsafe {
+        let hwnd = HWND(hwnd_raw as *mut core::ffi::c_void);
+        let mut p = WINDOWPLACEMENT { length: std::mem::size_of::<WINDOWPLACEMENT>() as u32, ..Default::default() };
+        if GetWindowPlacement(hwnd, &mut p).is_err() || p.rcNormalPosition.left < 30000 {
+            return;
+        }
+        let (w, h) = (p.rcNormalPosition.right - p.rcNormalPosition.left, p.rcNormalPosition.bottom - p.rcNormalPosition.top);
+        p.rcNormalPosition.left = x;
+        p.rcNormalPosition.top = y;
+        p.rcNormalPosition.right = x + w;
+        p.rcNormalPosition.bottom = y + h;
+        let _ = SetWindowPlacement(hwnd, &p);
+    }
+}
+
 /// Move the window back to (x,y) WITHOUT hiding it, changing its size or stealing focus. Used when
 /// the user asks for the window while an inline transform has it parked off-screen.
 #[cfg(windows)]
@@ -440,7 +474,18 @@ fn inline_restore_window(app: &AppHandle) {
         let pos = app.state::<AppState>().inline_saved_pos.lock().unwrap().take();
         if let (Some((x, y)), Some(main)) = (pos, app.get_window("main")) {
             if let Ok(h) = main.hwnd() {
-                win_unpark_hide(h.0 as isize, x, y);
+                // The parked window is "visible" to Windows, so Alt+Tab or the desktop view can bring it forward
+                // while the transform runs; the user then maximizes it. Hiding it now would close, under their
+                // hands, a window they are using (and put it back at its old place). Only a window still sitting
+                // off-screen is hidden.
+                if win_is_parked(h.0 as isize) {
+                    win_unpark_hide(h.0 as isize, x, y);
+                } else {
+                    debug::log("inline_restore_window: the window was brought back by the user, left as it is");
+                    // Maximized or minimized while parked, its "normal" rectangle is still the far one: un-maximizing
+                    // later would throw it off-screen. Put that rectangle back where the window was.
+                    win_fix_normal_pos(h.0 as isize, x, y);
+                }
             }
         }
     }
@@ -748,8 +793,13 @@ fn apply_autostart(app: &AppHandle, enabled: bool) {
     use tauri_plugin_autostart::ManagerExt;
     let mgr = app.autolaunch();
     let now = mgr.is_enabled().unwrap_or(false);
-    if enabled != now {
+    // A development build never touches the OS login item: it would register ITS OWN exe (target\debug), which at
+    // the next login starts without the dev server and shows "page not reachable" (seen 17/10/2026), and as the
+    // app is single-instance it also keeps the real `npm run dev` from starting.
+    if enabled != now && !cfg!(debug_assertions) {
         let _ = if enabled { mgr.enable() } else { mgr.disable() };
+    } else if enabled != now {
+        debug::log("autostart: debug build, the OS login item is left alone");
     }
     if let Some(item) = app.state::<AppState>().autostart_item.lock().unwrap().as_ref() {
         let _ = item.set_checked(enabled);
