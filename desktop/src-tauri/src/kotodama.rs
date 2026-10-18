@@ -2086,8 +2086,13 @@ const HARVEST_JS: &str = r##"
   // assistant bubble, ahead of the text. It is reasoning, never the answer: left in, the label came out in front
   // of the reply and made the page text look longer than the network text (TODO 49). Scoped to the bubble's own
   // testid like the writing block above, and matched by structure, never by the label (it is localised).
+  // Perplexity's source chips sit inside the paragraphs as `<span data-pplx-citation data-pplx-citation-url=...>`
+  // wrapping a link whose text is the site name (read live 18/10/2026). They are citations, not the model's own
+  // words: delivered, they came out as "Rosso [ speakup ](https://...)" and, by lengthening the page text, made the
+  // shorter network answer look incomplete (net=5B against dom=17B) so the page text won. A link the model wrote
+  // in its text carries no such attribute and stays.
   var CHROME_SEL = 'button, [role="button"], [role="toolbar"], [role="menu"], [role="menuitem"],'
-    + ' [role="tab"], [role="tablist"], select, input, textarea, [data-testid="TurnStatus"],'
+    + ' [role="tab"], [role="tablist"], select, input, textarea, [data-testid="TurnStatus"], [data-pplx-citation],'
     + ' [data-testid="chatgpt-writing-block"] header, [data-testid="assistant-message"] .thinking-container';
   // Is this node a control whose text is NOT part of the answer? A plain control carries one label ("Copy",
   // "Monthly", "Reset"). A generated interface also builds its cards and section headers out of pressable

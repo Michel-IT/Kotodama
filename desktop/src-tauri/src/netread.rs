@@ -1694,15 +1694,27 @@ impl Reader for Mistral {
                 }
             }
             let content = self.msg.get("content").and_then(Value::as_str).unwrap_or("");
-            let mut text = String::new();
+            let (mut text, mut reasoning) = (String::new(), String::new());
+            let mut has_chunks = false;
             if let Some(Value::Array(chunks)) = self.msg.get("contentChunks") {
                 for c in chunks {
-                    if let Some(t) = c.get("text").and_then(Value::as_str) {
+                    let Some(t) = c.get("text").and_then(Value::as_str) else { continue };
+                    has_chunks = true;
+                    // Measured 18/10/2026: the model's reasoning arrives as ordinary `text` chunks tagged
+                    // `_context.type == "reasoning"` (later chunks carry no `_context`). Telling them apart by
+                    // that tag, never by wording, keeps "Simple math. Respond in Italian." out of the answer.
+                    let ctx = c.pointer("/_context/type").and_then(Value::as_str).unwrap_or("");
+                    let kind = c.get("type").and_then(Value::as_str).unwrap_or("text");
+                    if ctx == "reasoning" || ctx == "thinking" || kind == "thinking" || kind == "reasoning" {
+                        reasoning.push_str(t);
+                    } else {
                         text.push_str(t);
                     }
                 }
             }
-            self.ans.text = if text.len() >= content.len() { text } else { content.to_string() };
+            // `content` is only a fallback for messages that carry no chunk at all.
+            self.ans.text = if has_chunks || content.is_empty() { text } else { content.to_string() };
+            self.ans.reasoning = reasoning;
             if let Some(Value::Array(refs)) = self.msg.get("references") {
                 for r in refs {
                     if let Some(url) = r.get("url").and_then(Value::as_str) {
@@ -2178,6 +2190,34 @@ mod tests {
         r.feed("data: {\"v\":\"olo**\"}\n\n");
         r.feed("data: {\"p\":\"response/status\",\"v\":\"FINISHED\"}\n\n");
         assert_eq!(r.answer().text, "**Titolo**");
+        assert!(r.answer().done);
+    }
+
+    #[test]
+    fn mistral_reasoning_chunks_kept_apart() {
+        // Reduced from a real stream (18/10/2026): reasoning chunks carry `_context.type == "reasoning"`.
+        let mut r = reader_for("mistral", "/api/chat").unwrap();
+        r.feed("15:{\"json\":{\"type\":\"message\",\"patches\":[{\"op\":\"replace\",\"path\":\"/\",\"value\":{\"role\":\"assistant\",\"content\":\"\",\"contentChunks\":null,\"generationStatus\":\"in-progress\"}}]}}\n");
+        r.feed("15:{\"json\":{\"type\":\"message\",\"patches\":[{\"op\":\"replace\",\"path\":\"/contentChunks\",\"value\":[{\"type\":\"text\",\"text\":\"Simple\",\"_context\":{\"type\":\"reasoning\",\"contextId\":\"harness-reasoning-0\"}}]}]}}\n");
+        r.feed("15:{\"json\":{\"type\":\"message\",\"patches\":[{\"op\":\"add\",\"path\":\"/contentChunks/1\",\"value\":{\"type\":\"text\",\"text\":\" math.\",\"_context\":{\"type\":\"reasoning\"}}},{\"op\":\"add\",\"path\":\"/contentChunks/2\",\"value\":{\"type\":\"text\",\"text\":\"17 x 23 = \"}},{\"op\":\"add\",\"path\":\"/contentChunks/3\",\"value\":{\"type\":\"text\",\"text\":\"**391**\"}}]}}\n");
+        assert_eq!(r.answer().text, "17 x 23 = **391**");
+        assert_eq!(r.answer().reasoning, "Simple math.");
+        r.feed("15:{\"json\":{\"type\":\"message\",\"patches\":[{\"op\":\"replace\",\"path\":\"/generationStatus\",\"value\":\"success\"}]}}\n");
+        assert!(r.answer().done);
+        assert_eq!(r.answer().text, "17 x 23 = **391**");
+    }
+
+    #[test]
+    fn mistral_final_compaction_keeps_the_reasoning_apart() {
+        // At the end Mistral folds the answer chunks into one: the `_context` of the first answer chunk is removed,
+        // its text becomes the whole answer and the others are dropped. The reasoning chunk stays what it was.
+        let mut r = reader_for("mistral", "/api/chat").unwrap();
+        r.feed("15:{\"json\":{\"type\":\"message\",\"patches\":[{\"op\":\"replace\",\"path\":\"/\",\"value\":{\"role\":\"assistant\",\"content\":\"\",\"contentChunks\":[{\"type\":\"text\",\"text\":\"Simple math.\",\"_context\":{\"type\":\"reasoning\"}},{\"type\":\"text\",\"text\":\"17 x \",\"_context\":{\"type\":\"reasoning\"}},{\"type\":\"text\",\"text\":\"23 = \"},{\"type\":\"text\",\"text\":\"**391**\"}],\"generationStatus\":\"in-progress\"}}]}}\n");
+        assert_eq!(r.answer().text, "23 = **391**");
+        assert_eq!(r.answer().reasoning, "Simple math.17 x ");
+        r.feed("15:{\"json\":{\"type\":\"message\",\"patches\":[{\"op\":\"remove\",\"path\":\"/contentChunks/1\"},{\"op\":\"remove\",\"path\":\"/contentChunks/2\"},{\"op\":\"remove\",\"path\":\"/contentChunks/1/_context\"},{\"op\":\"replace\",\"path\":\"/contentChunks/1/text\",\"value\":\"17 x 23 = **391**\"},{\"op\":\"replace\",\"path\":\"/generationStatus\",\"value\":\"success\"}]}}\n");
+        assert_eq!(r.answer().text, "17 x 23 = **391**");
+        assert_eq!(r.answer().reasoning, "Simple math.");
         assert!(r.answer().done);
     }
 
