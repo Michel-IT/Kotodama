@@ -3114,10 +3114,25 @@
     // Retry ONE failed card (⟳ in its header): reset it to pending and re-dispatch that
     // provider only, with the same turn text (context-aware on resumed sessions).
     const ktSuperseded=new Set();   // "bid:key" of attempts replaced by a retry: their late events are dropped
+    const ktRetryWaiting=new Set();   // `bid:key` of retries waiting for their files (see ktRetryKey)
     async function ktRetryKey(oldBid, key){
       const turn=ktTurnByBid[oldBid]; const ref=ktCards[`${oldBid}:${key}`];
       if(!turn || !ref || !TAURI) return;
       const bid='b'+(ktSeq++)+'-r'+Math.random().toString(36).slice(2,6);
+      // A retry is a new send, and Rust keeps the files per send: they are handed to the new one first. Without them
+      // the provider would get the text of a message about a file it never receives (for an image alone: only the
+      // neutral request). When they are gone (the app restarted since) nothing is sent and the card stays as it was.
+      if(turn.files && turn.files.length){
+        // the wait below must not let a second click (or the automatic retry after sign-in) start a second send
+        const rk=`${oldBid}:${key}`;
+        if(ktRetryWaiting.has(rk)) return;
+        ktRetryWaiting.add(rk);
+        let n=0;
+        try{ n=await invoke('kotodama_reuse_attachments',{ from:oldBid, to:bid }); }catch(e){ n=0; }
+        ktRetryWaiting.delete(rk);
+        if(ktCards[rk]!==ref) return;   // the card moved on while waiting
+        if(!n){ toast(ktAttachMsg(key)); return; }
+      }
       // The attempt being replaced may still be open in Rust (a card waiting on a sign-in or a check): the new
       // send closes it as an error, and that outcome must not overwrite the turn the new attempt now owns.
       ktSuperseded.add(`${oldBid}:${key}`);

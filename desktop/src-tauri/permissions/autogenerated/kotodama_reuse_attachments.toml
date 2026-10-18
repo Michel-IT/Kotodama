@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kotodama-reuse-attachments"
+description = "Enables the kotodama_reuse_attachments command without any pre-configured scope."
+commands.allow = ["kotodama_reuse_attachments"]
+
+[[permission]]
+identifier = "deny-kotodama-reuse-attachments"
+description = "Denies the kotodama_reuse_attachments command without any pre-configured scope."
+commands.deny = ["kotodama_reuse_attachments"]

@@ -296,6 +296,38 @@ fn attachments() -> &'static Mutex<HashMap<String, Vec<Attachment>>> {
     static S: OnceLock<Mutex<HashMap<String, Vec<Attachment>>>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(HashMap::new()))
 }
+/// How many messages' attachments are kept in memory (the oldest go first): a retry sends the same files again, and
+/// the files of a long session must not pile up (up to 5 x 10 MB for each message).
+const ATTACH_KEEP_BROADCASTS: usize = 4;
+fn attachment_order() -> &'static Mutex<std::collections::VecDeque<String>> {
+    static S: OnceLock<Mutex<std::collections::VecDeque<String>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(std::collections::VecDeque::new()))
+}
+/// A retry has a broadcast id of its own but sends the files of the send it replaces: retry id -> the id that holds
+/// the files (never a chain). Lock order everywhere: files, then order, then aliases.
+fn attachment_alias() -> &'static Mutex<HashMap<String, String>> {
+    static S: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(HashMap::new()))
+}
+/// The id that holds the files a broadcast sends (itself, unless it is a retry).
+fn attachment_root(broadcast_id: &str) -> String {
+    attachment_alias().lock().unwrap().get(broadcast_id).cloned().unwrap_or_else(|| broadcast_id.to_string())
+}
+/// Keeps the files of one broadcast, forgetting the oldest broadcasts beyond `ATTACH_KEEP_BROADCASTS` (and the
+/// retries that pointed at them).
+fn store_attachments(broadcast_id: String, files: Vec<Attachment>) {
+    let mut map = attachments().lock().unwrap();
+    let mut order = attachment_order().lock().unwrap();
+    order.retain(|b| *b != broadcast_id);
+    order.push_back(broadcast_id.clone());
+    map.insert(broadcast_id, files);
+    while order.len() > ATTACH_KEEP_BROADCASTS {
+        if let Some(old) = order.pop_front() {
+            map.remove(&old);
+            attachment_alias().lock().unwrap().retain(|_, root| *root != old);
+        }
+    }
+}
 // ---- Read aloud (audio.rs): the provider's own voice for the answer its page still shows. ----
 /// The conversation each provider page shows right now, as the broadcast whose answer is the LAST one in it.
 /// Set when an answer is delivered, dropped as soon as the page moves on (a new send, a pre-warm navigation).
@@ -671,14 +703,35 @@ pub fn kotodama_set_attachments(broadcast_id: String, files: Vec<AttachmentIn>) 
     }
     let n = out.len();
     if n > 0 {
-        attachments().lock().unwrap().insert(broadcast_id, out);
+        store_attachments(broadcast_id, out);
     }
     Ok(n)
 }
 
+/// A retry is a new broadcast: it sends the files of the one it replaces (by pointing at them, not by copying them,
+/// and without taking one of the kept places: five retries of one message must not push the message itself out).
+/// Returns how many files it has, 0 when the old ones are gone (the app was restarted, or newer messages pushed them
+/// out): the page then does not retry a message that is only half of itself.
+#[tauri::command]
+pub fn kotodama_reuse_attachments(from: String, to: String) -> usize {
+    let root = attachment_root(&from);
+    let map = attachments().lock().unwrap();
+    let n = match map.get(&root) {
+        Some(f) if !f.is_empty() => f.len(),
+        _ => return 0,
+    };
+    let mut order = attachment_order().lock().unwrap();
+    // a message that is being retried is a message still in use: it moves to the newest place
+    order.retain(|b| *b != root);
+    order.push_back(root.clone());
+    attachment_alias().lock().unwrap().insert(to, root);
+    n
+}
+
 /// JS prefix handing the broadcast's attachments to the page (empty when there are none).
 fn attach_js(broadcast_id: &str) -> String {
-    let Some(files) = attachments().lock().unwrap().get(broadcast_id).cloned() else { return String::new() };
+    let root = attachment_root(broadcast_id);
+    let Some(files) = attachments().lock().unwrap().get(&root).cloned() else { return String::new() };
     format!("window.__ktFiles = {};", serde_json::to_string(&files).unwrap_or_else(|_| "[]".into())) + ATTACH_JS
 }
 
@@ -4692,7 +4745,7 @@ pub async fn kotodama_broadcast(
 /// JS loops self-expire on their own timeouts (their deliveries will find nothing here).
 #[tauri::command]
 pub fn kotodama_cancel(window: Window, broadcast_id: String) -> Result<(), String> {
-    attachments().lock().unwrap().remove(&broadcast_id);
+    // (its attachments stay: a retry after "Stop" sends the same files; `store_attachments` forgets the old ones)
     let stuck: Vec<String> = broadcasts()
         .lock()
         .unwrap()
@@ -5069,6 +5122,56 @@ mod send_scope_tests {
 /// The attachment contract: nothing leaves without its files, and the page never carries user-facing words.
 #[cfg(test)]
 mod attach_tests {
+    /// The kept attachments are one global store: the tests that fill it run one at a time.
+    fn serial() -> std::sync::MutexGuard<'static, ()> {
+        static L: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        L.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    fn file(name: &str) -> Vec<super::Attachment> {
+        vec![super::Attachment { name: name.into(), mime: "image/png".into(), b64: "AA==".into() }]
+    }
+
+    #[test]
+    fn a_retry_gets_the_files_of_the_send_it_replaces() {
+        let _g = serial();
+        super::store_attachments("t83-a".into(), file("a.png"));
+        assert_eq!(super::kotodama_reuse_attachments("t83-a".into(), "t83-a-r1".into()), 1);
+        // a retry of a retry: the copy is a send of its own
+        assert_eq!(super::kotodama_reuse_attachments("t83-a-r1".into(), "t83-a-r2".into()), 1);
+        // nothing to reuse: 0, and the new send points at nothing
+        assert_eq!(super::kotodama_reuse_attachments("t83-none".into(), "t83-none-r1".into()), 0);
+        assert_eq!(super::attachment_root("t83-none-r1"), "t83-none-r1");
+        // a retry points at the files, never copies them
+        assert_eq!(super::attachment_root("t83-a-r2"), "t83-a");
+    }
+
+    #[test]
+    fn retries_do_not_push_the_message_out() {
+        let _g = serial();
+        super::store_attachments("t83-m".into(), file("m.png"));
+        for i in 0..(super::ATTACH_KEEP_BROADCASTS * 3) {
+            assert_eq!(super::kotodama_reuse_attachments("t83-m".into(), format!("t83-m-r{i}")), 1);
+        }
+        // many retries and more messages than places: the message that is still retried is not the one forgotten
+        for i in 0..(super::ATTACH_KEEP_BROADCASTS - 1) {
+            super::store_attachments(format!("t83-n-{i}"), file("n.png"));
+        }
+        assert_eq!(super::kotodama_reuse_attachments("t83-m-r0".into(), "t83-m-last".into()), 1);
+    }
+
+    #[test]
+    fn only_the_newest_sends_keep_their_files() {
+        let _g = serial();
+        for i in 0..(super::ATTACH_KEEP_BROADCASTS + 3) {
+            super::store_attachments(format!("t83-old-{i}"), file("x.png"));
+        }
+        // the first ones are forgotten, the last one is still there
+        assert_eq!(super::kotodama_reuse_attachments("t83-old-0".into(), "t83-old-0-r".into()), 0);
+        let last = format!("t83-old-{}", super::ATTACH_KEEP_BROADCASTS + 2);
+        assert_eq!(super::kotodama_reuse_attachments(last, "t83-last-r".into()), 1);
+    }
+
     #[test]
     fn page_sends_a_code_not_a_sentence() {
         let js = super::ATTACH_JS;

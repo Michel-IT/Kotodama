@@ -17,6 +17,7 @@
     "allow-show-provider-tab",
     "allow-kotodama-broadcast",
     "allow-kotodama-set-attachments",
+    "allow-kotodama-reuse-attachments",
     "allow-kotodama-file-info",
     "allow-kotodama-read-aloud",
     "allow-kotodama-regenerate",

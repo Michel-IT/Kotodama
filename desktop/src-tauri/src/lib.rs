@@ -2342,6 +2342,7 @@ pub fn run() {
             browser::show_provider_tab,
             kotodama::kotodama_broadcast,
             kotodama::kotodama_set_attachments,
+            kotodama::kotodama_reuse_attachments,
             kotodama::kotodama_file_info,
             kotodama::kotodama_read_aloud,
             kotodama::kotodama_regenerate,
