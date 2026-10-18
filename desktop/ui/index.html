@@ -402,7 +402,9 @@
     .cs.up .cs-panel { top:auto; bottom:calc(100% + 5px); transform:translateY(4px); }
     .cs.up.open .cs-panel { transform:none; }
     .cs-opt { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:8px; font-size:13px; color:var(--text); cursor:pointer; }
-    .cs-opt:hover { background:var(--field); }
+    .cs-opt:hover, .cs-opt.kb { background:var(--field); }
+    .cs-opt.kb { box-shadow:inset 0 0 0 1px var(--accent); }
+    .cs-trigger:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
     .cs-opt.active { color:var(--accent); font-weight:600; }
     .cs-opt.active::after { content:'✓'; font-size:12px; color:var(--accent); }
 
@@ -5557,10 +5559,13 @@
       vpClose();
     }
     // Esc closes the panel only, not the Settings window behind it.
-    function vpEsc(e){ if(e.key==='Escape' && vpOpen){ e.stopPropagation(); e.preventDefault(); vpClose(); } }
+    // An open themed menu inside the panel takes the Esc first (it closes the menu, see enhanceSelect).
+    function vpEsc(e){ if(e.key==='Escape' && vpOpen){ if(document.querySelector('.cs.open')) return; e.stopPropagation(); e.preventDefault(); vpClose(); } }
     // Settings: the page scrolling moves the button away from its panel; a list scrolling inside the panel does
     // not, it only closes an open menu (a fixed menu would drift from its field).
     function vpScroll(e){
+      // (the menu's own list scrolling, e.g. the arrows moving the highlight through a long one, is not the page moving)
+      if(e.target && e.target.nodeType===1 && e.target.closest && e.target.closest('.cs-panel')) return;
       if(vpOpen && e.target && e.target.nodeType===1 && vpOpen.el.contains(e.target)){ closeAllCs(); return; }
       vpClose();
     }
@@ -6027,11 +6032,18 @@
     // Progressive enhancement: the native <select> stays the source of truth
     // (value + change event); we add a themed UI alongside it. buildPrompt and the
     // existing listeners do not change.
-    function closeAllCs(){ document.querySelectorAll('.cs.open').forEach(c=>c.classList.remove('open')); }
+    function closeAllCs(){
+      document.querySelectorAll('.cs.open').forEach(c=>{
+        c.classList.remove('open');
+        const t=c.querySelector('.cs-trigger'); if(t){ t.setAttribute('aria-expanded','false'); t.removeAttribute('aria-activedescendant'); }
+      });
+    }
     document.addEventListener('click', closeAllCs);
     document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllCs(); });
+    let csSeq=0;   // unique id prefix per themed menu (aria-activedescendant needs ids that never repeat)
     function enhanceSelect(sel){
       if(!sel || sel.__cs) return sel && sel.__cs;
+      const csId='cs'+(++csSeq);
       const inBox = sel.parentElement && sel.parentElement.classList.contains('select');
       const host = inBox ? sel.parentElement : sel;            // visual container to hide
       const iconEl = inBox ? sel.parentElement.querySelector('.ico') : null;
@@ -6045,6 +6057,8 @@
       host.parentNode.insertBefore(cs, host);
       cs.appendChild(trigger); cs.appendChild(panel); cs.appendChild(host);
       host.classList.add('cs-host-hidden');
+      // the hidden native <select> and the list must not be Tab stops of their own: the trigger is the only one
+      sel.tabIndex=-1; panel.tabIndex=-1;
       function render(){
         const o=sel.options[sel.selectedIndex];
         val.textContent = o ? o.textContent : '';
@@ -6053,6 +6067,7 @@
           const it=document.createElement('div');
           it.className='cs-opt'+(i===sel.selectedIndex?' active':'');
           it.setAttribute('role','option'); it.dataset.i=i; it.textContent=opt.textContent;
+          it.id=csId+'-'+i; it.setAttribute('aria-selected', String(i===sel.selectedIndex));
           panel.appendChild(it);
         });
       }
@@ -6070,8 +6085,44 @@
             top: up ? 'auto' : (r.bottom+5)+'px', bottom: up ? (window.innerHeight-r.top+5)+'px' : 'auto' });
         }
       }
-      trigger.addEventListener('click', e=>{ e.stopPropagation(); const wasOpen=cs.classList.contains('open'); closeAllCs(); if(!wasOpen){ placePanel(); cs.classList.add('open'); } });
-      panel.addEventListener('click', e=>{ const it=e.target.closest('.cs-opt'); if(!it) return; e.stopPropagation(); sel.selectedIndex=+it.dataset.i; sel.dispatchEvent(new Event('change',{bubbles:true})); render(); cs.classList.remove('open'); });
+      // Keyboard: the trigger is a real button, so Tab reaches it and Enter/Space click it. Once the list is open the
+      // arrows move a highlight (`kb`, kept apart from the chosen value), Enter/Space chooses, Home/End jump, Escape
+      // and Tab close; a letter jumps to the next option that starts with it. The native <select> stays the source of
+      // truth: choosing sets its index and fires `change`, exactly like a click.
+      let kb=-1;
+      const opts=()=>Array.from(panel.children);
+      function setKb(i){
+        const list=opts(); if(!list.length) return;
+        kb=Math.max(0, Math.min(list.length-1, i));
+        list.forEach((o,n)=>o.classList.toggle('kb', n===kb));
+        list[kb].scrollIntoView({ block:'nearest' });
+        trigger.setAttribute('aria-activedescendant', csId+'-'+kb);
+      }
+      function openList(){ closeAllCs(); placePanel(); cs.classList.add('open'); trigger.setAttribute('aria-expanded','true'); setKb(sel.selectedIndex); }
+      function closeList(){ kb=-1; cs.classList.remove('open'); trigger.setAttribute('aria-expanded','false'); trigger.removeAttribute('aria-activedescendant'); opts().forEach(o=>o.classList.remove('kb')); }
+      function choose(i){ if(i<0 || i>=sel.options.length){ closeList(); return; } sel.selectedIndex=i; sel.dispatchEvent(new Event('change',{bubbles:true})); render(); closeList(); }
+      trigger.setAttribute('aria-haspopup','listbox'); trigger.setAttribute('aria-expanded','false');
+      trigger.addEventListener('click', e=>{ e.stopPropagation(); const wasOpen=cs.classList.contains('open'); closeAllCs(); if(!wasOpen){ openList(); } else { closeList(); } });
+      trigger.addEventListener('keydown', e=>{
+        const open=cs.classList.contains('open');
+        if(!open){
+          if(e.key==='ArrowDown' || e.key==='ArrowUp'){ e.preventDefault(); e.stopPropagation(); openList(); }
+          return;
+        }
+        const k=e.key;
+        if(k==='ArrowDown'){ e.preventDefault(); setKb(kb+1); }
+        else if(k==='ArrowUp'){ e.preventDefault(); setKb(kb-1); }
+        else if(k==='Home'){ e.preventDefault(); setKb(0); }
+        else if(k==='End'){ e.preventDefault(); setKb(opts().length-1); }
+        else if(k==='Enter' || k===' '){ e.preventDefault(); e.stopPropagation(); if(kb>=0) choose(kb); else closeList(); }
+        else if(k==='Escape'){ e.preventDefault(); e.stopPropagation(); closeList(); }
+        else if(k==='Tab'){ closeList(); }
+        else if(k.length===1 && !e.ctrlKey && !e.metaKey && !e.altKey){
+          const list=Array.from(sel.options), ch=k.toLowerCase();
+          for(let n=1; n<=list.length; n++){ const i=(kb+n)%list.length; if((list[i].textContent||'').trim().toLowerCase().startsWith(ch)){ setKb(i); break; } }
+        }
+      });
+      panel.addEventListener('click', e=>{ const it=e.target.closest('.cs-opt'); if(!it) return; e.stopPropagation(); choose(+it.dataset.i); trigger.focus(); });
       sel.__cs={ refresh:render };
       render();
       return sel.__cs;
