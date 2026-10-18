@@ -117,7 +117,13 @@ const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
     // and the generic chain resumes from `[data-message-author-role="assistant"]`, i.e. back to the
     // previous behaviour: no risk of getting worse, only of not getting better.
     ("mistral", r#"[data-message-author-role="assistant"] .prose, [data-message-author-role="assistant"] [class*="markdown" i]"#, ""),
-    ("poe", r#"[class*="Message_botMessageBubble"]"#, ""),
+    // Measured live 18/10/2026 (inspection port 9344, a bot that answered): the bot bubble is
+    // `Message_leftSideMessageBubble` (the old `Message_botMessageBubble` no longer exists, so the generic chain
+    // took over and read a whole bubble: the answer plus the row's `Message_messageMetadataText` time, and, with
+    // no points left, the text of the paywall modal through its `article`). The text lives in `selectableText`,
+    // a sibling of the metadata, so scoping the selector there keeps the time out structurally. A bubble with no
+    // text (error bubble) has none, hence no answer.
+    ("poe", r#"[class*="Message_leftSideMessageBubble"] [class*="Message_selectableText"], [class*="Message_botMessageBubble"] [class*="Message_selectableText"]"#, ""),
     ("kimi", r#".segment-assistant"#, r#".send-button-container.stop"#),
     ("meta", r#"[data-testid="assistant-message"]"#, r#"[data-testid="composer-stop-button"]"#),
     // copilot.com has no verified selectors anywhere (the only sources found cover
@@ -2021,7 +2027,9 @@ const HARVEST_JS: &str = r##"
   // Gemini too (14/10/2026, signed out): with the page still showing its welcome ("Meet Gemini, your personal AI
   // assistant") the generic chain matched `[class*="assistant" i]` (the welcome's own container) and the harvest
   // delivered the greeting by stability while the fill was still held. Its own selector (`message-content`) is verified.
-  var STRICT_ANS = KEY === 'anthropic' || KEY === 'gemini';
+  // Poe too (18/10/2026): with no points left its paywall modal (`<article>` inside a ReactModal) was picked by the
+  // generic chain and delivered as the answer ("done", 779 characters).
+  var STRICT_ANS = KEY === 'anthropic' || KEY === 'gemini' || KEY === 'poe';
   // Gemini, warm turn: the NEW answer is a new `message-content`, so until the count of painted ones grows the last
   // match is still the PREVIOUS answer, and its text is not ours to compare. Text inequality alone is not enough:
   // right after a send the page re-renders that previous message (measured 18/10/2026, inspection port 9344, Canvas
@@ -2636,6 +2644,19 @@ const HARVEST_JS: &str = r##"
     } catch(e){ return false; }
   }
   var noComposerTicks = 0;
+  // Out of points / messages as a wall rather than a refusal: Poe answers the message with an error bubble and opens a
+  // subscription modal (class `WebSubscriptionPaywall_*` inside a `ReactModal`), measured 18/10/2026 with the
+  // account at 274 points against a 278 point request. Matched on the developer's class name, never on the text
+  // (which follows the interface language). Poe only: another provider's upsell modal does not mean its answer
+  // is missing. Needs two consecutive sightings and a message already sent, so a modal left from before the send
+  // or a one-frame flash cannot end a turn.
+  var LIMIT_WALL_SEL = KEY === 'poe' ? '[class*="WebSubscriptionPaywall" i]' : '';
+  var limitWallTicks = 0;
+  function limitWallPresent(){
+    if (!LIMIT_WALL_SEL || !(KNOWN_SENT || window.__ktEnterPressed)) return false;
+    if (visibleMatch(LIMIT_WALL_SEL)) { limitWallTicks++; } else { limitWallTicks = 0; }
+    return limitWallTicks >= 2;
+  }
   var CAPTCHA_SEL = '[class*="captcha" i], [id*="captcha" i], [data-testid*="captcha" i], iframe[src*="captcha" i], iframe[src*="turnstile" i]';
   // Only while nothing has come back: once a response stream opened, the provider has the message.
   function currentBlock(clockTicks){
@@ -2805,6 +2826,8 @@ const HARVEST_JS: &str = r##"
     if (!blk && lostLogin()) blk = 'login';
     if (syncBlock(blk)) { clearInterval(armIv); return; }
     if (blk) { armT0 = Date.now(); if (blk !== 'login') lostSince = 0; if (armTries > 40) armTries = 40; return; }
+    // Out of points: the provider's paywall is up and no answer will come (see LIMIT_WALL_SEL).
+    if (limitWallPresent()) { clearInterval(armIv); fdiagArm('EXIT limit-wall (arming)'); setTimeout(function(){ deliver('limit', ''); }, 300); return; }
     // The message we sent is not on this page and nothing streamed: the send was lost (see ownMessageMissing).
     if (sendLost()) { clearInterval(armIv); fdiagArm('EXIT send-lost (arming) known=' + KNOWN_SENT + ' enter=' + !!window.__ktEnterPressed + ' url=' + location.pathname); setTimeout(function(){ deliver('sendfail', ''); }, 300); return; }
     // Arms the stream watcher as soon as the message is known to be out. Needed because on `?q=`
@@ -3123,6 +3146,10 @@ const HARVEST_JS: &str = r##"
       // Text on a page that has no composer, never took our message and never streamed is not an answer
       // (Copilot's welcome notice): ignore it, so the setup block below gets its chance.
       if (txt && !KNOWN_SENT && !window.__ktEnterPressed && !window.__ktStreamEver && composerVal() === null) txt = '';
+      // Out of points: whatever text the page shows is the paywall's, never an answer (see LIMIT_WALL_SEL). Only while
+      // there is no answer text: an answer already read is not thrown away because a modal opened after it (the
+      // other `limit` exits below are guarded the same way).
+      if (!txt && limitWallPresent()) { clearInterval(iv); fdiagArm('EXIT limit-wall'); deliver('limit', ''); return; }
       var busy = isBusy();
       if (busyVerified()) sawBusy = true;    // the marker exists on this page and we have seen it
       if (txt && txt === last) { stable++; } else { stable = 0; lastChangeAt = Date.now(); }
@@ -5253,6 +5280,26 @@ mod attach_tests {
         let g = js.find("countGuard = paintedAnswerCount();").unwrap();
         let i = js.find("var initialAnswer = FRESH ? '' : answerTxt();").unwrap();
         assert!(i < g);
+    }
+
+    /// Poe with no points left opens a subscription modal; its text must end the turn as `limit`, never travel as the
+    /// answer, and the answer element must exclude the bubble's time (measured live 18/10/2026).
+    #[test]
+    fn poe_paywall_ends_the_turn_as_limit_and_is_never_an_answer() {
+        let js = super::HARVEST_JS;
+        assert!(js.contains("var STRICT_ANS = KEY === 'anthropic' || KEY === 'gemini' || KEY === 'poe';"));
+        assert!(js.contains("[class*=\"WebSubscriptionPaywall\" i]"));
+        // both loops consult it, before any done decision, and deliver `limit`
+        assert!(js.contains("EXIT limit-wall (arming)"));
+        let w = js.find("EXIT limit-wall'").unwrap();
+        let d = js.find("var doneByEvent").unwrap();
+        assert!(w < d);
+        // an answer that was already read is never replaced by `limit`
+        assert!(js.contains("if (!txt && limitWallPresent()) { clearInterval(iv);"));
+        // the selector scopes to the text container, a sibling of the time
+        let sel = super::HARVEST_SELECTORS.iter().find(|p| p.0 == "poe").unwrap().1;
+        assert!(sel.contains("Message_leftSideMessageBubble") && sel.contains("Message_selectableText"));
+        assert!(!sel.contains("MessageMetadata"));
     }
 
     /// A model that answers the same words twice ("ok" after "ok") must not be taken for its previous answer: the
