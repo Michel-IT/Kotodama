@@ -97,12 +97,17 @@ const HARVEST_SELECTORS: &[(&str, &str, &str)] = &[
     ("perplexity", r#"main .prose"#, r#"button[aria-label*="stop" i]"#),
     ("deepseek", r#".ds-markdown"#, ""),
     ("qwen", "", ""),
-    // Was `[class*="message-bubble"]`, matching the USER's own bubble too (both share the
-    // class) -- with no distinct answer element, the SENT-text safety net kept discarding it
-    // as "that's my own message", stalling forever at 0 chars. `rounded-br-lg` decorates only
-    // the sender's (user's) bubble corner, so excluding it isolates the assistant's reply.
-    // Verified against a real captured DOM (not guessed); still no confirmed busy-marker.
-    ("grok", r#".message-bubble:not(.rounded-br-lg)"#, ""),
+    // Was `.message-bubble:not(.rounded-br-lg)`: `rounded-br-lg` is gone from Grok's bubbles, so the
+    // exclusion matched the user's bubble too (only "last match wins" kept it working). Measured live
+    // 18/10/2026 (inspection port 9344, 10 turns): both bubbles share `.message-bubble` and carry an
+    // explicit `data-testid` (`user-message` / `assistant-message`), which is what is used now.
+    // No busy marker on purpose. Measured in the same run: `canvas-working-indicator` exists only for
+    // ~0.7 s BEFORE the first character (then the page has no text anyway), and the `.thinking-container`
+    // child that spans the generation is emptied at the end, but TODO 49 reported its "Working for 1s"
+    // label left in the answer (not reproduced here), where a busy marker would hold a finished answer
+    // for ten polls. The end is decided by the stream event plus a settled page (see `doneByEvent` in
+    // HARVEST_JS); the label is kept out of the answer text by `CHROME_SEL`.
+    ("grok", r#"[data-testid="assistant-message"]"#, ""),
     // Verified live (chat.z.ai): explicit assistant/user class pair (no ambiguity), and the
     // round stop button that replaces send while generating.
     ("zai", r#".chat-assistant"#, r#"button.rounded-full.bg-black"#),
@@ -1996,9 +2001,13 @@ const HARVEST_JS: &str = r##"
   // and a bare tag name would exclude any `<header>` ANY provider might render as real content -- unverified
   // for providers other than ChatGPT. `matches()` accepts a descendant-combinator selector like this one:
   // it checks the element's real ancestry in the document, not just a scope rooted at the element itself.
+  // Grok nests its reasoning summary (`.thinking-container`, a "Working for 1s" label while it works) INSIDE the
+  // assistant bubble, ahead of the text. It is reasoning, never the answer: left in, the label came out in front
+  // of the reply and made the page text look longer than the network text (TODO 49). Scoped to the bubble's own
+  // testid like the writing block above, and matched by structure, never by the label (it is localised).
   var CHROME_SEL = 'button, [role="button"], [role="toolbar"], [role="menu"], [role="menuitem"],'
     + ' [role="tab"], [role="tablist"], select, input, textarea, [data-testid="TurnStatus"],'
-    + ' [data-testid="chatgpt-writing-block"] header';
+    + ' [data-testid="chatgpt-writing-block"] header, [data-testid="assistant-message"] .thinking-container';
   // Is this node a control whose text is NOT part of the answer? A plain control carries one label ("Copy",
   // "Monthly", "Reset"). A generated interface also builds its cards and section headers out of pressable
   // boxes (measured 14/10/2026 on ChatGPT: plan cards with name, price and size; checklist area headers with
@@ -2164,7 +2173,11 @@ const HARVEST_JS: &str = r##"
   function answerTxt(){
     if (heldBeforeSend() || ownTextStillInComposer() || ownMessageMissing()) return '';
     var el = getAnswerEl();
-    return sanitizeAnswer(el ? (el.innerText || '') : '');
+    // innerText keeps the reasoning summary (see CHROME_SEL), so when the bubble holds one the text is read
+    // by the chrome-skipping walk instead. Only then: the cheap innerText stays the hot path everywhere else.
+    var withReasoning = false;
+    try { var tc = el && el.querySelector('.thinking-container'); withReasoning = !!tc && isChrome(tc); } catch(e){}
+    return sanitizeAnswer(el ? (withReasoning ? cleanAnswerText(el) : (el.innerText || '')) : '');
   }
   // "Still generating?" - LANGUAGE-INDEPENDENT (no localized aria-label text). Uses the
   // per-provider BUSY_SEL (data-* attrs) + neutral streaming markers. NB: this only speeds
@@ -3080,7 +3093,13 @@ const HARVEST_JS: &str = r##"
           return !!el.querySelector(sel);
         } catch(e){ return false; }
       }
-      var doneByEvent = streamEnded && !!txt && !busy && !stillPainting() && stable >= 1;
+      // "Unchanged for one poll" counts POLLS, and the stream-end event can call this step a few milliseconds after
+      // a timed poll (measured on Grok, TODO 49: 72 ms). Two reads that close together prove nothing about a page
+      // that paints in bursts (Grok: about 400 ms apart, measured 18/10/2026: the text still grew 287 -> 321
+      // characters after the provider's own end markers had flipped), so the text must also have been unchanged
+      // for a full poll's worth of TIME. When the event lands too early the regular 1 s poll completes it.
+      var settled = stable >= 1 && (Date.now() - lastChangeAt) >= 900;
+      var doneByEvent = streamEnded && !!txt && !busy && !stillPainting() && settled;
       // The provider's answer stream is still open: its text can pause for many seconds between bursts while the
       // model works (measured on ChatGPT, 05/10/2026: no frame for 6.7 s in the middle of a 600-character answer, the
       // page looked "stable" for 3 polls and the answer was delivered cut at 417 B while the stream went on to

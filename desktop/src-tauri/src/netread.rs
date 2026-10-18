@@ -1924,12 +1924,22 @@ impl Reader for Qwen {
 struct Grok {
     objs: JsonObjects,
     ans: NetAnswer,
+    /// `event_id`s already applied. The ids are unique per event (`evt_<hash>_<n>`); a frame the socket delivers
+    /// twice (a reattached conversation replaying its tail) must not append its text twice, or the answer comes out
+    /// doubled and, being the longer one, wins over the page's correct reading (TODO 43). Chunks are tiny, so the
+    /// set stays small.
+    seen: std::collections::HashSet<String>,
 }
 impl Reader for Grok {
     fn feed(&mut self, chunk: &str) {
         for o in self.objs.push(chunk) {
             let Ok(v) = serde_json::from_str::<Value>(&o) else { self.ans.skipped += 1; continue };
             let ev = &v["event"];
+            if let Some(id) = ev.get("event_id").and_then(Value::as_str) {
+                if !self.seen.insert(id.to_string()) {
+                    continue;
+                }
+            }
             match ev.get("type").and_then(Value::as_str) {
                 Some("response.chunk") => {
                     let t = &ev["chunk"]["text"];
@@ -2100,6 +2110,33 @@ mod tests {
         let out = j.push("{\"t\":\"a}b\"}{\"u\":");
         assert_eq!(out.len(), 1);
         assert_eq!(j.push("2}").len(), 1);
+    }
+
+    fn grok_chunk(id: &str, text: &str) -> String {
+        format!(r#"{{"session_id":"s","event":{{"type":"response.chunk","event_id":"{id}","chunk":{{"text":{{"channel":"CHANNEL_ASSISTANT_RESPONSE","text":"{text}"}}}}}}}}"#)
+    }
+
+    #[test]
+    fn grok_reader_joins_chunks_and_ends_on_done() {
+        let mut g = Grok::default();
+        g.feed(&grok_chunk("evt_a_1", "| A | B |\\n"));
+        g.feed(&grok_chunk("evt_a_2", "| 1 | 2 |"));
+        assert!(!g.answer().done);
+        g.feed(r#"{"event":{"type":"response.done","event_id":"evt_a_3"}}"#);
+        assert!(g.answer().done);
+        assert_eq!(g.answer().text, "| A | B |\n| 1 | 2 |");
+    }
+
+    #[test]
+    fn grok_reader_ignores_a_replayed_event() {
+        // The same frames delivered twice (a reattached conversation replaying its tail), glued or in two reads.
+        let mut g = Grok::default();
+        let a = grok_chunk("evt_a_1", "Uno ");
+        let b = grok_chunk("evt_a_2", "due");
+        g.feed(&format!("{a}{b}"));
+        g.feed(&format!("{a}{b}"));
+        g.feed(&b);
+        assert_eq!(g.answer().text, "Uno due");
     }
 
     #[test]
