@@ -1886,6 +1886,13 @@ impl Reader for Zai {
     fn answer(&self) -> &NetAnswer {
         &self.ans
     }
+    /// `done` only ever comes from the provider's own `phase:"done"` / `done:true` frame (`end()` does nothing), so
+    /// the stream may stand in for the page. Measured 18/10/2026: after a slider captcha the stream had finished
+    /// with the full text ("ok", done=true) but the page showed no answer (dom=0B), and without this the card
+    /// waited out the whole 180 s harvest budget before the network text was used.
+    fn done_is_explicit(&self) -> bool {
+        true
+    }
 }
 
 /// Qwen: SSE OpenAI-like `choices[0].delta` with a `phase` (`answer`, `think`/`thinking_summary`) and a
@@ -2573,6 +2580,31 @@ data: {f}
         assert_eq!(r.answer().sources.len(), 1);
         assert_eq!(r.answer().sources[0].url, "https://example.org/a");
         assert_eq!(r.answer().skipped, 0);
+    }
+
+    #[test]
+    fn zai_done_is_explicit_and_a_cut_stream_is_not_done() {
+        let url = "https://chat.z.ai/api/v2/chat/completions";
+        let frame = |phase: &str, delta: &str| {
+            format!("data: {{\"type\":\"chat:completion\",\"data\":{{\"phase\":\"{phase}\",\"delta_content\":\"{delta}\"}}}}\n\n")
+        };
+        // A complete answer: only the provider's own done frame marks it finished, and the reader says so, which
+        // lets the stream deliver it when the page (captcha, reload) shows nothing.
+        let mut r = reader_for("zai", url).unwrap();
+        assert!(r.done_is_explicit());
+        r.feed(&frame("thinking", "hmm"));
+        r.feed(&frame("answer", "o"));
+        r.feed(&frame("answer", "k"));
+        assert!(!r.answer().done);
+        r.feed(&frame("done", ""));
+        r.end();
+        assert!(r.answer().done);
+        assert_eq!(r.answer().text, "ok");
+        // A connection that closes mid-answer must not look finished (no partial text is ever delivered).
+        let mut c = reader_for("zai", url).unwrap();
+        c.feed(&frame("answer", "par"));
+        c.end();
+        assert!(!c.answer().done);
     }
 
     #[test]
