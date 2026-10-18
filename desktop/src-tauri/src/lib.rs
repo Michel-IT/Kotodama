@@ -16,6 +16,7 @@ mod debug;
 mod gesture;
 mod kotodama;
 mod netread;
+mod plaintext;
 mod settings;
 mod toast;
 
@@ -1373,6 +1374,8 @@ fn inline_toast(app: AppHandle, mode: String, label: String) {
 /// into the input the user copied from.
 #[tauri::command]
 fn inline_finish(app: AppHandle, text: String) -> Result<(), String> {
+    // What goes into another program is plain text: asterisks and table bars mean nothing there.
+    let text = plaintext::markdown_to_plain(&text);
     *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(text.clone());
     app.state::<Clipboard>()
         .write_text(text)
@@ -1591,6 +1594,7 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
             "copylast" => {
                 let text = app.state::<AppState>().last_answer.lock().unwrap().clone();
                 if let Some(text) = text {
+                    let text = plaintext::markdown_to_plain(&text); // leaves the app: plain text
                     *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(text.clone());
                     if let Err(e) = app.state::<Clipboard>().write_text(text) {
                         debug::log(format!("tray copy-last failed: {e}"));
