@@ -1035,6 +1035,11 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
   // session. Kept in sync with the identical check in kotodama.rs's findComposerEl(): both must
   // reject it, or the fill (geometry-based) and the harvest (first-in-DOM) composer lookups can
   // land on different elements.
+  // Gemini's Canvas is the same trap (measured 18/10/2026, inspection port 9344): the document is a ProseMirror
+  // `contenteditable` inside `<immersive-editor>`, rendered INSIDE the model's own message, and its bottom edge sat
+  // below the real composer's. The second turn ("make it shorter") was typed into the document (143 -> 274
+  // characters), never sent, and the card ended as a send failure. Matched by the custom element's tag, never by
+  // a label. Every composer lookup in kotodama.rs carries the same exclusion.
   function pickComposer(){
     var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'];
     var best = null, bestY = -1e9;
@@ -1042,7 +1047,7 @@ pub(crate) fn fill_js(text: &str, send: bool) -> Result<String, String> {
       var els = document.querySelectorAll(sels[i]);
       for (var j=0;j<els.length;j++){
         var e = els[j]; if (e.offsetParent === null) continue;
-        if (e.closest('[data-testid="chatgpt-writing-block"]')) continue;   // canvas, not the composer
+        if (e.closest('[data-testid="chatgpt-writing-block"], immersive-editor')) continue;   // canvas, not the composer
         var b = e.getBoundingClientRect().bottom;
         if (b > bestY){ bestY = b; best = e; }
       }

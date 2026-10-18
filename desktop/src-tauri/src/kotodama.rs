@@ -784,7 +784,7 @@ const ATTACH_JS: &str = r##"
       var r = e[j].getBoundingClientRect();
       // Not Quill's hidden clipboard sink (Gemini: a contenteditable DIV.ql-clipboard, last in the document, which the
       // search took for the composer so every hand-over went to a node nobody reads) nor anything too small to type in.
-      if (e[j].offsetParent !== null && r.width >= 40 && r.height >= 12 && !e[j].classList.contains('ql-clipboard') && !e[j].closest('[aria-hidden="true"]') && !e[j].closest('[data-testid="chatgpt-writing-block"]')) return e[j];
+      if (e[j].offsetParent !== null && r.width >= 40 && r.height >= 12 && !e[j].classList.contains('ql-clipboard') && !e[j].closest('[aria-hidden="true"]') && !e[j].closest('[data-testid="chatgpt-writing-block"], immersive-editor')) return e[j];
     } }
     return null;
   }
@@ -2022,7 +2022,27 @@ const HARVEST_JS: &str = r##"
   // assistant") the generic chain matched `[class*="assistant" i]` (the welcome's own container) and the harvest
   // delivered the greeting by stability while the fill was still held. Its own selector (`message-content`) is verified.
   var STRICT_ANS = KEY === 'anthropic' || KEY === 'gemini';
+  // Gemini, warm turn: the NEW answer is a new `message-content`, so until the count of painted ones grows the last
+  // match is still the PREVIOUS answer, and its text is not ours to compare. Text inequality alone is not enough:
+  // right after a send the page re-renders that previous message (measured 18/10/2026, inspection port 9344, Canvas
+  // flow: its text went 573 -> 385 characters four seconds before the new reply existed, three stable polls later
+  // the stale text was delivered as the answer of "make it shorter"). The guard is released after 60 s so a page
+  // that ever stops adding elements cannot hold a real answer back, and it is off for regenerate (same count).
+  var countGuard = -1, guardUntil = 0;
+  function paintedAnswerCount(){
+    var n = 0;
+    try { var all = document.querySelectorAll(ANS_SEL); for (var k = 0; k < all.length; k++) { if (isPainted(all[k])) n++; } } catch(e){}
+    return n;
+  }
+  // Is `t` still the PREVIOUS answer? The same words as the snapshot are the previous answer only while no new answer
+  // element has been added to the page: a model that answers the same thing twice ("ok", "14", the same table) did
+  // answer, and waiting for DIFFERENT text made the turn end in sendfail (Gemini, measured 18/10/2026) or sit 181 s
+  // (Grok, DeepSeek). A page with no answer selector, or one that was empty before, keeps the text-only test.
+  function isStaleText(t){
+    return t === initialAnswer && !(initialCount > 0 && paintedAnswerCount() > initialCount);
+  }
   function getAnswerEl(){
+    if (countGuard >= 0 && Date.now() < guardUntil && paintedAnswerCount() <= countGuard) return null;
     if (STRICT_ANS) { var s = lastMatch(ANS_SEL, true); return isInputArea(s) ? null : s; }
     var el = lastMatch(ANS_SEL, true)
         || lastMatch('[data-message-author-role="assistant"]')
@@ -2404,6 +2424,9 @@ const HARVEST_JS: &str = r##"
     // both matching these selectors; `data-testid="chatgpt-writing-block"` marks the whole panel
     // and is absent near the real composer). Kept in sync: this lookup and the fill's must agree
     // on which element is the composer, or delivered()/composerVal() reads the wrong box.
+    // Gemini's Canvas editor (`immersive-editor`) sits inside the answer's own element and comes FIRST in the
+    // document: taken for the composer, `isInputArea` rejected the whole answer as "the input" and the turn
+    // ended as an error with no text (measured 18/10/2026: composer=len143 = the poem, not the empty box).
     var el = null;
     var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'];
     for (var i=0;i<sels.length && !el;i++){
@@ -2411,7 +2434,7 @@ const HARVEST_JS: &str = r##"
       for (var j=0;j<els.length;j++){
         var e = els[j];
         if (e.offsetParent === null) continue;
-        if (e.closest('[data-testid="chatgpt-writing-block"]')) continue;
+        if (e.closest('[data-testid="chatgpt-writing-block"], immersive-editor')) continue;
         el = e; break;
       }
     }
@@ -2705,6 +2728,10 @@ const HARVEST_JS: &str = r##"
   // and even FINISH answering before this script runs, so snapshotting would swallow the
   // whole answer. Warm turns: snapshot the previous answer so we wait for the new one.
   var initialAnswer = FRESH ? '' : answerTxt();
+  var initialCount = FRESH ? 0 : paintedAnswerCount();   // answer elements already on the page (see isStaleText)
+  // Gemini, warm turn: armed AFTER the snapshot, so the snapshot is the previous message's real text (when the guard
+  // expires the old protection is all that is left, never an empty snapshot that anything would differ from).
+  if (KEY === 'gemini' && !FRESH && !REGEN) { countGuard = paintedAnswerCount(); guardUntil = Date.now() + 60000; }
   guardReady = true;
   var sawText = false, armTries = 0, authCensusSent = false;
   // One-time diagnostic (debug log only, via the existing 'diag' push): inventories every
@@ -2787,7 +2814,7 @@ const HARVEST_JS: &str = r##"
     // answer's stream is still open at this point, so its close is captured.
     function armWatcher(){ try { if (!window.__ktSentAt) window.__ktSentAt = Date.now(); } catch(e){} }
     var cur = answerTxt();
-    if (cur && cur !== initialAnswer) { armWatcher(); clearInterval(armIv); harvest(); return; }  // answer streaming
+    if (cur && !isStaleText(cur)) { armWatcher(); clearInterval(armIv); harvest(); return; }  // answer streaming
     // The provider refused the message for its usage limit (429 after our send). The harvest loop already
     // says so, but it is never reached when the refusal comes INSTEAD of an answer: the arming loop ran out
     // its budget and reported a failed send, which is false and sends the user looking for the wrong fix
@@ -3044,7 +3071,7 @@ const HARVEST_JS: &str = r##"
     try {
       // Same test the harvest uses, on the same cheap reading: still the PREVIOUS answer means the new one
       // has not started, and a warm follow-up must not flash the old reply.
-      if (answerTxt() === initialAnswer) return;
+      if (isStaleText(answerTxt())) return;
       var t0 = performance.now();
       var el = getAnswerEl();
       if (!el) return;
@@ -3092,7 +3119,7 @@ const HARVEST_JS: &str = r##"
       var txt = answerTxt();
       // Still showing the previous answer, new one not in DOM yet. Except after a regenerate whose stream has
       // closed: the provider did answer again, and an identical wording is still the new answer.
-      if (txt === initialAnswer && !(REGEN && streamEnded)) txt = '';
+      if (isStaleText(txt) && !(REGEN && streamEnded)) txt = '';
       // Text on a page that has no composer, never took our message and never streamed is not an answer
       // (Copilot's welcome notice): ignore it, so the setup block below gets its chance.
       if (txt && !KNOWN_SENT && !window.__ktEnterPressed && !window.__ktStreamEver && composerVal() === null) txt = '';
@@ -3349,7 +3376,7 @@ fn temp_click_js(svg: &str) -> String {
   var SVG={svg};
   window.__ktHoldFill=true;
   var CLICKABLE='button,a,[role="button"],[role="menuitem"],[role="switch"],[role="menuitemcheckbox"]';
-  function composer(){{ var s=['textarea:not([readonly]):not([aria-hidden="true"])','[contenteditable="true"]','div[role="textbox"]']; for(var i=0;i<s.length;i++){{var e=document.querySelectorAll(s[i]);for(var j=0;j<e.length;j++){{if(e[j].offsetParent!==null)return e[j];}}}} return null; }}
+  function composer(){{ var s=['textarea:not([readonly]):not([aria-hidden="true"])','[contenteditable="true"]','div[role="textbox"]']; for(var i=0;i<s.length;i++){{var e=document.querySelectorAll(s[i]);for(var j=0;j<e.length;j++){{if(e[j].offsetParent!==null&&!e[j].closest('[data-testid="chatgpt-writing-block"], immersive-editor'))return e[j];}}}} return null; }}
   function findCtl(){{
     // (a) inline icon: a <path d> that CONTAINS the signature (Grok's ghost).
     try{{ var ps=document.querySelectorAll('svg path[d*="'+SVG+'"]'); for(var k=0;k<ps.length;k++){{ var b=ps[k].closest(CLICKABLE); if(b&&b.offsetParent!==null) return b; }} }}catch(e){{}}
@@ -4190,7 +4217,7 @@ fn login_probe_js(key: &str) -> String {
     var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'];
     for (var i=0;i<sels.length;i++){{
       var els = document.querySelectorAll(sels[i]);
-      for (var j=0;j<els.length;j++){{ if (els[j].offsetParent !== null) return true; }}
+      for (var j=0;j<els.length;j++){{ if (els[j].offsetParent !== null && !els[j].closest('[data-testid="chatgpt-writing-block"], immersive-editor')) return true; }}
     }}
     return false;
   }}
@@ -4820,7 +4847,7 @@ const STOP_JS: &str = r##"
     var sels = ['textarea:not([readonly]):not([aria-hidden="true"])', '[contenteditable="true"]', 'div[role="textbox"]'], best = null;
     for (var i = 0; i < sels.length; i++) {
       var l = document.querySelectorAll(sels[i]);
-      for (var j = 0; j < l.length; j++) if (l[j].offsetParent !== null) best = l[j];
+      for (var j = 0; j < l.length; j++) if (l[j].offsetParent !== null && !l[j].closest('[data-testid="chatgpt-writing-block"], immersive-editor')) best = l[j];
       if (best) return best;
     }
     return null;
@@ -5191,6 +5218,59 @@ mod attach_tests {
         assert!(!js.contains("did not reach") && !js.contains("Send it again"), "no English sentence in the page script");
         // the technical reason stays in the debug log
         assert!(js.contains("diag('FAILED ' + why"));
+    }
+
+    /// Gemini's Canvas editor lives inside the model's own message and is an editable ProseMirror: every lookup of
+    /// "the composer" must skip it, or the next turn is typed into the document and the answer is rejected as the
+    /// input (measured 18/10/2026). The five page-side lookups here and the fill's own (browser.rs) share one rule.
+    #[test]
+    fn every_composer_lookup_skips_the_canvas_editor() {
+        let rule = "immersive-editor";
+        for (name, js) in [
+            ("ATTACH_JS", super::ATTACH_JS.to_string()),
+            ("HARVEST_JS", super::HARVEST_JS.to_string()),
+            ("STOP_JS", super::STOP_JS.to_string()),
+            ("temp_click_js", super::temp_click_js("x")),
+            ("login_probe_js", super::login_probe_js("gemini")),
+        ] {
+            assert!(js.contains(rule), "{name} must exclude the canvas editor from its composer search");
+        }
+        let fill = include_str!("browser.rs");
+        let pick = fill.find("function pickComposer()").expect("pickComposer");
+        assert!(fill[pick..pick + 800].contains(rule), "pickComposer must exclude the canvas editor");
+    }
+
+    /// Gemini warm turn: the previous answer's element is re-rendered right after a send, so its changed text must not
+    /// pass for the new answer. The guard is keyed on the count of painted answer elements, only on a warm, non-regen
+    /// Gemini turn, and expires.
+    #[test]
+    fn gemini_warm_turn_waits_for_a_new_answer_element() {
+        let js = super::HARVEST_JS;
+        assert!(js.contains("if (KEY === 'gemini' && !FRESH && !REGEN) { countGuard = paintedAnswerCount();"));
+        assert!(js.contains("if (countGuard >= 0 && Date.now() < guardUntil && paintedAnswerCount() <= countGuard) return null;"));
+        // the guard is armed AFTER the first snapshot: the snapshot must hold the previous message's real text, not
+        // the empty string a guarded read returns (an expired guard would then treat any old text as new)
+        let g = js.find("countGuard = paintedAnswerCount();").unwrap();
+        let i = js.find("var initialAnswer = FRESH ? '' : answerTxt();").unwrap();
+        assert!(i < g);
+    }
+
+    /// A model that answers the same words twice ("ok" after "ok") must not be taken for its previous answer: the
+    /// snapshot comparison also looks at whether a new answer element has been added.
+    #[test]
+    fn an_identical_answer_in_a_new_element_is_not_the_previous_one() {
+        let js = super::HARVEST_JS;
+        assert!(js.contains("function isStaleText(t)"));
+        assert!(js.contains("return t === initialAnswer && !(initialCount > 0 && paintedAnswerCount() > initialCount);"));
+        // the three places that compared the text with the snapshot all go through it
+        assert!(js.contains("if (cur && !isStaleText(cur))"));
+        assert!(js.contains("if (isStaleText(answerTxt())) return;"));
+        assert!(js.contains("if (isStaleText(txt) && !(REGEN && streamEnded)) txt = '';"));
+        assert!(!js.contains("cur !== initialAnswer") && !js.contains("txt === initialAnswer"));
+        // the count is taken with the snapshot, before the Gemini guard changes what `paintedAnswerCount` sees
+        let c = js.find("var initialCount = FRESH ? 0 : paintedAnswerCount();").unwrap();
+        let g = js.find("countGuard = paintedAnswerCount();").unwrap();
+        assert!(c < g);
     }
 
     #[test]
