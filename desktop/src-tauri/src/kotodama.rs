@@ -5147,6 +5147,17 @@ mod attach_tests {
     }
 
     #[test]
+    fn the_page_script_of_a_retry_carries_the_files_of_the_original() {
+        let _g = serial();
+        super::store_attachments("t83-js".into(), file("js.png"));
+        assert_eq!(super::kotodama_reuse_attachments("t83-js".into(), "t83-js-r".into()), 1);
+        let js = super::attach_js("t83-js-r");
+        assert!(js.starts_with("window.__ktFiles = ") && js.contains("js.png"));
+        // a send that has no files at all gets no prefix
+        assert_eq!(super::attach_js("t83-js-nothing"), "");
+    }
+
+    #[test]
     fn retries_do_not_push_the_message_out() {
         let _g = serial();
         super::store_attachments("t83-m".into(), file("m.png"));

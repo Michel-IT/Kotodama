@@ -607,7 +607,8 @@ fn html_text(html: &str) -> String {
         let tag = &rest[1..end];
         i += end + 1;
         let closing = tag.starts_with('/');
-        let name: String = tag.trim_start_matches('/').chars().take_while(|c| c.is_ascii_alphanumeric()).collect::<String>().to_lowercase();
+        // the whole tag name, hyphen included: `<script-card>` is a custom element, not `<script>`
+        let name: String = tag.trim_start_matches('/').chars().take_while(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | ':' | '.')).collect::<String>().to_lowercase();
         // `script` and `style` hold raw text: nothing inside is a tag, the slash of `<script/>` means nothing, and the
         // element ends at the first `</script` / `</style` whatever the code in between looks like
         if !closing && (name == "script" || name == "style" || name == "noscript") {
@@ -2713,6 +2714,9 @@ data: {f}
         assert_eq!(html_text("<svg><svg>inner</svg>chart label</svg><p>shown</p>"), "shown");
         assert_eq!(html_text("<input class=\"sr-only\" id=\"a\"><p>Visible answer text</p>"), "Visible answer text");
         assert_eq!(html_text("<template>tpl</template><noscript>raw</noscript><style>p{}</style><p>ok</p>"), "ok");
+        // a custom element whose name starts like a hidden one is not hidden
+        assert_eq!(html_text("<script-card><p>visible</p></script-card><p>tail</p>"), "visible\ntail");
+        assert_eq!(html_text("<svg-icon>label</svg-icon><p>tail</p>"), "label\ntail");
         // a bare '<' is text, entities are decoded once
         assert_eq!(html_text("<p>5 < 6 and more</p>"), "5 < 6 and more");
         assert_eq!(html_text("<p>caff&egrave; &#8594; &#x27;a&#x27; &amp;lt; &unknown;</p>"), "caffè → 'a' &lt; &unknown;");
