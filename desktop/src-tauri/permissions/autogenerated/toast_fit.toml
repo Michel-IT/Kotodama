@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-toast-fit"
+description = "Enables the toast_fit command without any pre-configured scope."
+commands.allow = ["toast_fit"]
+
+[[permission]]
+identifier = "deny-toast-fit"
+description = "Denies the toast_fit command without any pre-configured scope."
+commands.deny = ["toast_fit"]

@@ -150,7 +150,17 @@
     "errorAccessibility": "Salli Kotodamalle Käyttöapu",
     "errorElevated": "Tämä ikkuna toimii järjestelmänvalvojana: Kotodama ei voi kopioida siitä",
     "restartAdmin": "Käynnistä uudelleen järjestelmänvalvojana",
-    "errorLogin": "Kirjautuminen vaaditaan: kirjaudu Kotodamaan"
+    "errorLogin": "Kirjautuminen vaaditaan: kirjaudu Kotodamaan",
+    "toastReady": "Tulos valmis",
+    "toastNotPasted": "En liittänyt sitä: siirryit toiseen ikkunaan.",
+    "toastPasteIn": "Liitä ikkunaan {w}",
+    "toastPasteInOrigin": "Liitä alkuperäiseen ikkunaan",
+    "toastInClipboard": "Se on leikepöydällä: voit liittää sen itse painamalla Ctrl+V",
+    "toastWindowClosed": "{w} suljettiin.",
+    "toastWindowClosedAny": "Alkuperäinen ikkuna suljettiin.",
+    "toastRefused": "Windows ei voinut tuoda tätä ikkunaa eteen. Napsauta haluamaasi kohtaa ja paina sitten Ctrl+V.",
+    "toastCopy": "Kopioi",
+    "toastCopied": "Kopioitu"
   },
   "neutralHint": "Kopioitu teksti lähetetään sellaisenaan oletuspalveluun.",
   "setRecipe": "Oletusresepti",

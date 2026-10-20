@@ -150,7 +150,17 @@
     "errorAccessibility": "允许 Kotodama 使用辅助功能",
     "errorElevated": "此窗口以管理员身份运行:Kotodama 无法从中复制",
     "restartAdmin": "以管理员身份重启",
-    "errorLogin": "需要登录: 从 Kotodama 登录"
+    "errorLogin": "需要登录: 从 Kotodama 登录",
+    "toastReady": "结果已准备好",
+    "toastNotPasted": "未粘贴：您已切换到其他窗口。",
+    "toastPasteIn": "粘贴到 {w}",
+    "toastPasteInOrigin": "粘贴到原窗口",
+    "toastInClipboard": "已在剪贴板中：您可以按 Ctrl+V 自行粘贴",
+    "toastWindowClosed": "{w} 已关闭。",
+    "toastWindowClosedAny": "原窗口已关闭。",
+    "toastRefused": "Windows 无法切换到该窗口。请点击您想要的位置，然后按 Ctrl+V。",
+    "toastCopy": "复制",
+    "toastCopied": "已复制"
   },
   "neutralHint": "复制的文本将原样发送至默认提供商。",
   "setRecipe": "默认配方",

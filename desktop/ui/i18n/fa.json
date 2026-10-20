@@ -142,7 +142,17 @@
     "errorAccessibility": "دسترس‌پذیری را برای Kotodama مجاز کنید",
     "errorElevated": "این پنجره با دسترسی مدیر اجرا می‌شود: Kotodama نمی‌تواند از آن کپی کند",
     "restartAdmin": "راه‌اندازی دوباره به‌عنوان مدیر",
-    "errorLogin": "ورود مورد نیاز است: از Kotodama وارد شوید"
+    "errorLogin": "ورود مورد نیاز است: از Kotodama وارد شوید",
+    "toastReady": "نتیجه آماده است",
+    "toastNotPasted": "آن را نچسباندم: به پنجره‌ی دیگری رفتید.",
+    "toastPasteIn": "در {w} بچسبان",
+    "toastPasteInOrigin": "در پنجره‌ی اصلی بچسبان",
+    "toastInClipboard": "در کلیپ‌بورد است: خودتان می‌توانید با Ctrl+V بچسبانید",
+    "toastWindowClosed": "{w} بسته شد.",
+    "toastWindowClosedAny": "پنجره‌ی اصلی بسته شد.",
+    "toastRefused": "Windows نتوانست آن پنجره را جلو بیاورد. هر جا می‌خواهید کلیک کنید، سپس Ctrl+V را فشار دهید.",
+    "toastCopy": "کپی",
+    "toastCopied": "کپی شد"
   },
   "rename": "تغییر نام",
   "edit": "ویرایش",

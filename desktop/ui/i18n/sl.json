@@ -150,7 +150,17 @@
     "errorAccessibility": "Dovolite Dostopnost za Kotodama",
     "errorElevated": "To okno se izvaja kot skrbnik: Kotodama iz njega ne more kopirati",
     "restartAdmin": "Znova zaženi kot skrbnik",
-    "errorLogin": "Prijava je obvezna: prijavite se iz Kotodame"
+    "errorLogin": "Prijava je obvezna: prijavite se iz Kotodame",
+    "toastReady": "Rezultat je pripravljen",
+    "toastNotPasted": "Nisem ga prilepil: preklopili ste na drugo okno.",
+    "toastPasteIn": "Prilepi v {w}",
+    "toastPasteInOrigin": "Prilepi v izvirno okno",
+    "toastInClipboard": "Je v odložišču: prilepite ga lahko sami s Ctrl+V",
+    "toastWindowClosed": "Okno {w} je bilo zaprto.",
+    "toastWindowClosedAny": "Izvirno okno je bilo zaprto.",
+    "toastRefused": "Windows tega okna ni mogel prikazati v ospredju. Kliknite, kamor želite, nato pritisnite Ctrl+V.",
+    "toastCopy": "Kopiraj",
+    "toastCopied": "Kopirano"
   },
   "neutralHint": "Kopirano besedilo se nespremenjeno pošlje privzetemu ponudniku.",
   "setRecipe": "Privzeti recept",

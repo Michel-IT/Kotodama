@@ -150,7 +150,17 @@
     "errorAccessibility": "Atļaujiet Kotodama pieejamību",
     "errorElevated": "Šis logs darbojas kā administrators: Kotodama nevar no tā kopēt",
     "restartAdmin": "Restartēt kā administratoram",
-    "errorLogin": "Nepieciešama pierakstīšanās: pierakstieties no Kotodama"
+    "errorLogin": "Nepieciešama pierakstīšanās: pierakstieties no Kotodama",
+    "toastReady": "Rezultāts ir gatavs",
+    "toastNotPasted": "Es to neielīmēju: pārslēdzāties uz citu logu.",
+    "toastPasteIn": "Ielīmēt logā {w}",
+    "toastPasteInOrigin": "Ielīmēt sākotnējā logā",
+    "toastInClipboard": "Tas ir starpliktuvē: varat ielīmēt paši ar Ctrl+V",
+    "toastWindowClosed": "Logs {w} tika aizvērts.",
+    "toastWindowClosedAny": "Sākotnējais logs tika aizvērts.",
+    "toastRefused": "Windows nevarēja atvērt šo logu priekšplānā. Noklikšķiniet, kur vēlaties, pēc tam nospiediet Ctrl+V.",
+    "toastCopy": "Kopēt",
+    "toastCopied": "Nokopēts"
   },
   "neutralHint": "Kopētais teksts tiek nosūtīts tāds, kāds ir, uz noklusējuma nodrošinātāju.",
   "setRecipe": "Noklusējuma recepte",

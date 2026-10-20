@@ -227,7 +227,17 @@
     "errorElevated": "Questa finestra è aperta come amministratore: Kotodama non può copiarne il testo",
     "restartAdmin": "Riavvia come amministratore",
     "stageConnect": "Connessione...",
-    "stageWork": "Risposta in arrivo"
+    "stageWork": "Risposta in arrivo",
+    "toastReady": "Risultato pronto",
+    "toastNotPasted": "Non l'ho incollato: sei passato a un'altra finestra.",
+    "toastPasteIn": "Incolla in {w}",
+    "toastPasteInOrigin": "Incolla nella finestra di partenza",
+    "toastCopy": "Copia",
+    "toastCopied": "Copiato",
+    "toastInClipboard": "È negli appunti: puoi incollarlo tu con Ctrl+V",
+    "toastWindowClosed": "{w} è stato chiuso.",
+    "toastWindowClosedAny": "La finestra di partenza è stata chiusa.",
+    "toastRefused": "Windows non ha portato davanti quella finestra. Clicca dove lo vuoi, poi premi Ctrl+V."
   },
   "ktTileTitle": "Kotodama... chiedi a tutti i provider insieme",
   "ktTitle": "Provider selezionati",

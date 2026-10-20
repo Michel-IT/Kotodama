@@ -150,7 +150,17 @@
     "errorAccessibility": "Luba Kotodamale juurdepääsetavus",
     "errorElevated": "See aken töötab administraatorina: Kotodama ei saa sealt kopeerida",
     "restartAdmin": "Taaskäivita administraatorina",
-    "errorLogin": "Sisselogimine on vajalik: logige sisse Kotodamast"
+    "errorLogin": "Sisselogimine on vajalik: logige sisse Kotodamast",
+    "toastReady": "Tulemus on valmis",
+    "toastNotPasted": "Ma ei kleepinud seda: läksid teise akna peale.",
+    "toastPasteIn": "Kleebi aknasse {w}",
+    "toastPasteInOrigin": "Kleebi algsesse aknasse",
+    "toastInClipboard": "See on lõikepuhvris: saad selle ise kleepida klahvikombinatsiooniga Ctrl+V",
+    "toastWindowClosed": "{w} suleti.",
+    "toastWindowClosedAny": "Algne aken suleti.",
+    "toastRefused": "Windows ei saanud seda akent ette tuua. Klõpsa kohta, kuhu tahad, ja vajuta seejärel Ctrl+V.",
+    "toastCopy": "Kopeeri",
+    "toastCopied": "Kopeeritud"
   },
   "neutralHint": "Kopeeritud tekst saadetakse muutmata kujul vaikepakkujale.",
   "setRecipe": "Vaikeretsept",

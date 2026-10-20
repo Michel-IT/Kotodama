@@ -150,7 +150,17 @@
     "errorAccessibility": "Izinkan Aksesibilitas untuk Kotodama",
     "errorElevated": "Jendela ini berjalan sebagai administrator: Kotodama tidak dapat menyalin darinya",
     "restartAdmin": "Mulai ulang sebagai administrator",
-    "errorLogin": "Masuk diperlukan: masuk dari Kotodama"
+    "errorLogin": "Masuk diperlukan: masuk dari Kotodama",
+    "toastReady": "Hasil siap",
+    "toastNotPasted": "Saya tidak menempelkannya: Anda pindah ke jendela lain.",
+    "toastPasteIn": "Tempel di {w}",
+    "toastPasteInOrigin": "Tempel di jendela asal",
+    "toastInClipboard": "Ada di papan klip: Anda bisa menempelkannya sendiri dengan Ctrl+V",
+    "toastWindowClosed": "{w} ditutup.",
+    "toastWindowClosedAny": "Jendela asal ditutup.",
+    "toastRefused": "Windows tidak dapat memunculkan jendela itu. Klik di tempat yang diinginkan, lalu tekan Ctrl+V.",
+    "toastCopy": "Salin",
+    "toastCopied": "Tersalin"
   },
   "neutralHint": "Teks yang disalin dikirim apa adanya ke penyedia default.",
   "setRecipe": "Resep default",

@@ -142,7 +142,17 @@
     "errorAccessibility": "Дозвольте Універсальний доступ для Kotodama",
     "errorElevated": "Це вікно запущено від імені адміністратора: Kotodama не може з нього копіювати",
     "restartAdmin": "Перезапустити від імені адміністратора",
-    "errorLogin": "Вхід обов'язковий: увійдіть з Kotodama"
+    "errorLogin": "Вхід обов'язковий: увійдіть з Kotodama",
+    "toastReady": "Результат готовий",
+    "toastNotPasted": "Я не вставив його: ви перейшли до іншого вікна.",
+    "toastPasteIn": "Вставити у {w}",
+    "toastPasteInOrigin": "Вставити у вихідне вікно",
+    "toastInClipboard": "Він у буфері обміну: ви можете вставити його самі через Ctrl+V",
+    "toastWindowClosed": "Вікно {w} закрито.",
+    "toastWindowClosedAny": "Вихідне вікно закрито.",
+    "toastRefused": "Windows не зміг перемкнути на це вікно. Клацніть, де потрібно, і натисніть Ctrl+V.",
+    "toastCopy": "Копіювати",
+    "toastCopied": "Скопійовано"
   },
   "rename": "Перейменувати",
   "edit": "Редагувати",

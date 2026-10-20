@@ -142,7 +142,17 @@
     "errorAccessibility": "Kotodama खातिर सुलभता के अनुमति दीं",
     "errorElevated": "ई विंडो प्रशासक के रूप में चलत बा: Kotodama एहसे कॉपी ना कर सकेला",
     "restartAdmin": "प्रशासक के रूप में फेर से चालू करीं",
-    "errorLogin": "साइन-इन आवश्यक है: Kotodama से साइन-इन करें"
+    "errorLogin": "साइन-इन आवश्यक है: Kotodama से साइन-इन करें",
+    "toastReady": "नतीजा तैयार बा",
+    "toastNotPasted": "हम ना चिपकवनी: आप दोसर विंडो पर चल गइनी.",
+    "toastPasteIn": "{w} में चिपकाईं",
+    "toastPasteInOrigin": "मूल विंडो में चिपकाईं",
+    "toastInClipboard": "ई क्लिपबोर्ड में बा: रउवा Ctrl+V से खुद चिपका सकत बानी",
+    "toastWindowClosed": "{w} बंद हो गइल.",
+    "toastWindowClosedAny": "मूल विंडो बंद हो गइल.",
+    "toastRefused": "Windows ओह विंडो के सामने ना ला सकल. जहाँ चाहीं वहाँ क्लिक करीं, फेर Ctrl+V दबाईं.",
+    "toastCopy": "कॉपी करीं",
+    "toastCopied": "कॉपी हो गइल"
   },
   "rename": "नाम बदलीं",
   "edit": "संपादित करीं",

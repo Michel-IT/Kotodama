@@ -150,7 +150,17 @@
     "errorAccessibility": "Kotodama にアクセシビリティを許可してください",
     "errorElevated": "このウィンドウは管理者として実行中のため、Kotodama はコピーできません",
     "restartAdmin": "管理者として再起動",
-    "errorLogin": "サインインが必要です: Kotodama からサインインしてください"
+    "errorLogin": "サインインが必要です: Kotodama からサインインしてください",
+    "toastReady": "結果の準備ができました",
+    "toastNotPasted": "貼り付けていません: 別のウィンドウに切り替わったためです。",
+    "toastPasteIn": "{w} に貼り付け",
+    "toastPasteInOrigin": "元のウィンドウに貼り付け",
+    "toastInClipboard": "クリップボードにあります: Ctrl+V で自分で貼り付けられます",
+    "toastWindowClosed": "{w} が閉じられました。",
+    "toastWindowClosedAny": "元のウィンドウが閉じられました。",
+    "toastRefused": "Windows がそのウィンドウを前面に出せませんでした。貼り付けたい場所をクリックしてから Ctrl+V を押してください。",
+    "toastCopy": "コピー",
+    "toastCopied": "コピーしました"
   },
   "neutralHint": "コピーしたテキストがそのままデフォルトのプロバイダーに送信されます。",
   "setRecipe": "デフォルトのレシピ",

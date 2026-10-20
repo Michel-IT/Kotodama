@@ -150,7 +150,17 @@
     "errorAccessibility": "Tillåt Hjälpmedel för Kotodama",
     "errorElevated": "Det här fönstret körs som administratör: Kotodama kan inte kopiera från det",
     "restartAdmin": "Starta om som administratör",
-    "errorLogin": "Inloggning krävs: logga in från Kotodama"
+    "errorLogin": "Inloggning krävs: logga in från Kotodama",
+    "toastReady": "Resultatet är klart",
+    "toastNotPasted": "Jag klistrade inte in det: du bytte till ett annat fönster.",
+    "toastPasteIn": "Klistra in i {w}",
+    "toastPasteInOrigin": "Klistra in i det ursprungliga fönstret",
+    "toastInClipboard": "Det finns i urklipp: du kan klistra in det själv med Ctrl+V",
+    "toastWindowClosed": "{w} stängdes.",
+    "toastWindowClosedAny": "Det ursprungliga fönstret stängdes.",
+    "toastRefused": "Windows kunde inte växla till det fönstret. Klicka där du vill, tryck sedan på Ctrl+V.",
+    "toastCopy": "Kopiera",
+    "toastCopied": "Kopierat"
   },
   "neutralHint": "Den kopierade texten skickas som den är till standardleverantören.",
   "setRecipe": "Standardrecept",

@@ -142,7 +142,17 @@
     "errorAccessibility": "Kotodama ಗೆ ಪ್ರವೇಶಿಸುವಿಕೆಯನ್ನು ಅನುಮತಿಸಿ",
     "errorElevated": "ಈ ವಿಂಡೋ ನಿರ್ವಾಹಕರಾಗಿ ಚಾಲನೆಯಲ್ಲಿದೆ: Kotodama ಇದರಿಂದ ನಕಲಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ",
     "restartAdmin": "ನಿರ್ವಾಹಕರಾಗಿ ಮರುಪ್ರಾರಂಭಿಸಿ",
-    "errorLogin": "ಸೈನ್-ಇನ್ ಅಗತ್ಯವಿದೆ: Kotodama ಯಿಂದ ಸೈನ್ ಇನ್ ಮಾಡಿ"
+    "errorLogin": "ಸೈನ್-ಇನ್ ಅಗತ್ಯವಿದೆ: Kotodama ಯಿಂದ ಸೈನ್ ಇನ್ ಮಾಡಿ",
+    "toastReady": "ಫಲಿತಾಂಶ ಸಿದ್ಧವಾಗಿದೆ",
+    "toastNotPasted": "ನಾನು ಅಂಟಿಸಲಿಲ್ಲ: ನೀವು ಬೇರೆ ವಿಂಡೋಗೆ ಬದಲಾಯಿಸಿದಿರಿ.",
+    "toastPasteIn": "{w} ನಲ್ಲಿ ಅಂಟಿಸಿ",
+    "toastPasteInOrigin": "ಮೂಲ ವಿಂಡೋದಲ್ಲಿ ಅಂಟಿಸಿ",
+    "toastInClipboard": "ಇದು ಕ್ಲಿಪ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿದೆ: ನೀವು Ctrl+V ಮೂಲಕ ನೀವೇ ಅಂಟಿಸಬಹುದು",
+    "toastWindowClosed": "{w} ಮುಚ್ಚಲಾಯಿತು.",
+    "toastWindowClosedAny": "ಮೂಲ ವಿಂಡೋ ಮುಚ್ಚಲಾಯಿತು.",
+    "toastRefused": "ಆ ವಿಂಡೋವನ್ನು ಮುಂಭಾಗಕ್ಕೆ ತರಲು Windows ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಬೇಕಾದ ಜಾಗದಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ, ನಂತರ Ctrl+V ಒತ್ತಿ.",
+    "toastCopy": "ನಕಲಿಸಿ",
+    "toastCopied": "ನಕಲಿಸಲಾಗಿದೆ"
   },
   "rename": "ಮರುಹೆಸರಿಸಿ",
   "edit": "ಸಂಪಾದಿಸಿ",

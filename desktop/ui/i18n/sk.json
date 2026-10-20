@@ -150,7 +150,17 @@
     "errorAccessibility": "Povoľte Prístupnosť pre Kotodama",
     "errorElevated": "Toto okno beží ako správca: Kotodama z neho nemôže kopírovať",
     "restartAdmin": "Reštartovať ako správca",
-    "errorLogin": "Prihlasovanie je povinné: prihláste sa z aplikácie Kotodama"
+    "errorLogin": "Prihlasovanie je povinné: prihláste sa z aplikácie Kotodama",
+    "toastReady": "Výsledok je pripravený",
+    "toastNotPasted": "Nevložil som ho: prepli ste do iného okna.",
+    "toastPasteIn": "Vložiť do {w}",
+    "toastPasteInOrigin": "Vložiť do pôvodného okna",
+    "toastInClipboard": "Je v schránke: môžete ho vložiť sami pomocou Ctrl+V",
+    "toastWindowClosed": "{w} bolo zatvorené.",
+    "toastWindowClosedAny": "Pôvodné okno bolo zatvorené.",
+    "toastRefused": "Windows sa nepodarilo prepnúť na to okno. Kliknite tam, kde chcete, a potom stlačte Ctrl+V.",
+    "toastCopy": "Kopírovať",
+    "toastCopied": "Skopírované"
   },
   "neutralHint": "Skopírovaný text sa odošle bez zmien predvolenému poskytovateľovi.",
   "setRecipe": "Predvolený recept",

@@ -150,7 +150,17 @@
     "errorAccessibility": "Bedienungshilfen für Kotodama erlauben",
     "errorElevated": "Dieses Fenster läuft als Administrator: Kotodama kann daraus nicht kopieren",
     "restartAdmin": "Als Administrator neu starten",
-    "errorLogin": "Anmeldung erforderlich: melden Sie sich in Kotodama an"
+    "errorLogin": "Anmeldung erforderlich: melden Sie sich in Kotodama an",
+    "toastReady": "Ergebnis bereit",
+    "toastNotPasted": "Nicht eingefügt: Du bist zu einem anderen Fenster gewechselt.",
+    "toastPasteIn": "In {w} einfügen",
+    "toastPasteInOrigin": "Im ursprünglichen Fenster einfügen",
+    "toastInClipboard": "Es ist in der Zwischenablage: Du kannst es selbst mit Ctrl+V einfügen",
+    "toastWindowClosed": "{w} wurde geschlossen.",
+    "toastWindowClosedAny": "Das ursprüngliche Fenster wurde geschlossen.",
+    "toastRefused": "Windows konnte nicht zu diesem Fenster wechseln. Klicke dorthin, wo du es haben willst, und drücke dann Ctrl+V.",
+    "toastCopy": "Kopieren",
+    "toastCopied": "Kopiert"
   },
   "neutralHint": "Der kopierte Text wird unverändert an den Standardanbieter gesendet.",
   "setRecipe": "Standardrezept",

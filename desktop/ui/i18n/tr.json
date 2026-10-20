@@ -150,7 +150,17 @@
     "errorAccessibility": "Kotodama için Erişilebilirliğe izin verin",
     "errorElevated": "Bu pencere yönetici olarak çalışıyor: Kotodama buradan kopyalayamaz",
     "restartAdmin": "Yönetici olarak yeniden başlat",
-    "errorLogin": "Oturum açma gereklidir: Kotodama'dan oturum açın"
+    "errorLogin": "Oturum açma gereklidir: Kotodama'dan oturum açın",
+    "toastReady": "Sonuç hazır",
+    "toastNotPasted": "Yapıştırmadım: başka bir pencereye geçtiniz.",
+    "toastPasteIn": "{w} penceresine yapıştır",
+    "toastPasteInOrigin": "Özgün pencereye yapıştır",
+    "toastInClipboard": "Panoda: Ctrl+V ile kendiniz yapıştırabilirsiniz",
+    "toastWindowClosed": "{w} kapatıldı.",
+    "toastWindowClosedAny": "Özgün pencere kapatıldı.",
+    "toastRefused": "Windows o pencereyi öne getiremedi. İstediğiniz yere tıklayın, sonra Ctrl+V tuşlarına basın.",
+    "toastCopy": "Kopyala",
+    "toastCopied": "Kopyalandı"
   },
   "neutralHint": "Kopyalanan metin olduğu gibi varsayılan sağlayıcıya gönderilir.",
   "setRecipe": "Varsayılan tarif",

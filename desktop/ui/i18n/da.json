@@ -150,7 +150,17 @@
     "errorAccessibility": "Tillad Tilgængelighed for Kotodama",
     "errorElevated": "Dette vindue kører som administrator: Kotodama kan ikke kopiere fra det",
     "restartAdmin": "Genstart som administrator",
-    "errorLogin": "ログインが必要です: Kotodama からログインしてください"
+    "errorLogin": "ログインが必要です: Kotodama からログインしてください",
+    "toastReady": "Resultat klar",
+    "toastNotPasted": "Jeg satte det ikke ind: du skiftede til et andet vindue.",
+    "toastPasteIn": "Sæt ind i {w}",
+    "toastPasteInOrigin": "Sæt ind i det oprindelige vindue",
+    "toastInClipboard": "Det er i udklipsholderen: du kan selv indsætte det med Ctrl+V",
+    "toastWindowClosed": "{w} blev lukket.",
+    "toastWindowClosedAny": "Det oprindelige vindue blev lukket.",
+    "toastRefused": "Windows ville ikke skifte til det vindue. Klik, hvor du vil have det, og tryk derefter på Ctrl+V.",
+    "toastCopy": "Kopiér",
+    "toastCopied": "Kopieret"
   },
   "neutralHint": "Den kopierede tekst sendes som den er til standardudbyderen.",
   "setRecipe": "Standardopskrift",

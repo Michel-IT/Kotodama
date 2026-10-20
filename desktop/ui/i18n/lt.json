@@ -150,7 +150,17 @@
     "errorAccessibility": "Leiskite Kotodama naudoti pritaikymą neįgaliesiems",
     "errorElevated": "Šis langas veikia kaip administratorius: Kotodama negali iš jo kopijuoti",
     "restartAdmin": "Paleisti iš naujo kaip administratoriui",
-    "errorLogin": "Prisijungimas būtinas: prisijunkite iš Kotodama"
+    "errorLogin": "Prisijungimas būtinas: prisijunkite iš Kotodama",
+    "toastReady": "Rezultatas paruoštas",
+    "toastNotPasted": "Neįklijavau: perjungėte į kitą langą.",
+    "toastPasteIn": "Įklijuoti į {w}",
+    "toastPasteInOrigin": "Įklijuoti į pradinį langą",
+    "toastInClipboard": "Jis iškarpinėje: galite įklijuoti patys su Ctrl+V",
+    "toastWindowClosed": "Langas {w} buvo uždarytas.",
+    "toastWindowClosedAny": "Pradinis langas buvo uždarytas.",
+    "toastRefused": "„Windows“ nepavyko perjungti į tą langą. Spustelėkite, kur norite, tada paspauskite Ctrl+V.",
+    "toastCopy": "Kopijuoti",
+    "toastCopied": "Nukopijuota"
   },
   "neutralHint": "Nukopijuotas tekstas siunčiamas toks, koks yra, į numatytąjį provaiderį.",
   "setRecipe": "Numatytasis receptas",

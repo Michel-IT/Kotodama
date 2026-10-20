@@ -150,7 +150,17 @@
     "errorAccessibility": "Ruhusu Ufikivu kwa Kotodama",
     "errorElevated": "Dirisha hili linaendeshwa kama msimamizi: Kotodama haiwezi kunakili kutoka humo",
     "restartAdmin": "Anzisha upya kama msimamizi",
-    "errorLogin": "Kuingia kunahitajika: ingia kutoka Kotodama"
+    "errorLogin": "Kuingia kunahitajika: ingia kutoka Kotodama",
+    "toastReady": "Matokeo tayari",
+    "toastNotPasted": "Sikuibandika: umehama dirisha lingine.",
+    "toastPasteIn": "Bandika kwenye {w}",
+    "toastPasteInOrigin": "Bandika kwenye dirisha asili",
+    "toastInClipboard": "Iko kwenye ubao wa kunakili: unaweza kuibandika mwenyewe kwa Ctrl+V",
+    "toastWindowClosed": "{w} imefungwa.",
+    "toastWindowClosedAny": "Dirisha asili limefungwa.",
+    "toastRefused": "Windows haikuweza kuleta dirisha hilo mbele. Bofya mahali unapotaka, kisha bonyeza Ctrl+V.",
+    "toastCopy": "Nakili",
+    "toastCopied": "Imenakiliwa"
   },
   "neutralHint": "Maandishi yaliyonakiliwa hutumwa kama yalivyo kwa mtoa huduma chaguo-msingi.",
   "setRecipe": "Kichocheo chaguo-msingi",

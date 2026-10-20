@@ -150,7 +150,17 @@
     "errorAccessibility": "Kotodama ਲਈ ਪਹੁੰਚਯੋਗਤਾ ਦੀ ਇਜਾਜ਼ਤ ਦਿਓ",
     "errorElevated": "ਇਹ ਵਿੰਡੋ ਪ੍ਰਬੰਧਕ ਵਜੋਂ ਚੱਲ ਰਹੀ ਹੈ: Kotodama ਇਸ ਤੋਂ ਕਾਪੀ ਨਹੀਂ ਕਰ ਸਕਦਾ",
     "restartAdmin": "ਪ੍ਰਬੰਧਕ ਵਜੋਂ ਮੁੜ ਚਾਲੂ ਕਰੋ",
-    "errorLogin": "ਸਾਈਨ-ਇਨ ਲਾਜ਼ਮੀ ਹੈ: Kotodama ਤੋਂ ਸਾਈਨ ਇਨ ਕਰੋ"
+    "errorLogin": "ਸਾਈਨ-ਇਨ ਲਾਜ਼ਮੀ ਹੈ: Kotodama ਤੋਂ ਸਾਈਨ ਇਨ ਕਰੋ",
+    "toastReady": "ਨਤੀਜਾ ਤਿਆਰ ਹੈ",
+    "toastNotPasted": "ਮੈਂ ਇਹ ਚਿਪਕਾਇਆ ਨਹੀਂ: ਤੁਸੀਂ ਕਿਸੇ ਹੋਰ ਵਿੰਡੋ 'ਤੇ ਚਲੇ ਗਏ।",
+    "toastPasteIn": "{w} ਵਿੱਚ ਚਿਪਕਾਓ",
+    "toastPasteInOrigin": "ਅਸਲ ਵਿੰਡੋ ਵਿੱਚ ਚਿਪਕਾਓ",
+    "toastInClipboard": "ਇਹ ਕਲਿੱਪਬੋਰਡ ਵਿੱਚ ਹੈ: ਤੁਸੀਂ Ctrl+V ਨਾਲ ਆਪ ਚਿਪਕਾ ਸਕਦੇ ਹੋ",
+    "toastWindowClosed": "{w} ਬੰਦ ਹੋ ਗਈ।",
+    "toastWindowClosedAny": "ਅਸਲ ਵਿੰਡੋ ਬੰਦ ਹੋ ਗਈ।",
+    "toastRefused": "Windows ਉਸ ਵਿੰਡੋ ਨੂੰ ਅੱਗੇ ਨਹੀਂ ਲਿਆ ਸਕਿਆ। ਜਿੱਥੇ ਚਾਹੁੰਦੇ ਹੋ ਉੱਥੇ ਕਲਿੱਕ ਕਰੋ, ਫਿਰ Ctrl+V ਦਬਾਓ।",
+    "toastCopy": "ਕਾਪੀ ਕਰੋ",
+    "toastCopied": "ਕਾਪੀ ਹੋ ਗਿਆ"
   },
   "neutralHint": "ਕਾਪੀ ਕੀਤਾ ਟੈਕਸਟ ਉਵੇਂ ਹੀ ਡਿਫਾਲਟ ਪ੍ਰੋਵਾਈਡਰ ਨੂੰ ਭੇਜਿਆ ਜਾਂਦਾ ਹੈ।",
   "setRecipe": "ਡਿਫਾਲਟ ਰੈਸਿਪੀ",

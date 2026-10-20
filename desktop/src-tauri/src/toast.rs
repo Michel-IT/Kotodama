@@ -11,6 +11,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 const PREVIEW_CHARS: usize = 160;
+const READY_PREVIEW_CHARS: usize = 240;
 
 #[derive(Clone, Serialize)]
 struct ToastContent {
@@ -30,6 +31,8 @@ struct ToastContent {
     /// "mac" | "other": tells the frontend which corner is flush against the screen edge
     /// (top on macOS, bottom elsewhere) so it can flip the card's rounded corners to match.
     os: String,
+    /// Readable name of the window a pending result belongs to ("ready" / "closed" modes).
+    target: String,
 }
 
 #[cfg(target_os = "macos")]
@@ -39,6 +42,10 @@ const OS_TAG: &str = "other";
 
 /// Internal: emit content + position right-aligned (bottom on Win/Linux, top on macOS) + show.
 fn emit_and_show(app: &AppHandle, mode: &str, label: &str, preview: String) {
+    emit_and_show_full(app, mode, label, preview, String::new());
+}
+
+fn emit_and_show_full(app: &AppHandle, mode: &str, label: &str, preview: String, target: String) {
     let Some(window) = app.get_webview_window("toast") else {
         return;
     };
@@ -57,6 +64,7 @@ fn emit_and_show(app: &AppHandle, mode: &str, label: &str, preview: String) {
             theme,
             language,
             os: OS_TAG.into(),
+            target,
         },
     );
 
@@ -65,8 +73,44 @@ fn emit_and_show(app: &AppHandle, mode: &str, label: &str, preview: String) {
     let logical_h: f64 = match mode {
         "processing" => 108.0,
         "done" | "error" => 66.0,
+        "ready" => 260.0,
+        "closed" => 230.0,
         _ => 138.0,
     };
+    place_with_height(&window, logical_h);
+    show_without_stealing_focus(&window);
+}
+
+/// Safety limits (logical px) for the height the page asks for via `toast_fit`.
+const FIT_MIN_H: f64 = 120.0;
+const FIT_MAX_H: f64 = 480.0;
+
+/// Pure: clamp a measured content height to the allowed range (NaN falls back to the minimum).
+pub fn clamp_toast_height(h: f64) -> f64 {
+    if h.is_nan() {
+        return FIT_MIN_H;
+    }
+    h.clamp(FIT_MIN_H, FIT_MAX_H)
+}
+
+/// Resize the toast to the height measured by the page ("ready"/"closed" states), keeping the
+/// width and the anchored edge. No-op when the size would not change; never touches the focus.
+pub fn fit(app: &AppHandle, logical_h: f64) {
+    let Some(window) = app.get_webview_window("toast") else {
+        return;
+    };
+    let h = clamp_toast_height(logical_h);
+    let scale = window.scale_factor().unwrap_or(1.0);
+    let phys_h = (h * scale).round() as u32;
+    if window.outer_size().map(|s| s.height == phys_h).unwrap_or(false) {
+        return;
+    }
+    place_with_height(&window, h);
+}
+
+/// Set the window height (logical px), keep its width and anchor it to the right edge of the work
+/// area (bottom on Windows/Linux, top on macOS).
+fn place_with_height(window: &tauri::WebviewWindow, logical_h: f64) {
     let scale = window.scale_factor().unwrap_or(1.0);
     let cur_w = window
         .outer_size()
@@ -88,8 +132,6 @@ fn emit_and_show(app: &AppHandle, mode: &str, label: &str, preview: String) {
         let y = wa.position.y + wa.size.height as i32 - phys_h as i32;
         let _ = window.set_position(PhysicalPosition::new(x, y));
     }
-
-    show_without_stealing_focus(&window);
 }
 
 /// Show the toast WITHOUT letting it take the foreground.
@@ -130,6 +172,11 @@ fn show_without_stealing_focus(window: &tauri::WebviewWindow) {
 
 /// Show the "text copied" toast with a preview (Open button -> home).
 pub fn show(app: &AppHandle, text: &str) {
+    // A "ready"/"closed" toast still waiting for the user must not be replaced by the copy toast
+    // (its buttons would vanish while the result lives only in memory). Pending exists on Windows only.
+    if app.state::<crate::AppState>().pending_paste.lock().unwrap().is_some() {
+        return;
+    }
     let mut preview: String = text.chars().take(PREVIEW_CHARS).collect();
     if text.chars().count() > PREVIEW_CHARS {
         preview.push('…');
@@ -143,9 +190,33 @@ pub fn show_state(app: &AppHandle, mode: &str, label: &str) {
     emit_and_show(app, mode, label, String::new());
 }
 
+/// Show the "result ready" toast: the answer was NOT pasted and waits for the user.
+/// `mode` is "ready" or "closed"; it stays on screen until the user acts or closes it.
+/// `label` is "" or "refused" (the last attempt to switch window was refused).
+pub fn show_ready(app: &AppHandle, mode: &str, label: &str, result: &str, target: &str) {
+    let mut preview: String = result.chars().take(READY_PREVIEW_CHARS).collect();
+    if result.chars().count() > READY_PREVIEW_CHARS {
+        preview.push('…');
+    }
+    emit_and_show_full(app, mode, label, preview, target.to_string());
+}
+
 /// Hide the toast.
 pub fn hide(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("toast") {
         let _ = window.hide();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::clamp_toast_height;
+
+    #[test]
+    fn clamps_height() {
+        assert_eq!(clamp_toast_height(50.0), 120.0);
+        assert_eq!(clamp_toast_height(200.0), 200.0);
+        assert_eq!(clamp_toast_height(900.0), 480.0);
+        assert_eq!(clamp_toast_height(f64::NAN), 120.0);
     }
 }

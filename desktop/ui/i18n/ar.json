@@ -150,7 +150,17 @@
     "errorAccessibility": "اسمح بإمكانية الوصول لـ Kotodama",
     "errorElevated": "هذه النافذة تعمل كمسؤول: لا يستطيع Kotodama النسخ منها",
     "restartAdmin": "إعادة التشغيل كمسؤول",
-    "errorLogin": "تسجيل الدخول مطلوب: سجّل الدخول من Kotodama"
+    "errorLogin": "تسجيل الدخول مطلوب: سجّل الدخول من Kotodama",
+    "toastReady": "النتيجة جاهزة",
+    "toastNotPasted": "لم ألصقها: انتقلت إلى نافذة أخرى.",
+    "toastPasteIn": "الصق في {w}",
+    "toastPasteInOrigin": "الصق في النافذة الأصلية",
+    "toastInClipboard": "هي في الحافظة: يمكنك لصقها بنفسك بـ Ctrl+V",
+    "toastWindowClosed": "تم إغلاق {w}.",
+    "toastWindowClosedAny": "تم إغلاق النافذة الأصلية.",
+    "toastRefused": "رفض Windows التبديل إلى تلك النافذة. انقر حيث تريدها، ثم اضغط Ctrl+V.",
+    "toastCopy": "نسخ",
+    "toastCopied": "تم النسخ"
   },
   "neutralHint": "يُرسَل النص المنسوخ كما هو إلى المزوّد الافتراضي.",
   "setRecipe": "الوصفة الافتراضية",

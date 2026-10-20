@@ -150,7 +150,17 @@
     "errorAccessibility": "Kotodama के लिए सुलभता की अनुमति दें",
     "errorElevated": "यह विंडो व्यवस्थापक के रूप में चल रही है: Kotodama इससे कॉपी नहीं कर सकता",
     "restartAdmin": "व्यवस्थापक के रूप में पुनः आरंभ करें",
-    "errorLogin": "साइन-इन आवश्यक है: Kotodama से लॉगिन करें"
+    "errorLogin": "साइन-इन आवश्यक है: Kotodama से लॉगिन करें",
+    "toastReady": "परिणाम तैयार है",
+    "toastNotPasted": "मैंने इसे नहीं चिपकाया: आप दूसरी विंडो पर चले गए।",
+    "toastPasteIn": "{w} में चिपकाएँ",
+    "toastPasteInOrigin": "मूल विंडो में चिपकाएँ",
+    "toastInClipboard": "यह क्लिपबोर्ड में है: आप खुद Ctrl+V से चिपका सकते हैं",
+    "toastWindowClosed": "{w} बंद हो गई।",
+    "toastWindowClosedAny": "मूल विंडो बंद हो गई।",
+    "toastRefused": "Windows उस विंडो को सामने नहीं ला सका। जहाँ चाहते हैं वहाँ क्लिक करें, फिर Ctrl+V दबाएँ।",
+    "toastCopy": "कॉपी करें",
+    "toastCopied": "कॉपी हो गया"
   },
   "neutralHint": "कॉपी किया गया टेक्स्ट ज्यों का त्यों डिफ़ॉल्ट प्रोवाइडर को भेजा जाता है।",
   "setRecipe": "डिफ़ॉल्ट रेसिपी",

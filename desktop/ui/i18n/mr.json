@@ -150,7 +150,17 @@
     "errorAccessibility": "Kotodama साठी सुलभतेला परवानगी द्या",
     "errorElevated": "ही विंडो प्रशासक म्हणून चालू आहे: Kotodama येथून कॉपी करू शकत नाही",
     "restartAdmin": "प्रशासक म्हणून पुन्हा सुरू करा",
-    "errorLogin": "साइन-इन आवश्यक आहे: Kotodama वरून साइन-इन करा"
+    "errorLogin": "साइन-इन आवश्यक आहे: Kotodama वरून साइन-इन करा",
+    "toastReady": "निकाल तयार आहे",
+    "toastNotPasted": "मी ते पेस्ट केले नाही: तुम्ही दुसऱ्या विंडोवर गेलात.",
+    "toastPasteIn": "{w} मध्ये पेस्ट करा",
+    "toastPasteInOrigin": "मूळ विंडोमध्ये पेस्ट करा",
+    "toastInClipboard": "ते क्लिपबोर्डवर आहे: तुम्ही Ctrl+V वापरून स्वतः पेस्ट करू शकता",
+    "toastWindowClosed": "{w} बंद झाली.",
+    "toastWindowClosedAny": "मूळ विंडो बंद झाली.",
+    "toastRefused": "Windows ती विंडो समोर आणू शकली नाही. हवी तिथे क्लिक करा, मग Ctrl+V दाबा.",
+    "toastCopy": "कॉपी करा",
+    "toastCopied": "कॉपी झाले"
   },
   "neutralHint": "कॉपी केलेला मजकूर जसाच्या तसा डीफॉल्ट प्रोव्हायडरला पाठवला जातो.",
   "setRecipe": "डीफॉल्ट रेसिपी",

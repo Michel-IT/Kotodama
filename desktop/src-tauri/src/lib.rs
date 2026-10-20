@@ -16,6 +16,7 @@ mod debug;
 mod gesture;
 mod kotodama;
 mod netread;
+mod pending_paste;
 mod plaintext;
 mod settings;
 mod toast;
@@ -61,6 +62,12 @@ pub struct AppState {
     /// Original (x,y) of the main window when it was parked off-screen for an inline
     /// transform (only set when the window was hidden); restored afterwards.
     pub inline_saved_pos: Mutex<Option<(i32, i32)>>,
+    /// Readable name of the window the current inline transform took its text from (Windows):
+    /// captured with the window itself at the shortcut, used on the "Paste in <window>" button.
+    pub inline_target_name: Mutex<String>,
+    /// A finished result that was NOT pasted (the original window is not in front, or is gone):
+    /// waits for "Paste in <window>" / "Copy" on the toast. A newer one replaces it.
+    pub pending_paste: Mutex<Option<pending_paste::PendingPaste>>,
 }
 
 // ============================ COMMANDS ============================
@@ -197,6 +204,8 @@ fn wait_for_relaunching_instance() {
 /// Hides the toast (✕ button / frontend-side auto-hide).
 #[tauri::command]
 fn hide_toast(app: AppHandle) {
+    // Closing the toast by hand abandons a pending result: no orphan left without its buttons.
+    *app.state::<AppState>().pending_paste.lock().unwrap() = None;
     toast::hide(&app);
 }
 
@@ -1046,6 +1055,15 @@ fn inline_transform(app: AppHandle, recipe: String) {
                 GetWindowThreadProcessId(hwnd, Some(&mut pid));
                 debug::log(format!("inline_transform: foreground hwnd={:?} pid={pid} title={title:?}", hwnd.0));
                 INLINE_TARGET.store(hwnd.0 as isize, Ordering::SeqCst);
+                INLINE_TARGET_PID.store(pid, Ordering::SeqCst);
+                // A new transform supersedes any result still waiting on the "Result ready" toast.
+                // The toast goes with it: with recipe notifications off nothing else would replace it.
+                let superseded = app.state::<AppState>().pending_paste.lock().unwrap().take().is_some();
+                if superseded {
+                    toast::hide(&app);
+                }
+                *app.state::<AppState>().inline_target_name.lock().unwrap() =
+                    pending_paste::window_display_name(&title);
             }
         }
         // A window running as administrator does not accept synthetic input from a normal process (Windows UIPI):
@@ -1220,28 +1238,120 @@ static GESTURE_TARGET: std::sync::atomic::AtomicIsize = std::sync::atomic::Atomi
 #[cfg(windows)]
 static INLINE_TARGET: std::sync::atomic::AtomicIsize = std::sync::atomic::AtomicIsize::new(0);
 
-/// Brings that window back and waits until it really is in front, so the paste that follows reaches it.
+/// Process id of `INLINE_TARGET` when it was recorded (guards against a reused HWND).
 #[cfg(windows)]
-fn refocus_inline_target() {
-    use windows::Win32::Foundation::HWND;
-    use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, SetForegroundWindow};
+static INLINE_TARGET_PID: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// Brings that window back and VERIFIES it is really in front (polling up to ~1 s). Returns `true` when the
+/// paste may go ahead. When the window is gone, or Windows refused to give it the focus, nothing is pasted:
+/// the result stays in the clipboard and the toast switches to "Result ready" (`pending_paste`), where the
+/// user picks "Paste in <window>" or "Copy". Never pastes into a window that was not the source.
+/// (macOS: the same safeguard, per application, is still to do; Linux is unchanged.)
+#[cfg(windows)]
+fn inline_target_in_front(app: &AppHandle, text: &str) -> bool {
     let h = INLINE_TARGET.swap(0, Ordering::SeqCst);
+    let pid = INLINE_TARGET_PID.swap(0, Ordering::SeqCst);
+    let name = std::mem::take(&mut *app.state::<AppState>().inline_target_name.lock().unwrap());
     if h == 0 {
-        return;
+        return true; // no window was recorded: nothing to verify, behave as before
     }
-    unsafe {
-        let hwnd = HWND(h as *mut core::ffi::c_void);
-        if GetForegroundWindow() == hwnd {
-            return;
-        }
-        let _ = SetForegroundWindow(hwnd);
-        for _ in 0..40 {
-            if GetForegroundWindow() == hwnd {
-                break;
+    let alive = pending_paste::is_window(h, pid);
+    let front = alive && pending_paste::bring_front(h, pid);
+    debug::log(format!("inline: focus back to hwnd={h} alive={alive} front={front}"));
+    if pending_paste::decide_paste(alive, front) == pending_paste::PasteDecision::Paste {
+        return true;
+    }
+    let p = pending_paste::PendingPaste {
+        text: text.to_string(),
+        target: h,
+        name,
+        pid,
+    };
+    debug::log("inline: not pasting, window not in front");
+    *app.state::<AppState>().pending_paste.lock().unwrap() = Some(p.clone());
+    show_pending_paste(app, &p, "");
+    false
+}
+
+/// Shows the "Result ready" toast for a pending result, recomputing from the live windows which look
+/// applies (original window still there, or closed).
+#[cfg(windows)]
+fn show_pending_paste(app: &AppHandle, p: &pending_paste::PendingPaste, label: &str) {
+    let alive = pending_paste::is_window(p.target, p.pid);
+    let view = pending_paste::ready_view(alive);
+    // A closed window has nothing to refuse: no "refused" reason, the closed state says it all.
+    let label = if alive { label } else { "" };
+    toast::show_ready(app, view.mode(), label, &p.text, &p.name);
+}
+
+/// Click on "Paste in <window>": bring the original window forward, verify, and only then paste. The clipboard is rewritten first, in case the user copied something else meanwhile.
+#[cfg(windows)]
+fn paste_pending(app: AppHandle) -> Result<(), String> {
+    // Take it under the lock so a double click cannot paste twice; put it back if we stay on the toast.
+    let Some(p) = app.state::<AppState>().pending_paste.lock().unwrap().take() else {
+        return Err("no pending result".into());
+    };
+    std::thread::spawn(move || {
+        let target = p.target;
+        let alive = pending_paste::is_window(target, p.pid);
+        let front = alive && pending_paste::bring_front(target, p.pid);
+        debug::log(format!("pending paste: hwnd={target} alive={alive} front={front}"));
+        match pending_paste::click_outcome(alive, front) {
+            pending_paste::ClickOutcome::Paste => {
+                *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(p.text.clone());
+                let _ = app.state::<Clipboard>().write_text(p.text.clone());
+                std::thread::sleep(std::time::Duration::from_millis(150));
+                send_combo(VK_V);
+                toast::show_state(&app, "done", "");
             }
-            std::thread::sleep(std::time::Duration::from_millis(20));
+            pending_paste::ClickOutcome::Stay => {
+                *app.state::<AppState>().pending_paste.lock().unwrap() = Some(p.clone());
+                show_pending_paste(&app, &p, "refused");
+            }
         }
-        debug::log(format!("inline: focus back to hwnd={h} front={:?}", GetForegroundWindow().0));
+    });
+    Ok(())
+}
+
+/// Toast button "Paste in <window>": back to the window the text came from, then paste.
+#[tauri::command]
+fn paste_pending_origin(app: AppHandle) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        paste_pending(app)
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Err("not supported on this platform yet".into())
+    }
+}
+
+/// The toast page reports the measured height (logical px) of its content in the "ready"/"closed"
+/// states; the window is resized to fit, anchored as usual.
+#[tauri::command]
+fn toast_fit(app: AppHandle, height: f64) {
+    toast::fit(&app, height);
+}
+
+/// Toast button "Copy": puts the pending result back in the clipboard (the copy may have been overwritten
+/// meanwhile) and closes the flow with a "copied" outcome. Pastes nowhere and brings no window forward.
+#[tauri::command]
+fn copy_pending(app: AppHandle) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        let Some(p) = app.state::<AppState>().pending_paste.lock().unwrap().take() else {
+            return Err("no pending result".into());
+        };
+        *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(p.text.clone());
+        let _ = app.state::<Clipboard>().write_text(p.text);
+        toast::show_state(&app, "done", "copied");
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Err("not supported on this platform yet".into())
     }
 }
 
@@ -1378,14 +1488,19 @@ fn inline_finish(app: AppHandle, text: String) -> Result<(), String> {
     let text = plaintext::markdown_to_plain(&text);
     *app.state::<AppState>().last_self_copy.lock().unwrap() = Some(text.clone());
     app.state::<Clipboard>()
-        .write_text(text)
+        .write_text(text.clone())
         .map_err(|e| e.to_string())?;
     std::thread::spawn(move || {
         inline_restore_window(&app); // hide the off-screen host again before pasting
-        // Windows: back to the window the text came from, or the paste lands wherever the user (or a provider
-        // page) left the foreground in the meantime.
+        // Windows: back to the window the text came from, VERIFIED, or no paste at all: the paste would land
+        // wherever the user (or a provider page) left the foreground. When it cannot go ahead, the toast asks.
         #[cfg(windows)]
-        refocus_inline_target();
+        if !inline_target_in_front(&app, &text) {
+            let st = app.state::<AppState>();
+            st.inline_busy.store(false, Ordering::SeqCst);
+            st.inline_suppress_toast.store(false, Ordering::SeqCst);
+            return;
+        }
         // macOS Services: the text came from another application, and performing the service brought us to the
         // front. Give the foreground back before the paste, or it lands in our own window.
         #[cfg(target_os = "macos")]
@@ -1755,6 +1870,8 @@ pub fn run() {
             inline_suppress_toast: AtomicBool::new(false),
             inline_notify: AtomicBool::new(true),
             inline_saved_pos: Mutex::new(None),
+            inline_target_name: Mutex::new(String::new()),
+            pending_paste: Mutex::new(None),
         })
         // App-level menu events: the provider's native EDITING context menu (browser.rs,
         // `show_context_menu`) puts a "Copy URL" item with id "copy_url". Copy/Cut/Paste/
@@ -2297,6 +2414,14 @@ pub fn run() {
                     debug::log(format!("auto-toast: {mode}"));
                     match mode.as_str() {
                         "processing" | "done" | "error" => toast::show_state(&h3, &mode, "Test"),
+                        // Visual check of the "result ready" states (no real pending result behind them).
+                        "ready" | "closed" => toast::show_ready(
+                            &h3,
+                            &mode,
+                            "",
+                            "Sample result text, long enough to need a few lines in the preview of the notification so the clamp can be checked.",
+                            "Notepad",
+                        ),
                         _ => toast::show(&h3, "Anteprima notifica Kotodama -- test posizionamento in alto a destra su macOS."),
                     }
                 });
@@ -2370,6 +2495,9 @@ pub fn run() {
             reveal_download_path,
             accept_clipboard,
             hide_toast,
+            paste_pending_origin,
+            copy_pending,
+            toast_fit,
             quit_app,
             restart_app,
             admin_start_state,

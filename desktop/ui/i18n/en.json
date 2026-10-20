@@ -227,7 +227,17 @@
     "errorElevated": "This window runs as administrator: Kotodama cannot copy from it",
     "restartAdmin": "Restart as administrator",
     "stageConnect": "Connecting...",
-    "stageWork": "Receiving the answer"
+    "stageWork": "Receiving the answer",
+    "toastReady": "Result ready",
+    "toastNotPasted": "I did not paste it: you switched to another window.",
+    "toastPasteIn": "Paste in {w}",
+    "toastPasteInOrigin": "Paste in the original window",
+    "toastCopy": "Copy",
+    "toastCopied": "Copied",
+    "toastInClipboard": "It is in the clipboard: you can paste it yourself with Ctrl+V",
+    "toastWindowClosed": "{w} was closed.",
+    "toastWindowClosedAny": "The original window was closed.",
+    "toastRefused": "Windows would not switch to that window. Click where you want it, then press Ctrl+V."
   },
   "ktTileTitle": "Kotodama... ask every provider at once",
   "ktTitle": "Selected providers",

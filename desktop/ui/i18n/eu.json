@@ -150,7 +150,17 @@
     "errorAccessibility": "Baimendu Erabilerraztasuna Kotodamarentzat",
     "errorElevated": "Leiho hau administratzaile gisa dabil: Kotodamak ezin du bertatik kopiatu",
     "restartAdmin": "Berrabiarazi administratzaile gisa",
-    "errorLogin": "Saio-hasiera beharrezkoa: Kotodamatik hasi saioa"
+    "errorLogin": "Saio-hasiera beharrezkoa: Kotodamatik hasi saioa",
+    "toastReady": "Emaitza prest dago",
+    "toastNotPasted": "Ez dut itsatsi: beste leiho batera aldatu zara.",
+    "toastPasteIn": "Itsatsi {w}-en",
+    "toastPasteInOrigin": "Itsatsi jatorrizko leihoan",
+    "toastInClipboard": "Arbelean dago: zuk ere itsatsi dezakezu Ctrl+V-rekin",
+    "toastWindowClosed": "{w} itxi da.",
+    "toastWindowClosedAny": "Jatorrizko leihoa itxi da.",
+    "toastRefused": "Windows-ek ezin izan du leiho hori aurrera ekarri. Egin klik nahi duzun tokian, eta gero sakatu Ctrl+V.",
+    "toastCopy": "Kopiatu",
+    "toastCopied": "Kopiatuta"
   },
   "neutralHint": "Kopiatutako testua dagoen bezala bidaltzen da hornitzaile lehenetsira.",
   "setRecipe": "Errezeta lehenetsia",

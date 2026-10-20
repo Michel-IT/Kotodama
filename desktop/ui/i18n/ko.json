@@ -150,7 +150,17 @@
     "errorAccessibility": "Kotodama에 손쉬운 사용을 허용하세요",
     "errorElevated": "이 창은 관리자 권한으로 실행 중이라 Kotodama가 복사할 수 없습니다",
     "restartAdmin": "관리자 권한으로 다시 시작",
-    "errorLogin": "로그인 필요: Kotodama에서 로그인하세요"
+    "errorLogin": "로그인 필요: Kotodama에서 로그인하세요",
+    "toastReady": "결과 준비됨",
+    "toastNotPasted": "붙여넣지 않았습니다: 다른 창으로 전환하셨습니다.",
+    "toastPasteIn": "{w}에 붙여넣기",
+    "toastPasteInOrigin": "원래 창에 붙여넣기",
+    "toastInClipboard": "클립보드에 있습니다: Ctrl+V로 직접 붙여넣을 수 있습니다",
+    "toastWindowClosed": "{w}이(가) 닫혔습니다.",
+    "toastWindowClosedAny": "원래 창이 닫혔습니다.",
+    "toastRefused": "Windows가 해당 창을 앞으로 가져오지 못했습니다. 원하는 곳을 클릭한 다음 Ctrl+V를 누르세요.",
+    "toastCopy": "복사",
+    "toastCopied": "복사됨"
   },
   "neutralHint": "복사한 텍스트가 그대로 기본 제공자에게 전송됩니다.",
   "setRecipe": "기본 레시피",

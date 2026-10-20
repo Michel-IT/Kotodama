@@ -150,7 +150,17 @@
     "errorAccessibility": "Cho phép Trợ năng cho Kotodama",
     "errorElevated": "Cửa sổ này chạy với quyền quản trị: Kotodama không thể sao chép từ đó",
     "restartAdmin": "Khởi động lại với quyền quản trị",
-    "errorLogin": "Cần đăng nhập: đăng nhập từ Kotodama"
+    "errorLogin": "Cần đăng nhập: đăng nhập từ Kotodama",
+    "toastReady": "Kết quả đã sẵn sàng",
+    "toastNotPasted": "Tôi chưa dán: bạn đã chuyển sang cửa sổ khác.",
+    "toastPasteIn": "Dán vào {w}",
+    "toastPasteInOrigin": "Dán vào cửa sổ gốc",
+    "toastInClipboard": "Kết quả nằm trong bộ nhớ tạm: bạn có thể tự dán bằng Ctrl+V",
+    "toastWindowClosed": "{w} đã bị đóng.",
+    "toastWindowClosedAny": "Cửa sổ gốc đã bị đóng.",
+    "toastRefused": "Windows không thể đưa cửa sổ đó lên trước. Nhấp vào nơi bạn muốn, rồi nhấn Ctrl+V.",
+    "toastCopy": "Sao chép",
+    "toastCopied": "Đã sao chép"
   },
   "neutralHint": "Văn bản đã sao chép được gửi nguyên trạng đến nhà cung cấp mặc định.",
   "setRecipe": "Công thức mặc định",

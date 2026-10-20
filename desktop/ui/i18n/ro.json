@@ -150,7 +150,17 @@
     "errorAccessibility": "Permite Accesibilitatea pentru Kotodama",
     "errorElevated": "Această fereastră rulează ca administrator: Kotodama nu poate copia din ea",
     "restartAdmin": "Repornește ca administrator",
-    "errorLogin": "Conectare necesară: conectați-vă din Kotodama"
+    "errorLogin": "Conectare necesară: conectați-vă din Kotodama",
+    "toastReady": "Rezultat gata",
+    "toastNotPasted": "Nu l-am lipit: ai trecut la altă fereastră.",
+    "toastPasteIn": "Lipește în {w}",
+    "toastPasteInOrigin": "Lipește în fereastra originală",
+    "toastInClipboard": "Este în clipboard: îl poți lipi singur cu Ctrl+V",
+    "toastWindowClosed": "{w} a fost închisă.",
+    "toastWindowClosedAny": "Fereastra originală a fost închisă.",
+    "toastRefused": "Windows nu a putut aduce fereastra aceea în față. Dă clic acolo unde vrei, apoi apasă Ctrl+V.",
+    "toastCopy": "Copiază",
+    "toastCopied": "Copiat"
   },
   "neutralHint": "Textul copiat este trimis ca atare către furnizorul implicit.",
   "setRecipe": "Rețetă implicită",

@@ -150,7 +150,17 @@
     "errorAccessibility": "Разрешете Достъпност за Kotodama",
     "errorElevated": "Този прозорец работи като администратор: Kotodama не може да копира от него",
     "restartAdmin": "Рестартирай като администратор",
-    "errorLogin": "Требуется вход: влезте от Kotodama"
+    "errorLogin": "Требуется вход: влезте от Kotodama",
+    "toastReady": "Резултатът е готов",
+    "toastNotPasted": "Не го поставих: превключихте към друг прозорец.",
+    "toastPasteIn": "Постави в {w}",
+    "toastPasteInOrigin": "Постави в първоначалния прозорец",
+    "toastInClipboard": "Е в клипборда: можете да го поставите сами с Ctrl+V",
+    "toastWindowClosed": "{w} беше затворен.",
+    "toastWindowClosedAny": "Първоначалният прозорец беше затворен.",
+    "toastRefused": "Windows не успя да превключи към този прозорец. Щракнете там, където го искате, после натиснете Ctrl+V.",
+    "toastCopy": "Копирай",
+    "toastCopied": "Копирано"
   },
   "neutralHint": "Копираният текст се изпраща както е до доставчика по подразбиране.",
   "setRecipe": "Рецепта по подразбиране",

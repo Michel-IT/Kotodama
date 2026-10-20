@@ -150,7 +150,17 @@
     "errorAccessibility": "Sta Toegankelijkheid toe voor Kotodama",
     "errorElevated": "Dit venster draait als beheerder: Kotodama kan er niet uit kopiëren",
     "restartAdmin": "Opnieuw starten als beheerder",
-    "errorLogin": "Aanmelden vereist: meld u aan via Kotodama"
+    "errorLogin": "Aanmelden vereist: meld u aan via Kotodama",
+    "toastReady": "Resultaat klaar",
+    "toastNotPasted": "Ik heb het niet geplakt: je bent naar een ander venster gegaan.",
+    "toastPasteIn": "Plakken in {w}",
+    "toastPasteInOrigin": "Plakken in het oorspronkelijke venster",
+    "toastInClipboard": "Het staat op het klembord: je kunt het zelf plakken met Ctrl+V",
+    "toastWindowClosed": "{w} is gesloten.",
+    "toastWindowClosedAny": "Het oorspronkelijke venster is gesloten.",
+    "toastRefused": "Windows kon dat venster niet naar voren halen. Klik waar je wilt en druk daarna op Ctrl+V.",
+    "toastCopy": "Kopiëren",
+    "toastCopied": "Gekopieerd"
   },
   "neutralHint": "De gekopieerde tekst wordt ongewijzigd naar de standaardprovider gestuurd.",
   "setRecipe": "Standaardrecept",

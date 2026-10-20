@@ -150,7 +150,17 @@
     "errorAccessibility": "อนุญาตการช่วยการเข้าถึงให้ Kotodama",
     "errorElevated": "หน้าต่างนี้ทำงานในสิทธิ์ผู้ดูแลระบบ: Kotodama คัดลอกจากหน้าต่างนี้ไม่ได้",
     "restartAdmin": "เริ่มใหม่ในสิทธิ์ผู้ดูแลระบบ",
-    "errorLogin": "ต้องลงชื่อเข้าใช้: ลงชื่อเข้าใช้จาก Kotodama"
+    "errorLogin": "ต้องลงชื่อเข้าใช้: ลงชื่อเข้าใช้จาก Kotodama",
+    "toastReady": "ผลลัพธ์พร้อมแล้ว",
+    "toastNotPasted": "ไม่ได้วางให้: คุณสลับไปหน้าต่างอื่นแล้ว",
+    "toastPasteIn": "วางใน {w}",
+    "toastPasteInOrigin": "วางในหน้าต่างเดิม",
+    "toastInClipboard": "อยู่ในคลิปบอร์ด: คุณวางเองได้ด้วย Ctrl+V",
+    "toastWindowClosed": "{w} ถูกปิดแล้ว",
+    "toastWindowClosedAny": "หน้าต่างเดิมถูกปิดแล้ว",
+    "toastRefused": "Windows ไม่สามารถสลับไปยังหน้าต่างนั้นได้ คลิกตรงที่ต้องการ แล้วกด Ctrl+V",
+    "toastCopy": "คัดลอก",
+    "toastCopied": "คัดลอกแล้ว"
   },
   "neutralHint": "ข้อความที่คัดลอกจะถูกส่งไปยังผู้ให้บริการเริ่มต้นตามเดิม",
   "setRecipe": "สูตรเริ่มต้น",

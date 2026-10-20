@@ -150,7 +150,17 @@
     "errorAccessibility": "Permet l'Accessibilitat per a Kotodama",
     "errorElevated": "Aquesta finestra s'executa com a administrador: Kotodama no en pot copiar",
     "restartAdmin": "Reinicia com a administrador",
-    "errorLogin": "Entrada requerida: entra des de Kotodama"
+    "errorLogin": "Entrada requerida: entra des de Kotodama",
+    "toastReady": "Resultat a punt",
+    "toastNotPasted": "No l'he enganxat: has canviat a una altra finestra.",
+    "toastPasteIn": "Enganxa a {w}",
+    "toastPasteInOrigin": "Enganxa a la finestra original",
+    "toastInClipboard": "És al porta-retalls: pots enganxar-lo tu amb Ctrl+V",
+    "toastWindowClosed": "S'ha tancat {w}.",
+    "toastWindowClosedAny": "S'ha tancat la finestra original.",
+    "toastRefused": "Windows no ha pogut portar aquella finestra al davant. Fes clic on vulguis i després prem Ctrl+V.",
+    "toastCopy": "Copia",
+    "toastCopied": "Copiat"
   },
   "neutralHint": "El text copiat s'envia tal qual al proveïdor predeterminat.",
   "setRecipe": "Recepta predeterminada",

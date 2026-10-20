@@ -12,7 +12,7 @@ fn main() {
         "set_provider_top_extra", "provider_reload", "provider_back",
         "set_provider_menu_labels",
         "provider_suppress", "provider_dock", "open_download_path", "reveal_download_path",
-        "accept_clipboard", "hide_toast", "app_write_clipboard", "show_main", "hide_main",
+        "accept_clipboard", "hide_toast", "paste_pending_origin", "copy_pending", "toast_fit", "app_write_clipboard", "show_main", "hide_main",
         "get_settings", "get_system_locale", "open_url", "set_settings", "save_ui_state",
         "set_tray_labels", "get_recipes", "save_recipes", "get_recipe_constraints", "save_recipe_constraints", "set_last_answer",
         "check_for_update", "install_update",

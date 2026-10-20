@@ -150,7 +150,17 @@
     "errorAccessibility": "Kotodama-কে অ্যাক্সেসিবিলিটির অনুমতি দিন",
     "errorElevated": "এই উইন্ডোটি অ্যাডমিনিস্ট্রেটর হিসেবে চলছে: Kotodama এখান থেকে কপি করতে পারে না",
     "restartAdmin": "অ্যাডমিনিস্ট্রেটর হিসেবে পুনরায় চালু করো",
-    "errorLogin": "সাইন-ইন প্রয়োজন: Kotodama থেকে সাইন-ইন করুন"
+    "errorLogin": "সাইন-ইন প্রয়োজন: Kotodama থেকে সাইন-ইন করুন",
+    "toastReady": "ফলাফল প্রস্তুত",
+    "toastNotPasted": "আমি পেস্ট করিনি: আপনি অন্য উইন্ডোতে চলে গেছেন।",
+    "toastPasteIn": "{w}-এ পেস্ট করুন",
+    "toastPasteInOrigin": "মূল উইন্ডোতে পেস্ট করুন",
+    "toastInClipboard": "এটি ক্লিপবোর্ডে আছে: আপনি Ctrl+V দিয়ে নিজে পেস্ট করতে পারেন",
+    "toastWindowClosed": "{w} বন্ধ হয়ে গেছে।",
+    "toastWindowClosedAny": "মূল উইন্ডো বন্ধ হয়ে গেছে।",
+    "toastRefused": "Windows সেই উইন্ডোটি সামনে আনতে পারেনি। যেখানে চান সেখানে ক্লিক করুন, তারপর Ctrl+V চাপুন।",
+    "toastCopy": "কপি",
+    "toastCopied": "কপি হয়েছে"
   },
   "neutralHint": "কপি করা টেক্সট যেমন আছে তেমনই ডিফল্ট প্রোভাইডারে পাঠানো হয়।",
   "setRecipe": "ডিফল্ট রেসিপি",

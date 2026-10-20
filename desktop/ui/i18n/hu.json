@@ -150,7 +150,17 @@
     "errorAccessibility": "Engedélyezd a Kisegítő lehetőségeket a Kotodamának",
     "errorElevated": "Ez az ablak rendszergazdaként fut: a Kotodama nem tud belőle másolni",
     "restartAdmin": "Újraindítás rendszergazdaként",
-    "errorLogin": "Bejelentkezés szükséges: jelentkezzen be a Kotodamából"
+    "errorLogin": "Bejelentkezés szükséges: jelentkezzen be a Kotodamából",
+    "toastReady": "Eredmény kész",
+    "toastNotPasted": "Nem illesztettem be: másik ablakra váltottál.",
+    "toastPasteIn": "Beillesztés a(z) {w} ablakba",
+    "toastPasteInOrigin": "Beillesztés az eredeti ablakba",
+    "toastInClipboard": "A vágólapon van: Ctrl+V-vel saját maga is beillesztheti",
+    "toastWindowClosed": "A(z) {w} be lett zárva.",
+    "toastWindowClosedAny": "Az eredeti ablak be lett zárva.",
+    "toastRefused": "A Windows nem tudta előtérbe hozni azt az ablakot. Kattintson oda, ahová szeretné, majd nyomja meg a Ctrl+V billentyűt.",
+    "toastCopy": "Másolás",
+    "toastCopied": "Másolva"
   },
   "neutralHint": "A másolt szöveg változtatás nélkül megy az alapértelmezett szolgáltatónak.",
   "setRecipe": "Alapértelmezett recept",

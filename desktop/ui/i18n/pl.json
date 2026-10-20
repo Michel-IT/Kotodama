@@ -142,7 +142,17 @@
     "errorAccessibility": "Zezwól Kotodama na Dostępność",
     "errorElevated": "To okno działa jako administrator: Kotodama nie może z niego kopiować",
     "restartAdmin": "Uruchom ponownie jako administrator",
-    "errorLogin": "Wymagane logowanie: zaloguj się z Kotodama"
+    "errorLogin": "Wymagane logowanie: zaloguj się z Kotodama",
+    "toastReady": "Wynik gotowy",
+    "toastNotPasted": "Nie wklejono go: przełączono się na inne okno.",
+    "toastPasteIn": "Wklej do {w}",
+    "toastPasteInOrigin": "Wklej do pierwotnego okna",
+    "toastInClipboard": "Jest w schowku: możesz wkleić go sam przez Ctrl+V",
+    "toastWindowClosed": "Okno {w} zostało zamknięte.",
+    "toastWindowClosedAny": "Pierwotne okno zostało zamknięte.",
+    "toastRefused": "Windows nie mógł przełączyć się na to okno. Kliknij, gdzie chcesz, a potem naciśnij Ctrl+V.",
+    "toastCopy": "Kopiuj",
+    "toastCopied": "Skopiowano"
   },
   "rename": "Zmień nazwę",
   "edit": "Edytuj",

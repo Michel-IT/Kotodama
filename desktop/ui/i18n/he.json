@@ -150,7 +150,17 @@
     "errorAccessibility": "אפשר נגישות עבור Kotodama",
     "errorElevated": "החלון הזה פועל כמנהל: Kotodama לא יכול להעתיק ממנו",
     "restartAdmin": "הפעלה מחדש כמנהל",
-    "errorLogin": "נדרשת כניסה: היכנסו מ-Kotodama"
+    "errorLogin": "נדרשת כניסה: היכנסו מ-Kotodama",
+    "toastReady": "התוצאה מוכנה",
+    "toastNotPasted": "לא הדבקתי אותה: עברת לחלון אחר.",
+    "toastPasteIn": "הדבק ב-{w}",
+    "toastPasteInOrigin": "הדבק בחלון המקורי",
+    "toastInClipboard": "היא בלוח הגזירים: אפשר להדביק אותה בעצמך עם Ctrl+V",
+    "toastWindowClosed": "{w} נסגר.",
+    "toastWindowClosedAny": "החלון המקורי נסגר.",
+    "toastRefused": "Windows לא הצליח להציג את החלון הזה. לחץ במקום שאתה רוצה, ואז לחץ Ctrl+V.",
+    "toastCopy": "העתק",
+    "toastCopied": "הועתק"
   },
   "neutralHint": "הטקסט שהועתק נשלח כפי שהוא לספק ברירת המחדל.",
   "setRecipe": "מתכון ברירת מחדל",

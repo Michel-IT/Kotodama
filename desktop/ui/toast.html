@@ -129,6 +129,32 @@
       background: linear-gradient(90deg, transparent, var(--pc, var(--accent)), transparent);
       animation: procslide 1.15s ease-in-out infinite; }
     @keyframes procslide { 0% { left: -40%; } 100% { left: 100%; } }
+
+    /* "Result ready": the answer was NOT pasted (window changed or closed) and waits for the user.
+       Never auto-hides; mirrors the approved mockup docs/ux/2026-09-27-risultato-pronto. */
+    body[data-mode="ready"] .card, body[data-mode="closed"] .card { height: auto; }
+    .ready { display: none; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
+    body[data-mode="ready"] .ready, body[data-mode="closed"] .ready { display: flex; }
+    body[data-mode="ready"] .preview, body[data-mode="closed"] .preview,
+    body[data-mode="ready"] .foot, body[data-mode="closed"] .foot,
+    body[data-mode="ready"] .proc, body[data-mode="closed"] .proc { display: none; }
+    body[data-mode="ready"] .title, body[data-mode="closed"] .title { color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .head .meta { font-size: 11.5px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; flex: 0 1 auto; }
+    .ready .why { font-size: 12px; color: var(--text); line-height: 1.35; }
+    .ready .res { font-size: 12px; color: var(--text-dim); line-height: 1.4; background: rgba(0,0,0,.18); border-radius: 8px;
+      padding: 7px 10px; }
+    /* The clamp lives on an inner box: with padding on the clamped element itself a sliver of the 4th line shows under the 3rd. */
+    .ready .res .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .ready .acts { display: flex; gap: 8px; }
+    .ready .act { padding: 7px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; min-width: 0; font-family: inherit; }
+    .ready .act[hidden] { display: none; }
+    .ready .act.main { border: none; background: linear-gradient(135deg, var(--accent), var(--accent-soft)); color: var(--on-accent); flex: 1; }
+    .ready .act.alt { border: 1px solid var(--border); background: none; color: var(--text); flex: none; }
+    .ready .act:disabled { opacity: .45; cursor: not-allowed; }
+    .ready .act:not(:disabled):hover { filter: brightness(1.08); }
+    .ready .note { font-size: 11px; color: var(--text-dim); }
+    [data-theme="sumi"] .ready .res, [data-theme="sumi"] .ready .act { border-radius: 2px; }
   </style>
 </head>
 <body>
@@ -137,12 +163,22 @@
       <img class="spark" src="logo.png" alt="Kotodama">
       <span class="spin"></span>
       <span class="title" id="title">Hai copiato del testo</span>
+      <span class="meta" id="meta" hidden></span>
       <button class="x" id="close" title="Chiudi">✕</button>
     </div>
     <div class="preview"><span class="ptext" id="preview"></span></div>
     <div class="proc">
       <span class="prov-chip" id="provChip"><span class="pic" id="provIc"></span><span class="pname" id="provName"></span></span>
       <span class="proc-stat"><span class="proc-stage" id="procStage"></span><span class="proc-bar"></span></span>
+    </div>
+    <div class="ready">
+      <div class="why" id="rdWhy"></div>
+      <div class="res"><div class="clamp" id="rdRes"></div></div>
+      <div class="acts">
+        <button class="act main" id="rdOrigin"></button>
+        <button class="act alt" id="rdHere"></button>
+      </div>
+      <div class="note" id="rdNote"></div>
     </div>
     <div class="foot">
       <div class="keys" id="keys"></div>
@@ -165,9 +201,18 @@
       errorLogin: 'Sign-in required: log in from Kotodama',
       errorElevated: 'This window runs as administrator: Kotodama cannot copy from it',
       restartAdmin: 'Restart as administrator',
-      stageConnect: 'Connecting...', stageWork: 'Receiving the answer' };
+      stageConnect: 'Connecting...', stageWork: 'Receiving the answer',
+      toastReady: 'Result ready', toastNotPasted: 'I did not paste it: you switched to another window.',
+      toastPasteIn: 'Paste in {w}', toastPasteInOrigin: 'Paste in the original window', toastCopy: 'Copy', toastCopied: 'Copied',
+      toastInClipboard: 'It is in the clipboard: you can paste it yourself with Ctrl+V',
+      toastWindowClosed: '{w} was closed.',
+      toastWindowClosedAny: 'The original window was closed.',
+      toastRefused: 'Windows would not switch to that window. Click where you want it, then press Ctrl+V.' };
     let STR = STR_EN;
     let curMode = 'copy', curLabel = '', curProv = null;
+    // "Result ready" state: window name, preview, recipe + provider
+    // remembered from the processing state, for the header.
+    let curTarget = '', curPreview = '', lastRecipe = '', lastProvName = '';
     const RTL = new Set(['ar','ur','fa','he']);
     async function loadToastStrings(code) {
       if (!code || code === 'en') { STR = STR_EN; return; }
@@ -186,16 +231,59 @@
       } else { chip.style.display = 'none'; }
     }
     function setStage(text) { document.getElementById('procStage').textContent = text; }
+    function fmtW(s, w) { return String(s).replace('{w}', () => w); }
+    // The "Result ready" / "window closed" states (the answer is in the clipboard, not pasted).
+    function renderReady() {
+      const closed = curMode === 'closed';
+      document.getElementById('title').textContent = '✓ ' + STR.toastReady;
+      const meta = document.getElementById('meta');
+      meta.textContent = [lastRecipe, lastProvName].filter(Boolean).join(' · ');
+      meta.hidden = !meta.textContent;
+      const why = document.getElementById('rdWhy');
+      // A closed window wins over a refusal: there is nothing left to switch to.
+      if (closed) why.textContent = curTarget ? fmtW(STR.toastWindowClosed, curTarget) : STR.toastWindowClosedAny;
+      else if (curLabel === 'refused') why.textContent = STR.toastRefused;
+      else why.textContent = STR.toastNotPasted;
+      document.getElementById('rdRes').textContent = curPreview;
+      const o = document.getElementById('rdOrigin');
+      o.hidden = closed;
+      o.textContent = curTarget ? fmtW(STR.toastPasteIn, curTarget) : STR.toastPasteInOrigin;
+      o.title = o.textContent;
+      o.disabled = false;
+      const h = document.getElementById('rdHere');
+      h.textContent = STR.toastCopy;
+      h.disabled = false;
+      // Closed state: the buttons already say it all; the note would only repeat the clipboard remark.
+      const note = document.getElementById('rdNote');
+      note.textContent = STR.toastInClipboard;
+      note.hidden = closed;
+      fitToast();
+    }
+    // Ask the backend to size the window to the real content height (card + the 8px halo that
+    // body already reserves). Only for ready/closed; no-op without Tauri (page opened in a browser).
+    let lastFit = 0;
+    function fitToast() {
+      if (!invoke) return;
+      requestAnimationFrame(() => {
+        if (curMode !== 'ready' && curMode !== 'closed') return;
+        const card = document.querySelector('.card');
+        const h = Math.ceil(card.getBoundingClientRect().height) + 8;
+        if (h === lastFit) return;
+        lastFit = h;
+        invoke('toast_fit', { height: h }).catch(() => {});
+      });
+    }
     function renderStrings() {
       const t = document.getElementById('title');
-      document.body.dataset.mode = curMode;
+      document.body.dataset.mode = curMode; document.getElementById('meta').hidden = true;  // only the ready/closed states show it (renderReady)
       if (curMode === 'processing') {
         t.textContent = `${STR.processing} ${curLabel}`.trim();
         renderProvChip();
         setStage(STR.stageConnect);
       }
-      else if (curMode === 'done') t.textContent = STR.done + ' ✓';
+      else if (curMode === 'done') t.textContent = (curLabel === 'copied' ? STR.toastCopied : STR.done) + ' ✓';
       else if (curMode === 'error') t.textContent = curLabel === 'empty' ? STR.errorEmpty : (curLabel === 'accessibility' ? STR.errorAccessibility : (curLabel === 'elevated' ? STR.errorElevated : (curLabel === 'login' ? STR.errorLogin : STR.errorNoAnswer)));
+      else if (curMode === 'ready' || curMode === 'closed') renderReady();
       else t.textContent = STR.title;
       // "Open" alone: it opens the HOME (builder), no provider name anymore
       document.getElementById('open').textContent = STR.open;
@@ -269,12 +357,18 @@
         const pl = e.payload || {};
         if (pl.os) document.documentElement.setAttribute('data-os', pl.os);
         if (pl.language !== undefined) { await loadToastStrings(pl.language); applyDir(pl.language); }
+        // Entering a new run: drop the provider/recipe of the previous one until its own event arrives.
+        if (pl.mode === 'processing' && curMode !== 'processing') { lastProvName = (curProv && curProv.name) || ''; lastRecipe = ''; }
         curMode = pl.mode || 'copy';
         curLabel = pl.label || '';
+        curTarget = pl.target || '';
+        curPreview = pl.preview || '';
+        if (curMode === 'processing') { lastRecipe = curLabel; }
         if (curMode !== 'processing') curProv = null;   // reset chip when leaving processing
         document.getElementById('preview').textContent = pl.preview || (curMode === 'copy' ? STR.empty : '');
         if (pl.hotkey) renderKeys(pl.hotkey);   // fix: always the current hotkey
         if (pl.theme) applyTheme(pl.theme);
+        lastFit = 0;
         renderStrings();
         scheduleAutoHide();
       });
@@ -284,7 +378,7 @@
         const pl = e.payload || {};
         // store the provider even if the processing content hasn't landed yet (race):
         // renderStrings() will paint the chip when the processing toast renders.
-        if (pl.prov) { curProv = pl.prov; if (curMode === 'processing') renderProvChip(); }
+        if (pl.prov) { curProv = pl.prov; lastProvName = pl.prov.name || ''; if (curMode === 'processing') renderProvChip(); }
         if (curMode !== 'processing') return;
         if (pl.stage === 'work') setStage(`${STR.stageWork} ${pl.len ? fmtLen(pl.len) : ''}`.trim());
         else setStage(STR.stageConnect);
@@ -296,6 +390,8 @@
     let hideTimer;
     function scheduleAutoHide() {
       clearTimeout(hideTimer);
+      // "Result ready" never goes away by itself: it stays until the user acts or closes it.
+      if (curMode === 'ready' || curMode === 'closed') return;
       const ms = curMode === 'processing' ? 120000 : (curMode === 'done' ? 2000 : (curMode === 'error' ? 4000 : 6000));
       hideTimer = setTimeout(() => { if (invoke) invoke('hide_toast').catch(() => {}); }, ms);
     }
@@ -308,6 +404,16 @@
     document.getElementById('asAdmin').addEventListener('click', () => {
       if (invoke) invoke('restart_as_admin').catch(() => {});
     });
+    // "Result ready": both buttons are locked while the backend switches window and pastes; the next
+    // content event (done, or the same state with a reason) unlocks them.
+    function pasteClick(cmd) {
+      if (!invoke) return;
+      document.getElementById('rdOrigin').disabled = true;
+      document.getElementById('rdHere').disabled = true;
+      invoke(cmd).catch(() => renderReady());
+    }
+    document.getElementById('rdOrigin').addEventListener('click', () => pasteClick('paste_pending_origin'));
+    document.getElementById('rdHere').addEventListener('click', () => pasteClick('copy_pending'));
     document.getElementById('close').addEventListener('click', () => {
       if (invoke) invoke('hide_toast').catch(() => {});
     });

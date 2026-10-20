@@ -142,7 +142,17 @@
     "errorAccessibility": "Kotodama ପାଇଁ ସୁଗମତାକୁ ଅନୁମତି ଦିଅନ୍ତୁ",
     "errorElevated": "ଏହି ୱିଣ୍ଡୋ ପ୍ରଶାସକ ଭାବରେ ଚାଲୁଛି: Kotodama ଏଥିରୁ କପି କରିପାରିବ ନାହିଁ",
     "restartAdmin": "ପ୍ରଶାସକ ଭାବରେ ପୁନଃଆରମ୍ଭ କରନ୍ତୁ",
-    "errorLogin": "ସାଇନ-ଇନ୍ ଆବଶ୍ୟକ: Kotodama ରୁ ସାଇନ ଇନ୍ କରନ୍ତୁ"
+    "errorLogin": "ସାଇନ-ଇନ୍ ଆବଶ୍ୟକ: Kotodama ରୁ ସାଇନ ଇନ୍ କରନ୍ତୁ",
+    "toastReady": "ଫଳାଫଳ ପ୍ରସ୍ତୁତ",
+    "toastNotPasted": "ମୁଁ ଏହାକୁ ଲଗାଇ ନାହିଁ: ଆପଣ ଅନ୍ୟ ୱିଣ୍ଡୋକୁ ଯାଇଛନ୍ତି।",
+    "toastPasteIn": "{w} ରେ ଲଗାନ୍ତୁ",
+    "toastPasteInOrigin": "ମୂଳ ୱିଣ୍ଡୋରେ ଲଗାନ୍ତୁ",
+    "toastInClipboard": "ଏହା କ୍ଲିପବୋର୍ଡରେ ଅଛି: ଆପଣ Ctrl+V ଦ୍ୱାରା ନିଜେ ଲଗାଇପାରିବେ",
+    "toastWindowClosed": "{w} ବନ୍ଦ ହୋଇଗଲା।",
+    "toastWindowClosedAny": "ମୂଳ ୱିଣ୍ଡୋ ବନ୍ଦ ହୋଇଗଲା।",
+    "toastRefused": "ସେହି ୱିଣ୍ଡୋକୁ ଆଗକୁ ଆଣି ପାରିଲା ନାହିଁ Windows। ଯେଉଁଠାରେ ଚାହିଁବେ ସେଠାରେ କ୍ଲିକ୍ କରନ୍ତୁ, ତାପରେ Ctrl+V ଦବାନ୍ତୁ।",
+    "toastCopy": "କପି କରନ୍ତୁ",
+    "toastCopied": "କପି ହେଲା"
   },
   "rename": "ନାମ ବଦଳାନ୍ତୁ",
   "edit": "ସମ୍ପାଦନା",

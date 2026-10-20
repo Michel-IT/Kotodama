@@ -150,7 +150,17 @@
     "errorAccessibility": "Kotodama کے لیے رسائی پذیری کی اجازت دیں",
     "errorElevated": "یہ ونڈو ایڈمنسٹریٹر کے طور پر چل رہی ہے: Kotodama اس سے کاپی نہیں کر سکتا",
     "restartAdmin": "ایڈمنسٹریٹر کے طور پر دوبارہ شروع کریں",
-    "errorLogin": "سائن ان درکار ہے: Kotodama سے سائن ان کریں"
+    "errorLogin": "سائن ان درکار ہے: Kotodama سے سائن ان کریں",
+    "toastReady": "نتیجہ تیار ہے",
+    "toastNotPasted": "میں نے اسے نہیں چسپاں کیا: آپ کسی اور ونڈو پر چلے گئے۔",
+    "toastPasteIn": "{w} میں چسپاں کریں",
+    "toastPasteInOrigin": "اصل ونڈو میں چسپاں کریں",
+    "toastInClipboard": "یہ کلپ بورڈ میں ہے: آپ خود Ctrl+V سے چسپاں کر سکتے ہیں",
+    "toastWindowClosed": "{w} بند ہو گئی۔",
+    "toastWindowClosedAny": "اصل ونڈو بند ہو گئی۔",
+    "toastRefused": "Windows اس ونڈو کو سامنے نہیں لا سکا۔ جہاں چاہیں وہاں کلک کریں، پھر Ctrl+V دبائیں۔",
+    "toastCopy": "کاپی کریں",
+    "toastCopied": "کاپی ہو گیا"
   },
   "neutralHint": "کاپی کیا گیا متن ویسے ہی ڈیفالٹ پرووائیڈر کو بھیجا جاتا ہے۔",
   "setRecipe": "ڈیفالٹ ریسیپی",
