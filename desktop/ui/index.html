@@ -290,8 +290,8 @@
     .recipe .rname { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .recipe .rname-edit { flex:1; min-width:0; font:inherit; background:var(--field); color:var(--text); border:1px solid var(--accent); border-radius:6px; padding:1px 6px; outline:none; }
     /* Context menu (right-click) */
-    /* z-index sopra .kt-view (1200): altrimenti il menu si apre ma resta nascosto DIETRO la vista
-       Kotodama (era il vero motivo per cui il tasto destro sembrava non fare nulla lì). */
+    /* z-index above .kt-view (1200): otherwise the menu opens but stays hidden BEHIND the
+       Kotodama view (this was the real reason the right click seemed to do nothing there). */
     .ctxmenu { position:fixed; z-index:1600; min-width:160px; background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:5px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:2px; }
     .ctxmenu[hidden] { display:none; }
     .ctxitem { display:flex; align-items:center; gap:8px; text-align:left; background:none; border:none; color:var(--text); padding:8px 12px; border-radius:6px; cursor:pointer; font:inherit; }
@@ -300,7 +300,7 @@
     .recipe:hover { background:var(--panel-2); }
     .recipe.active { background:var(--panel-2); color:var(--accent); font-weight:600; border-color:var(--border); box-shadow:0 0 0 1px var(--accent-glow) inset; }
     .recipe.active .ico { opacity:1; }
-    /* ★ sulla ricetta predefinita (usata quando si copia). Nascosta in hover sulle custom (lascia spazio alla ✕). */
+    /* ★ on the default recipe (used when copying). Hidden on hover on custom ones (leaves room for the ✕). */
     .recipe.is-default::after { content:'★'; position:absolute; top:50%; right:10px; transform:translateY(-50%); font-size:10px; line-height:1; color:var(--accent); pointer-events:none; }
     .recipe-custom.is-default:hover::after { opacity:0; }
     /* "Neutral" recipe active: no instruction and no constraints, the text goes as it is. */
@@ -527,10 +527,10 @@
        which the automatic rule kept opening/closing the sidebar against the user's intent. */
     .kt-side { flex:none; width:242px; display:flex; flex-direction:column; min-height:0;
       background:var(--bg-1); border-right:1px solid var(--border-soft); transition:width .15s ease; }
-    /* overflow:hidden -- da collassata i contenuti a larghezza piena (bottoni, ricerca) non devono
-       poter generare una barra di scorrimento orizzontale dentro il rail. */
+    /* overflow:hidden -- when collapsed, full-width contents (buttons, search) must not
+       be able to produce a horizontal scrollbar inside the rail. */
     .kt-side.collapsed { width:56px; overflow:hidden; }
-    /* Sta in fondo alla colonna (ultimo figlio): il pannello sopra ha flex:1 e lo spinge giù. */
+    /* It sits at the bottom of the column (last child): the panel above has flex:1 and pushes it down. */
     .kt-side-collapse-row { flex:none; display:flex; justify-content:flex-end; padding:4px 6px;
       border-top:1px solid var(--border-soft); }
     .kt-side.collapsed .kt-side-collapse-row { justify-content:center; }
@@ -546,24 +546,24 @@
     .kt-side-tab-ico svg { width:15px; height:15px; display:block; }
     .kt-side-tab:hover { color:var(--text); }
     .kt-side-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
-    /* Da collassata le due tab si impilano a tutta larghezza del rail (56px), invece di dividerselo
-       in due mezze colonne da 28px che schiacciano le icone contro i bordi. L'attiva si segna con
-       una barretta interna a sinistra (box-shadow, non border: non sposta l'icona di 2px). */
+    /* When collapsed the two tabs stack at the full width of the rail (56px), instead of splitting it
+       into two half columns of 28px that squash the icons against the edges. The active one is marked with
+       a small inner bar on the left (box-shadow, not border: it does not shift the icon by 2px). */
     .kt-side.collapsed .kt-side-tabs { flex-direction:column; }
     .kt-side.collapsed .kt-side-tab-label { display:none; }
     .kt-side.collapsed .kt-side-tab { padding:11px 0; border-bottom:none; }
     .kt-side.collapsed .kt-side-tab-ico { font-size:16px; }
     .kt-side.collapsed .kt-side-tab-ico svg { width:17px; height:17px; }
     .kt-side.collapsed .kt-side-tab.active { box-shadow:inset 2px 0 0 var(--accent); }
-    /* Collapsed / Cronologia: ogni conversazione diventa un quadratino con la sua INIZIALE (icone
-       tutte uguali non si distinguerebbero); il titolo completo e la data restano nel tooltip
-       della riga, impostato in renderKtSessions(). Sopra restano "nuova conversazione" e la
-       ricerca (che al clic riapre la sidebar e mette a fuoco il campo).
-       Senza queste regole il bottone "Nuova conversazione" straripava fuori dal rail e le righe
-       restavano appese con la sola data visibile. */
+    /* Collapsed / Cronologia: each conversation becomes a small square with its INITIAL (identical icons
+       could not be told apart); the full title and the date stay in the tooltip
+       of the row, set in renderKtSessions(). Above stay the "new conversation" button and the
+       search (which on click reopens the sidebar and focuses the field).
+       Without these rules the "New conversation" button overflowed the rail and the rows
+       were left hanging with only the date visible. */
     .kt-sess-ico { display:none; }
-    /* 34px + 3px sopra/sotto = passo verticale di 40px, lo stesso di ricerca e "nuova
-       conversazione" (34px + gap 6px): un'unica colonna di quadrati con lo stesso ritmo. */
+    /* 34px + 3px above/below = vertical step of 40px, the same as search and "new
+       conversation" (34px + gap 6px): a single column of squares with the same rhythm. */
     .kt-side.collapsed .kt-sess { justify-content:center; padding:3px 0; gap:0; }
     .kt-side.collapsed .kt-sess-meta,
     .kt-side.collapsed .kt-sess-ren,
@@ -574,7 +574,7 @@
       color:var(--text-faint); font-size:13px; font-weight:700; }
     .kt-side.collapsed .kt-sess:hover .kt-sess-ico { color:var(--text); }
     .kt-side.collapsed .kt-sess.active .kt-sess-ico { color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
-    /* barra di scorrimento invisibile: in un rail da 56px ruberebbe meta' della larghezza */
+    /* invisible scrollbar: in a 56px rail it would steal half of the width */
     .kt-side.collapsed .kt-sess-list { scrollbar-width:none; }
     .kt-side.collapsed .kt-sess-list::-webkit-scrollbar { width:0; height:0; }
     /* Collapsed: the three rows on top become three 34px squares with their own icon, on the same
@@ -691,8 +691,8 @@
     .kt-chip .ic { width:15px; height:15px; display:grid; place-items:center; color:var(--pc,var(--accent)); }
     .kt-chip .ic svg { width:15px; height:15px; display:block; }
     .kt-chip.on { opacity:1; color:var(--text); border-color:var(--pc,var(--accent)); }
-    /* ★ sul provider predefinito (usato da hotkey/toast/monitor appunti) -- stesso "medaglione"
-       di .prov.is-default, scalato alla pillola più piccola. */
+    /* ★ on the default provider (used by hotkey/toast/clipboard monitor) -- same "medallion"
+       as .prov.is-default, scaled to the smaller pill. */
     .kt-chip.is-default::after {
       content:'★'; position:absolute; top:-6px; right:-6px; font-size:9px; line-height:1;
       color:var(--accent); background:var(--panel); border:1px solid var(--accent-glow); border-radius:50%;
@@ -944,8 +944,8 @@
     .kt-recipe-badge-row button { border:none; background:none; color:var(--text-faint);
       cursor:pointer; font-size:13px; padding:4px; flex:none; }
     .kt-recipe-badge-row button:hover { color:var(--danger); }
-    /* Salva: sempre nel colore accento del tema (non solo in hover) -- deve saltare all'occhio
-       quando c'è qualcosa da salvare, non confondersi con gli altri pulsanti grigi. */
+    /* Save: always in the theme accent colour (not only on hover) -- it must catch the eye
+       when there is something to save, not blend in with the other grey buttons. */
     #ktRecipeBadgeSave, #ktRecipeBadgeSave:hover { color:var(--accent); }
     /* The input is ONE rounded box in the same centred column as the conversation, with the send button
        inside it: the textarea carries no border of its own, the box does. */
@@ -1233,7 +1233,7 @@
     .switch.sm { width:36px; height:20px; }
     .switch.sm .slider::before { height:14px; width:14px; }
     .switch.sm input:checked + .slider::before { transform:translateX(16px); }
-    /* Toggle "Auto-invio" della ricetta Neutra: solo quando la Neutra e' attiva, nel footer accanto a → */
+    /* "Auto-invio" toggle of the Neutra recipe: only when Neutra is active, in the footer next to → */
     .neutral-auto { display:none; }
     body.recipe-neutral .neutral-auto { display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--text-dim); cursor:pointer; user-select:none; margin-left:auto; }
     body.recipe-neutral .footer .hint { display:none; }
@@ -2246,7 +2246,7 @@
     // pipeline as "chiedi a tutti" (openKotodama with a lockKey) -- the provider's real page is
     // never shown for normal use, only via the explicit fallback (openProviderRealPage, below),
     // or automatically when that provider's tab needs login (browser::auto_show_for_login, Rust).
-    let lastPrompt = '';      // ultimo prompt inviato/aperto (riusato dal "cambia provider")
+    let lastPrompt = '';      // last prompt sent/opened (reused by the "cambia provider" action)
     async function openProvider(){
       const p=PROVIDERS[selectedProvider]; const promptText=buildPrompt();
       // Kotodama meta-provider: from the home the → button starts a NEW conversation
@@ -2512,12 +2512,12 @@
       items.forEach(s=>{
         const row=document.createElement('div'); row.className='kt-sess'+(ktSession&&s.id===ktSession.id?' active':'');
         const titolo=s.title||'...', data=ktFmtDate(s.updated||s.created), tag=ktSessionRecipeName(s);
-        // Tooltip su TUTTA la riga: da collassata e' l'unico modo di sapere che conversazione sia
-        // (si vede solo l'iniziale), da espansa recupera i titoli troncati con l'ellissi.
+        // Tooltip on the WHOLE row: when collapsed it is the only way to tell which conversation this is
+        // (only the initial shows), when expanded it recovers the titles truncated with the ellipsis.
         row.title=titolo+' · '+data+(tag?' · '+tag:'');
-        // Iniziale come icona: le conversazioni non hanno un simbolo proprio, ma l'iniziale le
-        // distingue una dall'altra (a differenza di un'icona uguale per tutte). Visibile solo nel
-        // rail collassato.
+        // Initial as icon: conversations have no symbol of their own, but the initial tells them
+        // apart (unlike an icon that is the same for all). Visible only in the
+        // collapsed rail.
         const ico=document.createElement('span'); ico.className='kt-sess-ico';
         ico.textContent=(titolo.trim().match(/\p{L}|\p{N}/u)||['·'])[0].toUpperCase();
         const meta=document.createElement('div'); meta.className='kt-sess-meta';
@@ -2533,7 +2533,7 @@
         const del=document.createElement('button'); del.className='kt-sess-del'; del.textContent='✕'; del.title=TR.delete||''; del.setAttribute('aria-label', TR.delete||'');
         del.addEventListener('click', ev=>{
           ev.stopPropagation();
-          if(!del.classList.contains('confirm')){                       // 1° click: chiede conferma inline
+          if(!del.classList.contains('confirm')){                       // 1st click: asks for inline confirmation
             del.classList.add('confirm'); del.textContent=TR.ktDeleteConfirm;
             setTimeout(()=>{ del.classList.remove('confirm'); del.textContent='✕'; }, 2500);
             return;
@@ -2780,7 +2780,7 @@
           const liveBid=Object.keys(ktPendingByBid).find(b=>ktTurnByBid[b]===turn && ktPendingByBid[b].has(key));
           if(liveBid){ ktPendingCard(grid, liveBid, key); return; }
         }
-        const st=(!a.status||a.status==='pending')?'error':a.status;   // app chiusa a metà -> errore
+        const st=(!a.status||a.status==='pending')?'error':a.status;   // app closed halfway -> error
         const bits=ktTileBits(key);
         const card=document.createElement('div');
         card.className='kt-card '+ktStatusClass(st); card.dataset.key=key;
@@ -3494,8 +3494,8 @@
       if(autosend){ ktNewConversation(); ktDoSend(); }
       else ktInput.focus();
     }
-    // TEMPORARY (per l'utente, "per il momento"): il builder classico resta nel codice ma non è
-    // raggiungibile -- Kotodama è l'unica vista. Riportare KT_ONLY a false per riabilitarlo.
+    // TEMPORARY (at the user's request, "for the moment"): the classic builder stays in the code but is not
+    // reachable -- Kotodama is the only view. Set KT_ONLY back to false to re-enable it.
     const KT_ONLY = true;
     function closeKotodama(){ if(KT_ONLY) return; body.classList.remove('kotodama-open'); }
     function ktNewConversation(){
@@ -4466,7 +4466,7 @@
       const warm=keys.filter(k=>ktStarted[k]);          // already talking -> continue the session
       keys.forEach(k=>ktStarted[k]=true);
       // Active recipe (Ricette tab, sticky until changed) + "Vincoli" (Lunghezza/Tono/Risposta/
-      // campi personalizzati, stesso pannello del builder classico, ora spostato sotto Ricette)
+      // custom fields, same panel as the classic builder, now moved under Ricette)
       // wrap the OUTGOING text only -- the stored turn.text stays the raw message so the bubble
       // and the context history (ktContextPrompt) shown to other/future providers stay clean,
       // not re-wrapped every turn. Uses `instruction.value` (the live-edited textarea, NOT the
@@ -4850,14 +4850,14 @@
       saveDownloads();
       if(dlOpen()) renderDownloads();
     }
-    // Inizio download (evento Rust): riga "in corso" + apri il pannello (stile Edge).
+    // Download start (Rust event): "in progress" row + open the panel (Edge style).
     function startDownload(d){
       downloadsArr.unshift({ name:d.name||'download', path:'', url:d.url||'', ts:Date.now(), size:0, status:'downloading' });
       saveDownloads();
       if(dlOpen()) renderDownloads();
       openDownloads();
     }
-    // Fine download: finalizza la riga "in corso" col path/dimensione reali (match per url).
+    // Download end: finalizes the "in progress" row with the real path/size (matched by url).
     function finishDownload(d){
       const i=downloadsArr.findIndex(x=> x.status==='downloading' && (x.url||'')===(d.url||''));
       if(i>=0){ const e=downloadsArr[i]; e.path=d.path||''; e.size=d.size||0; e.status='done'; if(d.path){ const n=d.path.split(/[\\/]/).pop(); if(n) e.name=n; } saveDownloads(); if(dlOpen()) renderDownloads(); }
@@ -4891,10 +4891,10 @@
     }
     async function openDownloads(){
       if(dlOpen()){ renderDownloads(); return; }
-      // Aggancia il pannello a destra: restringe la webview provider di DL_PANEL_PX cosi'
-      // il pannello (HTML) si vede accanto al provider invece che dietro.
+      // Dock the panel on the right: narrows the provider webview by DL_PANEL_PX so that
+      // the (HTML) panel shows next to the provider instead of behind it.
       if(TAURI && body.classList.contains('provider-open')){ try{ await invoke('provider_dock',{px:DL_PANEL_PX}); }catch(e){} }
-      // allinea il top del pannello al provider (46px topbar + eventuale banner Claude)
+      // align the top of the panel with the provider (46px topbar + possible Claude banner)
       try{ downloadsDock.style.top=(46 + ((claudeHint && !claudeHint.hidden)?(claudeHint.offsetHeight||0):0))+'px'; }catch(e){}
       renderDownloads();
       downloadsDock.classList.add('show');
@@ -4915,7 +4915,7 @@
     });
     dlSearch.addEventListener('input', renderDownloads);
     document.getElementById('downloadsX').addEventListener('click', closeDownloads);
-    // Conferma "Cancella tutto" INLINE nel pannello (una modale centrata finirebbe dietro il provider).
+    // INLINE "Cancella tutto" confirmation in the panel (a centred modal would end up behind the provider).
     document.getElementById('dlClear').addEventListener('click', ()=>{
       if(!downloadsArr.length) return;
       downloadsBody.innerHTML='<div class="dl-confirm"><div class="dl-confirm-msg">'+(TR.dlClearConfirm||'Clear the whole list? (Files are not deleted.)')+'</div><div class="dl-confirm-btns"><button class="btn" id="dlClearNo">'+dlEsc(TR.cancel||'Cancel')+'</button><button class="btn primary" id="dlClearYes">'+dlEsc(TR.dlClear||'Clear all')+'</button></div></div>';
@@ -5230,8 +5230,8 @@
     function recipeToStr(){ return activeRecipe.kind==='key' ? 'key:'+activeRecipe.key : 'id:'+activeRecipe.id; }
     function saveUiState(){
       if(restoring) return;
-      // NB: ne' default_provider ne' recipe seguono la selezione: la ricetta predefinita (currentSettings.recipe)
-      // si cambia solo via menu tasto-destro/Impostazioni (setDefaultRecipe), come il provider predefinito.
+      // NB: neither default_provider nor recipe follow the selection: the default recipe (currentSettings.recipe)
+      // is changed only via the right-click menu/Settings (setDefaultRecipe), like the default provider.
       currentSettings.length=lengthSel.selectedIndex<0?0:lengthSel.selectedIndex;
       currentSettings.tone=toneSel.selectedIndex<0?0:toneSel.selectedIndex;
       currentSettings.resp_fmt=respSel.selectedIndex<0?1:respSel.selectedIndex;
@@ -5256,7 +5256,7 @@
       renderDefaultStar();
       saveUiState();   // persists currentSettings (including the new default)
     }
-    // ★ sulla RICETTA predefinita (usata quando si copia). Stringa = 'key:<key>' | 'id:<id>'.
+    // ★ on the default RECIPE (used when copying). String = 'key:<key>' | 'id:<id>'.
     // Applies to both the (hidden) classic list and the Kotodama Ricette tab -- same data.
     function renderDefaultRecipeStar(){
       const def = (currentSettings && currentSettings.recipe) || '';
@@ -5267,7 +5267,7 @@
     function setDefaultRecipe(str){
       currentSettings.recipe=str;
       renderDefaultRecipeStar();
-      saveUiState();   // persiste la ricetta predefinita
+      saveUiState();   // persists the default recipe
     }
     async function loadSettings(){
       if(TAURI){ try{ return { ...DEFAULT_SETTINGS, ...(await invoke('get_settings')) }; }catch(e){} }
@@ -5341,7 +5341,7 @@
         recipesEl.appendChild(li);
       });
       if(activeRecipe.kind==='id'){ const li=recipesEl.querySelector(`.recipe-custom[data-id="${activeRecipe.id}"]`); if(li) li.classList.add('active'); }
-      renderDefaultRecipeStar();   // ri-applica la ★ della predefinita anche sulle custom
+      renderDefaultRecipeStar();   // re-applies the ★ of the default one on the custom ones too
       renderKtRecipes();           // keeps the Kotodama "Ricette" tab's list in sync (same data)
     }
     // "Canonical" instruction of the active recipe (built-in from i18n, custom from customRecipes).
@@ -5363,7 +5363,7 @@
     function setActiveInstruction(){
       const t=TR;
       const isNeutral = activeRecipe.kind==='key' && activeRecipe.key==='neutral';
-      document.body.classList.toggle('recipe-neutral', isNeutral);   // CSS nasconde istruzione+vincoli, mostra il toggle auto-invio
+      document.body.classList.toggle('recipe-neutral', isNeutral);   // CSS hides instruction+constraints, shows the auto-send toggle
       if(isNeutral){ instruction.value=''; }
       else if(activeRecipe.kind==='key'&&t.instr[activeRecipe.key]) instruction.value=t.instr[activeRecipe.key];
       else if(activeRecipe.kind==='id'){ const r=customRecipes.find(x=>x.id===activeRecipe.id); if(r) instruction.value=r.instruction; }
@@ -5383,7 +5383,7 @@
       if(v.trim() && v.trim()!==canonicalInstruction().trim()) ktInstrDrafts[ref]=v; else delete ktInstrDrafts[ref];
       updateSaveInstr();
     });
-    // Toggle "Auto-invio" Neutra: salva la preferenza (persistente).
+    // "Auto-invio" toggle of Neutra: saves the preference (persistent).
     // Save the modified instruction: custom → updates the recipe; built-in → creates a custom copy.
     saveInstrBtn.addEventListener('click', async ()=>{
       const text=instruction.value.trim(); if(!text) return;
@@ -6029,13 +6029,13 @@
         if(d.known) cur.add(d.key); else cur.delete(d.key);
         currentSettings.known_providers=[...cur];
       });
-      // Download da un provider (es. .docx di ChatGPT): salvato in Download/Kotodama.
+      // Download from a provider (e.g. a ChatGPT .docx): saved in Download/Kotodama.
       listen('app://provider-download-start', e=>{ const d=e.payload||{}; startDownload(d); });
       listen('app://provider-download', e=>{ const d=e.payload||{}; if(d.ok){ finishDownload(d); const f=(d.path||'').split(/[\\/]/).pop(); toast((TR.downloadDone||'Saved to Downloads/Kotodama')+(f?(': '+f):'')); } else { toast(TR.downloadFail||'Download failed'); } });
       listen('app://open-downloads', ()=>{ openDownloads(); });
-      // Autostart cambiato dalla tray: tieni currentSettings in sync (altrimenti un set_settings lo
-      // riazzera) E la checkbox in Impostazioni, se il pannello è già aperto in quel momento --
-      // altrimenti un "Salva" successivo la riporterebbe indietro al valore vecchio.
+      // Autostart changed from the tray: keep currentSettings in sync (otherwise a set_settings would
+      // reset it) AND the checkbox in Settings, if the panel is already open at that moment --
+      // otherwise a later "Salva" would bring it back to the old value.
       listen('app://autostart-changed', e=>{
         currentSettings.autostart = !!e.payload;
         if(setAutostart) setAutostart.checked = currentSettings.autostart;
@@ -6188,7 +6188,7 @@
     function populateProviderSelect(){
       setProvider.innerHTML=Object.keys(PROVIDERS).filter(k=>PROVIDERS[k].base).map(k=>`<option value="${k}">${PROVIDERS[k].name}</option>`).join('');
     }
-    // "Default recipe" select = built-in (nomi tradotti) + custom (per id). Costruito via DOM (nomi utente → no HTML injection).
+    // "Default recipe" select = built-in (translated names) + custom (by id). Built via DOM (user names → no HTML injection).
     function populateRecipeSelect(){
       const t=TR;
       setRecipe.innerHTML='';
@@ -6226,16 +6226,16 @@
       enhanceSelects();           // after applySettings: the length/tone options exist
       renderCustomRecipes();
       renderChatCons();           // the active recipe's constraints, under its instruction
-      // Istruzione della ricetta attiva: la stessa textarea #instruction del builder classico, ora
-      // spostata sopra il composer di Kotodama (barra ricetta) invece che in un pannello a parte --
-      // ".panel-head"/".neutral-hint" restano (inutilizzati) nel builder nascosto, non servono qui.
+      // Instruction of the active recipe: the same #instruction textarea of the classic builder, now
+      // moved above the Kotodama composer (recipe bar) instead of into a separate panel --
+      // ".panel-head"/".neutral-hint" remain (unused) in the hidden builder, not needed here.
       { const saveBtn=document.getElementById('ktRecipeBadgeSave'), instr=document.getElementById('instruction');
         if(saveBtn && instr) saveBtn.parentNode.insertBefore(instr, saveBtn); }
       wireTauri();
       showAppVersion();
       if(KT_ONLY){ const b=document.getElementById('ktBackBar'); if(b) b.style.display='none'; }
-      openKotodama();   // Kotodama è la pagina iniziale; il builder classico resta raggiungibile col bottone "← Ai Prompt Builder" (nascosto finché KT_ONLY)
-      if(!currentSettings.welcome_ack) showWelcome();   // benvenuto al primo avvio: privacy + confine provider (si sovrappone comunque)
+      openKotodama();   // Kotodama is the start page; the classic builder stays reachable via the "← Ai Prompt Builder" button (hidden while KT_ONLY)
+      if(!currentSettings.welcome_ack) showWelcome();   // welcome on first launch: privacy + provider boundary (it overlaps anyway)
       setTimeout(()=>checkUpdate(false), 2500);   // silent update check at startup
       // ...and then periodically (every hour), without stacking a second prompt if a dialog is already open
       setInterval(()=>{ if(!confirmOverlay.classList.contains('show')) checkUpdate(false); }, 3600000);

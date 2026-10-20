@@ -294,11 +294,11 @@ pub fn start_idle_suspender(app: &tauri::AppHandle) {
 /// (in particular the Google/Gemini login) block or degrade embedded browsers
 /// by recognizing the `Edg/`/WebView2 markers; a standard Chrome UA maximizes
 /// compatibility and login success.
-// User-Agent del webview provider. DEVE essere coerente col motore reale, altrimenti
-// Google ("browser non sicuro") e Cloudflare ("verifica anti-bot") bloccano il login:
-//   - Windows: WebView2 = Chromium  -> UA Chrome (coerente).
-//   - macOS:   WKWebView = WebKit/Safari -> UA Safari macOS (coerente; un UA "Windows Chrome"
-//              su WebKit crea l'incongruenza che fa scattare i blocchi).
+// User-Agent of the provider webview. It MUST be consistent with the real engine, otherwise
+// Google ("unsafe browser") and Cloudflare ("anti-bot check") block the login:
+//   - Windows: WebView2 = Chromium  -> Chrome UA (consistent).
+//   - macOS:   WKWebView = WebKit/Safari -> macOS Safari UA (consistent; a "Windows Chrome" UA
+//              on WebKit creates the inconsistency that triggers the blocks).
 #[cfg(target_os = "macos")]
 pub const PROVIDER_UA: &str =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15";
@@ -399,8 +399,8 @@ pub const NO_MENU_JS: &str = r#"
   document.addEventListener('click', function(e){
     var a = e.target && e.target.closest && e.target.closest('a[href]');
     if(!a) return;
-    // Download link (attributo download): NON dirottare al browser di sistema,
-    // lascialo scaricare qui dentro (lo cattura on_download lato Rust).
+    // Download link (download attribute): do NOT hijack it to the system browser,
+    // let it download in here (on_download catches it on the Rust side).
     if(a.hasAttribute('download')) return;
     var href = a.href || '';
     if(!/^https?:\/\//i.test(href)) return;
@@ -704,7 +704,7 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
             }
         })
         // Enables DOWNLOADS in the provider webview (without a handler, wry/WebView2 discards them):
-        // salviamo in Download/Kotodama e notifichiamo il frontend.
+        // we save to Download/Kotodama and notify the frontend.
         .on_download(|webview, event| {
             use tauri::webview::DownloadEvent;
             match event {

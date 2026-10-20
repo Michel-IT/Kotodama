@@ -41,7 +41,7 @@
     body {
       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
       height: 100vh;
-      /* a filo SOTTO (taskbar, padding 0); 5px da DESTRA; 8px alone a sinistra/top per l'ombra */
+      /* flush at the BOTTOM (taskbar, padding 0); 5px from the RIGHT; 8px halo on the left/top for the shadow */
       padding: 8px 5px 0 8px; -webkit-user-select: none; user-select: none; cursor: default;
     }
     .card {
@@ -49,15 +49,15 @@
       display: flex; flex-direction: column; gap: 9px; justify-content: flex-start;
       background: linear-gradient(180deg, var(--card-a), var(--card-b));
       border: 1px solid var(--border);
-      /* angoli alti arrotondati, basso squadrato: il lato squadrato sta a filo del bordo
-         schermo a cui la notifica e' ancorata (taskbar in basso su Win/Linux) */
+      /* top corners rounded, bottom squared: the squared side sits flush with the edge of the
+         screen the notification is anchored to (taskbar at the bottom on Win/Linux) */
       border-radius: 14px 14px 0 0; padding: 13px 15px;
       box-shadow: var(--card-shadow);
       -webkit-backdrop-filter: var(--card-blur); backdrop-filter: var(--card-blur);
       animation: slideup .28s cubic-bezier(.22,.61,.36,1);
     }
-    /* macOS: la notifica e' ancorata IN ALTO (menu bar), quindi il lato squadrato deve
-       stare sopra e quello arrotondato sotto -- capovolto rispetto a Win/Linux. */
+    /* macOS: the notification is anchored at the TOP (menu bar), so the squared side must
+       be on top and the rounded one below -- flipped compared to Win/Linux. */
     [data-os="mac"] body { padding: 0 5px 8px 8px; }
     [data-os="mac"] .card { border-radius: 0 0 14px 14px; }
     [data-os="mac"] .card { animation-name: slidedown; }

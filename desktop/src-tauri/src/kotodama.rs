@@ -2956,7 +2956,7 @@ const HARVEST_JS: &str = r##"
         for (var k=0;k<bs.length && bl.length<10;k++){
           var b = bs[k]; if (b.offsetParent === null) continue;
           var r = b.getBoundingClientRect();
-          if (r.top < cr.top - 10 || r.top > cr.bottom + 72) continue;   // stessa fascia di findSendBtn
+          if (r.top < cr.top - 10 || r.top > cr.bottom + 72) continue;   // same band as findSendBtn
           var idl = (b.getAttribute('data-testid') || b.getAttribute('aria-label') || b.id
             || ('svg?' + (b.querySelector('svg') ? 'y' : 'n'))).slice(0,22);
           bl.push(idl + (b.disabled ? '!D' : '') + '@' + Math.round(r.left));
@@ -4596,8 +4596,8 @@ pub async fn kotodama_broadcast(
             finish_key(&window, &broadcast_id, key, "error", "", false, "");
             continue;
         };
-        // Unico imbuto di TUTTI gli invii (broadcast, ritenta, inline transform): risvegliare qui
-        // copre ogni percorso. Un webview congelato non eseguirebbe lo script di fill iniettato.
+        // Single funnel for ALL sends (broadcast, retry, inline transform): waking up here
+        // covers every path. A frozen webview would not run the injected fill script.
         browser::resume_provider(&window, key, true);
         let label = browser::provider_label(key);
         let existing = window.get_webview(&label);

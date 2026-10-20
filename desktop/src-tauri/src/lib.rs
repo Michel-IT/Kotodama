@@ -1501,9 +1501,9 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
     use tauri::menu::{Menu, PredefinedMenuItem};
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
-    // Etichette MONOLINGUA nella lingua dell'app (it/en hardcoded; en di default). Le bilingue
-    // ("Apri / Open"...) erano troppo lunghe. Il frontend poi le localizza per TUTTE le lingue
-    // via set_tray_labels (all'avvio e ad ogni cambio lingua).
+    // MONOLINGUAL labels in the app's language (it/en hardcoded; en by default). The bilingual ones
+    // ("Apri / Open"...) were too long. The frontend then localizes them for ALL languages
+    // via set_tray_labels (at startup and on every language change).
     let (it, always_on_top_on) = {
         let st = app.state::<AppState>();
         let g = st.settings.lock().unwrap();
@@ -1563,8 +1563,8 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
                     g.clone()
                 };
                 save_settings_bg(app, snapshot);
-                // Tieni il frontend in sync: altrimenti currentSettings.autostart resta vecchio e
-                // un successivo set_settings lo sovrascriverebbe (ri-disabilitando l'autostart).
+                // Keep the frontend in sync: otherwise currentSettings.autostart stays stale and
+                // a later set_settings would overwrite it (re-disabling the autostart).
                 if let Some(main) = app.get_window("main") {
                     let _ = main.emit("app://autostart-changed", want);
                 }
@@ -2219,10 +2219,10 @@ pub fn run() {
             } else {
                 autostart_on
             };
-            // Il login-item/registro (gestito dal plugin autostart) e' la FONTE DI VERITA':
-            // la spunta della tray e settings.json riflettono lo stato REALE. NON forziamo piu'
-            // il registro al valore di settings.json: poteva essere "stale" (es. il frontend lo
-            // sovrascriveva) e all'avvio DISABILITAVA l'autostart appena abilitato, togliendo la spunta.
+            // The login item/registry (managed by the autostart plugin) is the SOURCE OF TRUTH:
+            // the tray checkmark and settings.json reflect the REAL state. We NO LONGER force
+            // the registry to the value in settings.json: it could be "stale" (e.g. the frontend
+            // overwrote it) and at startup it DISABLED the autostart that had just been enabled, removing the checkmark.
             build_tray(&handle, autostart_on)?;
             if loaded.autostart != autostart_on {
                 let snapshot = {

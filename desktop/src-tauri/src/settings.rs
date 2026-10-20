@@ -31,8 +31,8 @@ pub struct Settings {
     pub autostart: bool,
     /// Interface theme: "teal" | "glass" | "flat".
     pub theme: String,
-    /// Ricetta predefinita (★) usata quando si copia; all'avvio diventa anche l'attiva.
-    /// Formato: "key:<builtin>" oppure "id:<custom>".
+    /// Default recipe (★) used when copying; at startup it also becomes the active one.
+    /// Format: "key:<builtin>" or "id:<custom>".
     pub recipe: String,
     /// Last UI state: Length option index.
     pub length: u32,
@@ -41,14 +41,14 @@ pub struct Settings {
     /// "Risposta" field: 0 = Normale (nothing added), 1 = Solo testo (append answer-only
     /// constraint). Default 1.
     pub resp_fmt: u32,
-    /// Finestra sempre in primo piano (galleggia sopra le altre finestre). Default: on.
+    /// Always-on-top window (floats above the other windows). Default: on.
     pub always_on_top: bool,
-    /// La modale di benvenuto (primo avvio, privacy + confine provider) e' stata confermata
-    /// con "non mostrare piu'": se true non ricompare all'avvio. Default: false.
+    /// The welcome modal (first launch, privacy + provider boundary) was confirmed
+    /// with "don't show again": if true it does not reappear at startup. Default: false.
     pub welcome_ack: bool,
-    /// Scorciatoie globali PER RICETTA: chiave = "key:<builtin>"/"id:<custom>", valore =
-    /// accelerator W3C. Premuta -> flusso clipboard con QUELLA ricetta (non la predefinita).
-    /// Le entry che non si registrano (conflitti/invalidi) vengono scartate al salvataggio.
+    /// Global shortcuts PER RECIPE: key = "key:<builtin>"/"id:<custom>", value =
+    /// W3C accelerator. When pressed -> clipboard flow with THAT recipe (not the default one).
+    /// Entries that fail to register (conflicts/invalid) are discarded on save.
     pub recipe_hotkeys: std::collections::HashMap<String, String>,
     /// Which recipes appear in the double right-click menu: key = same reference as `recipe_hotkeys`, value =
     /// false to leave it out. Missing means shown, so a settings file written before this existed shows all.
@@ -69,22 +69,22 @@ pub struct Settings {
     /// empty string or absent = the default one.
     #[serde(default)]
     pub recipe_provider: std::collections::HashMap<String, String>,
-    /// Notifiche toast per scorciatoia-ricetta: chiave = stessa di `recipe_hotkeys`, valore =
-    /// mostra i toast "elaborazione/fatto/errore" per QUELLA scorciatoia. Assente = abilitata
-    /// (default): solo chi disattiva esplicitamente una ricetta molto usata sparisce dalla mappa.
+    /// Toast notifications per recipe shortcut: key = same as `recipe_hotkeys`, value =
+    /// shows the "processing/done/error" toasts for THAT shortcut. Absent = enabled
+    /// (default): only whoever explicitly turns off a heavily used recipe drops out of the map.
     pub recipe_notify: std::collections::HashMap<String, bool>,
-    /// Kotodama broadcast: usa la chat TEMPORANEA/anonima dei provider (dove supportata),
-    /// cosi' le richieste multi-provider non intasano le cronologie dei siti. Default: on.
+    /// Kotodama broadcast: use the providers' TEMPORARY/anonymous chat (where supported),
+    /// so multi-provider requests do not clog the sites' histories. Default: on.
     pub kt_temp_chats: bool,
-    /// Chat temporanea PER PROVIDER (key -> abilitata). Assente = abilitata dove supportata.
-    /// Il frontend sa quali provider la supportano; i toggle degli altri sono disabilitati.
+    /// Temporary chat PER PROVIDER (key -> enabled). Absent = enabled where supported.
+    /// The frontend knows which providers support it; the toggles of the others are disabled.
     pub kt_temp_providers: std::collections::HashMap<String, bool>,
-    /// Provider con cui un broadcast Kotodama e' andato a buon fine ALMENO una volta (segno che
-    /// l'utente ha un account attivo li'). Usato dal frontend per pre-selezionare SOLO questi
-    /// nella chat "chiedi a tutti", invece di tutti gli 8 a prescindere dal login: un broadcast
-    /// verso un provider mai autenticato creava comunque la sua webview e finiva su un muro di
-    /// login, per niente. Gli altri provider restano disponibili, l'utente li aggiunge a mano la
-    /// prima volta.
+    /// Providers with which a Kotodama broadcast succeeded AT LEAST once (a sign that
+    /// the user has an active account there). Used by the frontend to preselect ONLY these
+    /// in the "chiedi a tutti" chat, instead of all 8 regardless of login: a broadcast
+    /// to a never-authenticated provider still created its webview and ended up on a wall of
+    /// login, for nothing. The other providers remain available, the user adds them by hand the
+    /// first time.
     pub known_providers: std::collections::HashSet<String>,
     /// Resource saving. Two effects, both with a cost that must stay the user's choice:
     ///  - no hardware acceleration for the webviews (`--disable-gpu`): the GPU process gets lighter
