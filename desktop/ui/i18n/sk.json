@@ -335,5 +335,7 @@
   "ktSaveFailed": "Históriu sa nepodarilo uložiť: {e}. Skúšam znova.",
   "trayCopyLast": "Kopírovať poslednú odpoveď",
   "ktAttachOnlyPrompt": "Pozri sa na priložený súbor (alebo súbory) a povedz mi, čo obsahuje.",
-  "ktAttachFailed": "Súbor sa k {p} nedostal, preto sa správa neodoslala: odišla by bez prílohy. Odošlite ju znova."
+  "ktAttachFailed": "Súbor sa k {p} nedostal, preto sa správa neodoslala: odišla by bez prílohy. Odošlite ju znova.",
+  "rcReadFailed": "Súbor obmedzení sa nepodarilo načítať, takže zmeny obmedzení sa v tejto relácii neuložia.",
+  "rcSaveFailed": "Obmedzenia sa nepodarilo uložiť. Posledná zmena sa môže stratiť pri zatvorení aplikácie."
 }

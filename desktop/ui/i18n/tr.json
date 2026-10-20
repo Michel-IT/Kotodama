@@ -335,5 +335,7 @@
   "ktSaveFailed": "Geçmiş kaydedilemedi: {e}. Yeniden deneniyor.",
   "trayCopyLast": "Son yanıtı kopyala",
   "ktAttachOnlyPrompt": "Ekli dosyaya (veya dosyalara) bak ve içinde ne olduğunu söyle.",
-  "ktAttachFailed": "Dosya {p} tarafına ulaşmadı, bu yüzden ileti gönderilmedi: ek olmadan gidecekti. Yeniden gönderin."
+  "ktAttachFailed": "Dosya {p} tarafına ulaşmadı, bu yüzden ileti gönderilmedi: ek olmadan gidecekti. Yeniden gönderin.",
+  "rcReadFailed": "Kısıtlama dosyası okunamadı, bu yüzden kısıtlamalardaki değişiklikler bu oturumda kaydedilmeyecek.",
+  "rcSaveFailed": "Kısıtlamalar kaydedilemedi. Uygulama kapanınca son değişikliğiniz kaybolabilir."
 }

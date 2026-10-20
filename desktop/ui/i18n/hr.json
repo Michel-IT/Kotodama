@@ -335,5 +335,7 @@
   "ktSaveFailed": "Povijest se nije mogla spremiti: {e}. Pokušavam ponovno.",
   "trayCopyLast": "Kopiraj zadnji odgovor",
   "ktAttachOnlyPrompt": "Pogledaj priloženu datoteku (ili datoteke) i reci mi što sadrži.",
-  "ktAttachFailed": "Datoteka nije stigla do {p}, pa poruka nije poslana: otišla bi bez privitka. Pošaljite je ponovno."
+  "ktAttachFailed": "Datoteka nije stigla do {p}, pa poruka nije poslana: otišla bi bez privitka. Pošaljite je ponovno.",
+  "rcReadFailed": "Datoteka ograničenja nije se mogla pročitati, pa se promjene ograničenja u ovoj sesiji ne spremaju.",
+  "rcSaveFailed": "Ograničenja nije moguće spremiti. Zadnja promjena može se izgubiti kad se aplikacija zatvori."
 }

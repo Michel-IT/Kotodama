@@ -335,5 +335,7 @@
   "ktSaveFailed": "Ezin izan da historia gorde: {e}. Berriro saiatzen.",
   "trayCopyLast": "Kopiatu azken erantzuna",
   "ktAttachOnlyPrompt": "Begiratu erantsitako fitxategiari (edo fitxategiei) eta esan zer duen.",
-  "ktAttachFailed": "Fitxategia ez da {p}-ra iritsi, beraz mezua ez da bidali: eranskinik gabe joango zen. Bidali berriro."
+  "ktAttachFailed": "Fitxategia ez da {p}-ra iritsi, beraz mezua ez da bidali: eranskinik gabe joango zen. Bidali berriro.",
+  "rcReadFailed": "Murrizketen fitxategia ezin izan da irakurri, beraz, murrizketen aldaketak ez dira gordeko saio honetan.",
+  "rcSaveFailed": "Murrizketak ezin izan dira gorde. Azken aldaketa galdu daiteke aplikazioa ixtean."
 }

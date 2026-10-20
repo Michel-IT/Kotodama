@@ -335,5 +335,7 @@
   "ktSaveFailed": "No s'ha pogut desar l'historial: {e}. Ho torno a provar.",
   "trayCopyLast": "Copia l'última resposta",
   "ktAttachOnlyPrompt": "Mira el fitxer adjunt (o els fitxers adjunts) i digues-me què conté.",
-  "ktAttachFailed": "El fitxer no ha arribat a {p}, així que el missatge no s'ha enviat: hauria sortit sense l'adjunt. Torna'l a enviar."
+  "ktAttachFailed": "El fitxer no ha arribat a {p}, així que el missatge no s'ha enviat: hauria sortit sense l'adjunt. Torna'l a enviar.",
+  "rcReadFailed": "No s'ha pogut llegir el fitxer de restriccions, així que els canvis no es desaran en aquesta sessió.",
+  "rcSaveFailed": "No s'han pogut desar les restriccions. És possible que l'últim canvi es perdi en tancar l'aplicació."
 }

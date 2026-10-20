@@ -335,5 +335,7 @@
   "ktSaveFailed": "Der Verlauf konnte nicht gespeichert werden: {e}. Neuer Versuch läuft.",
   "trayCopyLast": "Letzte Antwort kopieren",
   "ktAttachOnlyPrompt": "Sieh dir die angehängte Datei (oder die angehängten Dateien) an und sag mir, was sie enthält.",
-  "ktAttachFailed": "Die Datei ist bei {p} nicht angekommen, daher wurde die Nachricht nicht gesendet: Sie wäre ohne Anhang abgegangen. Sende sie erneut."
+  "ktAttachFailed": "Die Datei ist bei {p} nicht angekommen, daher wurde die Nachricht nicht gesendet: Sie wäre ohne Anhang abgegangen. Sende sie erneut.",
+  "rcReadFailed": "Die Datei mit den Vorgaben konnte nicht gelesen werden, daher werden Änderungen an Vorgaben in dieser Sitzung nicht gespeichert.",
+  "rcSaveFailed": "Die Vorgaben konnten nicht gespeichert werden. Deine letzte Änderung geht beim Schließen der App möglicherweise verloren."
 }

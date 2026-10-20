@@ -335,5 +335,7 @@
   "ktSaveFailed": "Vēsturi neizdevās saglabāt: {e}. Mēģinu vēlreiz.",
   "trayCopyLast": "Kopēt pēdējo atbildi",
   "ktAttachOnlyPrompt": "Apskaties pievienoto failu (vai failus) un pasaki, kas tajā ir.",
-  "ktAttachFailed": "Fails nenonāca līdz {p}, tāpēc ziņa netika nosūtīta: tā būtu aizgājusi bez pielikuma. Nosūtiet to vēlreiz."
+  "ktAttachFailed": "Fails nenonāca līdz {p}, tāpēc ziņa netika nosūtīta: tā būtu aizgājusi bez pielikuma. Nosūtiet to vēlreiz.",
+  "rcReadFailed": "Ierobežojumu failu nevarēja nolasīt, tāpēc šajā sesijā ierobežojumu izmaiņas netiek saglabātas.",
+  "rcSaveFailed": "Ierobežojumus nevarēja saglabāt. Pēdējās izmaiņas var pazust, aizverot lietotni."
 }

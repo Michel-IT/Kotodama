@@ -335,5 +335,7 @@
   "ktSaveFailed": "Az előzményeket nem sikerült menteni: {e}. Újrapróbálom.",
   "trayCopyLast": "Utolsó válasz másolása",
   "ktAttachOnlyPrompt": "Nézd meg a csatolt fájlt (vagy fájlokat), és mondd el, mi van benne.",
-  "ktAttachFailed": "A fájl nem jutott el a(z) {p} szolgáltatóhoz, ezért az üzenet nem lett elküldve: melléklet nélkül ment volna el. Küldd el újra."
+  "ktAttachFailed": "A fájl nem jutott el a(z) {p} szolgáltatóhoz, ezért az üzenet nem lett elküldve: melléklet nélkül ment volna el. Küldd el újra.",
+  "rcReadFailed": "A korlátok fájlját nem sikerült beolvasni, ezért a korlátok módosításai ebben a munkamenetben nem mentődnek.",
+  "rcSaveFailed": "A korlátokat nem sikerült menteni. Az utolsó módosítás elveszhet, amikor bezárja az alkalmazást."
 }

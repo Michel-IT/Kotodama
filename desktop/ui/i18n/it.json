@@ -312,6 +312,8 @@
   "ktRetry": "Riprova",
   "ktRetryAll": "Rimanda a chi non ha risposto",
   "ktSaveFailed": "La cronologia non si è potuta salvare: {e}. Riprovo.",
+  "rcReadFailed": "Il file dei vincoli non si è potuto leggere, quindi in questa sessione le modifiche ai vincoli non vengono salvate.",
+  "rcSaveFailed": "I vincoli non si sono potuti salvare. L'ultima modifica può andare persa alla chiusura dell'app.",
   "trayCopyLast": "Copia l'ultima risposta",
   "setTabGeneral": "Generale",
   "setTabShortcuts": "Scorciatoie",

@@ -312,6 +312,8 @@
   "ktRetry": "Retry",
   "ktRetryAll": "Send again to the ones that did not answer",
   "ktSaveFailed": "The history could not be saved: {e}. Trying again.",
+  "rcReadFailed": "The constraints file could not be read, so changes to constraints are not saved in this session.",
+  "rcSaveFailed": "The constraints could not be saved. Your last change may be lost when the app closes.",
   "trayCopyLast": "Copy the last answer",
   "setTabGeneral": "General",
   "setTabShortcuts": "Shortcuts",

@@ -335,5 +335,7 @@
   "ktSaveFailed": "Riwayat tidak dapat disimpan: {e}. Mencoba lagi.",
   "trayCopyLast": "Salin jawaban terakhir",
   "ktAttachOnlyPrompt": "Lihat berkas terlampir (atau berkas-berkas terlampir) dan beri tahu saya isinya.",
-  "ktAttachFailed": "File tidak sampai ke {p}, jadi pesan tidak dikirim: pesan itu akan terkirim tanpa lampiran. Kirim lagi."
+  "ktAttachFailed": "File tidak sampai ke {p}, jadi pesan tidak dikirim: pesan itu akan terkirim tanpa lampiran. Kirim lagi.",
+  "rcReadFailed": "File batasan tidak dapat dibaca, jadi perubahan batasan tidak disimpan di sesi ini.",
+  "rcSaveFailed": "Batasan tidak dapat disimpan. Perubahan terakhir Anda mungkin hilang saat aplikasi ditutup."
 }

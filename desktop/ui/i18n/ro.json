@@ -335,5 +335,7 @@
   "ktSaveFailed": "Istoricul nu a putut fi salvat: {e}. Încerc din nou.",
   "trayCopyLast": "Copiază ultimul răspuns",
   "ktAttachOnlyPrompt": "Uită-te la fișierul atașat (sau fișierele atașate) și spune-mi ce conține.",
-  "ktAttachFailed": "Fișierul nu a ajuns la {p}, deci mesajul nu a fost trimis: ar fi plecat fără atașament. Trimite-l din nou."
+  "ktAttachFailed": "Fișierul nu a ajuns la {p}, deci mesajul nu a fost trimis: ar fi plecat fără atașament. Trimite-l din nou.",
+  "rcReadFailed": "Fișierul cu constrângeri nu a putut fi citit, așa că modificările constrângerilor nu se salvează în această sesiune.",
+  "rcSaveFailed": "Constrângerile nu au putut fi salvate. Ultima modificare poate fi pierdută la închiderea aplicației."
 }

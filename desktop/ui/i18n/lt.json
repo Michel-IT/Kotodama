@@ -335,5 +335,7 @@
   "ktSaveFailed": "Istorijos išsaugoti nepavyko: {e}. Bandau dar kartą.",
   "trayCopyLast": "Kopijuoti paskutinį atsakymą",
   "ktAttachOnlyPrompt": "Pažiūrėk į pridėtą failą (arba failus) ir pasakyk, kas jame yra.",
-  "ktAttachFailed": "Failas nepasiekė {p}, todėl žinutė neišsiųsta: ji būtų išėjusi be priedo. Siųskite dar kartą."
+  "ktAttachFailed": "Failas nepasiekė {p}, todėl žinutė neišsiųsta: ji būtų išėjusi be priedo. Siųskite dar kartą.",
+  "rcReadFailed": "Apribojimų failo perskaityti nepavyko, todėl šiame seanse apribojimų pakeitimai nebus išsaugoti.",
+  "rcSaveFailed": "Apribojimų išsaugoti nepavyko. Paskutinis pakeitimas gali būti prarastas uždarius programą."
 }

@@ -335,5 +335,7 @@
   "ktSaveFailed": "Historiaa ei voitu tallentaa: {e}. Yritetään uudelleen.",
   "trayCopyLast": "Kopioi viimeisin vastaus",
   "ktAttachOnlyPrompt": "Katso liitettyä tiedostoa (tai tiedostoja) ja kerro, mitä siinä on.",
-  "ktAttachFailed": "Tiedosto ei päätynyt palveluun {p}, joten viestiä ei lähetetty: se olisi lähtenyt ilman liitettä. Lähetä se uudelleen."
+  "ktAttachFailed": "Tiedosto ei päätynyt palveluun {p}, joten viestiä ei lähetetty: se olisi lähtenyt ilman liitettä. Lähetä se uudelleen.",
+  "rcReadFailed": "Rajoitustiedostoa ei voitu lukea, joten rajoitusten muutoksia ei tallenneta tässä istunnossa.",
+  "rcSaveFailed": "Rajoituksia ei voitu tallentaa. Viimeisin muutos voi kadota, kun sovellus suljetaan."
 }

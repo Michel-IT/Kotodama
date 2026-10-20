@@ -335,5 +335,7 @@
   "ktSaveFailed": "Historiken kunde inte sparas: {e}. Försöker igen.",
   "trayCopyLast": "Kopiera senaste svaret",
   "ktAttachOnlyPrompt": "Titta på den bifogade filen (eller filerna) och berätta vad den innehåller.",
-  "ktAttachFailed": "Filen nådde inte {p}, så meddelandet skickades inte: det hade gått iväg utan bilagan. Skicka det igen."
+  "ktAttachFailed": "Filen nådde inte {p}, så meddelandet skickades inte: det hade gått iväg utan bilagan. Skicka det igen.",
+  "rcReadFailed": "Filen med begränsningar kunde inte läsas, så ändringar av begränsningar sparas inte under den här sessionen.",
+  "rcSaveFailed": "Begränsningarna kunde inte sparas. Din senaste ändring kan försvinna när appen stängs."
 }

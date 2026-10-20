@@ -1908,6 +1908,7 @@
       setGesture:'Double right-click', setGestureHint:'Two quick right-clicks open the recipe menu in any program.',
       rhColMenu:'Menu', rhMenuTitle:'Show this recipe in the double right-click menu', trayRestart:'Restart',
       rhColRead:'Read', rhReadTitle:'Reads the answer aloud as soon as it arrives.',
+      rcReadFailed:"The constraints file could not be read, so changes to constraints are not saved in this session.", rcSaveFailed:"The constraints could not be saved. Your last change may be lost when the app closes.",
       vinAdd:"+ Add constraint", vinNew:"New constraint", vinBuiltin:"Built-in", vinMine:"Your constraints", vinMineRemove:"Remove from your constraints", vinNewRecipeCons:"Recipe constraints", vinColName:"Constraint", vinColShortcut:"From shortcut", vinColShortcutTitle:"The value this recipe's shortcut sends.", vinName:"Name", vinNamePh:"Constraint name", vinOptions:"Options", vinAddOption:"+ Add option", vinNeedName:"A name and at least one option are needed.", vinEdit:"Edit constraint", vinDelete:"Delete constraint", vinDeleted:"Constraint deleted", vinUndo:"Undo", vinUse:"Use this constraint", vinFixedOpts:"The options of {c} are fixed.", vinRespFixed:"The shortcut always pastes the text only.", vinNone:"No constraints", vinEmptyPop:"No constraints: the recipe sends the text only.", vinStale:"The chosen value is gone: using \"{v}\".", ktSaveFailed:"The history could not be saved: {e}. Trying again.", trayCopyLast:"Copy the last answer", rhColVincoli:'Constraints', rhColProvider:'Provider', rhKeyTitle:'The combination that runs the recipe on the selected text.', rhVinTitle:'The ones the recipe adds to the text when you run it from a shortcut.', rhProvTitle:'The one the recipe uses when you run it from a shortcut.', rhNotifyHeadTitle:'Shows the notice while the recipe works.', rhMenuHeadTitle:'Puts the recipe in the double right-click menu.', rhVinPopTitle:"This recipe's constraints", rhNeutralNoCons:'Neutral sends the text as it is, with no constraints.', rhProvDefaultShort:'Default',
       provColBar:'In the bar', provColDefault:'Default',
       setProvidersBarHint2:'Every provider, one row each: whether it appears in the "+" menu, whether it opens private chats, and which one is your default.',
@@ -2131,18 +2132,31 @@
     let rcStore={ recipes:{}, mine:[] };   // recipe-constraints.json: recipe ref -> list, and "your constraints"
     let rcSaveTimer=0;
     let rcReadOnly=false;   // the file is there but could not be read: never save over it in this run
+    let rcSaveFailing=false;   // the last save of the constraints failed: the user has been told
+    let rcReadWarned=false;    // the unreadable-file warning was repeated at the first change
+    // Said once, in the interface language: constraints that look saved but are not would be lost without a word.
+    function rcWarn(key){ try{ toast(TR[key]||''); }catch(e){} }
     async function loadRecipeConstraints(){
       let s=null;
-      if(TAURI){ try{ s=await invoke('get_recipe_constraints'); }catch(e){ rcReadOnly=true; } }
+      if(TAURI){ try{ s=await invoke('get_recipe_constraints'); }catch(e){ rcReadOnly=true; setTimeout(()=>rcWarn('rcReadFailed'), 1500); } }
       else { try{ s=JSON.parse(localStorage.getItem('apb-recipe-constraints')||'null'); }catch(e){} }
       s=s||{};
       return { recipes:s.recipes||{}, mine:Array.isArray(s.mine)?s.mine:[] };
     }
     function persistRecipeConstraints(){
       clearTimeout(rcSaveTimer);   // debounce: a value picked, an option typed, all in quick succession
-      if(rcReadOnly) return;
+      if(rcReadOnly){
+        // The warning at start can go unseen (the app starts hidden in the tray): said again at the first change.
+        // (a moment later: saving from Settings shows its own "saved" message at once, which would cover it)
+        if(!rcReadWarned){ rcReadWarned=true; setTimeout(()=>rcWarn('rcReadFailed'), 1500); }
+        return;
+      }
       rcSaveTimer=setTimeout(()=>{
-        if(TAURI){ invoke('save_recipe_constraints',{store:rcStore}).catch(()=>{}); }
+        if(TAURI){
+          invoke('save_recipe_constraints',{store:rcStore}).then(()=>{ rcSaveFailing=false; }).catch(()=>{
+            if(!rcSaveFailing){ rcSaveFailing=true; rcWarn('rcSaveFailed'); }
+          });
+        }
         else { try{ localStorage.setItem('apb-recipe-constraints', JSON.stringify(rcStore)); }catch(e){} }
       }, 250);
     }

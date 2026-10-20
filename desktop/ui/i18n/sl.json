@@ -335,5 +335,7 @@
   "ktSaveFailed": "Zgodovine ni bilo mogoče shraniti: {e}. Poskušam znova.",
   "trayCopyLast": "Kopiraj zadnji odgovor",
   "ktAttachOnlyPrompt": "Poglej priloženo datoteko (ali datoteke) in mi povej, kaj vsebuje.",
-  "ktAttachFailed": "Datoteka ni prišla do {p}, zato sporočilo ni bilo poslano: odšlo bi brez priloge. Pošljite ga znova."
+  "ktAttachFailed": "Datoteka ni prišla do {p}, zato sporočilo ni bilo poslano: odšlo bi brez priloge. Pošljite ga znova.",
+  "rcReadFailed": "Datoteke omejitev ni bilo mogoče prebrati, zato se spremembe omejitev v tej seji ne shranijo.",
+  "rcSaveFailed": "Omejitev ni bilo mogoče shraniti. Zadnja sprememba se lahko izgubi, ko zaprete aplikacijo."
 }

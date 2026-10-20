@@ -335,5 +335,7 @@
   "ktSaveFailed": "De geschiedenis kon niet worden opgeslagen: {e}. Nieuwe poging.",
   "trayCopyLast": "Laatste antwoord kopiëren",
   "ktAttachOnlyPrompt": "Bekijk het bijgevoegde bestand (of de bijgevoegde bestanden) en vertel me wat erin staat.",
-  "ktAttachFailed": "Het bestand is niet bij {p} aangekomen, dus het bericht is niet verzonden: het zou zonder bijlage zijn vertrokken. Verstuur het opnieuw."
+  "ktAttachFailed": "Het bestand is niet bij {p} aangekomen, dus het bericht is niet verzonden: het zou zonder bijlage zijn vertrokken. Verstuur het opnieuw.",
+  "rcReadFailed": "Het bestand met beperkingen kon niet worden gelezen, dus wijzigingen in beperkingen worden in deze sessie niet opgeslagen.",
+  "rcSaveFailed": "De beperkingen konden niet worden opgeslagen. Je laatste wijziging kan verloren gaan bij het sluiten van de app."
 }

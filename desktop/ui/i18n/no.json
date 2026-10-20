@@ -335,5 +335,7 @@
   "ktSaveFailed": "Historikken kunne ikke lagres: {e}. Prøver igjen.",
   "trayCopyLast": "Kopier siste svar",
   "ktAttachOnlyPrompt": "Se på den vedlagte filen (eller filene) og fortell meg hva den inneholder.",
-  "ktAttachFailed": "Filen nådde ikke {p}, så meldingen ble ikke sendt: den ville gått av gårde uten vedlegget. Send den på nytt."
+  "ktAttachFailed": "Filen nådde ikke {p}, så meldingen ble ikke sendt: den ville gått av gårde uten vedlegget. Send den på nytt.",
+  "rcReadFailed": "Filen med begrensninger kunne ikke leses, så endringer i begrensninger lagres ikke i denne økten.",
+  "rcSaveFailed": "Begrensningene kunne ikke lagres. Den siste endringen din kan gå tapt når appen lukkes."
 }

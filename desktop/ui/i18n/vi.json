@@ -335,5 +335,7 @@
   "ktSaveFailed": "Không thể lưu lịch sử: {e}. Đang thử lại.",
   "trayCopyLast": "Sao chép câu trả lời cuối",
   "ktAttachOnlyPrompt": "Hãy xem tệp đính kèm (hoặc các tệp đính kèm) và cho tôi biết nội dung của nó.",
-  "ktAttachFailed": "Tệp không đến được {p}, nên tin nhắn chưa được gửi: nó sẽ đi mà không có tệp đính kèm. Hãy gửi lại."
+  "ktAttachFailed": "Tệp không đến được {p}, nên tin nhắn chưa được gửi: nó sẽ đi mà không có tệp đính kèm. Hãy gửi lại.",
+  "rcReadFailed": "Không đọc được tệp ràng buộc, nên các thay đổi ràng buộc sẽ không được lưu trong phiên này.",
+  "rcSaveFailed": "Không thể lưu ràng buộc. Thay đổi cuối cùng của bạn có thể bị mất khi đóng ứng dụng."
 }

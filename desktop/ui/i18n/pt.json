@@ -335,5 +335,7 @@
   "ktSaveFailed": "Não foi possível guardar o histórico: {e}. A tentar de novo.",
   "trayCopyLast": "Copiar a última resposta",
   "ktAttachOnlyPrompt": "Olha para o ficheiro anexado (ou ficheiros anexados) e diz-me o que contém.",
-  "ktAttachFailed": "O arquivo não chegou a {p}, então a mensagem não foi enviada: ela teria saído sem o anexo. Envie de novo."
+  "ktAttachFailed": "O arquivo não chegou a {p}, então a mensagem não foi enviada: ela teria saído sem o anexo. Envie de novo.",
+  "rcReadFailed": "Não foi possível ler o arquivo de restrições, então as alterações nas restrições não são salvas nesta sessão.",
+  "rcSaveFailed": "Não foi possível salvar as restrições. Sua última alteração pode se perder ao fechar o aplicativo."
 }
