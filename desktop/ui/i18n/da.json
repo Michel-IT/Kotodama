@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Se på den vedhæftede fil (eller filer), og fortæl mig, hvad den indeholder.",
   "ktAttachFailed": "Filen nåede ikke frem til {p}, så beskeden blev ikke sendt: den ville være gået afsted uden vedhæftningen. Send den igen.",
   "rcReadFailed": "Filen med begrænsninger kunne ikke læses, så ændringer af begrænsninger gemmes ikke i denne session.",
-  "rcSaveFailed": "Begrænsningerne kunne ikke gemmes. Din sidste ændring kan gå tabt, når appen lukkes."
+  "rcSaveFailed": "Begrænsningerne kunne ikke gemmes. Din sidste ændring kan gå tabt, når appen lukkes.",
+  "ktSideResize": "Sidepanelets bredde",
+  "ktSideResizeTip": "Træk for at ændre størrelse; dobbeltklik for at nulstille",
+  "ktDayToday": "I dag",
+  "ktDayYesterday": "I går",
+  "ktDayOlder": "Ældre",
+  "ktDayGroupAria": "{day}, {n} samtaler",
+  "ktDayGroupAriaOne": "{day}, 1 samtale",
+  "provChat": "Chat",
+  "provMore": "Flere",
+  "provMoreTitle": "Flere udbydere",
+  "provRowAria": "Udbydersider",
+  "provOpenPage": "Åbn siden for {p}",
+  "setProvHotkey": "Åbn den sidst brugte udbyder",
+  "setProvHotkeyTitle": "Åbner siden for den udbyder du sidst åbnede, eller standarden",
+  "setProvHotkeyConflict": "Denne genvej bruges allerede af en anden og gemmes ikke"
 }

@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Podívej se na přiložený soubor (nebo soubory) a řekni mi, co obsahuje.",
   "ktAttachFailed": "Soubor se k {p} nedostal, proto nebyla zpráva odeslána: odešla by bez přílohy. Odešlete ji znovu.",
   "rcReadFailed": "Soubor omezení nelze načíst, takže změny omezení se v této relaci neukládají.",
-  "rcSaveFailed": "Omezení nelze uložit. Poslední změna se může ztratit při zavření aplikace."
+  "rcSaveFailed": "Omezení nelze uložit. Poslední změna se může ztratit při zavření aplikace.",
+  "ktSideResize": "Šířka postranního panelu",
+  "ktSideResizeTip": "Přetažením změníte velikost; dvojklikem obnovíte výchozí",
+  "ktDayToday": "Dnes",
+  "ktDayYesterday": "Včera",
+  "ktDayOlder": "Starší",
+  "ktDayGroupAria": "{day}, konverzací: {n}",
+  "ktDayGroupAriaOne": "{day}, 1 konverzace",
+  "provChat": "Chat",
+  "provMore": "Další",
+  "provMoreTitle": "Další poskytovatelé",
+  "provRowAria": "Stránky poskytovatelů",
+  "provOpenPage": "Otevřít stránku {p}",
+  "setProvHotkey": "Otevřít posledního poskytovatele",
+  "setProvHotkeyTitle": "Otevře stránku naposledy otevřeného poskytovatele, nebo výchozího",
+  "setProvHotkeyConflict": "Tuto zkratku už používá jiná a neuloží se"
 }

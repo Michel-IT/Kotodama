@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Sieh dir die angehängte Datei (oder die angehängten Dateien) an und sag mir, was sie enthält.",
   "ktAttachFailed": "Die Datei ist bei {p} nicht angekommen, daher wurde die Nachricht nicht gesendet: Sie wäre ohne Anhang abgegangen. Sende sie erneut.",
   "rcReadFailed": "Die Datei mit den Vorgaben konnte nicht gelesen werden, daher werden Änderungen an Vorgaben in dieser Sitzung nicht gespeichert.",
-  "rcSaveFailed": "Die Vorgaben konnten nicht gespeichert werden. Deine letzte Änderung geht beim Schließen der App möglicherweise verloren."
+  "rcSaveFailed": "Die Vorgaben konnten nicht gespeichert werden. Deine letzte Änderung geht beim Schließen der App möglicherweise verloren.",
+  "ktSideResize": "Breite der Seitenleiste",
+  "ktSideResizeTip": "Ziehen zum Ändern der Größe; Doppelklick zum Zurücksetzen",
+  "ktDayToday": "Heute",
+  "ktDayYesterday": "Gestern",
+  "ktDayOlder": "Älter",
+  "ktDayGroupAria": "{day}, {n} Unterhaltungen",
+  "ktDayGroupAriaOne": "{day}, 1 Unterhaltung",
+  "provChat": "Chat",
+  "provMore": "Mehr",
+  "provMoreTitle": "Weitere Anbieter",
+  "provRowAria": "Anbieterseiten",
+  "provOpenPage": "Seite von {p} öffnen",
+  "setProvHotkey": "Letzten Anbieter öffnen",
+  "setProvHotkeyTitle": "Öffnet die Seite des zuletzt geöffneten Anbieters oder des Standardanbieters",
+  "setProvHotkeyConflict": "Diese Tastenkombination wird bereits von einer anderen verwendet und nicht gespeichert"
 }

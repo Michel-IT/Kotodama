@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Spójrz na załączony plik (lub pliki) i powiedz mi, co zawiera.",
   "ktAttachFailed": "Plik nie dotarł do {p}, więc wiadomość nie została wysłana: poszłaby bez załącznika. Wyślij ją ponownie.",
   "rcReadFailed": "Nie udało się odczytać pliku z ograniczeniami, więc zmiany ograniczeń nie będą zapisywane w tej sesji.",
-  "rcSaveFailed": "Nie udało się zapisać ograniczeń. Ostatnia zmiana może przepaść po zamknięciu aplikacji."
+  "rcSaveFailed": "Nie udało się zapisać ograniczeń. Ostatnia zmiana może przepaść po zamknięciu aplikacji.",
+  "ktSideResize": "Szerokość paska bocznego",
+  "ktSideResizeTip": "Przeciągnij, aby zmienić rozmiar; kliknij dwukrotnie, aby przywrócić",
+  "ktDayToday": "Dziś",
+  "ktDayYesterday": "Wczoraj",
+  "ktDayOlder": "Starsze",
+  "ktDayGroupAria": "{day}, rozmów: {n}",
+  "ktDayGroupAriaOne": "{day}, 1 rozmowa",
+  "provChat": "Czat",
+  "provMore": "Więcej",
+  "provMoreTitle": "Więcej dostawców",
+  "provRowAria": "Strony dostawców",
+  "provOpenPage": "Otwórz stronę {p}",
+  "setProvHotkey": "Otwórz ostatniego dostawcę",
+  "setProvHotkeyTitle": "Otwiera stronę ostatnio otwartego dostawcy lub domyślnego",
+  "setProvHotkeyConflict": "Ten skrót jest już używany przez inny i nie zostanie zapisany"
 }

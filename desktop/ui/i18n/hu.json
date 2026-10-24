@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Nézd meg a csatolt fájlt (vagy fájlokat), és mondd el, mi van benne.",
   "ktAttachFailed": "A fájl nem jutott el a(z) {p} szolgáltatóhoz, ezért az üzenet nem lett elküldve: melléklet nélkül ment volna el. Küldd el újra.",
   "rcReadFailed": "A korlátok fájlját nem sikerült beolvasni, ezért a korlátok módosításai ebben a munkamenetben nem mentődnek.",
-  "rcSaveFailed": "A korlátokat nem sikerült menteni. Az utolsó módosítás elveszhet, amikor bezárja az alkalmazást."
+  "rcSaveFailed": "A korlátokat nem sikerült menteni. Az utolsó módosítás elveszhet, amikor bezárja az alkalmazást.",
+  "ktSideResize": "Oldalsáv szélessége",
+  "ktSideResizeTip": "Húzással átméretezheti; duplakattintás alaphelyzetbe állít",
+  "ktDayToday": "Ma",
+  "ktDayYesterday": "Tegnap",
+  "ktDayOlder": "Régebbi",
+  "ktDayGroupAria": "{day}, {n} beszélgetés",
+  "ktDayGroupAriaOne": "{day}, 1 beszélgetés",
+  "provChat": "Csevegés",
+  "provMore": "Továbbiak",
+  "provMoreTitle": "További szolgáltatók",
+  "provRowAria": "Szolgáltatói oldalak",
+  "provOpenPage": "A(z) {p} oldalának megnyitása",
+  "setProvHotkey": "Az utolsó szolgáltató megnyitása",
+  "setProvHotkeyTitle": "Az utoljára megnyitott szolgáltató oldalát nyitja meg, vagy az alapértelmezettet",
+  "setProvHotkeyConflict": "Ezt a gyorsbillentyűt már másik használja, ezért nem mentődik el"
 }

@@ -74,7 +74,7 @@ fn emit_and_show_full(app: &AppHandle, mode: &str, label: &str, preview: String,
         "processing" => 108.0,
         "done" | "error" => 66.0,
         "ready" => 260.0,
-        "closed" => 230.0,
+        "closed" => 246.0,
         _ => 138.0,
     };
     place_with_height(&window, logical_h);

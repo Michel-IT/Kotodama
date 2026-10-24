@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Погледај приложену датотеку (или датотеке) и реци ми шта садржи.",
   "ktAttachFailed": "Датотека није стигла до {p}, па порука није послата: отишла би без прилога. Пошаљите је поново.",
   "rcReadFailed": "Фајл ограничења није могао да се прочита, па се измене ограничења у овој сесији не чувају.",
-  "rcSaveFailed": "Ограничења није могуће сачувати. Последња измена може да се изгуби када се апликација затвори."
+  "rcSaveFailed": "Ограничења није могуће сачувати. Последња измена може да се изгуби када се апликација затвори.",
+  "ktSideResize": "Ширина бочне траке",
+  "ktSideResizeTip": "Превуците за промену ширине; двоструки клик за враћање",
+  "ktDayToday": "Danas",
+  "ktDayYesterday": "Juče",
+  "ktDayOlder": "Starije",
+  "ktDayGroupAria": "{day}, razgovora: {n}",
+  "ktDayGroupAriaOne": "{day}, 1 razgovor",
+  "provChat": "Razgovor",
+  "provMore": "Još",
+  "provMoreTitle": "Još provajdera",
+  "provRowAria": "Stranice provajdera",
+  "provOpenPage": "Otvori stranicu {p}",
+  "setProvHotkey": "Otvori poslednjeg provajdera",
+  "setProvHotkeyTitle": "Otvara stranicu poslednjeg provajdera koji si otvorio, ili podrazumevanog",
+  "setProvHotkeyConflict": "Ову пречицу већ користи друга и не чува се"
 }

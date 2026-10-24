@@ -239,6 +239,18 @@
     .ab-provswitch-btn svg { width:15px; height:15px; display:block; }
     .ab-provswitch-btn:hover { border-color:var(--pc,var(--accent)); }
     .ab-provswitch-btn.active { border-color:var(--pc,var(--accent)); background:var(--panel-2); }
+    /* Provider row: "Chat" + one icon per enabled provider + "Altri" when they do not all fit. */
+    .ab-provswitch-btn { position:relative; }
+    .ab-provswitch-btn.named { width:auto; display:inline-flex; align-items:center; gap:6px; padding:0 10px 0 8px;
+      color:var(--text); font-family:inherit; font-size:12px; font-weight:600; white-space:nowrap; }
+    .ab-provswitch-btn.chat-item svg { color:var(--text); }
+    .ab-provswitch-btn.chat-item.active { border-color:var(--accent); }
+    .ab-provswitch-btn.chat-item.active svg { color:var(--accent); }
+    .ab-provswitch-btn .pg-caret { font-size:10px; color:var(--text-faint); }
+    .ab-provswitch-btn:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+    .ab-provswitch-btn .pg-star { position:absolute; top:-6px; right:-4px; font-size:10px; line-height:1; color:var(--accent); pointer-events:none; }
+    .ab-provswitch .pg-sep { flex:none; width:1px; height:18px; background:var(--border); margin:0 3px; }
+    .prov-more-menu .kt-add-row:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; background:var(--panel-2); }
     /* Always keep a grab area right before the window controls, so the window can be dragged. */
     .ab-grip { flex:none; width:28px; align-self:stretch; }
     /* on narrow windows hide the brand text (the logo stays) so it does not
@@ -525,11 +537,20 @@
        Collapsing is MANUAL ONLY (the toggle at the bottom of the column, choice persisted): the
        window width never decides it, at any threshold -- explicitly requested, after a round in
        which the automatic rule kept opening/closing the sidebar against the user's intent. */
-    .kt-side { flex:none; width:242px; display:flex; flex-direction:column; min-height:0;
+    .kt-side { flex:none; position:relative; width:var(--kt-side-w, 242px); display:flex; flex-direction:column; min-height:0;
       background:var(--bg-1); border-right:1px solid var(--border-soft); transition:width .15s ease; }
     /* overflow:hidden -- when collapsed, full-width contents (buttons, search) must not
        be able to produce a horizontal scrollbar inside the rail. */
     .kt-side.collapsed { width:56px; overflow:hidden; }
+    /* Drag handle on the right edge (expanded sidebar only): a 2px accent line shows on hover/focus/drag. */
+    .kt-side-grip { display:none; }
+    .kt-side:not(.collapsed) .kt-side-grip { display:block; position:absolute; top:0; bottom:0; right:-5px; width:10px;
+      z-index:30; cursor:col-resize; touch-action:none; }
+    .kt-side-grip::after { content:''; position:absolute; top:0; bottom:0; left:4px; width:2px; background:transparent; transition:background .12s; }
+    .kt-side-grip:hover::after, .kt-side-grip.drag::after, .kt-side-grip:focus-visible::after { background:var(--accent); }
+    .kt-side-grip:focus-visible { outline:none; }
+    body.kt-side-resizing, body.kt-side-resizing * { cursor:col-resize !important; user-select:none !important; }
+    body.kt-side-resizing .kt-side { transition:none; }
     /* It sits at the bottom of the column (last child): the panel above has flex:1 and pushes it down. */
     .kt-side-collapse-row { flex:none; display:flex; justify-content:flex-end; padding:4px 6px;
       border-top:1px solid var(--border-soft); }
@@ -666,6 +687,27 @@
     .kt-sess-del.confirm { opacity:1; background:#5a2323; color:#ffb4b4; font-size:10px; width:auto; padding:0 7px; }
     .kt-sess:has(.kt-sess-del.confirm) .kt-sess-ren { opacity:0; pointer-events:none; }   /* the wider confirm covers it */
     .kt-empty { text-align:center; color:var(--text-faint); font-size:12.5px; padding:26px 8px; }
+    /* History grouped by day: one header per day (Today, Yesterday, "Mon 19 Oct", a month beyond 30 days).
+       The header sticks to the top of the list while its group has rows, and it is a button that folds the
+       group (aria-expanded). While searching it is a plain title and every group shows its results. */
+    .kt-sess-list:has(.kt-day) { padding-top:0; }
+    .kt-day { display:flex; align-items:center; gap:6px; width:calc(100% + 12px); margin:0 -6px; box-sizing:border-box;
+      padding:12px 17px 5px; border:0; background:var(--bg-1); box-shadow:0 1px 0 var(--border-soft);
+      position:sticky; top:0; z-index:3; font:inherit; font-size:10.5px; font-weight:700; letter-spacing:.06em;
+      text-transform:uppercase; color:var(--text-faint); text-align:left; }
+    button.kt-day { cursor:pointer; }
+    button.kt-day:hover { color:var(--text); }
+    button.kt-day:focus-visible { outline:1px solid var(--accent); outline-offset:-1px; }
+    .kt-day-chev { flex:none; width:10px; font-size:9px; text-align:center; letter-spacing:0; }
+    .kt-day-label { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .kt-day-n { flex:none; min-width:2ch; text-align:right; font-variant-numeric:tabular-nums; letter-spacing:0; font-weight:600; }
+    /* a folded group that holds the open conversation says so with a dot */
+    .kt-group.folded.has-active .kt-day-label::after { content:" \25CF"; color:var(--accent); }
+    .kt-side:not(.collapsed) .kt-group.folded .kt-sess { display:none; }
+    /* Rail (initials only): no headers, a thin rule between one group and the next; folded groups stay shown
+       (the rail ignores folding) and fold again when the bar is widened. */
+    .kt-side.collapsed .kt-day { display:none; }
+    .kt-side.collapsed .kt-group + .kt-group { border-top:1px solid var(--border-soft); margin:6px 8px 0; padding-top:6px; }
     /* "Delete all history": the last row of the history, far from the conversations so it is not hit by
        mistake, quiet until the pointer is on it; switched off (with the reason as tooltip) when empty. */
     .kt-clear-row { flex:none; margin:4px 6px 6px; width:calc(100% - 12px); color:var(--text-dim); font-weight:500;
@@ -816,6 +858,8 @@
     .kt-conv-panel { flex:1; min-height:0; overflow:auto; padding:14px 24px 20px; }
     .kt-conv-panel[hidden], .kt-conv-tabs[hidden], .kt-thread[hidden] { display:none; }
     .kt-group { max-width:var(--kt-col, 820px); margin:0 auto 18px; }
+    /* The sidebar day groups share the .kt-group name with the chat answer groups: keep the chat rule off them. */
+    .kt-side .kt-group { max-width:none; margin:0; }
     .kt-group-h { display:flex; align-items:baseline; gap:8px; margin:0 0 8px; font-size:12px; color:var(--text-faint); }
     .kt-group-q { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; color:var(--text); }
     .kt-group-t { flex:none; font-variant-numeric:tabular-nums; }
@@ -1262,16 +1306,15 @@
            replace .ab-spacer, so without it the whole centre/right of the bar could not move the
            window (the buttons inside stay clickable). -->
       <div class="ab-provnav" data-tauri-drag-region>
-        <button class="pc-close" id="pcClose">← <span data-i18n="builder">Ai Prompt Builder</span></button>
+        <!-- Provider row (renderProviderRow): "Chat" + a button per ENABLED provider, same row and order
+             as in the chat bar below. Order on screen is always: Chat | providers | back | reload. -->
+        <div class="ab-provswitch" id="abProvSwitch" role="group" data-tauri-drag-region></div>
         <button class="pc-btn" id="pcBack" data-i18n-title="back" title="Indietro">‹</button>
         <button class="pc-btn" id="pcReload" data-i18n-title="reload" title="Ricarica">⟳</button>
-        <!-- Switch to another provider's real page -- only ones already known/logged-in
-             (renderProviderSwitchBar); hidden with 0-1 entries (nothing to switch to). -->
-        <div class="ab-provswitch" id="abProvSwitch" hidden></div>
       </div>
-      <!-- Kotodama meta-chat: same back-to-builder control as the provider view (uniform app bar) -->
+      <!-- Kotodama meta-chat: the same provider row (filled by renderProviderRow) -->
       <div class="ab-ktnav" data-tauri-drag-region>
-        <button class="pc-close" id="ktBackBar">← <span data-i18n="builder">Ai Prompt Builder</span></button>
+        <div class="ab-provswitch" id="abProvChat" role="group" data-tauri-drag-region></div>
       </div>
 
       <div class="ab-spacer" data-tauri-drag-region></div>
@@ -1524,6 +1567,16 @@
               <span class="rh-notify-col"></span>
               <span class="rh-notify-col"></span>
             </div>
+            <div class="rh-row">
+              <div class="rh-name" data-i18n="setProvHotkey" data-i18n-title="setProvHotkeyTitle">Apri l'ultimo provider</div>
+              <input type="text" class="field" id="setProvHotkey" readonly>
+              <button class="rh-clear" id="provHotkeyClear" data-i18n-title="reset" title="Reset">↺</button>
+              <span class="rh-notify-col rh-vin-col"></span>
+              <span class="rh-notify-col rh-prov-col"></span>
+              <span class="rh-notify-col"></span>
+              <span class="rh-notify-col"></span>
+              <span class="rh-notify-col"></span>
+            </div>
             <hr class="rh-divider">
             <div id="recipeHotkeys"></div>
           </div>
@@ -1717,6 +1770,7 @@
     <!-- session sidebar: Cronologia (search + saved conversations) / Ricette (reuses the builder's
          recipe list+CRUD, applied to the Kotodama composer instead of the builder's own prompt). -->
     <aside class="kt-side" id="ktSide">
+      <div class="kt-side-grip" id="ktSideGrip" role="separator" aria-orientation="vertical" tabindex="0"></div>
       <div class="kt-top">
         <button class="kt-row kt-new" id="ktNew" type="button" data-i18n-title="ktNewChat" title="Nuova conversazione"><span class="kt-row-ico">＋</span><span class="kt-row-label" data-i18n="ktNewChat">Nuova conversazione</span></button>
       </div>
@@ -1870,6 +1924,8 @@
       ktLogin:'Sign-in required', ktOpenProvider:'Open provider', ktLoginBtn:'Log in',
       ktSelectOne:'Select at least one provider', ktTruncated:'(truncated)',
       ktSearch:'Search conversations...', ktNoSessions:'No conversations yet',
+      ktDayToday:'Today', ktDayYesterday:'Yesterday', ktDayOlder:'Older',
+      ktDayGroupAria:'{day}, {n} conversations', ktDayGroupAriaOne:'{day}, 1 conversation',
       ktClearAll:'Delete all history', ktClearAllQ:'Delete all history?', ktClearAllOk:'Delete all',
       ktClearAllMsg:'{n} conversations and their audio are gone for good.',
       ktClearAllMsgOne:'The conversation and its audio are gone for good.', ktClearAllEmpty:'History is already empty',
@@ -1883,6 +1939,7 @@
       provXferAllRightTitle:'Add all', provXferToRightTitle:'Add', provXferToLeftTitle:'Remove', provXferAllLeftTitle:'Remove all',
       ktTabHistory:'History', ktTabRecipes:'Recipes', ktRecipeNeutral:'Back to Neutral',
       ktSideCollapse:'Collapse sidebar', ktSideExpand:'Expand sidebar',
+      ktSideResize:'Sidebar width', ktSideResizeTip:'Drag to resize; double-click to reset',
       ktCtxIntro:'Context from our earlier conversation; answer the new message at the end.',
       ktCtxUser:'User:', ktCtxYou:'You answered:', ktCtxNew:'New message:',
       ktRetry:'Retry', ktRetryAll:'Send again to the ones that did not answer',
@@ -1896,6 +1953,8 @@
       setKtTempNA:'Not available',
       openError:'Error opening the provider',
       builder:'Ai Prompt Builder', reload:'Reload', back:'Back',
+      provChat:'Chat', provMore:'More', provMoreTitle:'More providers', provRowAria:'Provider pages', provOpenPage:'Open the page of {p}',
+      setProvHotkey:'Open the last provider', setProvHotkeyTitle:'Opens the page of the last provider you opened, or the default one', setProvHotkeyConflict:'This shortcut is already used by another one. The recipe keeps it; this one is not saved',
       copyUrl:'Copy URL',
       claudeHintMsg:'For Claude, sign in with “Continue with email”: Google sign-in doesn\'t work in embedded browsers.', bannerDismiss:'Don\'t show again',
       winMin:'Minimize', winMax:'Maximize', winClose:'Close', version:'Version', close:'Close',
@@ -2002,7 +2061,7 @@
     // Main shortcut: <mod>+Space everywhere, but macOS reserves BOTH Ctrl+Cmd+Space (Emoji &
     // Symbols) and Ctrl+Opt+Space (input source), so it gets K -- for Kotodama -- instead.
     const DEFAULT_MAIN_HOTKEY = DEFAULT_MOD + (IS_MAC ? '+KeyK' : '+Space');
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:DEFAULT_MAIN_HOTKEY, monitor_enabled:true, gesture_menu:true, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:DEFAULT_MAIN_HOTKEY, provider_hotkey:DEFAULT_MOD+'+KeyP', monitor_enabled:true, gesture_menu:true, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -2041,12 +2100,13 @@
       document.documentElement.lang=t._htmlLang||code;
       document.documentElement.dir = RTL.has(code) ? 'rtl' : 'ltr';
       document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(t[k]!==undefined) el.textContent=t[k]; });
-      document.querySelectorAll('[data-i18n-title]').forEach(el=>{ const k=el.getAttribute('data-i18n-title'); if(t[k]!==undefined) el.title=t[k]; });
+      document.querySelectorAll('[data-i18n-title]').forEach(el=>{ const k=el.getAttribute('data-i18n-title'); if(t[k]!==undefined){ el.title=t[k]; if(el.id==='pcBack'||el.id==='pcReload') el.setAttribute('aria-label',t[k]); } });
       document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(t[k]!==undefined) el.placeholder=t[k]; });
       recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]) li.querySelector('.rname').textContent=t.recipeNames[k]; });
       if(ktRecipesEl) ktRecipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]){ li.querySelector('.rname').textContent=t.recipeNames[k]; li.title=t.recipeNames[k]; } });
       renderKtSessions();   // recipe tags follow the language (every applyLang call runs after the sessions state exists)
       if(typeof ktSideApply==='function') ktSideApply();   // re-translate the collapse toggle's tooltip
+      renderProviderRow(true);   // row labels (Chat / Altri / tooltips) follow the language
       // the chip bar's "+" is built with its tooltip in the language of that moment: re-translate it here
       document.querySelectorAll('.kt-chip-add').forEach(b=>{ b.title=t.ktAddProvider||b.title; });
       // "open on the fly" tooltip on each provider (Kotodama gets its own meta tooltip)
@@ -2279,6 +2339,7 @@
       const t=TR;
       const url=(forLogin && p.loginUrl) ? p.loginUrl : p.base;
       selectProviderTile(key); lastProviderUrl=url;
+      provRecentPush(key);
       if(TAURI){
         startProviderLoading(p.name, key);           // instant if the tab is already open
         try{
@@ -2325,31 +2386,160 @@
       provLoadingSafety=setTimeout(()=>{ body.classList.remove('provider-loading'); }, 25000);
     }
     function closeProviderBar(){ body.classList.remove('provider-open','provider-loading'); setClaudeHint(false); closeDownloads(); }
-    // Topbar switcher (real-page view): only providers already known/logged-in (currentSettings.
-    // known_providers -- same signal ktLoadSel() uses), so it never offers a provider that would
-    // just land on a login wall. Re-reads settings each time (cheap) so a demotion that happened
-    // while this tab was parked in the background (login-wall detected mid-broadcast) shows up
-    // immediately instead of waiting for the next full settings reload.
+    // Provider row in the top bar: "Chat" first, then one button per ENABLED provider (Settings >
+    // Provider, not known_providers: the row no longer depends on the login history). Same row in the chat
+    // bar (#abProvChat) and in the provider page bar (#abProvSwitch); only the visible one is drawn.
+    // Order: default provider (star) first, then the most recently opened, then the rest as in Settings.
+    // What does not fit goes into an "Altri" menu. No status dot: a click only opens the real page.
     const abProvSwitchEl=document.getElementById('abProvSwitch');
-    async function renderProviderSwitchBar(){
-      if(!abProvSwitchEl) return;
-      if(TAURI){ try{ currentSettings={ ...currentSettings, ...(await invoke('get_settings')) }; }catch(e){} }
-      const known=new Set(currentSettings.known_providers||[]);
-      const keys=Object.keys(PROVIDERS).filter(k=>PROVIDERS[k].base && known.has(k));
-      abProvSwitchEl.innerHTML='';
-      abProvSwitchEl.hidden = keys.length<2;
-      keys.forEach(key=>{
-        const p=PROVIDERS[key], bits=ktTileBits(key);
-        const b=document.createElement('button');
-        b.className='ab-provswitch-btn'+(key===selectedProvider?' active':'');
-        b.type='button'; b.title=p.name;
-        if(bits.color) b.style.setProperty('--pc', bits.color);
-        b.innerHTML=bits.svg;
-        b.addEventListener('click', ()=>openProviderRealPage(key));
-        abProvSwitchEl.appendChild(b);
-      });
+    const abProvChatEl=document.getElementById('abProvChat');
+    const PROV_RECENT_KEY='kotodama.provRecent';
+    const PROV_CHAT_SVG='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></svg>';
+    let provMoreKeys=[];          // providers that did not fit, listed by the "Altri" menu
+    let provRowSig='';
+    function provRecentLoad(){
+      try{ const a=JSON.parse(localStorage.getItem(PROV_RECENT_KEY)||'[]'); return Array.isArray(a)?a.filter(k=>typeof k==='string'):[]; }catch(e){ return []; }
     }
-    document.getElementById('pcClose').addEventListener('click', async()=>{ if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} } closeProviderBar(); });
+    function provRecentPush(key){
+      const a=provRecentLoad().filter(k=>k!==key); a.unshift(key);
+      try{ localStorage.setItem(PROV_RECENT_KEY, JSON.stringify(a.slice(0,30))); }catch(e){}
+    }
+    function provRowKeys(){
+      const on=ktEnabledKeys(), def=currentSettings.default_provider, out=[];
+      if(on.includes(def)) out.push(def);
+      provRecentLoad().forEach(k=>{ if(on.includes(k) && !out.includes(k)) out.push(k); });
+      on.forEach(k=>{ if(!out.includes(k)) out.push(k); });
+      return out;
+    }
+    // Target of the global shortcut: the last provider opened, or the default one when none was.
+    function provLastKey(){
+      const on=ktEnabledKeys(), def=currentSettings.default_provider;
+      return provRecentLoad().find(k=>on.includes(k)) || (on.includes(def)?def:(on[0]||null));
+    }
+    async function leaveProviderPage(){
+      if(TAURI){ try{ await invoke('close_provider_view'); }catch(e){} }
+      closeProviderBar();
+    }
+    function provChatBtn(named, active){
+      const label=TR.provChat||'Chat';
+      const b=document.createElement('button');
+      b.type='button'; b.className='ab-provswitch-btn chat-item'+(named?' named':'')+(active?' active':'');
+      b.innerHTML=PROV_CHAT_SVG+(named?'<span class="pg-name"></span>':'');
+      if(named) b.querySelector('.pg-name').textContent=label;
+      b.title=label; b.setAttribute('aria-label', label);
+      if(active) b.setAttribute('aria-current','page');
+      b.addEventListener('click', ()=>{ closeProvMoreMenu(); if(body.classList.contains('provider-open')) leaveProviderPage(); });
+      return b;
+    }
+    function provBtn(key, active){
+      const p=PROVIDERS[key], bits=ktTileBits(key);
+      const b=document.createElement('button');
+      b.type='button'; b.className='ab-provswitch-btn'+(active?' active':''); b.dataset.prov=key;
+      if(bits.color) b.style.setProperty('--pc', bits.color);
+      b.innerHTML=bits.svg;
+      const tip=(TR.provOpenPage||'Open the page of {p}').replace('{p}', p.name);
+      b.title=tip; b.setAttribute('aria-label', tip);
+      if(active) b.setAttribute('aria-current','page');
+      if(key===currentSettings.default_provider){
+        const st=document.createElement('span'); st.className='pg-star'; st.textContent='★'; st.setAttribute('aria-hidden','true'); b.appendChild(st);
+      }
+      b.addEventListener('click', ()=>{ closeProvMoreMenu(); openProviderRealPage(key); });
+      return b;
+    }
+    function provFill(el, shown, hidden, chatNamed, inPage){
+      closeProvMoreMenu();
+      el.innerHTML='';
+      el.setAttribute('aria-label', TR.provRowAria||'Provider pages');
+      el.appendChild(provChatBtn(chatNamed, !inPage));
+      if(shown.length || hidden.length){ const sep=document.createElement('span'); sep.className='pg-sep'; sep.setAttribute('aria-hidden','true'); el.appendChild(sep); }
+      shown.forEach(k=>el.appendChild(provBtn(k, inPage && k===selectedProvider)));
+      provMoreKeys=hidden.slice();
+      if(hidden.length){
+        const m=document.createElement('button'), t=TR.provMoreTitle||'More providers';
+        m.type='button'; m.className='ab-provswitch-btn named prov-more'+((inPage && hidden.includes(selectedProvider))?' active':'');
+        m.title=t; m.setAttribute('aria-label', t); m.setAttribute('aria-haspopup','menu'); m.setAttribute('aria-expanded','false');
+        m.innerHTML='<span class="pg-name"></span><span class="pg-caret" aria-hidden="true">▾</span>';
+        m.querySelector('.pg-name').textContent=TR.provMore||'More';
+        m.addEventListener('click', ()=>openProvMoreMenu(m));
+        el.appendChild(m);
+      }
+    }
+    // Draws the row of the VISIBLE bar (chat or provider page) in the room the bar has: first with the word
+    // "Chat", then Chat as an icon, then the last providers move into "Altri" until the rest fits.
+    function renderProviderRow(force){
+      const inPage=body.classList.contains('provider-open');
+      const el=inPage?abProvSwitchEl:abProvChatEl, other=inPage?abProvChatEl:abProvSwitchEl;
+      if(!el) return;
+      if(other && other.firstChild){ closeProvMoreMenu(); other.innerHTML=''; provRowSig=''; }
+      if(!el.offsetParent) return;                 // bar not on screen yet: the body class observer calls again
+      const keys=provRowKeys();
+      const sig=[inPage?1:0, inPage?selectedProvider:'', keys.join(','), currentSettings.default_provider, TR.provChat, TR.provMore, window.innerWidth].join('|');
+      if(!force && sig===provRowSig && el.firstChild) return;
+      provRowSig=sig;
+      const sp=document.querySelector('.ab-spacer');
+      el.style.display='none';
+      const free=(sp?sp.getBoundingClientRect().width:0)-28;   // keep a grab area: the bar stays draggable
+      el.style.display='';
+      const fits=()=>el.getBoundingClientRect().width<=free;
+      provFill(el, keys, [], true, inPage);  if(fits()) return;
+      provFill(el, keys, [], false, inPage); if(fits()) return;
+      for(let c=keys.length-1;c>=0;c--){
+        provFill(el, keys.slice(0,c), keys.slice(c), false, inPage);
+        if(fits()) break;
+      }
+    }
+    // Kept as the single entry point the old switcher had (openProviderRealPage and the provider-opened event).
+    function renderProviderSwitchBar(){ renderProviderRow(true); }
+    // "Altri" menu: same look as the "+" menu; opens the real page of the chosen provider. Keyboard: Down/Up
+    // move, Enter/Space open, Esc closes and gives the focus back to the button. Over a provider page the
+    // native webview would cover it, so the page is hidden while the menu is open (provider_suppress).
+    let provMoreMenuEl=null, provMoreBtnEl=null, provMoreSuppressed=false;
+    function onProvMoreOutside(e){ if(provMoreMenuEl && !provMoreMenuEl.contains(e.target) && !(provMoreBtnEl && provMoreBtnEl.contains(e.target))) closeProvMoreMenu(); }
+    function onProvMoreKey(e){
+      if(!provMoreMenuEl) return;
+      const rows=[...provMoreMenuEl.querySelectorAll('.kt-add-row')], i=rows.indexOf(document.activeElement);
+      if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); closeProvMoreMenu(true); }
+      else if(e.key==='ArrowDown'){ e.preventDefault(); rows[(i+1)%rows.length].focus(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); rows[(i<=0?rows.length:i)-1].focus(); }
+      else if(e.key==='Tab'){ closeProvMoreMenu(true); }
+    }
+    function closeProvMoreMenu(refocus){
+      if(!provMoreMenuEl) return;
+      document.removeEventListener('mousedown', onProvMoreOutside, true);
+      document.removeEventListener('keydown', onProvMoreKey, true);
+      provMoreMenuEl.remove(); provMoreMenuEl=null;
+      if(provMoreBtnEl){ provMoreBtnEl.setAttribute('aria-expanded','false'); if(refocus) provMoreBtnEl.focus(); }
+      if(provMoreSuppressed){ provMoreSuppressed=false; if(TAURI) invoke('provider_suppress',{on:false}).catch(()=>{}); }
+    }
+    async function openProvMoreMenu(btn){
+      if(provMoreMenuEl){ closeProvMoreMenu(); return; }
+      provMoreBtnEl=btn; btn.setAttribute('aria-expanded','true');
+      const menu=document.createElement('div'); menu.className='kt-add-menu prov-more-menu'; menu.setAttribute('role','menu');
+      menu.setAttribute('aria-label', TR.provMoreTitle||'More providers');
+      provMoreKeys.forEach(key=>{
+        const p=PROVIDERS[key], bits=ktTileBits(key);
+        const row=document.createElement('div'); row.className='kt-add-row'; row.setAttribute('role','menuitem'); row.tabIndex=0;
+        const ic=document.createElement('span'); ic.className='ic'; if(bits.color) ic.style.setProperty('--pc', bits.color); ic.innerHTML=bits.svg;
+        const nm=document.createElement('span'); nm.textContent=p.name+(key===currentSettings.default_provider?' ★':'');
+        row.appendChild(ic); row.appendChild(nm);
+        const go=()=>{ closeProvMoreMenu(); openProviderRealPage(key); };
+        row.addEventListener('click', go);
+        row.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); go(); } });
+        menu.appendChild(row);
+      });
+      document.body.appendChild(menu);
+      const r=btn.getBoundingClientRect();
+      menu.style.left=Math.max(8, Math.min(r.left, window.innerWidth-menu.offsetWidth-8))+'px';
+      menu.style.top=(r.bottom+6)+'px';
+      provMoreMenuEl=menu;
+      document.addEventListener('mousedown', onProvMoreOutside, true);
+      document.addEventListener('keydown', onProvMoreKey, true);
+      const first=menu.querySelector('.kt-add-row'); if(first) first.focus();
+      if(TAURI && body.classList.contains('provider-open')){ provMoreSuppressed=true; try{ await invoke('provider_suppress',{on:true}); }catch(e){} }
+    }
+    // The row follows the window width and the view (chat <-> provider page, switched through body classes).
+    new MutationObserver(()=>renderProviderRow()).observe(document.body,{attributes:true,attributeFilter:['class']});
+    window.addEventListener('resize', ()=>requestAnimationFrame(()=>renderProviderRow()));
     document.getElementById('pcBack').addEventListener('click', ()=>{ if(TAURI) invoke('provider_back').catch(()=>{}); });
     document.getElementById('pcReload').addEventListener('click', ()=>{ if(TAURI) invoke('provider_reload').catch(()=>{}); });
 
@@ -2494,11 +2684,60 @@
       }
       return '';
     }
+    // ---- History grouped by day (the day is the PC's local midnight) ----
+    // A conversation sits in the day of its LAST message (updated), also when it crossed midnight. Today and Yesterday
+    // start open, every other group starts closed; what the user opens or closes is kept for this run of the UI only.
+    let ktGroupFold={};          // group key -> true (closed) / false (open), set by the user
+    let ktRenderedDay=0;         // local midnight the list was last drawn for
+    let ktMidnightTimer=null;
+    function ktDayStart(ms){ const d=new Date(ms); return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime(); }
+    function ktIntl(ms, opts){
+      const d=new Date(ms);
+      try{ return d.toLocaleDateString(document.documentElement.lang||undefined, opts); }
+      catch(e){ return d.toLocaleDateString(undefined, opts); }
+    }
+    function ktCap(t){ return t.charAt(0).toUpperCase()+t.slice(1); }
+    function ktDayGroupOf(ms, nowMs){
+      if(!ms) return { k:'old', label:TR.ktDayOlder||'Older', ord:-1e15, kind:'old', open:false };
+      const today=ktDayStart(nowMs), st=ktDayStart(ms), diff=Math.round((today-st)/864e5);
+      if(diff<=0) return { k:'today', label:TR.ktDayToday||'Today', ord:today, kind:'day', open:true };
+      if(diff===1) return { k:'yest', label:TR.ktDayYesterday||'Yesterday', ord:st, kind:'day', open:true };
+      if(diff<=30) return { k:'d'+st, label:ktCap(ktIntl(ms,{weekday:'short',day:'numeric',month:'short'}).replace(',','')), ord:st, kind:'day', open:false };
+      const d=new Date(ms), m0=new Date(d.getFullYear(),d.getMonth(),1).getTime();
+      return { k:'m'+m0, label:ktCap(ktIntl(ms,{month:'long',year:'numeric'})), ord:m0, kind:'month', open:false };
+    }
+    // The row says only what its header does not: the time inside a day group, the day inside a month group.
+    function ktRowWhen(ms, g){
+      if(!ms) return '';
+      if(g.kind==='day'){
+        try{ return new Date(ms).toLocaleTimeString(document.documentElement.lang||undefined,{hour:'2-digit',minute:'2-digit'}); }
+        catch(e){ return new Date(ms).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
+      }
+      const o={day:'numeric',month:'short'};
+      if(new Date(ms).getFullYear()!==new Date().getFullYear()) o.year='numeric';
+      return ktIntl(ms,o);
+    }
+    // Redraw at the next local midnight, and when the window comes back after the day has changed
+    // (timers are throttled while the window is hidden, so the check on focus is the safety net).
+    function ktScheduleMidnight(){
+      clearTimeout(ktMidnightTimer);
+      const n=new Date(), next=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1).getTime();
+      ktMidnightTimer=setTimeout(()=>{ ktDayRefresh(); ktScheduleMidnight(); }, Math.max(1000, next-n.getTime()+1000));
+    }
+    function ktDayRefresh(){
+      const list=document.getElementById('ktSessList');
+      if(list && list.querySelector('.kt-sess-title-edit')) return;   // never redraw under a rename in progress
+      if(ktDayStart(Date.now())!==ktRenderedDay) renderKtSessions();
+    }
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ ktDayRefresh(); ktScheduleMidnight(); } });
+    window.addEventListener('focus', ()=>{ ktDayRefresh(); ktScheduleMidnight(); });
+    ktScheduleMidnight();
     function renderKtSessions(){
       const list=document.getElementById('ktSessList'); if(!list) return;
       { const b=document.getElementById('ktClearAll');
         if(b){ const empty=!ktAllSessions.length; b.disabled=empty; b.title=(empty ? TR.ktClearAllEmpty : TR.ktClearAll)||''; } }
       const q=((ktSearch&&ktSearch.value)||'').trim().toLowerCase();
+      const keepTop=list.scrollTop;
       list.innerHTML='';
       const items=ktAllSessions.filter(s=>{
         if(!q) return true;
@@ -2509,7 +2748,46 @@
           || Object.values(t.answers||{}).some(a=>((a&&a.text)||'').toLowerCase().includes(q)));
       });
       if(!items.length){ const e=document.createElement('div'); e.className='kt-empty'; e.textContent=TR.ktNoSessions; list.appendChild(e); return; }
+      const nowMs=Date.now(); ktRenderedDay=ktDayStart(nowMs);
+      const groups=new Map();
       items.forEach(s=>{
+        const ms=s.updated||s.created||0, g=ktDayGroupOf(ms, nowMs);
+        let e=groups.get(g.k); if(!e){ e={ g, items:[] }; groups.set(g.k, e); }
+        e.items.push({ s, ms });
+      });
+      [...groups.values()].sort((a,b)=>b.g.ord-a.g.ord).forEach(G=>{
+        G.items.sort((a,b)=>b.ms-a.ms);                    // inside a group: latest message first
+        const folded=!q && (ktGroupFold[G.g.k]===undefined ? !G.g.open : ktGroupFold[G.g.k]);   // a search opens everything
+        const n=G.items.length;
+        const grp=document.createElement('div'); grp.className='kt-group'+(folded?' folded':'');
+        grp.setAttribute('role','group');
+        grp.setAttribute('aria-label', (n===1 ? (TR.ktDayGroupAriaOne||'{day}, 1 conversation') : (TR.ktDayGroupAria||'{day}, {n} conversations')).replace('{day}', G.g.label).replace('{n}', n));
+        const hasActive=!!ktSession && G.items.some(x=>x.s.id===ktSession.id);
+        if(folded && hasActive) grp.classList.add('has-active');
+        const head=document.createElement(q ? 'div' : 'button'); head.className='kt-day';
+        const lab=document.createElement('span'); lab.className='kt-day-label'; lab.textContent=G.g.label;
+        const cnt=document.createElement('span'); cnt.className='kt-day-n'; cnt.textContent=String(n);
+        if(!q){
+          head.type='button'; head.setAttribute('aria-expanded', String(!folded));
+          const chev=document.createElement('span'); chev.className='kt-day-chev'; chev.setAttribute('aria-hidden','true'); chev.textContent=folded?'\u25B8':'\u25BE';
+          head.appendChild(chev);
+          head.addEventListener('click', ()=>{
+            const nowFolded=!grp.classList.contains('folded');
+            ktGroupFold[G.g.k]=nowFolded;
+            grp.classList.toggle('folded', nowFolded);
+            grp.classList.toggle('has-active', nowFolded && hasActive);
+            head.setAttribute('aria-expanded', String(!nowFolded)); chev.textContent=nowFolded?'\u25B8':'\u25BE';
+          });
+        }
+        head.appendChild(lab); head.appendChild(cnt);
+        grp.appendChild(head);
+        G.items.forEach(({ s, ms })=>grp.appendChild(ktBuildSessRow(s, ktRowWhen(ms, G.g))));
+        list.appendChild(grp);
+      });
+      list.scrollTop=keepTop;
+    }
+    function ktBuildSessRow(s, when){
+      {
         const row=document.createElement('div'); row.className='kt-sess'+(ktSession&&s.id===ktSession.id?' active':'');
         const titolo=s.title||'...', data=ktFmtDate(s.updated||s.created), tag=ktSessionRecipeName(s);
         // Tooltip on the WHOLE row: when collapsed it is the only way to tell which conversation this is
@@ -2523,7 +2801,7 @@
         const meta=document.createElement('div'); meta.className='kt-sess-meta';
         const tt=document.createElement('div'); tt.className='kt-sess-title'; tt.textContent=titolo;
         const sub=document.createElement('div'); sub.className='kt-sess-sub';
-        const dd=document.createElement('span'); dd.className='kt-sess-date'; dd.textContent=data;
+        const dd=document.createElement('span'); dd.className='kt-sess-date'; dd.textContent=when||data;
         sub.appendChild(dd);
         if(tag){ const tg=document.createElement('span'); tg.className='kt-sess-tag'; tg.textContent=tag; sub.appendChild(tg); }
         meta.appendChild(tt); meta.appendChild(sub);
@@ -2546,8 +2824,8 @@
         });
         row.appendChild(meta); row.appendChild(ren); row.appendChild(del);
         row.addEventListener('click', ()=>ktLoadSession(s.id));
-        list.appendChild(row);
-      });
+        return row;
+      }
     }
     // "Delete all history": every conversation and its audio, after the app's own confirmation. A search in
     // progress does not narrow it: the count in the question says how many go.
@@ -3216,7 +3494,7 @@
       ktEnabled = Array.isArray(saved) ? new Set(saved.filter(k=>real.includes(k))) : new Set(real);
       return ktEnabled;
     }
-    function ktSaveEnabled(){ try{ localStorage.setItem('kotodama.enabled', JSON.stringify([...ktEnabled])); }catch(e){} }
+    function ktSaveEnabled(){ try{ localStorage.setItem('kotodama.enabled', JSON.stringify([...ktEnabled])); }catch(e){} renderProviderRow(); }
     // Coming-soon providers (PROV_COMING_SOON) can never be moved into "Selezionati" from the
     // Settings UI, but a stale/bootstrapped `ktEnabled` entry for one must not leak into the pool
     // that feeds the "+" menu / chip bar -- filter them out here too, not just at render time.
@@ -4588,8 +4866,27 @@
     const ktSideToggle=document.getElementById('ktSideToggle');
     let ktSidePref = localStorage.getItem('ktSideCollapsed');   // '1' | '0' | null
     function ktSideCollapsedNow(){ return ktSidePref==='1'; }
+    /* Width: the user's last choice is kept apart from the collapsed state, so reopening restores it.
+       Effective width = clamp(choice, MIN, max(MIN, min(MAX, 40% of the window))); the sidebar never
+       collapses by itself when the window is narrow. */
+    const KT_SIDE_DEF=242, KT_SIDE_MIN=200, KT_SIDE_MAX=420;
+    const ktSideGrip=document.getElementById('ktSideGrip');
+    let ktSideW = (()=>{ const n=parseInt(localStorage.getItem('ktSideWidth'),10); return Number.isFinite(n) ? n : KT_SIDE_DEF; })();
+    function ktSideMaxNow(){ return Math.max(KT_SIDE_MIN, Math.min(KT_SIDE_MAX, Math.floor(window.innerWidth*0.4))); }
+    function ktSideEff(){ return Math.max(KT_SIDE_MIN, Math.min(ktSideMaxNow(), Math.round(ktSideW))); }
+    function ktSideSetW(w, persist){
+      ktSideW = Math.max(KT_SIDE_MIN, Math.min(ktSideMaxNow(), Math.round(w)));
+      if(persist){ try{ localStorage.setItem('ktSideWidth', String(ktSideW)); }catch(e){} }
+      ktSideApply();
+    }
     function ktSideApply(){
       const collapsed = ktSideCollapsedNow();
+      ktSide.style.setProperty('--kt-side-w', ktSideEff()+'px');
+      ktSideGrip.setAttribute('aria-valuemin', KT_SIDE_MIN);
+      ktSideGrip.setAttribute('aria-valuemax', ktSideMaxNow());
+      ktSideGrip.setAttribute('aria-valuenow', ktSideEff());
+      ktSideGrip.setAttribute('aria-label', TR.ktSideResize || 'Sidebar width');
+      ktSideGrip.title = TR.ktSideResizeTip || '';
       ktSide.classList.toggle('collapsed', collapsed);
       ktSideToggle.textContent = collapsed ? '»' : '«';
       ktSideToggle.title = (collapsed ? TR.ktSideExpand : TR.ktSideCollapse) || ktSideToggle.title;
@@ -4600,6 +4897,34 @@
       ktSideApply();
     }
     ktSideToggle.addEventListener('click', ()=>ktSideSetCollapsed(!ktSideCollapsedNow()));
+    ktSideGrip.addEventListener('pointerdown', e=>{
+      if(e.button!==0 || ktSideCollapsedNow()) return;
+      e.preventDefault();
+      const x0=e.clientX, w0=ktSideEff();
+      try{ ktSideGrip.setPointerCapture(e.pointerId); }catch(_){}
+      document.body.classList.add('kt-side-resizing'); ktSideGrip.classList.add('drag');
+      const mv=ev=>ktSideSetW(w0+ev.clientX-x0, false);
+      const up=()=>{
+        ktSideGrip.removeEventListener('pointermove', mv); ktSideGrip.removeEventListener('pointerup', up);
+        ktSideGrip.removeEventListener('pointercancel', up);
+        document.body.classList.remove('kt-side-resizing'); ktSideGrip.classList.remove('drag');
+        ktSideSetW(ktSideW, true);
+      };
+      ktSideGrip.addEventListener('pointermove', mv); ktSideGrip.addEventListener('pointerup', up);
+      ktSideGrip.addEventListener('pointercancel', up);
+    });
+    ktSideGrip.addEventListener('dblclick', ()=>ktSideSetW(KT_SIDE_DEF, true));
+    ktSideGrip.addEventListener('keydown', e=>{
+      const st=e.shiftKey?32:8, k=e.key;
+      if(k==='ArrowRight') ktSideSetW(ktSideEff()+st, true);
+      else if(k==='ArrowLeft') ktSideSetW(ktSideEff()-st, true);
+      else if(k==='Home') ktSideSetW(KT_SIDE_MIN, true);
+      else if(k==='End') ktSideSetW(ktSideMaxNow(), true);
+      else if(k==='Enter') ktSideSetW(KT_SIDE_DEF, true);
+      else return;
+      e.preventDefault();
+    });
+    window.addEventListener('resize', ()=>ktSideApply());
     ktSideApply();
     ktFoldApply();
     // When collapsed, search is a single icon: clicking it reopens the sidebar and focuses the input,
@@ -4758,7 +5083,6 @@
     });
     document.getElementById('ktSend').addEventListener('click', ktDoSend);
     document.getElementById('ktNew').addEventListener('click', ()=>{ ktPrewarmed=false; ktPrewarm(); ktNewConversation(); });
-    document.getElementById('ktBackBar').addEventListener('click', closeKotodama);
     // Enter sends; Shift+Enter (or Ctrl/Cmd+Enter) inserts a newline. IME composition is left alone.
     ktInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.isComposing){ e.preventDefault(); if(!ktIsBusy()) ktDoSend(); } });
     if(ktSearch) ktSearch.addEventListener('input', renderKtSessions);
@@ -4950,6 +5274,8 @@
       });
     }
     let capturedHotkey=DEFAULT_SETTINGS.hotkey;
+    const setProvHotkey=document.getElementById('setProvHotkey');
+    let capturedProvHotkey=DEFAULT_SETTINGS.provider_hotkey;   // '' = no shortcut
 
     function keyLabel(part){
       switch(part){
@@ -4982,7 +5308,12 @@
     setHotkey.addEventListener('focus', ()=>{ setHotkey.classList.add('capturing'); setHotkey.value=TR.pressCombo; rhFitPressText(setHotkey); });
     setHotkey.addEventListener('blur', ()=>{ setHotkey.classList.remove('capturing'); setHotkey.style.fontSize=''; setHotkey.value=friendlyHotkey(capturedHotkey); rhFitColumns(); });
     setHotkey.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a){ capturedHotkey=a; setHotkey.value=friendlyHotkey(a); setHotkey.blur(); } });
-    document.getElementById('hotkeyClear').addEventListener('click', ()=>{ capturedHotkey=DEFAULT_SETTINGS.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey); });
+    document.getElementById('hotkeyClear').addEventListener('click', ()=>{ capturedHotkey=DEFAULT_SETTINGS.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey); rhMarkConflicts(); });
+    // "Open the last provider" shortcut: same capture field as the main one, reset puts the default back.
+    setProvHotkey.addEventListener('focus', ()=>{ setProvHotkey.classList.add('capturing'); setProvHotkey.value=TR.pressCombo; rhFitPressText(setProvHotkey); });
+    setProvHotkey.addEventListener('blur', ()=>{ setProvHotkey.classList.remove('capturing'); setProvHotkey.style.fontSize=''; setProvHotkey.value=friendlyHotkey(capturedProvHotkey); rhMarkConflicts(); rhFitColumns(); });
+    setProvHotkey.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a){ capturedProvHotkey=a; setProvHotkey.value=friendlyHotkey(a); setProvHotkey.blur(); } });
+    document.getElementById('provHotkeyClear').addEventListener('click', ()=>{ capturedProvHotkey=DEFAULT_SETTINGS.provider_hotkey; setProvHotkey.value=friendlyHotkey(capturedProvHotkey); rhMarkConflicts(); });
 
     /* --- Settings tabs (the options outgrew a single scroll) --- */
     function settingsShowTab(name){
@@ -5016,10 +5347,18 @@
     function rhMarkConflicts(){
       const vals={};
       if(capturedHotkey) vals[capturedHotkey]=(vals[capturedHotkey]||0)+1;
+      if(capturedProvHotkey) vals[capturedProvHotkey]=(vals[capturedProvHotkey]||0)+1;
       Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) vals[a]=(vals[a]||0)+1; });
+      // the provider shortcut yields: a recipe is only in conflict with the main hotkey or another recipe
+      const others={};
+      if(capturedHotkey) others[capturedHotkey]=(others[capturedHotkey]||0)+1;
+      Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) others[a]=(others[a]||0)+1; });
+      const provClash=!!capturedProvHotkey && vals[capturedProvHotkey]>1;
+      setProvHotkey.classList.toggle('conflict', provClash);
+      setProvHotkey.title = provClash ? TR.setProvHotkeyConflict : (TR.setProvHotkeyTitle||'');
       document.querySelectorAll('#recipeHotkeys .rh-row input').forEach(inp=>{
         const a=capturedRecipeHotkeys[inp.dataset.recipe]||'';
-        inp.classList.toggle('conflict', !!a && vals[a]>1);
+        inp.classList.toggle('conflict', !!a && others[a]>1);
       });
     }
     function buildShortcutRows(){
@@ -5151,6 +5490,8 @@
       populateRecipeSelect(); setRecipe.value=currentSettings.recipe;
       [setTheme,setLang,setProvider,setRecipe].forEach(s=>{ if(s.__cs) s.__cs.refresh(); }); // refresh the custom dropdowns
       capturedHotkey=currentSettings.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey);
+      capturedProvHotkey=typeof currentSettings.provider_hotkey==='string' ? currentSettings.provider_hotkey : DEFAULT_SETTINGS.provider_hotkey;
+      setProvHotkey.value=friendlyHotkey(capturedProvHotkey);
       capturedRecipeHotkeys={ ...(currentSettings.recipe_hotkeys||{}) };
       capturedRecipeNotify={ ...(currentSettings.recipe_notify||{}) };
       capturedRecipeMenu={ ...(currentSettings.recipe_menu||{}) };
@@ -5174,18 +5515,22 @@
       // spread of currentSettings → does not reset provider/recipe/length/tone (managed by the tiles/controls)
       // per-recipe shortcuts: keep only non-empty, non-conflicting combos (Rust drops dupes too)
       const rh={};
+      let ph='';
       {
-        const vals={};
-        if(capturedHotkey) vals[capturedHotkey]=(vals[capturedHotkey]||0)+1;
-        Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) vals[a]=(vals[a]||0)+1; });
-        Object.keys(capturedRecipeHotkeys).forEach(k=>{ const a=capturedRecipeHotkeys[k]; if(a && vals[a]===1) rh[k]=a; });
+        // Provider shortcut yields to any other: recipes keep theirs (as before the provider queue) and
+        // only the provider one is dropped. Count recipe/main combos WITHOUT the provider one.
+        const others={};
+        if(capturedHotkey) others[capturedHotkey]=(others[capturedHotkey]||0)+1;
+        Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) others[a]=(others[a]||0)+1; });
+        Object.keys(capturedRecipeHotkeys).forEach(k=>{ const a=capturedRecipeHotkeys[k]; if(a && others[a]===1) rh[k]=a; });
+        if(capturedProvHotkey && !others[capturedProvHotkey]) ph=capturedProvHotkey;
       }
       const rn={}; Object.keys(capturedRecipeNotify).forEach(k=>{ if(capturedRecipeNotify[k]===false) rn[k]=false; });
       const rm={}; Object.keys(capturedRecipeMenu).forEach(k=>{ if(capturedRecipeMenu[k]===false) rm[k]=false; });
       const rr={}; Object.keys(capturedRecipeRead).forEach(k=>{ if(capturedRecipeRead[k]===true) rr[k]=true; });
       const rp={ ...capturedRecipeProvider };
       const lowPowerChanged = !!currentSettings.low_power !== setLowPower.checked;
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, recipe_read:rr, recipe_provider:rp, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, provider_hotkey:ph, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, recipe_read:rr, recipe_provider:rp, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
       closeModal(settingsOverlay);   // closes the Constraints panel first, so a half-done edit is tidied
@@ -5248,6 +5593,7 @@
     function renderDefaultStar(){
       providers.querySelectorAll('.prov').forEach(p=>p.classList.toggle('is-default', p.dataset.prov===currentSettings.default_provider));
       if(ktChipsEl) ktChipsEl.querySelectorAll('.kt-chip[data-prov]').forEach(c=>c.classList.toggle('is-default', c.dataset.prov===currentSettings.default_provider));
+      renderProviderRow();   // the star and the first place of the row follow the default provider
     }
     // Sets the default (from the provider menu or Settings) and persists it.
     function setDefaultProvider(key){
@@ -5988,6 +6334,8 @@
         invoke('inline_toast',{mode:'processing', label:recipeNameFor(recipe)}).catch(()=>{});
         ktInlineDispatch(recipe, txt);
       });
+      // Global shortcut (Settings > Ricette): open the page of the last provider opened, or the default one.
+      listen('app://open-last-provider', ()=>{ const k=provLastKey(); if(k) openProviderRealPage(k); });
       listen('app://provider-opened', ()=>{ body.classList.add('provider-open'); renderProviderSwitchBar(); });
       listen('app://provider-loaded', ()=>{
         clearTimeout(provLoadingSafety);
@@ -6233,7 +6581,6 @@
         if(saveBtn && instr) saveBtn.parentNode.insertBefore(instr, saveBtn); }
       wireTauri();
       showAppVersion();
-      if(KT_ONLY){ const b=document.getElementById('ktBackBar'); if(b) b.style.display='none'; }
       openKotodama();   // Kotodama is the start page; the classic builder stays reachable via the "← Ai Prompt Builder" button (hidden while KT_ONLY)
       if(!currentSettings.welcome_ack) showWelcome();   // welcome on first launch: privacy + provider boundary (it overlaps anyway)
       setTimeout(()=>checkUpdate(false), 2500);   // silent update check at startup

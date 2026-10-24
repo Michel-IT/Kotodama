@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Tazama faili iliyoambatishwa (au faili zilizoambatishwa) na uniambie kilichomo.",
   "ktAttachFailed": "Faili haikufika kwa {p}, kwa hiyo ujumbe haukutumwa: ungeenda bila kiambatisho. Utume tena.",
   "rcReadFailed": "Faili ya vikwazo haikuweza kusomwa, kwa hiyo mabadiliko ya vikwazo hayahifadhiwi katika kipindi hiki.",
-  "rcSaveFailed": "Vikwazo havikuweza kuhifadhiwa. Mabadiliko yako ya mwisho yanaweza kupotea programu inapofungwa."
+  "rcSaveFailed": "Vikwazo havikuweza kuhifadhiwa. Mabadiliko yako ya mwisho yanaweza kupotea programu inapofungwa.",
+  "ktSideResize": "Upana wa upau wa kando",
+  "ktSideResizeTip": "Buruta kubadilisha ukubwa; bofya mara mbili kuweka upya",
+  "ktDayToday": "Leo",
+  "ktDayYesterday": "Jana",
+  "ktDayOlder": "Za zamani",
+  "ktDayGroupAria": "{day}, mazungumzo {n}",
+  "ktDayGroupAriaOne": "{day}, mazungumzo 1",
+  "provChat": "Gumzo",
+  "provMore": "Zaidi",
+  "provMoreTitle": "Watoa huduma zaidi",
+  "provRowAria": "Kurasa za watoa huduma",
+  "provOpenPage": "Fungua ukurasa wa {p}",
+  "setProvHotkey": "Fungua mtoa huduma wa mwisho",
+  "setProvHotkeyTitle": "Hufungua ukurasa wa mtoa huduma uliyefungua mwisho, au wa chaguomsingi",
+  "setProvHotkeyConflict": "Njia hii ya mkato tayari inatumiwa na nyingine, na haitahifadhiwa"
 }

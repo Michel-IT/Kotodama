@@ -13,6 +13,8 @@ mod audio;
 mod browser;
 mod clipboard;
 mod debug;
+#[cfg(windows)]
+mod display_watch;
 mod gesture;
 mod kotodama;
 mod netread;
@@ -269,12 +271,87 @@ fn bring_to_front(w: &tauri::Window) {
                 if let Some(win) = app2.get_window("main") {
                     let _ = win.set_skip_taskbar(false);
                     if let Ok(h) = win.hwnd() {
+                        // Hidden outside every monitor (layout changed while in the tray): bring it back first.
+                        display_watch::ensure_reachable(&win);
                         win_show(h.0 as isize, true); // SW_SHOW -> current desktop
+                        win_sync_visible(&win, true, "bring_to_front");
+                        // set_focus only acts when tao's flag says visible, and Windows may still deny
+                        // the foreground to a tray click: verify and retry with the standard sequence.
+                        win_ensure_foreground(&win, h.0 as isize);
                     }
                     let _ = win.set_focus();
                 }
             });
         });
+    }
+}
+
+/// Windows only. INVARIANT: tao keeps its own VISIBLE flag for the window and it must mirror the real
+/// window: every raw `ShowWindow` show/hide (`win_show`) realigns it through here. tao only syncs
+/// MAXIMIZED and MINIMIZED from window messages, never VISIBLE; with a stale `false`, any later
+/// `set_maximized` / `toggle_maximize` / `set_always_on_top` runs `apply_diff`, which skips SW_MAXIMIZE
+/// and then does SW_HIDE (the window vanishes at "Maximize"), and `set_focus` does nothing.
+/// Order matters: call AFTER the raw ShowWindow. `show()` then finds the window already visible (an
+/// extra SW_SHOW, harmless, and it re-applies SW_MAXIMIZE if the flag says maximized); `hide()` repeats
+/// an SW_HIDE. The off-screen parking of the inline transform (win_park_offscreen / win_unpark_hide /
+/// inline_restore_window) deliberately stays raw and does NOT go through here: it must not touch the
+/// state the user sees, and a parked window is flagged hidden, which is what it is for the user.
+#[cfg(windows)]
+fn win_sync_visible(w: &tauri::Window, visible: bool, tag: &str) {
+    let _ = if visible { w.show() } else { w.hide() };
+    if debug::enabled() {
+        // tao exposes no getter for its flag (is_visible() asks IsWindowVisible), so log the real
+        // state after the sync: it must equal `visible`, and a later Maximize must not hide it.
+        let real = w
+            .hwnd()
+            .map(|h| unsafe {
+                windows::Win32::UI::WindowsAndMessaging::IsWindowVisible(windows::Win32::Foundation::HWND(
+                    h.0 as *mut core::ffi::c_void,
+                ))
+                .as_bool()
+            })
+            .unwrap_or(false);
+        debug::log(format!(
+            "WIN sync_visible[{tag}]: wanted={visible} IsWindowVisible={real} tauri_is_visible={:?} maximized={:?}",
+            w.is_visible(),
+            w.is_maximized()
+        ));
+    }
+}
+
+/// Windows only: after a tray click, make sure the main window really got the foreground. If not,
+/// retry with the standard sequence: attach our input queue to the thread owning the current
+/// foreground window, SetForegroundWindow + BringWindowToTop, and always detach.
+#[cfg(windows)]
+fn win_ensure_foreground(w: &tauri::Window, hwnd_raw: isize) {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        BringWindowToTop, GetForegroundWindow, GetWindowThreadProcessId, SetForegroundWindow,
+    };
+    let _ = w.set_focus();
+    unsafe {
+        let hwnd = HWND(hwnd_raw as *mut core::ffi::c_void);
+        let fg = GetForegroundWindow();
+        if fg == hwnd {
+            return;
+        }
+        let fg_thread = if fg.0.is_null() { 0 } else { GetWindowThreadProcessId(fg, None) };
+        let me = GetCurrentThreadId();
+        let attached = fg_thread != 0 && fg_thread != me && AttachThreadInput(me, fg_thread, true).as_bool();
+        let ok = SetForegroundWindow(hwnd).as_bool();
+        let top = BringWindowToTop(hwnd).is_ok();
+        if attached {
+            let _ = AttachThreadInput(me, fg_thread, false); // always detach
+        }
+        if debug::enabled() {
+            let now = GetForegroundWindow();
+            debug::log(format!(
+                "WIN ensure_foreground: previous_fg={:?} (thread {fg_thread}) attached={attached} SetForegroundWindow={ok} BringWindowToTop={top} now_fg_is_us={}",
+                fg.0,
+                now == hwnd
+            ));
+        }
     }
 }
 
@@ -477,6 +554,23 @@ fn inline_park_window(app: &AppHandle) {
     }
 }
 
+/// Applies the always-on-top flag unless the window is parked off screen for an inline transform
+/// (or one is in progress): tao may turn that into SW_HIDE and close the window under the transform.
+/// The stored setting is re-applied by `inline_restore_window`.
+fn set_always_on_top_safe(app: &AppHandle, want: bool) {
+    let Some(main) = app.get_window("main") else { return };
+    #[cfg(windows)]
+    {
+        let transforming = app.state::<AppState>().inline_saved_pos.lock().unwrap().is_some();
+        let parked = main.hwnd().map(|h| win_is_parked(h.0 as isize)).unwrap_or(false);
+        if transforming || parked {
+            debug::log("always-on-top change deferred: main window parked for an inline transform");
+            return;
+        }
+    }
+    let _ = main.set_always_on_top(want);
+}
+
 /// Undo `inline_park_window` (hide + restore position). No-op if the window was visible.
 fn inline_restore_window(app: &AppHandle) {
     #[cfg(windows)]
@@ -497,6 +591,9 @@ fn inline_restore_window(app: &AppHandle) {
                     win_fix_normal_pos(h.0 as isize, x, y);
                 }
             }
+            // A change requested while parked was deferred: apply the stored value now.
+            let want = app.state::<AppState>().settings.lock().unwrap().always_on_top;
+            set_always_on_top_safe(app, want);
         }
     }
     #[cfg(target_os = "macos")]
@@ -540,6 +637,7 @@ fn hide_to_tray(w: &tauri::Window) {
     #[cfg(windows)]
     if let Ok(h) = w.hwnd() {
         win_show(h.0 as isize, false); // SW_HIDE (not minimize: keeps it off any desktop)
+        win_sync_visible(w, false, "hide_to_tray");
     }
     #[cfg(not(windows))]
     let _ = w.minimize();
@@ -632,9 +730,7 @@ fn reveal_download_path(app: AppHandle, path: String) {
 fn set_settings(app: AppHandle, settings: Settings) -> Result<Settings, String> {
     apply_autostart(&app, settings.autostart);
     gesture::set_enabled(settings.gesture_menu);
-    if let Some(w) = app.get_window("main") {
-        let _ = w.set_always_on_top(settings.always_on_top);
-    }
+    set_always_on_top_safe(&app, settings.always_on_top);
 
     // Register the whole shortcut set (main hotkey with fallback + per-recipe ones);
     // the effective state (fallback applied, conflicting entries dropped) is what
@@ -794,7 +890,7 @@ fn save_settings_bg(app: &AppHandle, settings: Settings) {
     let app = app.clone();
     std::thread::spawn(move || {
         if let Err(e) = settings::save(&app, &settings) {
-            eprintln!("[settings] salvataggio in background fallito: {e}");
+            eprintln!("[settings] background save failed: {e}");
         }
     });
 }
@@ -1559,6 +1655,31 @@ fn try_register_hotkey(app: &AppHandle, accel: &str, recipe: Option<String>) -> 
     ok
 }
 
+/// Registers the "open the last provider page" shortcut. `true` on success.
+fn try_register_provider_hotkey(app: &AppHandle, accel: &str) -> bool {
+    use std::str::FromStr;
+    use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
+
+    let Ok(shortcut) = Shortcut::from_str(accel) else {
+        return false;
+    };
+    let handle = app.clone();
+    let ok = app
+        .global_shortcut()
+        .on_shortcut(shortcut, move |_app, _sc, event| {
+            if event.state() == ShortcutState::Pressed {
+                // The UI knows which provider was opened last: it only needs the window in front and a nudge.
+                if let Some(main) = handle.get_window("main") {
+                    bring_to_front(&main);
+                    let _ = main.emit("app://open-last-provider", ());
+                }
+            }
+        })
+        .is_ok();
+    debug::log(format!("hotkey REGISTER accel={accel} provider ok={ok}"));
+    ok
+}
+
 /// Registers the MAIN hotkey with per-platform fallbacks (no unregister here: the caller
 /// `register_hotkeys` clears everything first). Returns the accelerator ACTUALLY
 /// registered, or `None` if none is registrable (the toast/tray fallback remains).
@@ -1569,12 +1690,12 @@ fn register_hotkey(app: &AppHandle, accel: &str) -> Option<String> {
     for cand in candidates {
         if try_register_hotkey(app, cand, None) {
             if cand != accel {
-                eprintln!("[hotkey] '{accel}' non registrabile su questa piattaforma; uso '{cand}'");
+                eprintln!("[hotkey] '{accel}' cannot be registered on this platform; using '{cand}'");
             }
             return Some(cand.to_string());
         }
     }
-    eprintln!("[hotkey] nessun hotkey registrabile: usa il toast o la tray");
+    eprintln!("[hotkey] no hotkey could be registered: use the toast or the tray");
     None
 }
 
@@ -1591,10 +1712,16 @@ fn register_hotkeys(app: &AppHandle, s: &mut Settings) {
     s.recipe_hotkeys.retain(|recipe, accel| {
         let ok = !accel.is_empty() && try_register_hotkey(app, accel, Some(recipe.clone()));
         if !ok {
-            eprintln!("[hotkey] scorciatoia ricetta scartata: {recipe} = '{accel}'");
+            eprintln!("[hotkey] recipe shortcut dropped: {recipe} = '{accel}'");
         }
         ok
     });
+    // Registered after the recipe ones, so a recipe that already holds the combination keeps it and
+    // this one is the entry dropped (same rule as a duplicate between recipes).
+    if !s.provider_hotkey.is_empty() && !try_register_provider_hotkey(app, &s.provider_hotkey) {
+        eprintln!("[hotkey] provider shortcut dropped: '{}'", s.provider_hotkey);
+        s.provider_hotkey.clear();
+    }
 }
 
 /// Startup registration: applies the whole shortcut set and, if the effective state
@@ -1603,9 +1730,18 @@ fn register_hotkeys(app: &AppHandle, s: &mut Settings) {
 fn register_and_persist_hotkeys(app: &AppHandle) {
     let state = app.state::<AppState>();
     let mut snapshot = state.settings.lock().unwrap().clone();
-    let before = (snapshot.hotkey.clone(), snapshot.recipe_hotkeys.clone());
+    let before = (
+        snapshot.hotkey.clone(),
+        snapshot.recipe_hotkeys.clone(),
+        snapshot.provider_hotkey.clone(),
+    );
     register_hotkeys(app, &mut snapshot);
-    let changed = before != (snapshot.hotkey.clone(), snapshot.recipe_hotkeys.clone());
+    let changed = before
+        != (
+            snapshot.hotkey.clone(),
+            snapshot.recipe_hotkeys.clone(),
+            snapshot.provider_hotkey.clone(),
+        );
     *state.settings.lock().unwrap() = snapshot.clone();
     if changed {
         let _ = settings::save(app, &snapshot);
@@ -1691,9 +1827,7 @@ fn build_tray(app: &AppHandle, autostart_on: bool) -> tauri::Result<()> {
                     g.always_on_top = !g.always_on_top;
                     g.always_on_top
                 };
-                if let Some(main) = app.get_window("main") {
-                    let _ = main.set_always_on_top(want);
-                }
+                set_always_on_top_safe(app, want);
                 if let Some(item) = state.always_on_top_item.lock().unwrap().as_ref() {
                     let _ = item.set_checked(want);
                 }
@@ -1975,6 +2109,14 @@ pub fn run() {
                     if let Ok(h) = w.hwnd() {
                         suppress_lone_alt_menu(h.0 as isize);
                     }
+                }
+            }
+
+            // Bring the main window back inside the visible desktop after a monitor change / wake from standby.
+            #[cfg(windows)]
+            if let Some(w) = app.get_webview_window("main") {
+                if let Ok(h) = w.hwnd() {
+                    display_watch::install(app.handle(), h.0 as isize);
                 }
             }
 

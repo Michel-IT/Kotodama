@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "请查看附加的文件，并告诉我里面有什么。",
   "ktAttachFailed": "文件未能传到 {p}，因此消息没有发送：否则它会不带附件发出。请重新发送。",
   "rcReadFailed": "无法读取约束文件，因此本次会话中对约束的更改不会被保存。",
-  "rcSaveFailed": "无法保存约束。关闭应用时，你最后的更改可能会丢失。"
+  "rcSaveFailed": "无法保存约束。关闭应用时，你最后的更改可能会丢失。",
+  "ktSideResize": "侧边栏宽度",
+  "ktSideResizeTip": "拖动以调整大小；双击恢复默认",
+  "ktDayToday": "今天",
+  "ktDayYesterday": "昨天",
+  "ktDayOlder": "更早",
+  "ktDayGroupAria": "{day}，{n} 段对话",
+  "ktDayGroupAriaOne": "{day}，1 段对话",
+  "provChat": "聊天",
+  "provMore": "更多",
+  "provMoreTitle": "更多服务商",
+  "provRowAria": "服务商页面",
+  "provOpenPage": "打开{p}的页面",
+  "setProvHotkey": "打开上次使用的服务商",
+  "setProvHotkeyTitle": "打开你最近打开的服务商的页面，或默认服务商的页面",
+  "setProvHotkeyConflict": "该快捷键已被其他项使用，不会被保存"
 }

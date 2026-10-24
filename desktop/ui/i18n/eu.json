@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Begiratu erantsitako fitxategiari (edo fitxategiei) eta esan zer duen.",
   "ktAttachFailed": "Fitxategia ez da {p}-ra iritsi, beraz mezua ez da bidali: eranskinik gabe joango zen. Bidali berriro.",
   "rcReadFailed": "Murrizketen fitxategia ezin izan da irakurri, beraz, murrizketen aldaketak ez dira gordeko saio honetan.",
-  "rcSaveFailed": "Murrizketak ezin izan dira gorde. Azken aldaketa galdu daiteke aplikazioa ixtean."
+  "rcSaveFailed": "Murrizketak ezin izan dira gorde. Azken aldaketa galdu daiteke aplikazioa ixtean.",
+  "ktSideResize": "Alboko barraren zabalera",
+  "ktSideResizeTip": "Arrastatu tamaina aldatzeko; egin klik bikoitza berrezartzeko",
+  "ktDayToday": "Gaur",
+  "ktDayYesterday": "Atzo",
+  "ktDayOlder": "Zaharragoak",
+  "ktDayGroupAria": "{day}, {n} elkarrizketa",
+  "ktDayGroupAriaOne": "{day}, elkarrizketa 1",
+  "provChat": "Txat",
+  "provMore": "Gehiago",
+  "provMoreTitle": "Hornitzaile gehiago",
+  "provRowAria": "Hornitzaileen orriak",
+  "provOpenPage": "Ireki {p}-ren orria",
+  "setProvHotkey": "Ireki azken hornitzailea",
+  "setProvHotkeyTitle": "Azkenekoz ireki duzun hornitzailearen orria irekitzen du, edo lehenetsia",
+  "setProvHotkeyConflict": "Lasterbide hau dagoeneko beste batek erabiltzen du, eta ez da gordetzen"
 }

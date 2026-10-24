@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Ekli dosyaya (veya dosyalara) bak ve içinde ne olduğunu söyle.",
   "ktAttachFailed": "Dosya {p} tarafına ulaşmadı, bu yüzden ileti gönderilmedi: ek olmadan gidecekti. Yeniden gönderin.",
   "rcReadFailed": "Kısıtlama dosyası okunamadı, bu yüzden kısıtlamalardaki değişiklikler bu oturumda kaydedilmeyecek.",
-  "rcSaveFailed": "Kısıtlamalar kaydedilemedi. Uygulama kapanınca son değişikliğiniz kaybolabilir."
+  "rcSaveFailed": "Kısıtlamalar kaydedilemedi. Uygulama kapanınca son değişikliğiniz kaybolabilir.",
+  "ktSideResize": "Kenar çubuğu genişliği",
+  "ktSideResizeTip": "Boyutlandırmak için sürükleyin; sıfırlamak için çift tıklayın",
+  "ktDayToday": "Bugün",
+  "ktDayYesterday": "Dün",
+  "ktDayOlder": "Daha eski",
+  "ktDayGroupAria": "{day}, {n} konuşma",
+  "ktDayGroupAriaOne": "{day}, 1 konuşma",
+  "provChat": "Sohbet",
+  "provMore": "Diğer",
+  "provMoreTitle": "Diğer sağlayıcılar",
+  "provRowAria": "Sağlayıcı sayfaları",
+  "provOpenPage": "{p} sayfasını aç",
+  "setProvHotkey": "Son sağlayıcıyı aç",
+  "setProvHotkeyTitle": "En son açtığın sağlayıcının sayfasını ya da varsayılanı açar",
+  "setProvHotkeyConflict": "Bu kısayol zaten başka biri tarafından kullanılıyor ve kaydedilmiyor"
 }

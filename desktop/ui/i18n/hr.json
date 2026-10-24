@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Pogledaj priloženu datoteku (ili datoteke) i reci mi što sadrži.",
   "ktAttachFailed": "Datoteka nije stigla do {p}, pa poruka nije poslana: otišla bi bez privitka. Pošaljite je ponovno.",
   "rcReadFailed": "Datoteka ograničenja nije se mogla pročitati, pa se promjene ograničenja u ovoj sesiji ne spremaju.",
-  "rcSaveFailed": "Ograničenja nije moguće spremiti. Zadnja promjena može se izgubiti kad se aplikacija zatvori."
+  "rcSaveFailed": "Ograničenja nije moguće spremiti. Zadnja promjena može se izgubiti kad se aplikacija zatvori.",
+  "ktSideResize": "Širina bočne trake",
+  "ktSideResizeTip": "Povucite za promjenu veličine; dvostruki klik za vraćanje",
+  "ktDayToday": "Danas",
+  "ktDayYesterday": "Jučer",
+  "ktDayOlder": "Starije",
+  "ktDayGroupAria": "{day}, razgovora: {n}",
+  "ktDayGroupAriaOne": "{day}, 1 razgovor",
+  "provChat": "Razgovor",
+  "provMore": "Više",
+  "provMoreTitle": "Više pružatelja",
+  "provRowAria": "Stranice pružatelja",
+  "provOpenPage": "Otvori stranicu {p}",
+  "setProvHotkey": "Otvori zadnjeg pružatelja",
+  "setProvHotkeyTitle": "Otvara stranicu zadnjeg pružatelja koji si otvorio ili zadanoga",
+  "setProvHotkeyConflict": "Ovu prečicu već koristi druga i ne sprema se"
 }

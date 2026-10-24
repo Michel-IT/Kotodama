@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "添付されたファイルを見て、何が入っているか教えてください。",
   "ktAttachFailed": "ファイルが {p} に届かなかったため、メッセージは送信されませんでした。添付なしで送られるところでした。もう一度送信してください。",
   "rcReadFailed": "制約ファイルを読み込めなかったため、このセッションでは制約の変更は保存されません。",
-  "rcSaveFailed": "制約を保存できませんでした。アプリを閉じると、最後の変更が失われる可能性があります。"
+  "rcSaveFailed": "制約を保存できませんでした。アプリを閉じると、最後の変更が失われる可能性があります。",
+  "ktSideResize": "サイドバーの幅",
+  "ktSideResizeTip": "ドラッグでサイズ変更; ダブルクリックでリセット",
+  "ktDayToday": "今日",
+  "ktDayYesterday": "昨日",
+  "ktDayOlder": "それ以前",
+  "ktDayGroupAria": "{day}、{n}件の会話",
+  "ktDayGroupAriaOne": "{day}、1件の会話",
+  "provChat": "チャット",
+  "provMore": "その他",
+  "provMoreTitle": "その他のプロバイダー",
+  "provRowAria": "プロバイダーのページ",
+  "provOpenPage": "{p}のページを開く",
+  "setProvHotkey": "最後のプロバイダーを開く",
+  "setProvHotkeyTitle": "最後に開いたプロバイダーのページ、なければ既定のページを開きます",
+  "setProvHotkeyConflict": "このショートカットは既に別の機能で使われており、保存されません"
 }

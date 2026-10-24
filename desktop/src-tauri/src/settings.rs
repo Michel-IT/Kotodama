@@ -100,6 +100,11 @@ pub struct Settings {
     /// it is the feature's whole point, and the gesture is one no program uses.
     #[serde(default = "default_true")]
     pub gesture_menu: bool,
+    /// Global shortcut that opens the page of the LAST provider opened (or the default one when none
+    /// was opened yet), from the chat and from inside a provider page. Empty = no shortcut. A settings
+    /// file written before this existed has no such field and reads as the default, so nobody's own
+    /// choice is ever overwritten.
+    pub provider_hotkey: String,
 }
 
 /// Default modifier pair for every built-in shortcut, per platform.
@@ -131,6 +136,10 @@ pub fn default_hotkey() -> String {
         "Space"
     };
     format!("{DEFAULT_MOD}+{key}")
+}
+/// Default shortcut that opens the last provider page: <mod>+P ("provider").
+pub fn default_provider_hotkey() -> String {
+    format!("{DEFAULT_MOD}+KeyP")
 }
 pub fn default_recipe_hotkeys() -> std::collections::HashMap<String, String> {
     std::collections::HashMap::from([
@@ -174,6 +183,7 @@ impl Default for Settings {
             known_providers: std::collections::HashSet::new(),
             low_power: false, // hardware acceleration on: no user gets worse off unknowingly
             gesture_menu: true,
+            provider_hotkey: default_provider_hotkey(),
         }
     }
 }
@@ -677,6 +687,18 @@ mod tests {
         let back: RecipeConstraints =
             serde_json::from_str(&serde_json::to_string(&rc).unwrap()).unwrap();
         assert_eq!(back, rc);
+    }
+
+    /// A settings file from before the provider shortcut existed gets the default; one that has it
+    /// (even emptied on purpose) keeps its own value.
+    #[test]
+    fn provider_hotkey_default_never_overwrites_a_choice() {
+        let old: Settings = serde_json::from_str(r#"{"language":"it"}"#).unwrap();
+        assert_eq!(old.provider_hotkey, default_provider_hotkey());
+        let mine: Settings = serde_json::from_str(r#"{"provider_hotkey":"Control+Shift+F9"}"#).unwrap();
+        assert_eq!(mine.provider_hotkey, "Control+Shift+F9");
+        let none: Settings = serde_json::from_str(r#"{"provider_hotkey":""}"#).unwrap();
+        assert_eq!(none.provider_hotkey, "");
     }
 
     /// The migration moves what the install merely inherited, and nothing the user chose. Off

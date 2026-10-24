@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Mira el fitxer adjunt (o els fitxers adjunts) i digues-me què conté.",
   "ktAttachFailed": "El fitxer no ha arribat a {p}, així que el missatge no s'ha enviat: hauria sortit sense l'adjunt. Torna'l a enviar.",
   "rcReadFailed": "No s'ha pogut llegir el fitxer de restriccions, així que els canvis no es desaran en aquesta sessió.",
-  "rcSaveFailed": "No s'han pogut desar les restriccions. És possible que l'últim canvi es perdi en tancar l'aplicació."
+  "rcSaveFailed": "No s'han pogut desar les restriccions. És possible que l'últim canvi es perdi en tancar l'aplicació.",
+  "ktSideResize": "Amplada de la barra lateral",
+  "ktSideResizeTip": "Arrossega per canviar la mida; doble clic per restablir",
+  "ktDayToday": "Avui",
+  "ktDayYesterday": "Ahir",
+  "ktDayOlder": "Més antigues",
+  "ktDayGroupAria": "{day}, {n} converses",
+  "ktDayGroupAriaOne": "{day}, 1 conversa",
+  "provChat": "Xat",
+  "provMore": "Més",
+  "provMoreTitle": "Més proveïdors",
+  "provRowAria": "Pàgines dels proveïdors",
+  "provOpenPage": "Obre la pàgina de {p}",
+  "setProvHotkey": "Obre l'últim proveïdor",
+  "setProvHotkeyTitle": "Obre la pàgina de l'últim proveïdor obert, o del predeterminat",
+  "setProvHotkeyConflict": "Aquesta drecera ja la fa servir una altra i no es desa"
 }

@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Katso liitettyä tiedostoa (tai tiedostoja) ja kerro, mitä siinä on.",
   "ktAttachFailed": "Tiedosto ei päätynyt palveluun {p}, joten viestiä ei lähetetty: se olisi lähtenyt ilman liitettä. Lähetä se uudelleen.",
   "rcReadFailed": "Rajoitustiedostoa ei voitu lukea, joten rajoitusten muutoksia ei tallenneta tässä istunnossa.",
-  "rcSaveFailed": "Rajoituksia ei voitu tallentaa. Viimeisin muutos voi kadota, kun sovellus suljetaan."
+  "rcSaveFailed": "Rajoituksia ei voitu tallentaa. Viimeisin muutos voi kadota, kun sovellus suljetaan.",
+  "ktSideResize": "Sivupalkin leveys",
+  "ktSideResizeTip": "Muuta kokoa vetämällä; palauta kaksoisnapsauttamalla",
+  "ktDayToday": "Tänään",
+  "ktDayYesterday": "Eilen",
+  "ktDayOlder": "Vanhemmat",
+  "ktDayGroupAria": "{day}, {n} keskustelua",
+  "ktDayGroupAriaOne": "{day}, 1 keskustelu",
+  "provChat": "Keskustelu",
+  "provMore": "Lisää",
+  "provMoreTitle": "Lisää palveluntarjoajia",
+  "provRowAria": "Palveluntarjoajien sivut",
+  "provOpenPage": "Avaa {p}:n sivu",
+  "setProvHotkey": "Avaa viimeisin palveluntarjoaja",
+  "setProvHotkeyTitle": "Avaa viimeksi avaamasi palveluntarjoajan sivun tai oletuksen",
+  "setProvHotkeyConflict": "Tätä pikanäppäintä käyttää jo toinen, eikä sitä tallenneta"
 }

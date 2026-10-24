@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Apskaties pievienoto failu (vai failus) un pasaki, kas tajā ir.",
   "ktAttachFailed": "Fails nenonāca līdz {p}, tāpēc ziņa netika nosūtīta: tā būtu aizgājusi bez pielikuma. Nosūtiet to vēlreiz.",
   "rcReadFailed": "Ierobežojumu failu nevarēja nolasīt, tāpēc šajā sesijā ierobežojumu izmaiņas netiek saglabātas.",
-  "rcSaveFailed": "Ierobežojumus nevarēja saglabāt. Pēdējās izmaiņas var pazust, aizverot lietotni."
+  "rcSaveFailed": "Ierobežojumus nevarēja saglabāt. Pēdējās izmaiņas var pazust, aizverot lietotni.",
+  "ktSideResize": "Sānjoslas platums",
+  "ktSideResizeTip": "Velciet, lai mainītu izmēru; veiciet dubultklikšķi, lai atiestatītu",
+  "ktDayToday": "Šodien",
+  "ktDayYesterday": "Vakar",
+  "ktDayOlder": "Vecākas",
+  "ktDayGroupAria": "{day}, sarunu: {n}",
+  "ktDayGroupAriaOne": "{day}, 1 saruna",
+  "provChat": "Tērzēšana",
+  "provMore": "Vairāk",
+  "provMoreTitle": "Vairāk pakalpojumu sniedzēju",
+  "provRowAria": "Pakalpojumu sniedzēju lapas",
+  "provOpenPage": "Atvērt {p} lapu",
+  "setProvHotkey": "Atvērt pēdējo pakalpojumu sniedzēju",
+  "setProvHotkeyTitle": "Atver pēdējā atvērtā pakalpojumu sniedzēja lapu vai noklusēto",
+  "setProvHotkeyConflict": "Šo īsceļu jau izmanto cits, un tas netiks saglabāts"
 }

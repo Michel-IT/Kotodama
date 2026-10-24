@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Poglej priloženo datoteko (ali datoteke) in mi povej, kaj vsebuje.",
   "ktAttachFailed": "Datoteka ni prišla do {p}, zato sporočilo ni bilo poslano: odšlo bi brez priloge. Pošljite ga znova.",
   "rcReadFailed": "Datoteke omejitev ni bilo mogoče prebrati, zato se spremembe omejitev v tej seji ne shranijo.",
-  "rcSaveFailed": "Omejitev ni bilo mogoče shraniti. Zadnja sprememba se lahko izgubi, ko zaprete aplikacijo."
+  "rcSaveFailed": "Omejitev ni bilo mogoče shraniti. Zadnja sprememba se lahko izgubi, ko zaprete aplikacijo.",
+  "ktSideResize": "Širina stranske vrstice",
+  "ktSideResizeTip": "Povlecite za spremembo velikosti; dvojni klik ponastavi",
+  "ktDayToday": "Danes",
+  "ktDayYesterday": "Včeraj",
+  "ktDayOlder": "Starejše",
+  "ktDayGroupAria": "{day}, pogovorov: {n}",
+  "ktDayGroupAriaOne": "{day}, 1 pogovor",
+  "provChat": "Klepet",
+  "provMore": "Več",
+  "provMoreTitle": "Več ponudnikov",
+  "provRowAria": "Strani ponudnikov",
+  "provOpenPage": "Odpri stran {p}",
+  "setProvHotkey": "Odpri zadnjega ponudnika",
+  "setProvHotkeyTitle": "Odpre stran zadnjega odprtega ponudnika ali privzetega",
+  "setProvHotkeyConflict": "To bližnjico že uporablja druga in se ne shrani"
 }

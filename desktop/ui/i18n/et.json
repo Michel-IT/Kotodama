@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Vaata lisatud faili (või faile) ja ütle mulle, mida see sisaldab.",
   "ktAttachFailed": "Fail ei jõudnud teenusesse {p}, seega sõnumit ei saadetud: see oleks läinud ilma manuseta. Saada see uuesti.",
   "rcReadFailed": "Piirangute faili ei saanud lugeda, seetõttu piirangute muudatusi selles seansis ei salvestata.",
-  "rcSaveFailed": "Piiranguid ei saanud salvestada. Viimane muudatus võib rakenduse sulgemisel kaduda."
+  "rcSaveFailed": "Piiranguid ei saanud salvestada. Viimane muudatus võib rakenduse sulgemisel kaduda.",
+  "ktSideResize": "Külgriba laius",
+  "ktSideResizeTip": "Lohistamisega muuda suurust; topeltklõps lähtestab",
+  "ktDayToday": "Täna",
+  "ktDayYesterday": "Eile",
+  "ktDayOlder": "Varasemad",
+  "ktDayGroupAria": "{day}, {n} vestlust",
+  "ktDayGroupAriaOne": "{day}, 1 vestlus",
+  "provChat": "Vestlus",
+  "provMore": "Rohkem",
+  "provMoreTitle": "Rohkem pakkujaid",
+  "provRowAria": "Pakkujate lehed",
+  "provOpenPage": "Ava {p} leht",
+  "setProvHotkey": "Ava viimane pakkuja",
+  "setProvHotkeyTitle": "Avab viimati avatud pakkuja lehe või vaikepakkuja lehe",
+  "setProvHotkeyConflict": "See kiirklahv on juba teise kasutuses ja ei salvestu"
 }

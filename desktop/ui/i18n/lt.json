@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Pažiūrėk į pridėtą failą (arba failus) ir pasakyk, kas jame yra.",
   "ktAttachFailed": "Failas nepasiekė {p}, todėl žinutė neišsiųsta: ji būtų išėjusi be priedo. Siųskite dar kartą.",
   "rcReadFailed": "Apribojimų failo perskaityti nepavyko, todėl šiame seanse apribojimų pakeitimai nebus išsaugoti.",
-  "rcSaveFailed": "Apribojimų išsaugoti nepavyko. Paskutinis pakeitimas gali būti prarastas uždarius programą."
+  "rcSaveFailed": "Apribojimų išsaugoti nepavyko. Paskutinis pakeitimas gali būti prarastas uždarius programą.",
+  "ktSideResize": "Šoninės juostos plotis",
+  "ktSideResizeTip": "Tempkite keisti dydį; dukart spustelėkite, kad atkurtumėte",
+  "ktDayToday": "Šiandien",
+  "ktDayYesterday": "Vakar",
+  "ktDayOlder": "Senesni",
+  "ktDayGroupAria": "{day}, pokalbių: {n}",
+  "ktDayGroupAriaOne": "{day}, 1 pokalbis",
+  "provChat": "Pokalbis",
+  "provMore": "Daugiau",
+  "provMoreTitle": "Daugiau tiekėjų",
+  "provRowAria": "Tiekėjų puslapiai",
+  "provOpenPage": "Atidaryti {p} puslapį",
+  "setProvHotkey": "Atidaryti paskutinį tiekėją",
+  "setProvHotkeyTitle": "Atidaro paskutinio atidaryto tiekėjo puslapį arba numatytojo",
+  "setProvHotkeyConflict": "Šį spartųjį klavišą jau naudoja kitas ir jis neįrašomas"
 }

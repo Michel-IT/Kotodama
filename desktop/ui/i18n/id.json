@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Lihat berkas terlampir (atau berkas-berkas terlampir) dan beri tahu saya isinya.",
   "ktAttachFailed": "File tidak sampai ke {p}, jadi pesan tidak dikirim: pesan itu akan terkirim tanpa lampiran. Kirim lagi.",
   "rcReadFailed": "File batasan tidak dapat dibaca, jadi perubahan batasan tidak disimpan di sesi ini.",
-  "rcSaveFailed": "Batasan tidak dapat disimpan. Perubahan terakhir Anda mungkin hilang saat aplikasi ditutup."
+  "rcSaveFailed": "Batasan tidak dapat disimpan. Perubahan terakhir Anda mungkin hilang saat aplikasi ditutup.",
+  "ktSideResize": "Lebar bilah samping",
+  "ktSideResizeTip": "Seret untuk mengubah ukuran; klik dua kali untuk mengatur ulang",
+  "ktDayToday": "Hari ini",
+  "ktDayYesterday": "Kemarin",
+  "ktDayOlder": "Lebih lama",
+  "ktDayGroupAria": "{day}, {n} percakapan",
+  "ktDayGroupAriaOne": "{day}, 1 percakapan",
+  "provChat": "Obrolan",
+  "provMore": "Lainnya",
+  "provMoreTitle": "Penyedia lainnya",
+  "provRowAria": "Halaman penyedia",
+  "provOpenPage": "Buka halaman {p}",
+  "setProvHotkey": "Buka penyedia terakhir",
+  "setProvHotkeyTitle": "Membuka halaman penyedia terakhir yang kamu buka, atau yang default",
+  "setProvHotkeyConflict": "Pintasan ini sudah dipakai yang lain dan tidak disimpan"
 }

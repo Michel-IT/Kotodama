@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Titta på den bifogade filen (eller filerna) och berätta vad den innehåller.",
   "ktAttachFailed": "Filen nådde inte {p}, så meddelandet skickades inte: det hade gått iväg utan bilagan. Skicka det igen.",
   "rcReadFailed": "Filen med begränsningar kunde inte läsas, så ändringar av begränsningar sparas inte under den här sessionen.",
-  "rcSaveFailed": "Begränsningarna kunde inte sparas. Din senaste ändring kan försvinna när appen stängs."
+  "rcSaveFailed": "Begränsningarna kunde inte sparas. Din senaste ändring kan försvinna när appen stängs.",
+  "ktSideResize": "Sidofältets bredd",
+  "ktSideResizeTip": "Dra för att ändra storlek; dubbelklicka för att återställa",
+  "ktDayToday": "Idag",
+  "ktDayYesterday": "Igår",
+  "ktDayOlder": "Äldre",
+  "ktDayGroupAria": "{day}, {n} konversationer",
+  "ktDayGroupAriaOne": "{day}, 1 konversation",
+  "provChat": "Chatt",
+  "provMore": "Fler",
+  "provMoreTitle": "Fler leverantörer",
+  "provRowAria": "Leverantörssidor",
+  "provOpenPage": "Öppna sidan för {p}",
+  "setProvHotkey": "Öppna senaste leverantören",
+  "setProvHotkeyTitle": "Öppnar sidan för den leverantör du öppnade senast, eller standardleverantören",
+  "setProvHotkeyConflict": "Denna genväg används redan av en annan och sparas inte"
 }

@@ -2023,7 +2023,7 @@ const HARVEST_JS: &str = r##"
   }
   // Claude: its selector is verified and the generic chain below is worse than nothing there. While the model
   // reasons there is no reply block yet, and `[class*="assistant" i]` then matched the chat list in the sidebar:
-  // "ora" / "1 minuto fa" was delivered as the answer (measured 01/10 and 05/10/2026, voce 59).
+  // "ora" / "1 minuto fa" was delivered as the answer (measured 01/10 and 05/10/2026).
   // Gemini too (14/10/2026, signed out): with the page still showing its welcome ("Meet Gemini, your personal AI
   // assistant") the generic chain matched `[class*="assistant" i]` (the welcome's own container) and the harvest
   // delivered the greeting by stability while the fill was still held. Its own selector (`message-content`) is verified.

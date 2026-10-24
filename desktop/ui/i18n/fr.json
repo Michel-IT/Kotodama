@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Regarde le fichier joint (ou les fichiers joints) et dis-moi ce qu'il contient.",
   "ktAttachFailed": "Le fichier n'est pas arrivé chez {p}, le message n'a donc pas été envoyé : il serait parti sans la pièce jointe. Renvoyez-le.",
   "rcReadFailed": "Le fichier des contraintes n'a pas pu être lu, donc les modifications des contraintes ne seront pas enregistrées pendant cette session.",
-  "rcSaveFailed": "Les contraintes n'ont pas pu être enregistrées. Votre dernière modification risque d'être perdue à la fermeture de l'application."
+  "rcSaveFailed": "Les contraintes n'ont pas pu être enregistrées. Votre dernière modification risque d'être perdue à la fermeture de l'application.",
+  "ktSideResize": "Largeur de la barre latérale",
+  "ktSideResizeTip": "Faites glisser pour redimensionner ; double-cliquez pour réinitialiser",
+  "ktDayToday": "Aujourd'hui",
+  "ktDayYesterday": "Hier",
+  "ktDayOlder": "Plus anciennes",
+  "ktDayGroupAria": "{day}, {n} conversations",
+  "ktDayGroupAriaOne": "{day}, 1 conversation",
+  "provChat": "Chat",
+  "provMore": "Plus",
+  "provMoreTitle": "Autres fournisseurs",
+  "provRowAria": "Pages des fournisseurs",
+  "provOpenPage": "Ouvrir la page de {p}",
+  "setProvHotkey": "Ouvrir le dernier fournisseur",
+  "setProvHotkeyTitle": "Ouvre la page du dernier fournisseur ouvert, ou celle du fournisseur par défaut",
+  "setProvHotkeyConflict": "Ce raccourci est déjà utilisé par un autre et n'est pas enregistré"
 }

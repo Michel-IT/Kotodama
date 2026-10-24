@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Olha para o ficheiro anexado (ou ficheiros anexados) e diz-me o que contém.",
   "ktAttachFailed": "O arquivo não chegou a {p}, então a mensagem não foi enviada: ela teria saído sem o anexo. Envie de novo.",
   "rcReadFailed": "Não foi possível ler o arquivo de restrições, então as alterações nas restrições não são salvas nesta sessão.",
-  "rcSaveFailed": "Não foi possível salvar as restrições. Sua última alteração pode se perder ao fechar o aplicativo."
+  "rcSaveFailed": "Não foi possível salvar as restrições. Sua última alteração pode se perder ao fechar o aplicativo.",
+  "ktSideResize": "Largura da barra lateral",
+  "ktSideResizeTip": "Arraste para redimensionar; clique duas vezes para redefinir",
+  "ktDayToday": "Hoje",
+  "ktDayYesterday": "Ontem",
+  "ktDayOlder": "Mais antigas",
+  "ktDayGroupAria": "{day}, {n} conversas",
+  "ktDayGroupAriaOne": "{day}, 1 conversa",
+  "provChat": "Chat",
+  "provMore": "Mais",
+  "provMoreTitle": "Mais provedores",
+  "provRowAria": "Páginas dos provedores",
+  "provOpenPage": "Abrir a página de {p}",
+  "setProvHotkey": "Abrir o último provedor",
+  "setProvHotkeyTitle": "Abre a página do último provedor aberto, ou do predefinido",
+  "setProvHotkeyConflict": "Este atalho já é usado por outro e não é guardado"
 }

@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Se på den vedlagte filen (eller filene) og fortell meg hva den inneholder.",
   "ktAttachFailed": "Filen nådde ikke {p}, så meldingen ble ikke sendt: den ville gått av gårde uten vedlegget. Send den på nytt.",
   "rcReadFailed": "Filen med begrensninger kunne ikke leses, så endringer i begrensninger lagres ikke i denne økten.",
-  "rcSaveFailed": "Begrensningene kunne ikke lagres. Den siste endringen din kan gå tapt når appen lukkes."
+  "rcSaveFailed": "Begrensningene kunne ikke lagres. Den siste endringen din kan gå tapt når appen lukkes.",
+  "ktSideResize": "Bredde på sidepanelet",
+  "ktSideResizeTip": "Dra for å endre størrelse; dobbeltklikk for å tilbakestille",
+  "ktDayToday": "I dag",
+  "ktDayYesterday": "I går",
+  "ktDayOlder": "Eldre",
+  "ktDayGroupAria": "{day}, {n} samtaler",
+  "ktDayGroupAriaOne": "{day}, 1 samtale",
+  "provChat": "Chat",
+  "provMore": "Mer",
+  "provMoreTitle": "Flere leverandører",
+  "provRowAria": "Leverandørsider",
+  "provOpenPage": "Åpne siden til {p}",
+  "setProvHotkey": "Åpne sist brukte leverandør",
+  "setProvHotkeyTitle": "Åpner siden til den leverandøren du åpnet sist, eller standarden",
+  "setProvHotkeyConflict": "Denne snarveien brukes allerede av en annen og lagres ikke"
 }

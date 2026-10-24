@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Pozri sa na priložený súbor (alebo súbory) a povedz mi, čo obsahuje.",
   "ktAttachFailed": "Súbor sa k {p} nedostal, preto sa správa neodoslala: odišla by bez prílohy. Odošlite ju znova.",
   "rcReadFailed": "Súbor obmedzení sa nepodarilo načítať, takže zmeny obmedzení sa v tejto relácii neuložia.",
-  "rcSaveFailed": "Obmedzenia sa nepodarilo uložiť. Posledná zmena sa môže stratiť pri zatvorení aplikácie."
+  "rcSaveFailed": "Obmedzenia sa nepodarilo uložiť. Posledná zmena sa môže stratiť pri zatvorení aplikácie.",
+  "ktSideResize": "Šírka bočného panela",
+  "ktSideResizeTip": "Potiahnutím zmeníte veľkosť; dvojklikom obnovíte predvolenú",
+  "ktDayToday": "Dnes",
+  "ktDayYesterday": "Včera",
+  "ktDayOlder": "Staršie",
+  "ktDayGroupAria": "{day}, konverzácií: {n}",
+  "ktDayGroupAriaOne": "{day}, 1 konverzácia",
+  "provChat": "Chat",
+  "provMore": "Viac",
+  "provMoreTitle": "Ďalší poskytovatelia",
+  "provRowAria": "Stránky poskytovateľov",
+  "provOpenPage": "Otvoriť stránku {p}",
+  "setProvHotkey": "Otvoriť posledného poskytovateľa",
+  "setProvHotkeyTitle": "Otvorí stránku naposledy otvoreného poskytovateľa alebo predvoleného",
+  "setProvHotkeyConflict": "Túto skratku už používa iná a neuloží sa"
 }

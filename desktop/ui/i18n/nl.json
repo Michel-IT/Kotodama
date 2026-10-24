@@ -347,5 +347,20 @@
   "ktAttachOnlyPrompt": "Bekijk het bijgevoegde bestand (of de bijgevoegde bestanden) en vertel me wat erin staat.",
   "ktAttachFailed": "Het bestand is niet bij {p} aangekomen, dus het bericht is niet verzonden: het zou zonder bijlage zijn vertrokken. Verstuur het opnieuw.",
   "rcReadFailed": "Het bestand met beperkingen kon niet worden gelezen, dus wijzigingen in beperkingen worden in deze sessie niet opgeslagen.",
-  "rcSaveFailed": "De beperkingen konden niet worden opgeslagen. Je laatste wijziging kan verloren gaan bij het sluiten van de app."
+  "rcSaveFailed": "De beperkingen konden niet worden opgeslagen. Je laatste wijziging kan verloren gaan bij het sluiten van de app.",
+  "ktSideResize": "Breedte van zijbalk",
+  "ktSideResizeTip": "Sleep om het formaat te wijzigen; dubbelklik om te herstellen",
+  "ktDayToday": "Vandaag",
+  "ktDayYesterday": "Gisteren",
+  "ktDayOlder": "Ouder",
+  "ktDayGroupAria": "{day}, {n} gesprekken",
+  "ktDayGroupAriaOne": "{day}, 1 gesprek",
+  "provChat": "Chat",
+  "provMore": "Meer",
+  "provMoreTitle": "Meer providers",
+  "provRowAria": "Providerpagina's",
+  "provOpenPage": "Open de pagina van {p}",
+  "setProvHotkey": "Open de laatste provider",
+  "setProvHotkeyTitle": "Opent de pagina van de laatste provider die je opende, of van de standaard",
+  "setProvHotkeyConflict": "Deze sneltoets wordt al door een ander gebruikt en wordt niet opgeslagen"
 }

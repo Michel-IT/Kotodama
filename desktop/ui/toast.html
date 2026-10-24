@@ -253,10 +253,9 @@
       const h = document.getElementById('rdHere');
       h.textContent = STR.toastCopy;
       h.disabled = false;
-      // Closed state: the buttons already say it all; the note would only repeat the clipboard remark.
       const note = document.getElementById('rdNote');
       note.textContent = STR.toastInClipboard;
-      note.hidden = closed;
+      note.hidden = false;
       fitToast();
     }
     // Ask the backend to size the window to the real content height (card + the 8px halo that
