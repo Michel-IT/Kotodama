@@ -427,5 +427,6 @@
   "provColAutoNone": "Itzali denak",
   "provBulkAskTitle": "Bidalketa automatikoa zerbitzu batzuentzat",
   "provBulkAskOk": "Piztu denak",
-  "provBulkAsk": "Kotodama-k zure mezuak behean dauden zerbitzuen orrietan idatziko ditu, bidaliko ditu eta erantzunak irakurriko ditu, zure kontuarekin. Zerbitzu asko beren baldintzetan programa automatikoak debekatzen dituzte: haiek piztea zure aukera da eta zure erantzukizuna (Baldintzak, 6. atala). Bakoitza edozein unetan itzali dezakezu."
+  "provBulkAsk": "Kotodama-k zure mezuak behean dauden zerbitzuen orrietan idatziko ditu, bidaliko ditu eta erantzunak irakurriko ditu, zure kontuarekin. Zerbitzu asko beren baldintzetan programa automatikoak debekatzen dituzte: haiek piztea zure aukera da eta zure erantzukizuna (Baldintzak, 6. atala). Bakoitza edozein unetan itzali dezakezu.",
+  "ktNewChatTip": "Elkarrizketa berria ({k})"
 }

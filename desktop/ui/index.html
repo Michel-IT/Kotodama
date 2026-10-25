@@ -687,9 +687,7 @@
     /* invisible scrollbar: in a 56px rail it would steal half of the width */
     .kt-side.collapsed .kt-sess-list { scrollbar-width:none; }
     .kt-side.collapsed .kt-sess-list::-webkit-scrollbar { width:0; height:0; }
-    /* Collapsed: the three rows on top become three 34px squares with their own icon, on the same
-       40px rhythm as the conversations below. */
-    .kt-side.collapsed .kt-top { align-items:center; padding:8px 0; gap:6px; border-bottom:none; }
+    /* Collapsed: the search and the row buttons become 34px squares on the 40px rhythm of the conversations. */
     .kt-side.collapsed .kt-hist-search { display:flex; justify-content:center; padding:8px 0 3px; }
     .kt-side.collapsed .kt-hist-search .kt-search { width:34px; height:34px; padding:0; gap:0; margin:0;
       justify-content:center; border-radius:9px; cursor:pointer; }
@@ -697,17 +695,13 @@
     .kt-side.collapsed .kt-hist-search .kt-search input { display:none; }
     .kt-side.collapsed .kt-row { width:34px; height:34px; padding:0; gap:0; justify-content:center; }
     .kt-side.collapsed .kt-row-label,
-    .kt-side.collapsed .kt-hist-head { display:none; }
-    /* The sidebar holds the history only (the recipes are chosen from the composer): it takes the whole
-       height under "New conversation". */
+    .kt-side.collapsed .kt-hist-head .seclabel { display:none; }
+    /* Collapsed: the history title goes, the "new conversation" icon stays on top of the rail. */
+    .kt-side.collapsed .kt-hist-head { justify-content:center; padding:8px 0 3px; border-bottom:none; }
+    /* The sidebar holds the history only: the panel fills the height under the header. */
     .kt-side-panel { flex:1; min-height:0; display:flex; flex-direction:column; }
     .kt-side-fill { flex:1 1 auto; min-height:0; }
-    /* The top of the sidebar speaks one language: search, then rows that all look alike (icon + label),
-       the way the history below is a list of alike rows. "New conversation" used to be a button in the
-       middle of the column and "Recipes" a centred caption with a fold arrow: three different shapes
-       for three actions, which is what made the column feel disordered. */
-    .kt-top { flex:none; display:flex; flex-direction:column; gap:6px; padding:10px 6px 8px;
-      border-bottom:1px solid var(--border-soft); }
+    /* Top of the sidebar: search, then rows that look like the history rows below. */
     /* 8px above and below, and the same left and right edges as the conversation rows under it (6px). */
     .kt-hist-search { flex:none; padding:8px 6px 2px; }
     .kt-hist-search .kt-search { margin:0; }
@@ -718,8 +712,12 @@
     .kt-row:focus-visible { outline:1px solid var(--accent); outline-offset:-1px; }
     .kt-row-ico { flex:none; width:18px; text-align:center; color:var(--accent); font-size:15px; line-height:1; }
     .kt-row-label { flex:none; }
-    .kt-new { background:var(--panel-2); border-color:var(--border); }
-    .kt-new:hover { border-color:var(--accent); }
+    /* Icon-only "new conversation" button in the history title row: 28px hit area, theme colours only. */
+    .kt-new-btn { flex:none; width:28px; height:28px; padding:0; display:grid; place-items:center; cursor:pointer;
+      color:var(--accent); background:var(--panel-2); border:1px solid var(--border); border-radius:var(--radius-s); }
+    .kt-new-btn:hover { border-color:var(--accent); background:var(--panel-glow); }
+    .kt-new-btn:focus-visible { outline:1px solid var(--accent); outline-offset:1px; }
+    .kt-side.collapsed .kt-new-btn { width:34px; height:34px; }
     /* The recipes open as a menu above their button in the composer, over the chat: the conversation never
        moves. It stays inside the window and scrolls when there are many recipes; "New recipe" stays pinned
        at the bottom. */
@@ -1967,9 +1965,6 @@
          recipe list+CRUD, applied to the Kotodama composer instead of the builder's own prompt). -->
     <aside class="kt-side" id="ktSide">
       <div class="kt-side-grip" id="ktSideGrip" role="separator" aria-orientation="vertical" tabindex="0"></div>
-      <div class="kt-top">
-        <button class="kt-row kt-new" id="ktNew" type="button" data-i18n-title="ktNewChat" title="Nuova conversazione"><span class="kt-row-ico">＋</span><span class="kt-row-label" data-i18n="ktNewChat">Nuova conversazione</span></button>
-      </div>
       <div class="kt-recipes-menu" id="ktPanelRecipes">
         <ul class="recipes" id="ktRecipes">
           <li class="recipe active" data-key="neutral" title="Neutral"><span class="ico">↦</span> <span class="rname">Neutral</span></li>
@@ -1985,7 +1980,7 @@
         <button class="recipe kt-menu-new" id="ktAddRecipe" type="button"><span class="ico">＋</span><span class="rname" data-i18n="newRecipe">Nuova ricetta</span></button>
       </div>
       <div class="kt-side-panel kt-side-fill" id="ktPanelHistory">
-        <div class="sidebar-head kt-hist-head"><span class="seclabel" data-i18n="ktTabHistory">Cronologia</span></div>
+        <div class="sidebar-head kt-hist-head"><span class="seclabel" data-i18n="ktTabHistory">Cronologia</span><button class="kt-new-btn" id="ktNew" type="button" title="Nuova conversazione" aria-label="Nuova conversazione"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
         <!-- The search belongs to the history it searches: right under its title, same edges as the rows. -->
         <div class="kt-hist-search">
           <div class="dl-search kt-search">
@@ -2114,7 +2109,7 @@
       popupBlocked:'Popup blocked by the browser: please allow popups for this site.',
       ktTileTitle:'Kotodama... ask every provider at once',
       ktTitle:'Selected providers', ktPlaceholder:'Ask all selected providers...',
-      ktSendBtn:'Send', ktNewChat:'New conversation',
+      ktSendBtn:'Send', ktNewChat:'New conversation', ktNewChatTip:'New conversation ({k})',
       ktPending:'Waiting...', ktGenerating:'Generating...',
       ktTimeout:'Timed out, partial answer', ktError:'No answer received',
       ktLogin:'Sign-in required', ktOpenProvider:'Open provider', ktLoginBtn:'Log in',
@@ -2292,6 +2287,8 @@
     // Ctrl+Cmd because Option is a dead-key modifier there (Opt+C types a cedilla), so Ctrl+Alt
     // clashes with plain text entry; every other platform keeps Ctrl+Alt.
     const IS_MAC = /Mac|iPhone|iPad|iPod/.test((navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||navigator.userAgent);
+    // In-app "New conversation" combo, reserved: it cannot be assigned to a global shortcut.
+    const KT_NEW_ACCEL=IS_MAC?'Shift+Super+KeyO':'Control+Shift+KeyO';
     const IS_WIN = /Win/.test((navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||navigator.userAgent);
     const DEFAULT_MOD = IS_MAC ? 'Control+Super' : 'Control+Alt';
     // Main shortcut: <mod>+Space everywhere, but macOS reserves BOTH Ctrl+Cmd+Space (Emoji &
@@ -2337,6 +2334,7 @@
       document.documentElement.dir = RTL.has(code) ? 'rtl' : 'ltr';
       document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(t[k]!==undefined) el.textContent=t[k]; });
       document.querySelectorAll('[data-i18n-title]').forEach(el=>{ const k=el.getAttribute('data-i18n-title'); if(t[k]!==undefined){ el.title=t[k]; if(el.id==='pcBack'||el.id==='pcReload') el.setAttribute('aria-label',t[k]); } });
+      ktNewTip();
       document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(t[k]!==undefined) el.placeholder=t[k]; });
       recipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]) li.querySelector('.rname').textContent=t.recipeNames[k]; });
       if(ktRecipesEl) ktRecipesEl.querySelectorAll('.recipe[data-key]').forEach(li=>{ const k=li.dataset.key; if(t.recipeNames[k]){ li.querySelector('.rname').textContent=t.recipeNames[k]; li.title=t.recipeNames[k]; } });
@@ -5468,7 +5466,39 @@
       ktPrewarm();
     });
     document.getElementById('ktSend').addEventListener('click', ktDoSend);
-    document.getElementById('ktNew').addEventListener('click', ()=>{ ktPrewarmed=false; ktPrewarm(); ktNewConversation(); });
+    // Icon-only button: its name and shortcut live in title + aria-label, composed per platform
+    // (Ctrl+Shift+O, Cmd+Shift+O on macOS).
+    function ktNewTip(){
+      const el=document.getElementById('ktNew'); if(!el) return;
+      const name=TR.ktNewChat||'New conversation';
+      const keys=friendlyHotkey(KT_NEW_ACCEL);
+      el.title=(TR.ktNewChatTip||'New conversation ({k})').replace('{k}', keys);
+      // The accessible name stays the plain action; the shortcut is exposed separately.
+      el.setAttribute('aria-label', name);
+      el.setAttribute('aria-keyshortcuts', IS_MAC ? 'Meta+Shift+O' : 'Control+Shift+O');
+    }
+    // True when something else is on screen that Esc would close first: the shortcut then stays out of the way.
+    function ktNewShortcutBlocked(){
+      const b=document.body;
+      if(!b.classList.contains('kotodama-open') || b.classList.contains('provider-open')) return true;
+      if(document.querySelector('.modal-overlay.show, .cs.open')) return true;
+      if(dlOpen() || ktRecipeMenuOpen || provMoreMenuEl) return true;
+      const cm=document.getElementById('ctxMenu'); if(cm && !cm.hidden) return true;
+      return false;
+    }
+    function ktNewClick(){ ktPrewarmed=false; ktPrewarm(); ktNewConversation(); ktInput.focus(); }
+    document.getElementById('ktNew').addEventListener('click', ktNewClick);
+    // Local shortcut (not a system-wide one): only while the Kotodama view is open and no dialog covers it.
+    // It is not a text-editing chord, so it works with the composer focused too.
+    document.addEventListener('keydown', e=>{
+      if(!e.shiftKey || e.altKey || e.repeat || e.isComposing) return;
+      if(IS_MAC ? (!e.metaKey || e.ctrlKey) : (!e.ctrlKey || e.metaKey)) return;
+      // Physical key first (non-Latin layouts report a local letter in e.key); e.key only when e.code is missing.
+      const isO = e.code ? e.code==='KeyO' : (e.key||'').toLowerCase()==='o';
+      if(!isO || ktNewShortcutBlocked()) return;
+      e.preventDefault(); ktNewClick();
+    });
+    ktNewTip();
     // Enter sends; Shift+Enter (or Ctrl/Cmd+Enter) inserts a newline. IME composition is left alone.
     ktInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.isComposing){ e.preventDefault(); if(!ktIsBusy()) ktDoSend(); } });
     if(ktSearch) ktSearch.addEventListener('input', renderKtSessions);
@@ -6101,7 +6131,7 @@
     }
     setHotkey.addEventListener('focus', ()=>{ setHotkey.classList.add('capturing'); setHotkey.value=TR.pressCombo; rhFitPressText(setHotkey); });
     setHotkey.addEventListener('blur', ()=>{ setHotkey.classList.remove('capturing'); setHotkey.style.fontSize=''; setHotkey.value=friendlyHotkey(capturedHotkey); rhFitColumns(); });
-    setHotkey.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a){ capturedHotkey=a; setHotkey.value=friendlyHotkey(a); setHotkey.blur(); } });
+    setHotkey.addEventListener('keydown', e=>{ e.preventDefault(); const a=accelFromEvent(e); if(a && a!==KT_NEW_ACCEL){ capturedHotkey=a; setHotkey.value=friendlyHotkey(a); setHotkey.blur(); } });
     document.getElementById('hotkeyClear').addEventListener('click', ()=>{ capturedHotkey=DEFAULT_SETTINGS.hotkey; setHotkey.value=friendlyHotkey(capturedHotkey); rhMarkConflicts(); });
     // "Open the last provider" shortcut: same capture field as the main one, reset puts the default back.
     setProvHotkey.addEventListener('focus', ()=>{ setProvHotkey.classList.add('capturing'); setProvHotkey.value=TR.pressCombo; rhFitPressText(setProvHotkey); });
@@ -6143,8 +6173,11 @@
       if(capturedHotkey) vals[capturedHotkey]=(vals[capturedHotkey]||0)+1;
       if(capturedProvHotkey) vals[capturedProvHotkey]=(vals[capturedProvHotkey]||0)+1;
       Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) vals[a]=(vals[a]||0)+1; });
+      // New-conversation combo is reserved for the in-app shortcut: counting it once makes any assignment a clash.
+      vals[KT_NEW_ACCEL]=(vals[KT_NEW_ACCEL]||0)+1;
       // the provider shortcut yields: a recipe is only in conflict with the main hotkey or another recipe
       const others={};
+      others[KT_NEW_ACCEL]=1;
       if(capturedHotkey) others[capturedHotkey]=(others[capturedHotkey]||0)+1;
       Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) others[a]=(others[a]||0)+1; });
       const provClash=!!capturedProvHotkey && vals[capturedProvHotkey]>1;
@@ -6331,6 +6364,7 @@
         // Provider shortcut yields to any other: recipes keep theirs (as before the provider queue) and
         // only the provider one is dropped. Count recipe/main combos WITHOUT the provider one.
         const others={};
+        others[KT_NEW_ACCEL]=1;   // reserved for the in-app "New conversation" shortcut: never saved
         if(capturedHotkey) others[capturedHotkey]=(others[capturedHotkey]||0)+1;
         Object.values(capturedRecipeHotkeys).forEach(a=>{ if(a) others[a]=(others[a]||0)+1; });
         Object.keys(capturedRecipeHotkeys).forEach(k=>{ const a=capturedRecipeHotkeys[k]; if(a && others[a]===1) rh[k]=a; });

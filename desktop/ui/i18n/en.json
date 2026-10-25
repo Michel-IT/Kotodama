@@ -317,6 +317,7 @@
   "ktPlaceholder": "Ask all selected providers...",
   "ktSendBtn": "Send",
   "ktNewChat": "New conversation",
+  "ktNewChatTip": "New conversation ({k})",
   "ktPending": "Waiting...",
   "ktGenerating": "Generating...",
   "ktTimeout": "Timed out, partial answer",

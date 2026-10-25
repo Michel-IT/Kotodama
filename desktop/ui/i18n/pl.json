@@ -427,5 +427,6 @@
   "provColAutoNone": "Wyłącz wszystko",
   "provBulkAskTitle": "Automatyczne wysyłanie dla kilku usług",
   "provBulkAskOk": "Włącz wszystko",
-  "provBulkAsk": "Kotodama będzie wpisywać twoje wiadomości na stronach usług poniżej, wysyłać je i odczytywać odpowiedzi, na twoim koncie. Wiele usług zakazuje w swoich warunkach automatycznych programów: włączenie ich to twój wybór i twoja odpowiedzialność (Warunki, punkt 6). Każdą z nich możesz wyłączyć w dowolnym momencie."
+  "provBulkAsk": "Kotodama będzie wpisywać twoje wiadomości na stronach usług poniżej, wysyłać je i odczytywać odpowiedzi, na twoim koncie. Wiele usług zakazuje w swoich warunkach automatycznych programów: włączenie ich to twój wybór i twoja odpowiedzialność (Warunki, punkt 6). Każdą z nich możesz wyłączyć w dowolnym momencie.",
+  "ktNewChatTip": "Nowa rozmowa ({k})"
 }

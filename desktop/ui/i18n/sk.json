@@ -427,5 +427,6 @@
   "provColAutoNone": "Vypnúť všetko",
   "provBulkAskTitle": "Automatické odosielanie pre viac služieb",
   "provBulkAskOk": "Zapnúť všetko",
-  "provBulkAsk": "Kotodama bude vaše správy písať na stránkach nižšie uvedených služieb, odosielať ich a čítať odpovede, s vaším účtom. Mnohé služby vo svojich podmienkach zakazujú automatizované programy: ich zapnutie je vaša voľba a vaša zodpovednosť (Podmienky, bod 6). Každú z nich môžete kedykoľvek vypnúť."
+  "provBulkAsk": "Kotodama bude vaše správy písať na stránkach nižšie uvedených služieb, odosielať ich a čítať odpovede, s vaším účtom. Mnohé služby vo svojich podmienkach zakazujú automatizované programy: ich zapnutie je vaša voľba a vaša zodpovednosť (Podmienky, bod 6). Každú z nich môžete kedykoľvek vypnúť.",
+  "ktNewChatTip": "Nová konverzácia ({k})"
 }

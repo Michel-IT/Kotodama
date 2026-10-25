@@ -427,5 +427,6 @@
   "provColAutoNone": "Zima zote",
   "provBulkAskTitle": "Kutuma kiotomatiki kwa huduma kadhaa",
   "provBulkAskOk": "Washa zote",
-  "provBulkAsk": "Kotodama itaandika ujumbe wako kwenye kurasa za huduma zilizo hapa chini, kuzituma na kusoma majibu, kwa kutumia akaunti yako. Huduma nyingi zinapiga marufuku programu za kiotomatiki katika masharti yake: kuziwasha ni chaguo lako na jukumu lako (Masharti, kifungu cha 6). Unaweza kuzizima kila moja wakati wowote."
+  "provBulkAsk": "Kotodama itaandika ujumbe wako kwenye kurasa za huduma zilizo hapa chini, kuzituma na kusoma majibu, kwa kutumia akaunti yako. Huduma nyingi zinapiga marufuku programu za kiotomatiki katika masharti yake: kuziwasha ni chaguo lako na jukumu lako (Masharti, kifungu cha 6). Unaweza kuzizima kila moja wakati wowote.",
+  "ktNewChatTip": "Mazungumzo mapya ({k})"
 }

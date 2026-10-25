@@ -427,5 +427,6 @@
   "provColAutoNone": "Kaikki pois",
   "provBulkAskTitle": "Automaattinen lähetys useille palveluille",
   "provBulkAskOk": "Kaikki päälle",
-  "provBulkAsk": "Kotodama kirjoittaa viestisi alla olevien palveluiden sivuille, lähettää ne ja lukee vastaukset tilisi kautta. Monet palvelut kieltävät käyttöehdoissaan automaattiset ohjelmat: niiden käyttöön ottaminen on sinun valintasi ja vastuullasi (Käyttöehdot, kohta 6). Voit poistaa kunkin käytöstä milloin tahansa."
+  "provBulkAsk": "Kotodama kirjoittaa viestisi alla olevien palveluiden sivuille, lähettää ne ja lukee vastaukset tilisi kautta. Monet palvelut kieltävät käyttöehdoissaan automaattiset ohjelmat: niiden käyttöön ottaminen on sinun valintasi ja vastuullasi (Käyttöehdot, kohta 6). Voit poistaa kunkin käytöstä milloin tahansa.",
+  "ktNewChatTip": "Uusi keskustelu ({k})"
 }

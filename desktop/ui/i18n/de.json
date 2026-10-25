@@ -427,5 +427,6 @@
   "provColAutoNone": "Alle aus",
   "provBulkAskTitle": "Automatisches Senden für mehrere Dienste",
   "provBulkAskOk": "Alle an",
-  "provBulkAsk": "Kotodama schreibt Ihre Nachrichten auf die Seiten der unten aufgeführten Dienste, sendet sie und liest die Antworten, mit Ihrem Konto. Viele Dienste verbieten in ihren Nutzungsbedingungen automatische Programme: Das Einschalten ist Ihre Entscheidung und Ihre Verantwortung (Nutzungsbedingungen, Abschnitt 6). Sie können jeden Dienst jederzeit wieder ausschalten."
+  "provBulkAsk": "Kotodama schreibt Ihre Nachrichten auf die Seiten der unten aufgeführten Dienste, sendet sie und liest die Antworten, mit Ihrem Konto. Viele Dienste verbieten in ihren Nutzungsbedingungen automatische Programme: Das Einschalten ist Ihre Entscheidung und Ihre Verantwortung (Nutzungsbedingungen, Abschnitt 6). Sie können jeden Dienst jederzeit wieder ausschalten.",
+  "ktNewChatTip": "Neue Unterhaltung ({k})"
 }

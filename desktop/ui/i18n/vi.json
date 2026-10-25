@@ -427,5 +427,6 @@
   "provColAutoNone": "Tắt tất cả",
   "provBulkAskTitle": "Tự động gửi cho nhiều dịch vụ",
   "provBulkAskOk": "Bật tất cả",
-  "provBulkAsk": "Kotodama sẽ nhập tin nhắn của bạn vào trang của các dịch vụ bên dưới, gửi đi và đọc phản hồi, bằng tài khoản của bạn. Nhiều dịch vụ cấm chương trình tự động trong điều khoản của họ: việc bật chúng là lựa chọn và trách nhiệm của bạn (Điều khoản, mục 6). Bạn có thể tắt từng dịch vụ bất cứ lúc nào."
+  "provBulkAsk": "Kotodama sẽ nhập tin nhắn của bạn vào trang của các dịch vụ bên dưới, gửi đi và đọc phản hồi, bằng tài khoản của bạn. Nhiều dịch vụ cấm chương trình tự động trong điều khoản của họ: việc bật chúng là lựa chọn và trách nhiệm của bạn (Điều khoản, mục 6). Bạn có thể tắt từng dịch vụ bất cứ lúc nào.",
+  "ktNewChatTip": "Cuộc trò chuyện mới ({k})"
 }

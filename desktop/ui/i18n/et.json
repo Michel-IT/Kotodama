@@ -427,5 +427,6 @@
   "provColAutoNone": "Keela kõik",
   "provBulkAskTitle": "Automaatne saatmine mitme teenuse jaoks",
   "provBulkAskOk": "Luba kõik",
-  "provBulkAsk": "Kotodama kirjutab teie sõnumid allpool loetletud teenuste lehtedele, saadab need ja loeb vastused teie kontoga. Paljud teenused keelavad oma tingimustes automaatsed programmid: nende sisselülitamine on teie valik ja teie vastutus (Tingimused, punkt 6). Igaüks neist on teil igal ajal võimalik välja lülitada."
+  "provBulkAsk": "Kotodama kirjutab teie sõnumid allpool loetletud teenuste lehtedele, saadab need ja loeb vastused teie kontoga. Paljud teenused keelavad oma tingimustes automaatsed programmid: nende sisselülitamine on teie valik ja teie vastutus (Tingimused, punkt 6). Igaüks neist on teil igal ajal võimalik välja lülitada.",
+  "ktNewChatTip": "Uus vestlus ({k})"
 }

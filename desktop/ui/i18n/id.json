@@ -427,5 +427,6 @@
   "provColAutoNone": "Matikan semua",
   "provBulkAskTitle": "Kirim otomatis untuk beberapa layanan",
   "provBulkAskOk": "Aktifkan semua",
-  "provBulkAsk": "Kotodama akan mengetik pesan Anda di halaman layanan di bawah, mengirimkannya, dan membaca jawabannya, dengan akun Anda. Banyak layanan melarang program otomatis dalam ketentuannya: mengaktifkannya adalah pilihan dan tanggung jawab Anda (Ketentuan, bagian 6). Anda dapat menonaktifkan masing-masing kapan saja."
+  "provBulkAsk": "Kotodama akan mengetik pesan Anda di halaman layanan di bawah, mengirimkannya, dan membaca jawabannya, dengan akun Anda. Banyak layanan melarang program otomatis dalam ketentuannya: mengaktifkannya adalah pilihan dan tanggung jawab Anda (Ketentuan, bagian 6). Anda dapat menonaktifkan masing-masing kapan saja.",
+  "ktNewChatTip": "Percakapan baru ({k})"
 }

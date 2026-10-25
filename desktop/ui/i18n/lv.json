@@ -427,5 +427,6 @@
   "provColAutoNone": "Izslēgt visus",
   "provBulkAskTitle": "Automātiska sūtīšana vairākiem pakalpojumiem",
   "provBulkAskOk": "Ieslēgt visus",
-  "provBulkAsk": "Kotodama ierakstīs jūsu ziņojumus zemāk uzskaitīto pakalpojumu lapās, nosūtīs tos un nolasīs atbildes, izmantojot jūsu kontu. Daudzi pakalpojumi savos noteikumos aizliedz automatizētas programmas: to ieslēgšana ir jūsu izvēle un jūsu atbildība (Noteikumi, 6. punkts). Katru no tiem varat izslēgt jebkurā brīdī."
+  "provBulkAsk": "Kotodama ierakstīs jūsu ziņojumus zemāk uzskaitīto pakalpojumu lapās, nosūtīs tos un nolasīs atbildes, izmantojot jūsu kontu. Daudzi pakalpojumi savos noteikumos aizliedz automatizētas programmas: to ieslēgšana ir jūsu izvēle un jūsu atbildība (Noteikumi, 6. punkts). Katru no tiem varat izslēgt jebkurā brīdī.",
+  "ktNewChatTip": "Jauna saruna ({k})"
 }

@@ -427,5 +427,6 @@
   "provColAutoNone": "Slå av alle",
   "provBulkAskTitle": "Automatisk sending for flere tjenester",
   "provBulkAskOk": "Slå på alle",
-  "provBulkAsk": "Kotodama skriver meldingene dine inn på sidene til tjenestene nedenfor, sender dem og leser svarene, med din konto. Mange tjenester forbyr automatiske programmer i vilkårene sine: å slå dem på er ditt valg og ditt ansvar (Vilkår, punkt 6). Du kan slå av hver enkelt når som helst."
+  "provBulkAsk": "Kotodama skriver meldingene dine inn på sidene til tjenestene nedenfor, sender dem og leser svarene, med din konto. Mange tjenester forbyr automatiske programmer i vilkårene sine: å slå dem på er ditt valg og ditt ansvar (Vilkår, punkt 6). Du kan slå av hver enkelt når som helst.",
+  "ktNewChatTip": "Ny samtale ({k})"
 }

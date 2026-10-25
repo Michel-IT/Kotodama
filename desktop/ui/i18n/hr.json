@@ -427,5 +427,6 @@
   "provColAutoNone": "Isključi sve",
   "provBulkAskTitle": "Automatsko slanje za više usluga",
   "provBulkAskOk": "Uključi sve",
-  "provBulkAsk": "Kotodama će upisivati vaše poruke na stranicama usluga navedenih u nastavku, slati ih i čitati odgovore, s vašim računom. Mnoge usluge u svojim uvjetima zabranjuju automatske programe: uključivanje je vaš izbor i vaša odgovornost (Uvjeti, točka 6). Svaku možete isključiti u bilo kojem trenutku."
+  "provBulkAsk": "Kotodama će upisivati vaše poruke na stranicama usluga navedenih u nastavku, slati ih i čitati odgovore, s vašim računom. Mnoge usluge u svojim uvjetima zabranjuju automatske programe: uključivanje je vaš izbor i vaša odgovornost (Uvjeti, točka 6). Svaku možete isključiti u bilo kojem trenutku.",
+  "ktNewChatTip": "Novi razgovor ({k})"
 }

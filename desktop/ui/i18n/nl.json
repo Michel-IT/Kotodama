@@ -427,5 +427,6 @@
   "provColAutoNone": "Alles uit",
   "provBulkAskTitle": "Automatisch verzenden voor meerdere diensten",
   "provBulkAskOk": "Alles aan",
-  "provBulkAsk": "Kotodama typt je berichten in de pagina's van onderstaande diensten, verstuurt ze en leest de antwoorden, met jouw account. Veel diensten verbieden automatische programma's in hun voorwaarden: ze inschakelen is jouw keuze en jouw verantwoordelijkheid (Voorwaarden, artikel 6). Je kunt elke dienst op elk moment uitschakelen."
+  "provBulkAsk": "Kotodama typt je berichten in de pagina's van onderstaande diensten, verstuurt ze en leest de antwoorden, met jouw account. Veel diensten verbieden automatische programma's in hun voorwaarden: ze inschakelen is jouw keuze en jouw verantwoordelijkheid (Voorwaarden, artikel 6). Je kunt elke dienst op elk moment uitschakelen.",
+  "ktNewChatTip": "Nieuw gesprek ({k})"
 }

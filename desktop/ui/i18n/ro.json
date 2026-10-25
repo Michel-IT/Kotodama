@@ -427,5 +427,6 @@
   "provColAutoNone": "Oprește tot",
   "provBulkAskTitle": "Trimitere automată pentru mai multe servicii",
   "provBulkAskOk": "Activează tot",
-  "provBulkAsk": "Kotodama va scrie mesajele tale în paginile serviciilor de mai jos, le va trimite și va citi răspunsurile, cu contul tău. Multe servicii interzic în termenii lor programele automate: activarea lor este alegerea ta și responsabilitatea ta (Termeni, punctul 6). Poți dezactiva fiecare serviciu oricând."
+  "provBulkAsk": "Kotodama va scrie mesajele tale în paginile serviciilor de mai jos, le va trimite și va citi răspunsurile, cu contul tău. Multe servicii interzic în termenii lor programele automate: activarea lor este alegerea ta și responsabilitatea ta (Termeni, punctul 6). Poți dezactiva fiecare serviciu oricând.",
+  "ktNewChatTip": "Conversație nouă ({k})"
 }

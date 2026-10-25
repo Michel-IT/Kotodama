@@ -427,5 +427,6 @@
   "provColAutoNone": "Tümünü kapat",
   "provBulkAskTitle": "Birden çok hizmet için otomatik gönderme",
   "provBulkAskOk": "Tümünü aç",
-  "provBulkAsk": "Kotodama, aşağıdaki hizmetlerin sayfalarına mesajlarınızı yazacak, gönderecek ve yanıtları okuyacak; bunları hesabınızla yapacak. Birçok hizmet kullanım koşullarında otomatik programları yasaklar: bunları açmak sizin tercihiniz ve sorumluluğunuzdur (Kullanım Koşulları, madde 6). Her birini istediğiniz zaman kapatabilirsiniz."
+  "provBulkAsk": "Kotodama, aşağıdaki hizmetlerin sayfalarına mesajlarınızı yazacak, gönderecek ve yanıtları okuyacak; bunları hesabınızla yapacak. Birçok hizmet kullanım koşullarında otomatik programları yasaklar: bunları açmak sizin tercihiniz ve sorumluluğunuzdur (Kullanım Koşulları, madde 6). Her birini istediğiniz zaman kapatabilirsiniz.",
+  "ktNewChatTip": "Yeni konuşma ({k})"
 }

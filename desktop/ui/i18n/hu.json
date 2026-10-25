@@ -427,5 +427,6 @@
   "provColAutoNone": "Mind kikapcs",
   "provBulkAskTitle": "Automatikus küldés több szolgáltatáshoz",
   "provBulkAskOk": "Mind bekapcs",
-  "provBulkAsk": "A Kotodama az alábbi szolgáltatások oldalaira gépeli be az üzeneteit, elküldi azokat, és beolvassa a válaszokat, az Ön fiókjával. Sok szolgáltatás a feltételeiben tiltja az automatikus programokat: ezek bekapcsolása az Ön döntése és felelőssége (Feltételek, 6. pont). Mindegyiket bármikor kikapcsolhatja."
+  "provBulkAsk": "A Kotodama az alábbi szolgáltatások oldalaira gépeli be az üzeneteit, elküldi azokat, és beolvassa a válaszokat, az Ön fiókjával. Sok szolgáltatás a feltételeiben tiltja az automatikus programokat: ezek bekapcsolása az Ön döntése és felelőssége (Feltételek, 6. pont). Mindegyiket bármikor kikapcsolhatja.",
+  "ktNewChatTip": "Új beszélgetés ({k})"
 }

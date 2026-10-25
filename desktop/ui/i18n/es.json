@@ -427,5 +427,6 @@
   "provColAutoNone": "Desactivar todo",
   "provBulkAskTitle": "Envío automático para varios servicios",
   "provBulkAskOk": "Activar todo",
-  "provBulkAsk": "Kotodama escribirá tus mensajes en las páginas de los servicios de abajo, los enviará y leerá las respuestas, con tu cuenta. Muchos servicios prohíben en sus términos los programas automáticos: activarlos es una decisión tuya y tu responsabilidad (Términos, apartado 6). Puedes desactivar cada uno en cualquier momento."
+  "provBulkAsk": "Kotodama escribirá tus mensajes en las páginas de los servicios de abajo, los enviará y leerá las respuestas, con tu cuenta. Muchos servicios prohíben en sus términos los programas automáticos: activarlos es una decisión tuya y tu responsabilidad (Términos, apartado 6). Puedes desactivar cada uno en cualquier momento.",
+  "ktNewChatTip": "Nueva conversación ({k})"
 }
