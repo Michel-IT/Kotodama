@@ -2331,12 +2331,15 @@ dependencies = [
 name = "kotodama"
 version = "0.1.8"
 dependencies = [
+ "base64 0.22.1",
  "core-foundation",
  "core-graphics",
  "miniz_oxide",
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",
+ "reqwest",
+ "rustls",
  "serde",
  "serde_json",
  "sys-locale",
@@ -2349,6 +2352,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
+ "url",
  "webview2-com",
  "windows 0.62.2",
 ]

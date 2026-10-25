@@ -362,5 +362,12 @@
   "provOpenPage": "Ouvrir la page de {p}",
   "setProvHotkey": "Ouvrir le dernier fournisseur",
   "setProvHotkeyTitle": "Ouvre la page du dernier fournisseur ouvert, ou celle du fournisseur par défaut",
-  "setProvHotkeyConflict": "Ce raccourci est déjà utilisé par un autre et n'est pas enregistré"
+  "setProvHotkeyConflict": "Ce raccourci est déjà utilisé par un autre et n'est pas enregistré",
+  "setProvIcons": "Télécharger les icônes des fournisseurs depuis leurs sites",
+  "setProvIconsHint": "L'icône de chaque fournisseur activé provient de son site et de ses serveurs de contenu, reste sur cet ordinateur et est revérifiée environ une fois par mois. Désactivé : seulement les initiales.",
+  "welcomeIcons": "Pour afficher l'icône de chaque fournisseur activé, Kotodama la télécharge depuis son site et ses serveurs de contenu, la garde sur votre ordinateur et la vérifie à nouveau environ une fois par mois. Vous pouvez la désactiver dans les Paramètres.",
+  "provIconsNoticeTitle": "Icônes des fournisseurs",
+  "provIconsNoticeBody": "Kotodama peut télécharger l'icône de chaque fournisseur activé depuis son site et ses serveurs de contenu, la conserver sur cet ordinateur et la revérifier environ une fois par mois. Voulez-vous les télécharger ? Vous pouvez changer d'avis dans Paramètres > Système.",
+  "provIconsNoticeYes": "Télécharger les icônes",
+  "provIconsNoticeNo": "Non, initiales seules"
 }

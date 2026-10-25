@@ -362,5 +362,12 @@
   "provOpenPage": "Otwórz stronę {p}",
   "setProvHotkey": "Otwórz ostatniego dostawcę",
   "setProvHotkeyTitle": "Otwiera stronę ostatnio otwartego dostawcy lub domyślnego",
-  "setProvHotkeyConflict": "Ten skrót jest już używany przez inny i nie zostanie zapisany"
+  "setProvHotkeyConflict": "Ten skrót jest już używany przez inny i nie zostanie zapisany",
+  "setProvIcons": "Pobieraj ikony dostawców z ich stron",
+  "setProvIconsHint": "Ikona każdego włączonego dostawcy pochodzi z jego strony i serwerów z treścią, zostaje na tym komputerze i jest sprawdzana ponownie mniej więcej raz w miesiącu. Wyłączone: same inicjały.",
+  "welcomeIcons": "Aby pokazać ikonę każdego włączonego dostawcy, Kotodama pobiera ją z jego strony i serwerów z treścią, zapisuje na tym komputerze i sprawdza ponownie mniej więcej raz w miesiącu. Można to wyłączyć w Ustawieniach.",
+  "provIconsNoticeTitle": "Ikony dostawców",
+  "provIconsNoticeBody": "Kotodama może pobrać ikonę każdego włączonego dostawcy z jego strony i serwerów z treścią, zapisać ją na tym komputerze i ponownie sprawdzać mniej więcej raz w miesiącu. Chcesz je pobrać? Zmienisz zdanie w Ustawienia > System.",
+  "provIconsNoticeYes": "Pobierz ikony",
+  "provIconsNoticeNo": "Nie, tylko inicjały"
 }

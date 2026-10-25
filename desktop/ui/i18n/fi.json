@@ -362,5 +362,12 @@
   "provOpenPage": "Avaa {p}:n sivu",
   "setProvHotkey": "Avaa viimeisin palveluntarjoaja",
   "setProvHotkeyTitle": "Avaa viimeksi avaamasi palveluntarjoajan sivun tai oletuksen",
-  "setProvHotkeyConflict": "Tätä pikanäppäintä käyttää jo toinen, eikä sitä tallenneta"
+  "setProvHotkeyConflict": "Tätä pikanäppäintä käyttää jo toinen, eikä sitä tallenneta",
+  "setProvIcons": "Lataa palveluntarjoajien kuvakkeet heidän sivuiltaan",
+  "setProvIconsHint": "Kunkin käytössä olevan palveluntarjoajan kuvake tulee sen verkkosivuilta ja sisältöpalvelimilta, pysyy tällä tietokoneella ja sitä tarkistetaan uudelleen noin kerran kuukaudessa. Pois: vain alkukirjaimet.",
+  "welcomeIcons": "Kotodama lataa kunkin käytössä olevan palveluntarjoajan kuvakkeen sen omilta verkkosivuilta ja sisältöpalvelimilta, tallentaa sen tietokoneellesi ja tarkistaa sen uudelleen noin kerran kuukaudessa. Tämän voi poistaa käytöstä asetuksissa.",
+  "provIconsNoticeTitle": "Palveluntarjoajien kuvakkeet",
+  "provIconsNoticeBody": "Kotodama voi ladata kunkin käytössä olevan palveluntarjoajan kuvakkeen sen verkkosivuilta ja sisältöpalvelimilta, säilyttää sen tällä tietokoneella ja tarkistaa sen uudelleen noin kerran kuukaudessa. Haluatko ladata ne? Voit vaihtaa mieltäsi kohdassa Asetukset > Järjestelmä.",
+  "provIconsNoticeYes": "Lataa kuvakkeet",
+  "provIconsNoticeNo": "Ei, vain alkukirjaimet"
 }

@@ -31,6 +31,10 @@ tauri-plugin-single-instance = "2"    # single instance: a 2nd launch focuses th
 sys-locale = "0.3"                    # OS language detection (multilingual first launch)
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }   # provider icons: same build as the updater
+rustls = { version = "0.23", default-features = false, features = ["ring"] }   # process-wide TLS provider for reqwest (as the updater)
+url = "2"
+base64 = "0.22"
 miniz_oxide = "0.8"                   # inflate: Claude's timeline stream compresses its larger frames (gzip)
 
 # Windows only: move the window onto the CURRENT virtual desktop (IVirtualDesktopManager).

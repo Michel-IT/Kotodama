@@ -15,6 +15,7 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-internal-toggle-maximize",
     "allow-show-provider-tab",
+    "allow-provider-icon",
     "allow-kotodama-broadcast",
     "allow-kotodama-set-attachments",
     "allow-kotodama-reuse-attachments",

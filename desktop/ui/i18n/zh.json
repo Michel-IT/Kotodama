@@ -362,5 +362,12 @@
   "provOpenPage": "打开{p}的页面",
   "setProvHotkey": "打开上次使用的服务商",
   "setProvHotkeyTitle": "打开你最近打开的服务商的页面，或默认服务商的页面",
-  "setProvHotkeyConflict": "该快捷键已被其他项使用，不会被保存"
+  "setProvHotkeyConflict": "该快捷键已被其他项使用，不会被保存",
+  "setProvIcons": "从各提供商网站下载其图标",
+  "setProvIconsHint": "每个已启用提供商的图标来自其网站和内容服务器，保存在本机，并大约每月重新检查一次。关闭：只显示首字母。",
+  "welcomeIcons": "为显示每个已启用提供商的图标，Kotodama 会从其网站和内容服务器下载图标，保存在您的电脑上，并大约每月重新检查一次。可在设置中关闭。",
+  "provIconsNoticeTitle": "提供商图标",
+  "provIconsNoticeBody": "Kotodama 可以从各提供商的网站和内容服务器下载其图标，保存在本机，并大约每月重新检查一次。要下载吗？你可以在 设置 > 系统 中改变主意。",
+  "provIconsNoticeYes": "下载图标",
+  "provIconsNoticeNo": "不，只显示首字母"
 }

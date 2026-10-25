@@ -362,5 +362,12 @@
   "provOpenPage": "Åpne siden til {p}",
   "setProvHotkey": "Åpne sist brukte leverandør",
   "setProvHotkeyTitle": "Åpner siden til den leverandøren du åpnet sist, eller standarden",
-  "setProvHotkeyConflict": "Denne snarveien brukes allerede av en annen og lagres ikke"
+  "setProvHotkeyConflict": "Denne snarveien brukes allerede av en annen og lagres ikke",
+  "setProvIcons": "Last ned leverandørikoner fra nettstedene deres",
+  "setProvIconsHint": "Ikonet til hver aktiverte leverandør kommer fra nettstedet og innholdsserverne deres, blir på denne datamaskinen og sjekkes på nytt omtrent én gang i måneden. Av: bare initialene.",
+  "welcomeIcons": "For å vise ikonet til hver aktiverte leverandør laster Kotodama det ned fra leverandørens nettsted og innholdsservere, lagrer det på datamaskinen din og sjekker det på nytt omtrent én gang i måneden. Du kan slå dette av i Innstillinger.",
+  "provIconsNoticeTitle": "Leverandørikoner",
+  "provIconsNoticeBody": "Kotodama kan laste ned ikonet til hver aktiverte leverandør fra nettstedet og innholdsserverne deres, beholde det på denne datamaskinen og sjekke det på nytt omtrent én gang i måneden. Vil du laste dem ned? Du kan endre mening under Innstillinger > System.",
+  "provIconsNoticeYes": "Last ned ikonene",
+  "provIconsNoticeNo": "Nei, bare initialene"
 }

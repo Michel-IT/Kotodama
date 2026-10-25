@@ -352,11 +352,26 @@
     }
     .prov:hover { background:var(--panel-2); color:var(--text); transform:translateY(-1px); border-color:var(--border); }
     .prov.active {
-      color:var(--text); background:var(--panel-2); border-color:var(--pc, var(--accent));
-      box-shadow:0 0 0 1px var(--pc, var(--accent)) inset;
+      color:var(--text); background:var(--panel-2); border-color:var(--accent);
+      box-shadow:0 0 0 1px var(--accent) inset;
     }
-    .prov .glyph { width:22px; height:22px; display:grid; place-items:center; color:var(--pc); }
+    .prov .glyph { width:22px; height:22px; display:grid; place-items:center; color:var(--accent); }
     .prov svg { display:block; }
+    /* Provider icons: the provider's own favicon, untouched (no filter, no recolour, no outline), or a disc with
+       the initials in Kotodama's colours while there is no icon. Size comes from --pi, set per container. */
+    .pico { --pi:16px; width:var(--pi); height:var(--pi); flex:none; display:grid; place-items:center; }
+    .pico img { width:100%; height:100%; display:block; object-fit:contain; }
+    .pico-fb { width:100%; height:100%; box-sizing:border-box; border-radius:50%; display:grid; place-items:center;
+      font-size:calc(var(--pi) * .44); font-weight:700; line-height:1; letter-spacing:0; user-select:none;
+      color:var(--accent); background:color-mix(in srgb, var(--accent) 18%, var(--panel-2));
+      border:1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+    .ab-provswitch-btn .pico { --pi:18px; }
+    .prov .glyph .pico { --pi:20px; }
+    .kt-chip .pico { --pi:15px; }
+    .kt-card-head .pico { --pi:20px; }
+    .kt-by .pico { --pi:14px; }
+    .kt-audio .kt-by .pico { --pi:20px; }
+    .prov-row .pico, .prov-xfer-row .pico, .kt-add-row .pico { --pi:16px; }
     .prov .pname { font-size:13px; font-weight:600; }
 
     /* Instructions panel */
@@ -469,6 +484,16 @@
     /* max-height + flex: head/foot fixed, body scrollable → no overflow/clipping */
     .modal { width:100%; max-width:460px; max-height:calc(100vh - 48px); display:flex; flex-direction:column; background:linear-gradient(180deg, var(--panel-glow), transparent 50%), var(--bg-1); border:1px solid var(--border); border-radius:var(--radius-l); box-shadow:var(--shadow); overflow:hidden; }
     .modal.sm { max-width:380px; }
+    /* z-index 1250: above the chat view (1200) and the two bars (1210/1211), below menus (1300+), downloads and modals.
+       Top right, under the application bar and the bars above the chat (--kt-hint-h), like a toast: never over the composer nor the bottom of a modal.
+       Hidden while any modal is open (it comes back when the last one closes, if still undecided). */
+    .pin-notice { position:fixed; top:calc(var(--topbar-h) + var(--kt-hint-h, 0px) + 12px); inset-inline-end:12px; width:min(360px, calc(100vw - 24px)); z-index:1250;
+      padding:16px 18px; background:linear-gradient(180deg, var(--panel-glow), transparent 50%), var(--bg-1);
+      border:1px solid var(--border); border-radius:var(--radius-s); box-shadow:var(--shadow-s); }
+    .pin-notice[hidden], body:has(.modal-overlay.show) .pin-notice { display:none; }
+    .pin-title { font-size:14px; font-weight:700; margin-bottom:6px; }
+    .pin-body { font-size:13px; color:var(--text-dim); line-height:1.5; margin:0 0 12px; }
+    .pin-btns { display:flex; flex-direction:row-reverse; justify-content:flex-start; gap:10px; flex-wrap:wrap; }   /* "Yes" first in the DOM (focus, Tab), shown last */
     .wc-modal { max-width:600px; }
     .wc-body { gap:0; }
     .wc-brand { display:flex; align-items:center; gap:13px; margin-bottom:16px; }
@@ -748,7 +773,7 @@
        (no handler attached, see renderKtChips); this is just a visual cue it can't be removed. */
     .kt-chips.kt-locked .kt-chip { cursor:default; }
     /* "+" popup: checkbox list + "Select all", positioned under the "+" button (fixed, JS-placed). */
-    .kt-add-menu { position:fixed; z-index:1300; width:260px; max-height:70vh; overflow-y:auto;
+    .kt-add-menu { position:fixed; z-index:1300; width:260px; max-width:calc(100vw - 12px); max-height:70vh; overflow-y:auto;
       background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:8px;
       box-shadow:var(--shadow); display:flex; flex-direction:column; gap:1px; }
     .kt-add-row { display:flex; align-items:center; gap:9px; padding:7px 8px; border-radius:8px;
@@ -807,9 +832,9 @@
     .kt-card-head { grid-column:1 / -1; grid-row:1; display:grid; grid-template-columns:28px minmax(0,1fr) auto;
       column-gap:12px; align-items:center; padding:0 0 4px; }
     .kt-card-head .ic { position:relative; width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
-      color:var(--pc,var(--accent)); background:color-mix(in srgb, var(--pc, var(--accent)) 16%, transparent); }
+      color:var(--text-dim); background:var(--panel-2); border:1px solid var(--border); box-sizing:border-box; }
     .kt-card-head .ic svg { width:16px; height:16px; display:block; }
-    /* Waiting: a ring turning around the avatar, in the provider's colour. It replaces the small spinner
+    /* Waiting: a ring turning around the avatar, in the theme's accent colour. It replaces the small spinner
        in the status text, which is now hidden. */
     .kt-card.pending .kt-card-head .ic::after { content:""; position:absolute; inset:-3px; border-radius:50%;
       border:2px solid transparent; border-top-color:var(--pc,var(--accent)); animation:plspin .9s linear infinite; }
@@ -885,7 +910,7 @@
     .kt-link-dom { font-size:11.5px; color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .kt-link-by { display:flex; gap:3px; }
     .kt-by { width:18px; height:18px; border-radius:50%; display:grid; place-items:center; font-size:9px; font-weight:700;
-      color:var(--pc, var(--accent)); background:color-mix(in srgb, var(--pc, var(--accent)) 16%, transparent); }
+      color:var(--text-dim); background:var(--panel-2); border:1px solid var(--border); box-sizing:border-box; }
     .kt-by svg { width:11px; height:11px; }
     .kt-images { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
     .kt-img { position:relative; aspect-ratio:4/3; max-width:100%; border:1px solid var(--border-soft); border-radius:12px;
@@ -1377,59 +1402,59 @@
             <span class="pbar-hint" data-i18n="providerOpenHint">Doppio clic o tasto destro su un provider per aprirlo subito, senza prompt</span>
           </div>
           <div class="providers" id="providers">
-            <div class="prov active" data-prov="openai" style="--pc:#10a37f">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7476-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg></span>
+            <div class="prov active" data-prov="openai">
+              <span class="glyph"></span>
               <span class="pname">ChatGPT</span>
             </div>
-            <div class="prov" data-prov="anthropic" style="--pc:#d97757">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.541Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"/></svg></span>
+            <div class="prov" data-prov="anthropic">
+              <span class="glyph"></span>
               <span class="pname">Claude</span>
             </div>
-            <div class="prov" data-prov="grok" style="--pc:#e7f3f1">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 3h3.7l5.3 7.4L17.4 3H21l-7.2 9.7L21 21h-3.7l-5.3-7.4L6.6 21H3l7.2-9.7z"/></svg></span>
+            <div class="prov" data-prov="grok">
+              <span class="glyph"></span>
               <span class="pname">Grok</span>
             </div>
-            <div class="prov" data-prov="gemini" style="--pc:#4285f4">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M12 0c.5 6.34 5.66 11.5 12 12-6.34.5-11.5 5.66-12 12-.5-6.34-5.66-11.5-12-12C6.34 11.5 11.5 6.34 12 0Z"/></svg></span>
+            <div class="prov" data-prov="gemini">
+              <span class="glyph"></span>
               <span class="pname">Gemini</span>
             </div>
-            <div class="prov" data-prov="perplexity" style="--pc:#20b8cd">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v16M5 8l7 4 7-4M5 16l7-4 7 4M5 8v8M19 8v8"/></svg></span>
+            <div class="prov" data-prov="perplexity">
+              <span class="glyph"></span>
               <span class="pname">Perplexity</span>
             </div>
-            <div class="prov" data-prov="qwen" style="--pc:#615ced">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">Q</text></svg></span>
+            <div class="prov" data-prov="qwen">
+              <span class="glyph"></span>
               <span class="pname">Qwen</span>
             </div>
-            <div class="prov" data-prov="deepseek" style="--pc:#4d6bfe">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">D</text></svg></span>
+            <div class="prov" data-prov="deepseek">
+              <span class="glyph"></span>
               <span class="pname">DeepSeek</span>
             </div>
-            <div class="prov" data-prov="zai" style="--pc:#1ab39d">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">Z</text></svg></span>
+            <div class="prov" data-prov="zai">
+              <span class="glyph"></span>
               <span class="pname">Z.ai</span>
             </div>
-            <div class="prov" data-prov="mistral" style="--pc:#fa5b0f">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">M</text></svg></span>
+            <div class="prov" data-prov="mistral">
+              <span class="glyph"></span>
               <span class="pname">Mistral</span>
             </div>
-            <div class="prov" data-prov="poe" style="--pc:#a855f7">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">P</text></svg></span>
+            <div class="prov" data-prov="poe">
+              <span class="glyph"></span>
               <span class="pname">Poe</span>
             </div>
-            <div class="prov" data-prov="kimi" style="--pc:#0ea5e9">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">K</text></svg></span>
+            <div class="prov" data-prov="kimi">
+              <span class="glyph"></span>
               <span class="pname">Kimi</span>
             </div>
-            <div class="prov" data-prov="meta" style="--pc:#0081fb">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12c0-3 1.8-6 4-6 1.6 0 2.8 1.8 4 4 1.2-2.2 2.4-4 4-4 2.2 0 4 3 4 6s-1.8 6-4 6c-1.6 0-2.8-1.8-4-4-1.2 2.2-2.4 4-4 4-2.2 0-4-3-4-6Z"/></svg></span>
+            <div class="prov" data-prov="meta">
+              <span class="glyph"></span>
               <span class="pname">Meta AI</span>
             </div>
-            <div class="prov" data-prov="copilot" style="--pc:#5865f2">
-              <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20"><text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" font-family="Segoe UI, system-ui, sans-serif">C</text></svg></span>
+            <div class="prov" data-prov="copilot">
+              <span class="glyph"></span>
               <span class="pname">Copilot</span>
             </div>
-            <div class="prov" data-prov="kotodama" style="--pc:#c9a7ff">
+            <div class="prov" data-prov="kotodama">
               <span class="glyph"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="5" r="1.6"/><circle cx="19.5" cy="5" r="1.6"/><circle cx="4.5" cy="19" r="1.6"/><circle cx="19.5" cy="19" r="1.6"/><path d="M6 6.2 10.3 10.5M18 6.2 13.7 10.5M6 17.8 10.3 13.5M18 17.8 13.7 13.5"/></svg></span>
               <span class="pname">Kotodama</span>
             </div>
@@ -1499,12 +1524,23 @@
         <p class="wc-p" id="wcP1"></p>
         <div class="wc-div"></div>
         <p class="wc-p wc-small" id="wcP2"></p>
+        <p class="wc-p wc-small" id="wcP3"></p>
         <div class="wc-tldr"><b id="wcTldrLabel"></b><br><span id="wcTldr"></span></div>
         <div class="wc-foot">
           <label class="wc-chk"><input type="checkbox" id="wcDont" checked><span id="wcDontLabel"></span></label>
           <button class="btn" id="wcOk"></button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- One-time notice for installs that predate provider icons (see maybeShowProvIconsNotice) -->
+  <div class="pin-notice" id="provIconsNotice" role="alertdialog" aria-labelledby="pinTitle" aria-describedby="pinBody" hidden>
+    <div class="pin-title" id="pinTitle"></div>
+    <p class="pin-body" id="pinBody"></p>
+    <div class="pin-btns">
+      <button class="btn primary" id="pinYes" type="button"></button>
+      <button class="btn" id="pinNo" type="button"></button>
     </div>
   </div>
 
@@ -1616,6 +1652,15 @@
                   <div class="sub" data-i18n="setGestureHint">Due clic destri veloci aprono il menu delle ricette in qualunque programma.</div>
                 </div>
                 <label class="switch"><input type="checkbox" id="setGesture"><span class="slider"></span></label>
+              </div>
+            </div>
+            <div class="setting">
+              <div class="row">
+                <div>
+                  <label data-i18n="setProvIcons">Scarica le icone dei provider dai loro siti</label>
+                  <div class="sub" data-i18n="setProvIconsHint">L'icona di ogni provider abilitato arriva dal suo sito e dai suoi server di contenuti, resta su questo computer e viene ricontrollata circa una volta al mese. Spento: un disco con le iniziali.</div>
+                </div>
+                <label class="switch"><input type="checkbox" id="setProvIcons"><span class="slider"></span></label>
               </div>
             </div>
             <div class="setting">
@@ -1964,6 +2009,9 @@
       setHotkey:'Global shortcut', setHotkeyHint:'Click and press the combo (e.g. Ctrl + \\).',
       setMonitor:'Clipboard monitor', setMonitorHint:'Show the toast when you copy text.',
       setAutostart:'Start on login', setAutostartHint:'Starts minimized in the tray at login.',
+      setProvIcons:'Download provider icons from their sites', setProvIconsHint:'The icon of each enabled provider comes from its site and content servers, stays on this computer and is re-checked about once a month. Off: a disc with the initials.',
+      provIconsNoticeTitle:'Provider icons', provIconsNoticeBody:'Kotodama can download the icon of each enabled provider from its website and content servers, keep it on your computer and re-check it about once a month. Do you want to download them? You can change your mind in Settings > System.', provIconsNoticeYes:'Download the icons', provIconsNoticeNo:'No, initials only',
+      welcomeIcons:'Kotodama downloads the icon of each enabled provider from its website and content servers, keeps it on your computer and re-checks it about once a month. You can turn this off in Settings.',
       setGesture:'Double right-click', setGestureHint:'Two quick right-clicks open the recipe menu in any program.',
       rhColMenu:'Menu', rhMenuTitle:'Show this recipe in the double right-click menu', trayRestart:'Restart',
       rhColRead:'Read', rhReadTitle:'Reads the answer aloud as soon as it arrives.',
@@ -2061,7 +2109,7 @@
     // Main shortcut: <mod>+Space everywhere, but macOS reserves BOTH Ctrl+Cmd+Space (Emoji &
     // Symbols) and Ctrl+Opt+Space (input source), so it gets K -- for Kotodama -- instead.
     const DEFAULT_MAIN_HOTKEY = DEFAULT_MOD + (IS_MAC ? '+KeyK' : '+Space');
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:DEFAULT_MAIN_HOTKEY, provider_hotkey:DEFAULT_MOD+'+KeyP', monitor_enabled:true, gesture_menu:true, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:DEFAULT_MAIN_HOTKEY, provider_hotkey:DEFAULT_MOD+'+KeyP', monitor_enabled:true, gesture_menu:true, fetch_provider_icons:true, prov_icons_decided:false, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -2107,6 +2155,8 @@
       renderKtSessions();   // recipe tags follow the language (every applyLang call runs after the sessions state exists)
       if(typeof ktSideApply==='function') ktSideApply();   // re-translate the collapse toggle's tooltip
       renderProviderRow(true);   // row labels (Chat / Altri / tooltips) follow the language
+      { const pn=document.getElementById('provIconsNotice');   // open provider-icons notice follows the language too
+        if(pn && !pn.hidden && typeof renderProvIconsNotice==='function') renderProvIconsNotice(); }
       // the chip bar's "+" is built with its tooltip in the language of that moment: re-translate it here
       document.querySelectorAll('.kt-chip-add').forEach(b=>{ b.title=t.ktAddProvider||b.title; });
       // "open on the fly" tooltip on each provider (Kotodama gets its own meta tooltip)
@@ -2435,7 +2485,6 @@
       const p=PROVIDERS[key], bits=ktTileBits(key);
       const b=document.createElement('button');
       b.type='button'; b.className='ab-provswitch-btn'+(active?' active':''); b.dataset.prov=key;
-      if(bits.color) b.style.setProperty('--pc', bits.color);
       b.innerHTML=bits.svg;
       const tip=(TR.provOpenPage||'Open the page of {p}').replace('{p}', p.name);
       b.title=tip; b.setAttribute('aria-label', tip);
@@ -2493,6 +2542,18 @@
     // "Altri" menu: same look as the "+" menu; opens the real page of the chosen provider. Keyboard: Down/Up
     // move, Enter/Space open, Esc closes and gives the focus back to the button. Over a provider page the
     // native webview would cover it, so the page is hidden while the menu is open (provider_suppress).
+    // Places a popup under its anchor and keeps it INSIDE the window: when there is no room on the right it ends
+    // at the right edge instead (re-run on resize, so a window narrowed while the menu is open does not cut it).
+    function placePopup(menu, anchor, margin){
+      const r=anchor.getBoundingClientRect(), vw=document.documentElement.clientWidth||window.innerWidth;
+      const mw=menu.offsetWidth||260;
+      menu.style.left=Math.max(margin, Math.min(r.left, vw-mw-margin))+'px';
+      menu.style.top=(r.bottom+6)+'px';
+    }
+    window.addEventListener('resize', ()=>{
+      if(typeof provMoreMenuEl!=='undefined' && provMoreMenuEl && provMoreBtnEl) placePopup(provMoreMenuEl, provMoreBtnEl, 8);
+      if(typeof ktAddMenuEl!=='undefined' && ktAddMenuEl && ktAddBtnEl) placePopup(ktAddMenuEl, ktAddBtnEl, 6);
+    });
     let provMoreMenuEl=null, provMoreBtnEl=null, provMoreSuppressed=false;
     function onProvMoreOutside(e){ if(provMoreMenuEl && !provMoreMenuEl.contains(e.target) && !(provMoreBtnEl && provMoreBtnEl.contains(e.target))) closeProvMoreMenu(); }
     function onProvMoreKey(e){
@@ -2519,7 +2580,7 @@
       provMoreKeys.forEach(key=>{
         const p=PROVIDERS[key], bits=ktTileBits(key);
         const row=document.createElement('div'); row.className='kt-add-row'; row.setAttribute('role','menuitem'); row.tabIndex=0;
-        const ic=document.createElement('span'); ic.className='ic'; if(bits.color) ic.style.setProperty('--pc', bits.color); ic.innerHTML=bits.svg;
+        const ic=document.createElement('span'); ic.className='ic'; ic.innerHTML=bits.svg;
         const nm=document.createElement('span'); nm.textContent=p.name+(key===currentSettings.default_provider?' ★':'');
         row.appendChild(ic); row.appendChild(nm);
         const go=()=>{ closeProvMoreMenu(); openProviderRealPage(key); };
@@ -2528,9 +2589,7 @@
         menu.appendChild(row);
       });
       document.body.appendChild(menu);
-      const r=btn.getBoundingClientRect();
-      menu.style.left=Math.max(8, Math.min(r.left, window.innerWidth-menu.offsetWidth-8))+'px';
-      menu.style.top=(r.bottom+6)+'px';
+      placePopup(menu, btn, 8);
       provMoreMenuEl=menu;
       document.addEventListener('mousedown', onProvMoreOutside, true);
       document.addEventListener('keydown', onProvMoreKey, true);
@@ -3062,7 +3121,6 @@
         const bits=ktTileBits(key);
         const card=document.createElement('div');
         card.className='kt-card '+ktStatusClass(st); card.dataset.key=key;
-        if(bits.color) card.style.setProperty('--pc', bits.color);
         card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
           +`<span class="kt-status"><span class="kt-st-txt"></span></span></div>`
           +`<div class="kt-card-body"></div>`
@@ -3332,7 +3390,7 @@
     // show WHICH provider is working, highlighted.
     function inlineToastStage(stage, len, provKey){
       let prov=null;
-      if(provKey){ const b=ktTileBits(provKey); prov={ name:PROVIDERS[provKey].name, svg:b.svg, color:b.color }; }
+      if(provKey){ prov={ name:PROVIDERS[provKey].name, key:provKey, initials:provInitials(provKey), icon:PROV_ICONS[provKey]||null }; }
       try{ window.__TAURI__.event.emit('toast://progress', { stage, len: len||0, prov }); }catch(e){}
     }
     function ktInlineDispatch(recipeStr, text){
@@ -3494,7 +3552,7 @@
       ktEnabled = Array.isArray(saved) ? new Set(saved.filter(k=>real.includes(k))) : new Set(real);
       return ktEnabled;
     }
-    function ktSaveEnabled(){ try{ localStorage.setItem('kotodama.enabled', JSON.stringify([...ktEnabled])); }catch(e){} renderProviderRow(); }
+    function ktSaveEnabled(){ try{ localStorage.setItem('kotodama.enabled', JSON.stringify([...ktEnabled])); }catch(e){} renderProviderRow(); provIconsPreload(); }
     // Coming-soon providers (PROV_COMING_SOON) can never be moved into "Selezionati" from the
     // Settings UI, but a stale/bootstrapped `ktEnabled` entry for one must not leak into the pool
     // that feeds the "+" menu / chip bar -- filter them out here too, not just at render time.
@@ -3519,10 +3577,106 @@
       ktLockedKey=null;
       renderKtChips();
     }
+    // Provider icons. The icon is the provider's own favicon, fetched by Rust (`provider_icon`) and shown
+    // untouched; until it arrives (or when there is none) a disc with the initials fills the same box, so the
+    // layout never jumps. ktTileBits() returns ready HTML ({svg}) for every place that draws a provider.
+    // Only ENABLED providers are asked for, and only once the user has decided (see provIconsAllowed()): a new
+    // install decides by confirming the welcome, which says so; an existing one answers a one-time notice.
+    // Data URLs already read are kept in memory and in localStorage (30 days), so the next drawing is immediate.
+    var PROV_ICONS={};        // key -> data URL (absent = no icon yet: the disc with the initials stays)
+    var provIconAsked={};     // key -> true once requested this session (Rust has its own cache and backoff)
+    var PROV_ICON_LS='kotodama.provIcons', PROV_ICON_LS_DAYS=30;
+    // Same rule as the toast: only these image types, base64 only, nothing that could leave an attribute.
+    function provIconOk(u){ return typeof u==='string' && /^data:image\/(png|x-icon|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/.test(u); }
+    function provIconsLsRead(){
+      try{
+        const o=JSON.parse(localStorage.getItem(PROV_ICON_LS)||'{}'), now=Date.now(), out={};
+        Object.keys(o||{}).forEach(k=>{ const e=o[k]; if(e && provIconOk(e.u) && now-(e.t||0)<PROV_ICON_LS_DAYS*864e5) out[k]=e; });
+        return out;
+      }catch(e){ return {}; }
+    }
+    function provIconsLsWrite(o){ try{ localStorage.setItem(PROV_ICON_LS, JSON.stringify(o)); }catch(e){} }
+    function provIconsLsPut(key,url){ const o=provIconsLsRead(); o[key]={u:url,t:Date.now()}; provIconsLsWrite(o); }
+    function provIconsLsDrop(key){ const o=provIconsLsRead(); if(o[key]){ delete o[key]; provIconsLsWrite(o); } }
+    // Memory warm-up from the previous session. It is not gated on the option: the cache only exists if icons were
+    // fetched, and provIconsReset() empties it when the option is turned off.
+    (function(){ const o=provIconsLsRead(); Object.keys(o).forEach(k=>{ PROV_ICONS[k]=o[k].u; }); })();
+    function provInitials(key){
+      const n=(PROVIDERS[key]&&PROVIDERS[key].name)||key||'';
+      return (n.replace(/[^A-Za-z]/g,'').slice(0,2)||'?').toUpperCase();
+    }
+    // The disc with the initials, as HTML (no external value in it: initials come from the provider table).
+    function provIconInner(key){
+      return `<span class="pico-fb" aria-hidden="true">${provInitials(key)}</span>`;
+    }
+    // Fills a .pico box: the icon as an <img> built with createElement (the data URL never goes through HTML),
+    // or the disc with the initials when there is none.
+    function provIconFill(el,key){
+      const u=PROV_ICONS[key];
+      if(provIconOk(u)){
+        const img=document.createElement('img'); img.alt=''; img.draggable=false; img.src=u;
+        el.textContent=''; el.appendChild(img);
+      }else{
+        el.innerHTML=provIconInner(key);
+      }
+    }
+    // Boxes drawn from an HTML string (ktTileBits) start with the disc; this swaps in the icons that are already known.
+    var provHydrateQueued=false;
+    function provIconsHydrate(){
+      provHydrateQueued=false;
+      document.querySelectorAll('.pico[data-pico]').forEach(el=>{ if(PROV_ICONS[el.dataset.pico] && !el.querySelector('img')) provIconFill(el,el.dataset.pico); });
+    }
+    // An icon the browser cannot draw: forget it and go back to the disc with the initials.
+    document.addEventListener('error', e=>{
+      const img=e.target;
+      if(!img || img.tagName!=='IMG') return;
+      const box=img.closest ? img.closest('.pico[data-pico]') : null;
+      if(!box) return;
+      const key=box.dataset.pico;
+      delete PROV_ICONS[key]; provIconsLsDrop(key);
+      document.querySelectorAll(`.pico[data-pico="${key}"]`).forEach(el=>{ provIconFill(el,key); });
+    }, true);
+    // True only when the user has answered the question (welcome confirmed on a new install, or the one-time
+    // notice on an update) AND the option is on. Until then nothing is requested.
+    function provIconsAllowed(){
+      return !!currentSettings.prov_icons_decided && currentSettings.fetch_provider_icons!==false;
+    }
+    function provIconWanted(key){ return provIconsAllowed() && ktEnabledKeys().includes(key); }
+    function provIconLoad(key){
+      if(!TAURI || provIconAsked[key] || !PROVIDERS[key] || key==='kotodama' || !provIconWanted(key)) return;
+      provIconAsked[key]=true;
+      invoke('provider_icon',{key}).then(r=>{
+        if(!(r && r.data_url && !r.fallback)) return;
+        if(!provIconOk(r.data_url)) return;
+        PROV_ICONS[key]=r.data_url; provIconsLsPut(key,r.data_url);
+        document.querySelectorAll(`.pico[data-pico="${key}"]`).forEach(el=>{ provIconFill(el,key); });
+      }).catch(()=>{});
+    }
+    // Asks for the icon of every enabled provider in the background (also warms the cache the toast is fed from).
+    function provIconsPreload(){ ktEnabledKeys().forEach(provIconLoad); }
+    // After the "download icons" option changes: forget what was loaded and start again.
+    function provIconsReset(){
+      Object.keys(PROV_ICONS).forEach(k=>delete PROV_ICONS[k]);
+      Object.keys(provIconAsked).forEach(k=>delete provIconAsked[k]);
+      provIconsLsWrite({});
+      document.querySelectorAll('.pico[data-pico]').forEach(el=>{ provIconFill(el,el.dataset.pico); });
+      provIconsPreload();
+    }
     function ktTileBits(key){
-      const tile=document.querySelector(`.prov[data-prov="${key}"]`);
-      const glyph=tile?tile.querySelector('.glyph'):null;
-      return { svg: glyph?glyph.innerHTML:'✦', color: ((tile&&tile.style.getPropertyValue('--pc'))||'').trim() };
+      if(key==='kotodama'){   // the app's own mark, not a third-party logo
+        const tile=document.querySelector('.prov[data-prov="kotodama"]'), glyph=tile?tile.querySelector('.glyph'):null;
+        return { svg: glyph?glyph.innerHTML:'✦' };
+      }
+      provIconLoad(key);
+      if(PROV_ICONS[key] && !provHydrateQueued){ provHydrateQueued=true; Promise.resolve().then(provIconsHydrate); }
+      return { svg:`<span class="pico" data-pico="${key}">${provIconInner(key)}</span>` };
+    }
+    // The classic builder's tiles: fill each glyph box with the same icon (the kotodama tile keeps its own mark).
+    function provTilesFill(){
+      document.querySelectorAll('#providers .prov').forEach(t=>{
+        const k=t.dataset.prov, g=t.querySelector('.glyph');
+        if(g && k!=='kotodama') g.innerHTML=ktTileBits(k).svg;
+      });
     }
     // The bar shows EXACTLY the selected (and still enabled) providers, nothing else -- no
     // dimmed/deselected chips. Adding one back from the enabled pool only happens through the "+"
@@ -3539,7 +3693,6 @@
         const p=PROVIDERS[key], bits=ktTileBits(key);
         const c=document.createElement('button');
         c.className='kt-chip on'; c.dataset.prov=key;
-        if(bits.color) c.style.setProperty('--pc', bits.color);
         c.innerHTML=`<span class="ic">${bits.svg}</span><span class="nm"></span>`;
         c.querySelector('.nm').textContent=p.name;
         if(!ktLockedKey){
@@ -3583,7 +3736,6 @@
         const p=PROVIDERS[key], bits=ktTileBits(key);
         const comingSoon=PROV_COMING_SOON.has(key);
         const row=document.createElement('div'); row.className='prov-row'; row.dataset.prov=key;
-        if(bits.color) row.style.setProperty('--pc', bits.color);
         row.innerHTML=`<span class="ic">${bits.svg}</span><span class="nm"></span>`;
         row.querySelector('.nm').textContent=p.name;
         if(comingSoon){
@@ -3656,7 +3808,7 @@
     // "+" popup: checkbox list of providers not currently in the bar + "Select all", committed by
     // one "Add" click -- replaces the old inline dim/reveal so the bar only ever shows selected
     // providers. A fresh, throwaway DOM (rebuilt every open), like the other popups in the app.
-    let ktAddMenuEl=null;
+    let ktAddMenuEl=null, ktAddBtnEl=null;
     function closeKtAddMenu(){
       if(!ktAddMenuEl) return;
       document.removeEventListener('mousedown', onKtAddMenuOutside, true);
@@ -3682,7 +3834,7 @@
           ktSaveSel(); renderKtChips(true);
         });
         row.appendChild(cb);
-        const ic=document.createElement('span'); ic.className='ic'; if(bits.color) ic.style.setProperty('--pc', bits.color);
+        const ic=document.createElement('span'); ic.className='ic';
         ic.innerHTML=bits.svg; row.appendChild(ic);
         const nm=document.createElement('span'); nm.textContent=p.name; row.appendChild(nm);
         menu.appendChild(row);
@@ -3742,13 +3894,9 @@
       });
       menu.appendChild(more);
       document.body.appendChild(menu);
-      const r=anchorBtn.getBoundingClientRect();
-      // the width it really takes (padding, border, a scrollbar), not the nominal 260px: with the nominal one
-      // the menu ran past the right edge of a narrow window
-      const mw=menu.offsetWidth||260;
-      menu.style.left=Math.max(6, Math.min(r.left, window.innerWidth-mw-6))+'px';
-      menu.style.top=(r.bottom+6)+'px';
-      ktAddMenuEl=menu;
+      // placed by its real width (padding, border, a scrollbar), inside the window, and again on resize
+      placePopup(menu, anchorBtn, 6);
+      ktAddMenuEl=menu; ktAddBtnEl=anchorBtn;
       setTimeout(()=>document.addEventListener('mousedown', onKtAddMenuOutside, true), 0);
     }
     // prefill: text from the builder; autosend: → from home = new conversation + immediate broadcast.
@@ -4252,7 +4400,7 @@
       [...by].forEach(key=>{
         const b=document.createElement('span'); b.className='kt-by';
         if(key && PROVIDERS[key]){
-          const bits=ktTileBits(key); b.innerHTML=bits.svg; if(bits.color) b.style.setProperty('--pc', bits.color);
+          const bits=ktTileBits(key); b.innerHTML=bits.svg;
           b.title=PROVIDERS[key].name;
         } else { b.textContent='\u2022'; b.title=TR.ktYou||''; }
         wrap.appendChild(b);
@@ -4489,7 +4637,6 @@
     function ktPendingCard(grid, bid, key){
       const p=PROVIDERS[key], bits=ktTileBits(key);
       const card=document.createElement('div'); card.className='kt-card pending'; card.dataset.key=key;
-      if(bits.color) card.style.setProperty('--pc', bits.color);
       card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
         +`<span class="kt-status"><span class="dl-spin"></span><span class="kt-st-txt"></span></span></div>`
         +`<div class="kt-card-body empty"></div>`
@@ -5128,15 +5275,66 @@
     function renderWelcome(){
       const t=TR, set=(id,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
       set('wcTitle',t.welcomeTitle); set('wcSub',t.welcomeSub);
-      set('wcP1',t.welcomeP1); set('wcP2',t.welcomeP2);
+      set('wcP1',t.welcomeP1); set('wcP2',t.welcomeP2); set('wcP3',t.welcomeIcons);
       set('wcTldrLabel',t.welcomeTldrLabel); set('wcTldr',t.welcomeTldr);
       set('wcDontLabel',t.welcomeDont); set('wcOk',t.welcomeOk);
     }
     function showWelcome(){ renderWelcome(); openModal(welcomeOverlay); }
     document.getElementById('wcOk').addEventListener('click', ()=>{
       closeModal(welcomeOverlay);
-      if(document.getElementById('wcDont').checked){ currentSettings.welcome_ack=true; persistSettings(currentSettings); }
+      // The welcome says that icons are downloaded (and where to turn it off): confirming it is the decision of a
+      // new install, whether or not "don't show again" is ticked. fetch_provider_icons keeps its value.
+      currentSettings.prov_icons_decided=true;
+      if(document.getElementById('wcDont').checked) currentSettings.welcome_ack=true;
+      persistSettings(currentSettings);
+      provIconsPreload();
     });
+    /* One-time notice for an install that existed before provider icons did: nothing is downloaded until it is
+       answered. A card at the top right under the bars, not a modal: the app stays usable; Esc = "No". */
+    const pinEl=document.getElementById('provIconsNotice');
+    let pinPrevFocus=null;
+    function renderProvIconsNotice(){
+      const t=TR, set=(id,v)=>{ document.getElementById(id).textContent=v; };
+      set('pinTitle',t.provIconsNoticeTitle); set('pinBody',t.provIconsNoticeBody);
+      set('pinYes',t.provIconsNoticeYes); set('pinNo',t.provIconsNoticeNo);
+    }
+    function typingNow(){
+      const a=document.activeElement;
+      return !!a && (a.tagName==='INPUT' || a.tagName==='TEXTAREA' || a.tagName==='SELECT' || a.isContentEditable);
+    }
+    function maybeShowProvIconsNotice(){
+      if(!TAURI || !currentSettings.welcome_ack || currentSettings.prov_icons_decided) return;
+      renderProvIconsNotice();
+      pinPrevFocus=document.activeElement;
+      pinEl.hidden=false;
+      if(!typingNow()) document.getElementById('pinYes').focus();   // never steal the focus from someone writing
+    }
+    function hideProvIconsNotice(){
+      if(pinEl.hidden) return;
+      pinEl.hidden=true;
+      if(pinPrevFocus && pinPrevFocus.focus && document.contains(pinPrevFocus)) pinPrevFocus.focus();
+      pinPrevFocus=null;
+    }
+    async function answerProvIconsNotice(yes){
+      hideProvIconsNotice();
+      // Record the answer BEFORE the await: any other persistSettings(currentSettings) that starts meanwhile
+      // (and the Settings form) must already see the decision, not the old undecided state.
+      // persistSettings never throws (it falls back to localStorage), so there is nothing to roll back.
+      currentSettings.prov_icons_decided=true;
+      currentSettings.fetch_provider_icons=!!yes;
+      setProvIcons.checked=!!yes;
+      setProvIcons.dataset.touched='';
+      const eff=await persistSettings({ ...currentSettings });
+      // Keep from the answer only what it decided; every other field stays as it is now (it may have changed).
+      if(eff){ currentSettings.prov_icons_decided=true; currentSettings.fetch_provider_icons=!!yes; }
+      if(yes) provIconsPreload();
+    }
+
+    // Esc answers "No" only while the focus is INSIDE the notice (handler below): a global Esc raced with the
+    // menus and the provider page, which close themselves on Esc too, and answered for the user without them seeing it.
+    document.getElementById('pinYes').addEventListener('click', ()=>answerProvIconsNotice(true));
+    document.getElementById('pinNo').addEventListener('click', ()=>answerProvIconsNotice(false));
+    pinEl.addEventListener('keydown', e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); answerProvIconsNotice(false); } });
     const confirmOverlay=document.getElementById('confirmOverlay');
     [settingsOverlay,recipeOverlay,confirmOverlay].forEach(o=>o.addEventListener('click',e=>{ if(e.target===o){ if(o===settingsOverlay) applyTheme(currentSettings.theme); applyLang(currentSettings.language); closeModal(o); } }));
 
@@ -5261,6 +5459,7 @@
     const setAlwaysOnTop=document.getElementById('setAlwaysOnTop');
     const setLowPower=document.getElementById('setLowPower');
     const setGesture=document.getElementById('setGesture');
+    const setProvIcons=document.getElementById('setProvIcons');
     const setAdmin=document.getElementById('setAdmin');
     /* Running as administrator is NOT a saved setting: it lives in Windows (a logon task with the highest
        privileges plus the "run as administrator" flag on the executable). The switch reads the real state and
@@ -5500,6 +5699,8 @@
       capturedRecipeProvider={ ...(currentSettings.recipe_provider||{}) };
       rhGlobalNotify.checked=!!currentSettings.monitor_enabled;
       setGesture.checked=currentSettings.gesture_menu!==false;
+      setProvIcons.checked=provIconsAllowed();   // what is really happening: off until the question was answered
+      setProvIcons.dataset.touched='';           // only a change by the user makes it the decision (see saveSettings)
       if(setAdmin && TAURI) invoke('admin_start_state').then(v=>{ setAdmin.checked=!!v; }).catch(()=>{});
       buildShortcutRows();
       setAutostart.checked=!!currentSettings.autostart;
@@ -5508,6 +5709,7 @@
       renderProviderXfer();
     }
     function openSettings(){ fillSettingsForm(); settingsShowTab('system'); openModal(settingsOverlay); checkUpdate(true); }
+    setProvIcons.addEventListener('change', ()=>{ setProvIcons.dataset.touched='1'; });
     setTheme.addEventListener('change', ()=>applyTheme(setTheme.value)); // live preview
     setLang.addEventListener('change', ()=>{ applyLang(setLang.value); }); // live language preview (restored on Cancel)
 
@@ -5530,9 +5732,17 @@
       const rr={}; Object.keys(capturedRecipeRead).forEach(k=>{ if(capturedRecipeRead[k]===true) rr[k]=true; });
       const rp={ ...capturedRecipeProvider };
       const lowPowerChanged = !!currentSettings.low_power !== setLowPower.checked;
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, provider_hotkey:ph, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, recipe_read:rr, recipe_provider:rp, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
+      // Provider icons: the switch only counts if the user touched it (touching = the decision). Untouched:
+      // an existing decision stays as it is, and an undecided state stays undecided (the notice remains).
+      const piTouched = setProvIcons.dataset.touched==='1';
+      const piDecided = !!currentSettings.prov_icons_decided;
+      const piBefore = provIconsAllowed();
+      const provIconsChanged = piTouched && (!piDecided || setProvIcons.checked !== piBefore);
+      const piFetch = piTouched ? setProvIcons.checked : currentSettings.fetch_provider_icons;
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, provider_hotkey:ph, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, fetch_provider_icons:piFetch, prov_icons_decided:(piTouched || piDecided), autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, recipe_read:rr, recipe_provider:rp, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
       currentSettings=eff; await applySettings(eff);
+      if(provIconsChanged){ provIconsReset(); hideProvIconsNotice(); }
       closeModal(settingsOverlay);   // closes the Constraints panel first, so a half-done edit is tidied
       rcStore=rcDraft; persistRecipeConstraints(); renderChatCons();
       // warn if the chosen shortcut was not registrable and was replaced
@@ -6580,9 +6790,11 @@
       { const saveBtn=document.getElementById('ktRecipeBadgeSave'), instr=document.getElementById('instruction');
         if(saveBtn && instr) saveBtn.parentNode.insertBefore(instr, saveBtn); }
       wireTauri();
+      provTilesFill();
+      provIconsPreload();   // real provider icons arrive in the background; the disc with initials shows meanwhile
       showAppVersion();
       openKotodama();   // Kotodama is the start page; the classic builder stays reachable via the "← Ai Prompt Builder" button (hidden while KT_ONLY)
-      if(!currentSettings.welcome_ack) showWelcome();   // welcome on first launch: privacy + provider boundary (it overlaps anyway)
+      if(currentSettings.welcome_ack) maybeShowProvIconsNotice(); else showWelcome();   // welcome on first launch: privacy + provider boundary (it overlaps anyway)
       setTimeout(()=>checkUpdate(false), 2500);   // silent update check at startup
       // ...and then periodically (every hour), without stacking a second prompt if a dialog is already open
       setInterval(()=>{ if(!confirmOverlay.classList.contains('show')) checkUpdate(false); }, 3600000);

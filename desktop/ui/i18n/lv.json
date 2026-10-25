@@ -362,5 +362,12 @@
   "provOpenPage": "Atvērt {p} lapu",
   "setProvHotkey": "Atvērt pēdējo pakalpojumu sniedzēju",
   "setProvHotkeyTitle": "Atver pēdējā atvērtā pakalpojumu sniedzēja lapu vai noklusēto",
-  "setProvHotkeyConflict": "Šo īsceļu jau izmanto cits, un tas netiks saglabāts"
+  "setProvHotkeyConflict": "Šo īsceļu jau izmanto cits, un tas netiks saglabāts",
+  "setProvIcons": "Lejupielādēt pakalpojumu sniedzēju ikonas no to vietnēm",
+  "setProvIconsHint": "Katra iespējotā pakalpojumu sniedzēja ikona nāk no tā vietnes un satura serveriem, paliek šajā datorā un aptuveni reizi mēnesī tiek pārbaudīta atkārtoti. Izslēgts: tikai iniciāļi.",
+  "welcomeIcons": "Lai rādītu katra iespējotā pakalpojumu sniedzēja ikonu, Kotodama to lejupielādē no tā vietnes un satura serveriem, glabā jūsu datorā un aptuveni reizi mēnesī pārbauda atkārtoti. To var izslēgt iestatījumos.",
+  "provIconsNoticeTitle": "Pakalpojumu sniedzēju ikonas",
+  "provIconsNoticeBody": "Kotodama var lejupielādēt katra iespējotā pakalpojumu sniedzēja ikonu no tā vietnes un satura serveriem, glabāt to šajā datorā un aptuveni reizi mēnesī pārbaudīt no jauna. Vai vēlaties tās lejupielādēt? Savu lēmumu varat mainīt sadaļā Iestatījumi > Sistēma.",
+  "provIconsNoticeYes": "Lejupielādēt ikonas",
+  "provIconsNoticeNo": "Nē, tikai iniciāļi"
 }

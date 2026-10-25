@@ -362,5 +362,12 @@
   "provOpenPage": "{p} 페이지 열기",
   "setProvHotkey": "마지막 제공업체 열기",
   "setProvHotkeyTitle": "마지막으로 연 제공업체의 페이지를 열고, 없으면 기본 제공업체 페이지를 엽니다",
-  "setProvHotkeyConflict": "이 단축키는 이미 다른 항목이 사용 중이며 저장되지 않습니다"
+  "setProvHotkeyConflict": "이 단축키는 이미 다른 항목이 사용 중이며 저장되지 않습니다",
+  "setProvIcons": "제공자 아이콘을 각 사이트에서 내려받기",
+  "setProvIconsHint": "활성화된 각 제공자의 아이콘은 해당 웹사이트와 콘텐츠 서버에서 가져오며, 이 컴퓨터에 보관되고 대략 한 달에 한 번 다시 확인됩니다. 끄면 이니셜만 표시됩니다.",
+  "welcomeIcons": "활성화된 각 제공자의 아이콘을 보여주기 위해 Kotodama는 해당 제공자의 웹사이트와 콘텐츠 서버에서 아이콘을 내려받아 이 컴퓨터에 보관하고, 대략 한 달에 한 번 다시 확인합니다. 설정에서 끌 수 있습니다.",
+  "provIconsNoticeTitle": "제공자 아이콘",
+  "provIconsNoticeBody": "Kotodama는 활성화된 각 제공자의 아이콘을 해당 웹사이트와 콘텐츠 서버에서 내려받아 이 컴퓨터에 보관하고, 대략 한 달에 한 번 다시 확인할 수 있습니다. 내려받으시겠습니까? 설정 > 시스템에서 언제든 바꿀 수 있습니다.",
+  "provIconsNoticeYes": "아이콘 내려받기",
+  "provIconsNoticeNo": "아니요, 이니셜만"
 }

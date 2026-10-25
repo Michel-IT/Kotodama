@@ -362,5 +362,12 @@
   "provOpenPage": "Mở trang của {p}",
   "setProvHotkey": "Mở nhà cung cấp gần nhất",
   "setProvHotkeyTitle": "Mở trang của nhà cung cấp bạn mở gần nhất, hoặc nhà cung cấp mặc định",
-  "setProvHotkeyConflict": "Phím tắt này đã được mục khác sử dụng và sẽ không được lưu"
+  "setProvHotkeyConflict": "Phím tắt này đã được mục khác sử dụng và sẽ không được lưu",
+  "setProvIcons": "Tải biểu tượng nhà cung cấp từ trang web của họ",
+  "setProvIconsHint": "Biểu tượng của mỗi nhà cung cấp đang bật lấy từ trang web và máy chủ nội dung của họ, được giữ trên máy tính này và kiểm tra lại khoảng một lần mỗi tháng. Tắt: chỉ hiện chữ cái đầu.",
+  "welcomeIcons": "Để hiển thị biểu tượng của từng nhà cung cấp đang bật, Kotodama tải biểu tượng từ trang web và máy chủ nội dung của nhà cung cấp đó, lưu trên máy tính của bạn và kiểm tra lại khoảng một lần mỗi tháng. Bạn có thể tắt trong Cài đặt.",
+  "provIconsNoticeTitle": "Biểu tượng nhà cung cấp",
+  "provIconsNoticeBody": "Kotodama có thể tải biểu tượng của mỗi nhà cung cấp đang bật từ trang web và máy chủ nội dung của họ, giữ trên máy tính này và kiểm tra lại khoảng một lần mỗi tháng. Bạn có muốn tải chúng không? Bạn có thể đổi ý trong Cài đặt > Hệ thống.",
+  "provIconsNoticeYes": "Tải biểu tượng",
+  "provIconsNoticeNo": "Không, chỉ chữ cái đầu"
 }

@@ -362,5 +362,12 @@
   "provOpenPage": "Seite von {p} öffnen",
   "setProvHotkey": "Letzten Anbieter öffnen",
   "setProvHotkeyTitle": "Öffnet die Seite des zuletzt geöffneten Anbieters oder des Standardanbieters",
-  "setProvHotkeyConflict": "Diese Tastenkombination wird bereits von einer anderen verwendet und nicht gespeichert"
+  "setProvHotkeyConflict": "Diese Tastenkombination wird bereits von einer anderen verwendet und nicht gespeichert",
+  "setProvIcons": "Anbieter-Symbole von deren Websites herunterladen",
+  "setProvIconsHint": "Das Symbol jedes aktivierten Anbieters stammt von dessen Website und Inhalts-Servern, bleibt auf diesem Computer und wird etwa einmal im Monat erneut geprüft. Aus: nur das Kürzel.",
+  "welcomeIcons": "Damit das Symbol jedes aktivierten Anbieters angezeigt werden kann, lädt Kotodama es von dessen Website und Inhalts-Servern herunter, speichert es auf Ihrem Computer und prüft es etwa einmal im Monat erneut. Sie können dies in den Einstellungen deaktivieren.",
+  "provIconsNoticeTitle": "Anbieter-Symbole",
+  "provIconsNoticeBody": "Kotodama kann das Symbol jedes aktivierten Anbieters von dessen Website und Inhalts-Servern herunterladen, auf diesem Computer speichern und etwa einmal im Monat erneut prüfen. Möchtest du sie herunterladen? Du kannst deine Entscheidung in Einstellungen > System ändern.",
+  "provIconsNoticeYes": "Symbole herunterladen",
+  "provIconsNoticeNo": "Nein, nur Kürzel"
 }

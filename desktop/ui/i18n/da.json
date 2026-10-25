@@ -362,5 +362,12 @@
   "provOpenPage": "Åbn siden for {p}",
   "setProvHotkey": "Åbn den sidst brugte udbyder",
   "setProvHotkeyTitle": "Åbner siden for den udbyder du sidst åbnede, eller standarden",
-  "setProvHotkeyConflict": "Denne genvej bruges allerede af en anden og gemmes ikke"
+  "setProvHotkeyConflict": "Denne genvej bruges allerede af en anden og gemmes ikke",
+  "setProvIcons": "Hent udbydernes ikoner fra deres websteder",
+  "setProvIconsHint": "Ikonet for hver aktiveret udbyder kommer fra dens websted og indholdsservere, bliver på denne computer og tjekkes igen ca. en gang om måneden. Fra: kun initialerne.",
+  "welcomeIcons": "For at vise ikonet for hver aktiveret udbyder henter Kotodama det fra udbyderens websted og indholdsservere, gemmer det på din computer og tjekker det igen ca. en gang om måneden. Du kan slå det fra under Indstillinger.",
+  "provIconsNoticeTitle": "Udbyderikoner",
+  "provIconsNoticeBody": "Kotodama kan hente ikonet for hver aktiveret udbyder fra dens websted og indholdsservere, gemme det på computeren og tjekke det igen cirka en gang om måneden. Vil du hente dem? Du kan ændre mening under Indstillinger > System.",
+  "provIconsNoticeYes": "Hent ikonerne",
+  "provIconsNoticeNo": "Nej, kun initialer"
 }

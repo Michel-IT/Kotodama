@@ -362,5 +362,12 @@
   "provOpenPage": "Atidaryti {p} puslapį",
   "setProvHotkey": "Atidaryti paskutinį tiekėją",
   "setProvHotkeyTitle": "Atidaro paskutinio atidaryto tiekėjo puslapį arba numatytojo",
-  "setProvHotkeyConflict": "Šį spartųjį klavišą jau naudoja kitas ir jis neįrašomas"
+  "setProvHotkeyConflict": "Šį spartųjį klavišą jau naudoja kitas ir jis neįrašomas",
+  "setProvIcons": "Atsisiųsti teikėjų piktogramas iš jų svetainių",
+  "setProvIconsHint": "Kiekvieno įjungto teikėjo piktograma gaunama iš jo svetainės ir turinio serverių, lieka šiame kompiuteryje ir maždaug kartą per mėnesį tikrinama iš naujo. Išjungta: tik inicialai.",
+  "welcomeIcons": "Kiekvieno įjungto teikėjo piktogramai rodyti Kotodama ją atsisiunčia iš teikėjo svetainės ir turinio serverių, saugo jūsų kompiuteryje ir maždaug kartą per mėnesį patikrina iš naujo. Tai galima išjungti Nustatymuose.",
+  "provIconsNoticeTitle": "Teikėjų piktogramos",
+  "provIconsNoticeBody": "Kotodama gali atsisiųsti kiekvieno įjungto teikėjo piktogramą iš jo svetainės ir turinio serverių, laikyti ją šiame kompiuteryje ir maždaug kartą per mėnesį patikrinti iš naujo. Ar norite jas atsisiųsti? Savo sprendimą galite pakeisti Nustatymai > Sistema.",
+  "provIconsNoticeYes": "Atsisiųsti piktogramas",
+  "provIconsNoticeNo": "Ne, tik inicialai"
 }

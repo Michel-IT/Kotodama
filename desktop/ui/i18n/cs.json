@@ -362,5 +362,12 @@
   "provOpenPage": "Otevřít stránku {p}",
   "setProvHotkey": "Otevřít posledního poskytovatele",
   "setProvHotkeyTitle": "Otevře stránku naposledy otevřeného poskytovatele, nebo výchozího",
-  "setProvHotkeyConflict": "Tuto zkratku už používá jiná a neuloží se"
+  "setProvHotkeyConflict": "Tuto zkratku už používá jiná a neuloží se",
+  "setProvIcons": "Stahovat ikony poskytovatelů z jejich webů",
+  "setProvIconsHint": "Ikona každého zapnutého poskytovatele pochází z jeho webu a serverů s obsahem, zůstává v tomto počítači a přibližně jednou za měsíc se znovu kontroluje. Vypnuto: zobrazí se jen iniciály.",
+  "welcomeIcons": "Aby se zobrazila ikona každého zapnutého poskytovatele, Kotodama ji stáhne z jeho webu a serverů s obsahem, uloží ji do počítače a přibližně jednou za měsíc ji znovu zkontroluje. Dá se to vypnout v Nastavení.",
+  "provIconsNoticeTitle": "Ikony poskytovatelů",
+  "provIconsNoticeBody": "Kotodama může stáhnout ikonu každého zapnutého poskytovatele z jeho webu a serverů s obsahem, uložit ji v tomto počítači a přibližně jednou za měsíc ji znovu zkontrolovat. Chcete je stáhnout? Názor můžete změnit v Nastavení > Systém.",
+  "provIconsNoticeYes": "Stáhnout ikony",
+  "provIconsNoticeNo": "Ne, jen iniciály"
 }

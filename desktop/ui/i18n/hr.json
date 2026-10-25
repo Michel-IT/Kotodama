@@ -362,5 +362,12 @@
   "provOpenPage": "Otvori stranicu {p}",
   "setProvHotkey": "Otvori zadnjeg pružatelja",
   "setProvHotkeyTitle": "Otvara stranicu zadnjeg pružatelja koji si otvorio ili zadanoga",
-  "setProvHotkeyConflict": "Ovu prečicu već koristi druga i ne sprema se"
+  "setProvHotkeyConflict": "Ovu prečicu već koristi druga i ne sprema se",
+  "setProvIcons": "Preuzmi ikone pružatelja s njihovih web-mjesta",
+  "setProvIconsHint": "Ikona svakog omogućenog pružatelja dolazi s njegove web-stranice i poslužitelja sadržaja, ostaje na ovom računalu i ponovno se provjerava otprilike jednom mjesečno. Isključeno: samo inicijali.",
+  "welcomeIcons": "Kotodama za prikaz ikone svakog omogućenog pružatelja preuzima je s njegove web-stranice i poslužitelja sadržaja, čuva na vašem računalu i ponovno je provjerava otprilike jednom mjesečno. To možete isključiti u Postavkama.",
+  "provIconsNoticeTitle": "Ikone pružatelja",
+  "provIconsNoticeBody": "Kotodama može preuzeti ikonu svakog omogućenog pružatelja s njegove web-stranice i poslužitelja sadržaja, čuvati je na ovom računalu i ponovno je provjeravati otprilike jednom mjesečno. Želite li ih preuzeti? Odluku možete promijeniti u Postavke > Sustav.",
+  "provIconsNoticeYes": "Preuzmi ikone",
+  "provIconsNoticeNo": "Ne, samo inicijali"
 }

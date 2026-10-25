@@ -362,5 +362,12 @@
   "provOpenPage": "Abrir a página de {p}",
   "setProvHotkey": "Abrir o último provedor",
   "setProvHotkeyTitle": "Abre a página do último provedor aberto, ou do predefinido",
-  "setProvHotkeyConflict": "Este atalho já é usado por outro e não é guardado"
+  "setProvHotkeyConflict": "Este atalho já é usado por outro e não é guardado",
+  "setProvIcons": "Baixar os ícones dos provedores dos sites deles",
+  "setProvIconsHint": "O ícone de cada fornecedor ativado vem do site e dos servidores de conteúdo dele, fica neste computador e é verificado de novo cerca de uma vez por mês. Desligado: só as iniciais.",
+  "welcomeIcons": "Para mostrar o ícone de cada fornecedor ativado, o Kotodama o descarrega do site e dos servidores de conteúdo desse fornecedor, guarda-o no seu computador e volta a verificá-lo cerca de uma vez por mês. Pode desativar nas Definições.",
+  "provIconsNoticeTitle": "Ícones dos provedores",
+  "provIconsNoticeBody": "O Kotodama pode baixar o ícone de cada provedor ativado do site e dos servidores de conteúdo dele, guardá-lo neste computador e verificá-lo de novo cerca de uma vez por mês. Quer baixá-los? Você pode mudar de ideia em Configurações > Sistema.",
+  "provIconsNoticeYes": "Baixar os ícones",
+  "provIconsNoticeNo": "Não, só as iniciais"
 }

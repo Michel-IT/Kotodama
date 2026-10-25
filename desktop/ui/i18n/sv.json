@@ -362,5 +362,12 @@
   "provOpenPage": "Öppna sidan för {p}",
   "setProvHotkey": "Öppna senaste leverantören",
   "setProvHotkeyTitle": "Öppnar sidan för den leverantör du öppnade senast, eller standardleverantören",
-  "setProvHotkeyConflict": "Denna genväg används redan av en annan och sparas inte"
+  "setProvHotkeyConflict": "Denna genväg används redan av en annan och sparas inte",
+  "setProvIcons": "Hämta leverantörernas ikoner från deras webbplatser",
+  "setProvIconsHint": "Ikonen för varje aktiverad leverantör kommer från dess webbplats och innehållsservrar, finns kvar på den här datorn och kontrolleras igen ungefär en gång i månaden. Av: bara initialerna.",
+  "welcomeIcons": "För att visa ikonen för varje aktiverad leverantör hämtar Kotodama den från leverantörens webbplats och innehållsservrar, sparar den på datorn och kontrollerar den igen ungefär en gång i månaden. Du kan stänga av detta i Inställningar.",
+  "provIconsNoticeTitle": "Leverantörsikoner",
+  "provIconsNoticeBody": "Kotodama kan hämta ikonen för varje aktiverad leverantör från dess webbplats och innehållsservrar, behålla den på datorn och kontrollera den igen ungefär en gång i månaden. Vill du hämta dem? Du kan ändra dig under Inställningar > System.",
+  "provIconsNoticeYes": "Hämta ikonerna",
+  "provIconsNoticeNo": "Nej, bara initialerna"
 }

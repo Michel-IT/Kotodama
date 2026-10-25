@@ -362,5 +362,12 @@
   "provOpenPage": "Open de pagina van {p}",
   "setProvHotkey": "Open de laatste provider",
   "setProvHotkeyTitle": "Opent de pagina van de laatste provider die je opende, of van de standaard",
-  "setProvHotkeyConflict": "Deze sneltoets wordt al door een ander gebruikt en wordt niet opgeslagen"
+  "setProvHotkeyConflict": "Deze sneltoets wordt al door een ander gebruikt en wordt niet opgeslagen",
+  "setProvIcons": "Providerpictogrammen downloaden van hun websites",
+  "setProvIconsHint": "Het pictogram van elke ingeschakelde provider komt van de eigen site en contentservers, blijft op deze computer en wordt ongeveer één keer per maand opnieuw gecontroleerd. Uit: alleen de initialen.",
+  "welcomeIcons": "Om het pictogram van elke ingeschakelde provider te tonen, downloadt Kotodama het van de website en de contentservers van die provider, bewaart het op je computer en controleert het ongeveer één keer per maand opnieuw. Je kunt dit uitzetten in Instellingen.",
+  "provIconsNoticeTitle": "Providerpictogrammen",
+  "provIconsNoticeBody": "Kotodama kan het pictogram van elke ingeschakelde provider downloaden van de eigen site en contentservers, het op deze computer bewaren en ongeveer één keer per maand opnieuw controleren. Wil je ze downloaden? Je kunt je keuze wijzigen onder Instellingen > Systeem.",
+  "provIconsNoticeYes": "Pictogrammen downloaden",
+  "provIconsNoticeNo": "Nee, alleen de initialen"
 }

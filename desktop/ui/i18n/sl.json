@@ -362,5 +362,12 @@
   "provOpenPage": "Odpri stran {p}",
   "setProvHotkey": "Odpri zadnjega ponudnika",
   "setProvHotkeyTitle": "Odpre stran zadnjega odprtega ponudnika ali privzetega",
-  "setProvHotkeyConflict": "To bližnjico že uporablja druga in se ne shrani"
+  "setProvHotkeyConflict": "To bližnjico že uporablja druga in se ne shrani",
+  "setProvIcons": "Prenesi ikone ponudnikov z njihovih spletnih mest",
+  "setProvIconsHint": "Ikona vsakega omogočenega ponudnika prihaja z njegove spletne strani in strežnikov z vsebino, ostane v tem računalniku in se približno enkrat mesečno znova preveri. Izklopljeno: samo začetnice.",
+  "welcomeIcons": "Da se prikaže ikona vsakega omogočenega ponudnika, Kotodama to ikono prenese z njegove spletne strani in strežnikov z vsebino, jo shrani v računalnik in jo približno enkrat mesečno znova preveri. To lahko izklopite v nastavitvah.",
+  "provIconsNoticeTitle": "Ikone ponudnikov",
+  "provIconsNoticeBody": "Kotodama lahko prenese ikono vsakega omogočenega ponudnika z njegove spletne strani in strežnikov z vsebino, jo shrani v tem računalniku in jo približno enkrat mesečno znova preveri. Ali jih želite prenesti? Odločitev lahko spremenite v Nastavitve > Sistem.",
+  "provIconsNoticeYes": "Prenesi ikone",
+  "provIconsNoticeNo": "Ne, samo začetnice"
 }

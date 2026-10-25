@@ -362,5 +362,12 @@
   "provOpenPage": "Ireki {p}-ren orria",
   "setProvHotkey": "Ireki azken hornitzailea",
   "setProvHotkeyTitle": "Azkenekoz ireki duzun hornitzailearen orria irekitzen du, edo lehenetsia",
-  "setProvHotkeyConflict": "Lasterbide hau dagoeneko beste batek erabiltzen du, eta ez da gordetzen"
+  "setProvHotkeyConflict": "Lasterbide hau dagoeneko beste batek erabiltzen du, eta ez da gordetzen",
+  "setProvIcons": "Deskargatu hornitzaileen ikonoak haien webguneetatik",
+  "setProvIconsHint": "Hornitzaile gaitu bakoitzaren ikonoa haren webgunetik eta eduki-zerbitzarietatik dator, ordenagailu honetan geratzen da eta hilean behin inguru berrikusten da. Itzalita: hasierako letrak soilik.",
+  "welcomeIcons": "Hornitzaile gaituaren ikonoa erakusteko, Kotodamak hornitzailearen webgunetik eta eduki-zerbitzarietatik deskargatzen du, ordenagailuan gordetzen du eta hilean behin inguru berrikusten du. Ezarpenetan itzal daiteke.",
+  "provIconsNoticeTitle": "Hornitzaileen ikonoak",
+  "provIconsNoticeBody": "Kotodama-k hornitzaile gaitu bakoitzaren ikonoa deskarga dezake haren webgunetik eta eduki-zerbitzarietatik, ordenagailu honetan gorde eta hilean behin inguru berrikusi. Deskargatu nahi dituzu? Iritzia alda dezakezu Ezarpenak > Sistema atalean.",
+  "provIconsNoticeYes": "Deskargatu ikonoak",
+  "provIconsNoticeNo": "Ez, hasierako letrak soilik"
 }

@@ -362,5 +362,12 @@
   "provOpenPage": "Fungua ukurasa wa {p}",
   "setProvHotkey": "Fungua mtoa huduma wa mwisho",
   "setProvHotkeyTitle": "Hufungua ukurasa wa mtoa huduma uliyefungua mwisho, au wa chaguomsingi",
-  "setProvHotkeyConflict": "Njia hii ya mkato tayari inatumiwa na nyingine, na haitahifadhiwa"
+  "setProvHotkeyConflict": "Njia hii ya mkato tayari inatumiwa na nyingine, na haitahifadhiwa",
+  "setProvIcons": "Pakua aikoni za watoa huduma kutoka tovuti zao",
+  "setProvIconsHint": "Ikoni ya kila mtoa huduma aliyewezeshwa hutoka kwenye tovuti yake na seva zake za maudhui, hubaki kwenye kompyuta hii na hukaguliwa tena takriban mara moja kwa mwezi. Imezimwa: herufi za mwanzo tu.",
+  "welcomeIcons": "Ili kuonyesha ikoni ya kila mtoa huduma aliyewezeshwa, Kotodama huipakua kutoka tovuti yake na seva zake za maudhui, huiweka kwenye kompyuta yako na kuikagua tena takriban mara moja kwa mwezi. Unaweza kuizima katika Mipangilio.",
+  "provIconsNoticeTitle": "Aikoni za watoa huduma",
+  "provIconsNoticeBody": "Kotodama inaweza kupakua aikoni ya kila mtoa huduma aliyewezeshwa kutoka tovuti yake na seva zake za maudhui, kuihifadhi kwenye kompyuta hii na kuikagua upya takriban mara moja kwa mwezi. Je, unataka kuzipakua? Unaweza kubadili uamuzi wako katika Mipangilio > Mfumo.",
+  "provIconsNoticeYes": "Pakua aikoni",
+  "provIconsNoticeNo": "Hapana, herufi za mwanzo tu"
 }

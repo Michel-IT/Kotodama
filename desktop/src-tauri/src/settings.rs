@@ -105,6 +105,15 @@ pub struct Settings {
     /// file written before this existed has no such field and reads as the default, so nobody's own
     /// choice is ever overwritten.
     pub provider_hotkey: String,
+    /// Download the real icon of each provider from its own site (cached on disk). Off = only the disc with the
+    /// initials. A settings file written before this existed reads as on.
+    #[serde(default = "default_true")]
+    pub fetch_provider_icons: bool,
+    /// The user has answered the question about downloading provider icons (new install: confirming the
+    /// welcome, which says so; existing install: the one-time notice). Nothing is fetched until this is true,
+    /// so someone who updates is never opted in silently. A file written before this existed reads as false.
+    #[serde(default)]
+    pub prov_icons_decided: bool,
 }
 
 /// Default modifier pair for every built-in shortcut, per platform.
@@ -184,6 +193,8 @@ impl Default for Settings {
             low_power: false, // hardware acceleration on: no user gets worse off unknowingly
             gesture_menu: true,
             provider_hotkey: default_provider_hotkey(),
+            fetch_provider_icons: true,
+            prov_icons_decided: false,
         }
     }
 }

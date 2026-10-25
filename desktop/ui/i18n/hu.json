@@ -362,5 +362,12 @@
   "provOpenPage": "A(z) {p} oldalának megnyitása",
   "setProvHotkey": "Az utolsó szolgáltató megnyitása",
   "setProvHotkeyTitle": "Az utoljára megnyitott szolgáltató oldalát nyitja meg, vagy az alapértelmezettet",
-  "setProvHotkeyConflict": "Ezt a gyorsbillentyűt már másik használja, ezért nem mentődik el"
+  "setProvHotkeyConflict": "Ezt a gyorsbillentyűt már másik használja, ezért nem mentődik el",
+  "setProvIcons": "Szolgáltatóikonok letöltése a weboldalaikról",
+  "setProvIconsHint": "Minden engedélyezett szolgáltató ikonja a saját weboldalukról és tartalomkiszolgálóikról érkezik, ezen a számítógépen marad, és nagyjából havonta egyszer újra ellenőrzik. Ki: csak a kezdőbetűk.",
+  "welcomeIcons": "Minden engedélyezett szolgáltató ikonjának megjelenítéséhez a Kotodama letölti azt a szolgáltató weboldaláról és tartalomkiszolgálóiról, a számítógépén tárolja, és nagyjából havonta egyszer újra ellenőrzi. Ez a Beállításokban kikapcsolható.",
+  "provIconsNoticeTitle": "Szolgáltatóikonok",
+  "provIconsNoticeBody": "A Kotodama le tudja tölteni minden engedélyezett szolgáltató ikonját a weboldalukról és tartalomkiszolgálóikról, meg tudja tartani ezen a számítógépen, és nagyjából havonta egyszer újra ellenőrzi. Le akarod tölteni őket? A döntésedet a Beállítások > Rendszer menüpontban változtathatod meg.",
+  "provIconsNoticeYes": "Ikonok letöltése",
+  "provIconsNoticeNo": "Nem, csak a kezdőbetűk"
 }

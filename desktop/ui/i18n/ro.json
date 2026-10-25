@@ -362,5 +362,12 @@
   "provOpenPage": "Deschide pagina {p}",
   "setProvHotkey": "Deschide ultimul provider",
   "setProvHotkeyTitle": "Deschide pagina ultimului provider deschis sau pe cea implicită",
-  "setProvHotkeyConflict": "Această scurtătură este deja folosită de alta și nu se salvează"
+  "setProvHotkeyConflict": "Această scurtătură este deja folosită de alta și nu se salvează",
+  "setProvIcons": "Descarcă pictogramele furnizorilor de pe site-urile lor",
+  "setProvIconsHint": "Pictograma fiecărui furnizor activat provine de pe site-ul și serverele de conținut ale acestuia, rămâne pe acest computer și este verificată din nou aproximativ o dată pe lună. Oprit: doar inițialele.",
+  "welcomeIcons": "Pentru a afișa pictograma fiecărui furnizor activat, Kotodama o descarcă de pe site-ul și serverele de conținut ale acestuia, o păstrează pe computerul dumneavoastră și o verifică din nou aproximativ o dată pe lună. Puteți dezactiva asta din Setări.",
+  "provIconsNoticeTitle": "Pictogramele furnizorilor",
+  "provIconsNoticeBody": "Kotodama poate descărca pictograma fiecărui furnizor activat de pe site-ul și de pe serverele de conținut ale acestuia, o poate păstra pe acest computer și o poate verifica din nou aproximativ o dată pe lună. Vrei să le descarci? Îți poți schimba părerea în Setări > Sistem.",
+  "provIconsNoticeYes": "Descarcă pictogramele",
+  "provIconsNoticeNo": "Nu, doar inițialele"
 }

@@ -362,5 +362,12 @@
   "provOpenPage": "Buka halaman {p}",
   "setProvHotkey": "Buka penyedia terakhir",
   "setProvHotkeyTitle": "Membuka halaman penyedia terakhir yang kamu buka, atau yang default",
-  "setProvHotkeyConflict": "Pintasan ini sudah dipakai yang lain dan tidak disimpan"
+  "setProvHotkeyConflict": "Pintasan ini sudah dipakai yang lain dan tidak disimpan",
+  "setProvIcons": "Unduh ikon penyedia dari situs mereka",
+  "setProvIconsHint": "Ikon setiap penyedia yang aktif berasal dari situs dan server kontennya, tetap di komputer ini, dan diperiksa ulang sekitar sebulan sekali. Mati: hanya inisial.",
+  "welcomeIcons": "Untuk menampilkan ikon setiap penyedia yang aktif, Kotodama mengunduhnya dari situs web dan server konten penyedia tersebut, menyimpannya di komputer Anda, dan memeriksanya ulang sekitar sebulan sekali. Anda dapat mematikannya di Pengaturan.",
+  "provIconsNoticeTitle": "Ikon penyedia",
+  "provIconsNoticeBody": "Kotodama dapat mengunduh ikon setiap penyedia yang aktif dari situs dan server kontennya, menyimpannya di komputer ini, dan memeriksanya ulang sekitar sebulan sekali. Apakah Anda ingin mengunduhnya? Anda dapat mengubah keputusan di Pengaturan > Sistem.",
+  "provIconsNoticeYes": "Unduh ikon",
+  "provIconsNoticeNo": "Tidak, hanya inisial"
 }

@@ -362,5 +362,12 @@
   "provOpenPage": "{p} sayfasını aç",
   "setProvHotkey": "Son sağlayıcıyı aç",
   "setProvHotkeyTitle": "En son açtığın sağlayıcının sayfasını ya da varsayılanı açar",
-  "setProvHotkeyConflict": "Bu kısayol zaten başka biri tarafından kullanılıyor ve kaydedilmiyor"
+  "setProvHotkeyConflict": "Bu kısayol zaten başka biri tarafından kullanılıyor ve kaydedilmiyor",
+  "setProvIcons": "Sağlayıcı simgelerini web sitelerinden indir",
+  "setProvIconsHint": "Etkin her sağlayıcının simgesi kendi web sitesinden ve içerik sunucularından gelir, bu bilgisayarda kalır ve yaklaşık ayda bir yeniden denetlenir. Kapalı: yalnızca baş harfler.",
+  "welcomeIcons": "Etkin her sağlayıcının simgesini göstermek için Kotodama, simgeyi sağlayıcının web sitesinden ve içerik sunucularından indirir, bilgisayarınızda saklar ve yaklaşık ayda bir yeniden denetler. Bunu Ayarlar'dan kapatabilirsiniz.",
+  "provIconsNoticeTitle": "Sağlayıcı simgeleri",
+  "provIconsNoticeBody": "Kotodama, etkin her sağlayıcının simgesini kendi web sitesinden ve içerik sunucularından indirebilir, bu bilgisayarda saklayabilir ve yaklaşık ayda bir yeniden denetleyebilir. İndirmek ister misiniz? Fikrinizi Ayarlar > Sistem bölümünden değiştirebilirsiniz.",
+  "provIconsNoticeYes": "Simgeleri indir",
+  "provIconsNoticeNo": "Hayır, yalnızca baş harfler"
 }

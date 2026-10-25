@@ -362,5 +362,12 @@
   "provOpenPage": "Ava {p} leht",
   "setProvHotkey": "Ava viimane pakkuja",
   "setProvHotkeyTitle": "Avab viimati avatud pakkuja lehe või vaikepakkuja lehe",
-  "setProvHotkeyConflict": "See kiirklahv on juba teise kasutuses ja ei salvestu"
+  "setProvHotkeyConflict": "See kiirklahv on juba teise kasutuses ja ei salvestu",
+  "setProvIcons": "Laadi teenusepakkujate ikoonid alla nende veebisaitidelt",
+  "setProvIconsHint": "Iga lubatud teenusepakkuja ikoon pärineb tema veebisaidilt ja sisuserveritest, jääb sellesse arvutisse ning kontrollitakse seda umbes kord kuus uuesti. Väljas: ainult algustähed.",
+  "welcomeIcons": "Iga lubatud teenusepakkuja ikooni kuvamiseks laadib Kotodama selle alla teenusepakkuja veebisaidilt ja sisuserveritest, hoiab seda sinu arvutis ning kontrollib seda umbes kord kuus uuesti. Selle saab seadetes välja lülitada.",
+  "provIconsNoticeTitle": "Teenusepakkujate ikoonid",
+  "provIconsNoticeBody": "Kotodama saab laadida iga lubatud teenusepakkuja ikooni alla tema veebisaidilt ja sisuserveritest, hoida seda selles arvutis ja kontrollida seda umbes kord kuus uuesti. Kas soovid need alla laadida? Oma otsuse saad muuta jaotises Seaded > Süsteem.",
+  "provIconsNoticeYes": "Laadi ikoonid alla",
+  "provIconsNoticeNo": "Ei, ainult algustähed"
 }

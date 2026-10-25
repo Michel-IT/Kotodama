@@ -121,6 +121,12 @@
       box-shadow: 0 0 14px -4px var(--pc, var(--accent)); }
     .prov-chip .pic { width: 18px; height: 18px; display: grid; place-items: center; color: var(--pc, var(--accent)); flex: none; }
     .prov-chip .pic svg { width: 18px; height: 18px; display: block; }
+    /* Provider icon: the provider's own favicon, untouched; a disc with the initials when there is none. */
+    .pic img { width: 100%; height: 100%; display: block; object-fit: contain; }
+    .pic .pico-fb { width: 100%; height: 100%; box-sizing: border-box; border-radius: 50%; display: grid; place-items: center;
+      font-size: 8px; font-weight: 700; line-height: 1; color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
     .prov-chip .pname { font-size: 12.5px; font-weight: 700; color: var(--text); letter-spacing: .2px; }
     .proc-stat { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
     .proc-stage { font-size: 11.5px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -224,8 +230,20 @@
     function renderProvChip() {
       const chip = document.getElementById('provChip');
       if (curProv) {
-        chip.style.setProperty('--pc', curProv.color || 'var(--accent)');
-        document.getElementById('provIc').innerHTML = curProv.svg || '';
+        const ic = document.getElementById('provIc');
+        const disc = () => {
+          ic.textContent = '';
+          const fb = document.createElement('span'); fb.className = 'pico-fb'; fb.setAttribute('aria-hidden', 'true');
+          fb.textContent = curProv.initials || ''; ic.appendChild(fb);
+        };
+        if (curProv.icon && /^data:image\/(png|x-icon|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/.test(curProv.icon)) {
+          ic.textContent = '';
+          const img = document.createElement('img'); img.alt = ''; img.draggable = false;
+          img.onerror = disc;   // an icon the browser cannot draw: back to the disc with the initials
+          img.src = curProv.icon; ic.appendChild(img);
+        } else {
+          disc();
+        }
         document.getElementById('provName').textContent = curProv.name || '';
         chip.style.display = '';
       } else { chip.style.display = 'none'; }

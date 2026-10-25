@@ -362,5 +362,12 @@
   "provOpenPage": "Obre la pàgina de {p}",
   "setProvHotkey": "Obre l'últim proveïdor",
   "setProvHotkeyTitle": "Obre la pàgina de l'últim proveïdor obert, o del predeterminat",
-  "setProvHotkeyConflict": "Aquesta drecera ja la fa servir una altra i no es desa"
+  "setProvHotkeyConflict": "Aquesta drecera ja la fa servir una altra i no es desa",
+  "setProvIcons": "Descarrega les icones dels proveïdors des dels seus llocs web",
+  "setProvIconsHint": "La icona de cada proveïdor activat arriba del seu lloc web i dels seus servidors de contingut, es queda en aquest ordinador i es torna a comprovar aproximadament un cop al mes. Desactivat: només les inicials.",
+  "welcomeIcons": "Per mostrar la icona de cada proveïdor activat, Kotodama la descarrega del seu lloc web i dels seus servidors de contingut, la guarda al teu ordinador i la torna a comprovar aproximadament un cop al mes. Pots desactivar-ho a la Configuració.",
+  "provIconsNoticeTitle": "Icones dels proveïdors",
+  "provIconsNoticeBody": "Kotodama pot baixar la icona de cada proveïdor activat des del seu lloc web i dels seus servidors de contingut, guardar-la en aquest ordinador i tornar-la a comprovar aproximadament un cop al mes. Vols baixar-les? Pots canviar d'opinió a Configuració > Sistema.",
+  "provIconsNoticeYes": "Descarrega les icones",
+  "provIconsNoticeNo": "No, només les inicials"
 }
