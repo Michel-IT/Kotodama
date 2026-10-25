@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-terms-decline"
+description = "Enables the terms_decline command without any pre-configured scope."
+commands.allow = ["terms_decline"]
+
+[[permission]]
+identifier = "deny-terms-decline"
+description = "Denies the terms_decline command without any pre-configured scope."
+commands.deny = ["terms_decline"]

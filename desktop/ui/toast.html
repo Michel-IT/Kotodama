@@ -205,6 +205,7 @@
       processing: 'Working on it...', done: 'Pasted', errorEmpty: 'Nothing to copy', errorNoAnswer: 'No answer received',
       errorAccessibility: 'Allow Accessibility for Kotodama',
       errorLogin: 'Sign-in required: log in from Kotodama',
+      errorAutoOff: 'Automatic sending is off for this provider: turn it on in Kotodama',
       errorElevated: 'This window runs as administrator: Kotodama cannot copy from it',
       restartAdmin: 'Restart as administrator',
       stageConnect: 'Connecting...', stageWork: 'Receiving the answer',
@@ -299,7 +300,7 @@
         setStage(STR.stageConnect);
       }
       else if (curMode === 'done') t.textContent = (curLabel === 'copied' ? STR.toastCopied : STR.done) + ' ✓';
-      else if (curMode === 'error') t.textContent = curLabel === 'empty' ? STR.errorEmpty : (curLabel === 'accessibility' ? STR.errorAccessibility : (curLabel === 'elevated' ? STR.errorElevated : (curLabel === 'login' ? STR.errorLogin : STR.errorNoAnswer)));
+      else if (curMode === 'error') t.textContent = curLabel === 'empty' ? STR.errorEmpty : (curLabel === 'accessibility' ? STR.errorAccessibility : (curLabel === 'elevated' ? STR.errorElevated : (curLabel === 'login' ? STR.errorLogin : (curLabel === 'autooff' ? STR.errorAutoOff : STR.errorNoAnswer))));
       else if (curMode === 'ready' || curMode === 'closed') renderReady();
       else t.textContent = STR.title;
       // "Open" alone: it opens the HOME (builder), no provider name anymore

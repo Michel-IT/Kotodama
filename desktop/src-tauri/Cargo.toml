@@ -35,6 +35,7 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls-no-p
 rustls = { version = "0.23", default-features = false, features = ["ring"] }   # process-wide TLS provider for reqwest (as the updater)
 url = "2"
 base64 = "0.22"
+sha2 = "0.10"                         # fingerprint of the Terms text the user accepts (already in the dependency tree)
 miniz_oxide = "0.8"                   # inflate: Claude's timeline stream compresses its larger frames (gzip)
 
 # Windows only: move the window onto the CURRENT virtual desktop (IVirtualDesktopManager).

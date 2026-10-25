@@ -158,6 +158,159 @@ fn dirty_pages() -> &'static Mutex<HashSet<String>> {
     static S: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
     S.get_or_init(|| Mutex::new(HashSet::new()))
 }
+/* ===================== Qwen: normal send first, simulated input only with consent =====================
+   Qwen's page can drop a script-made send (captured: text in the field, Enter pressed, field emptied, no request
+   ever sent). The send always starts the normal way, like every other provider. When the page reports it lost
+   (`sendfail`), the app does NOT switch to simulated input on its own (browser::trusted_input): it asks once
+   (`app://qwen-trusted-ask`, a dialog carrying the responsibility clause), stores the answer in
+   `Settings.qwen_trusted_input`, and from then on either retries this one message with simulated input (yes), or
+   leaves the text in Qwen's field, brings its tab forward and lets the user press Enter (no). */
+const QWEN: &str = "qwen";
+/// (broadcast, provider) pairs whose CURRENT injection uses simulated input: set only by `qwen_trusted_retry`, read by
+/// the fill script's prelude (`__ktTrustedInput`) and required by the `trusted-*` pushes, so no page can obtain
+/// simulated input by itself. One retry per message: a second failure is reported as it is.
+fn trusted_runs() -> &'static Mutex<HashSet<(String, String)>> {
+    static T: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+    T.get_or_init(|| Mutex::new(HashSet::new()))
+}
+fn trusted_now(bid: &str, key: &str) -> bool {
+    cfg!(windows) && trusted_runs().lock().unwrap().contains(&(bid.to_string(), key.to_string()))
+}
+/// Messages waiting for the user's answer to the Qwen question (the watchdog spares them via `blocked_marks`).
+fn qwen_asks() -> &'static Mutex<HashSet<(String, String)>> {
+    static Q: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+    Q.get_or_init(|| Mutex::new(HashSet::new()))
+}
+/// Messages handed to the user (text left in Qwen's field): their card says so (`reason: "manual"`).
+fn manual_marks() -> &'static Mutex<HashSet<(String, String)>> {
+    static M: OnceLock<Mutex<HashSet<(String, String)>>> = OnceLock::new();
+    M.get_or_init(|| Mutex::new(HashSet::new()))
+}
+/// Whether Qwen's injection for a message was a fresh conversation, so a retry harvests the same way.
+fn qwen_fresh() -> &'static Mutex<HashMap<(String, String), bool>> {
+    static F: OnceLock<Mutex<HashMap<(String, String), bool>>> = OnceLock::new();
+    F.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Qwen's page lost a normal send. Returns true when the failure is taken over (a retry, a question to the user or
+/// a hand-off), false when it must be delivered as it is (another provider, the simulated retry failed too, the
+/// message is no longer pending).
+fn qwen_send_refused(window: &Window, bid: &str, key: &str) -> bool {
+    if key != QWEN {
+        return false;
+    }
+    let pair = (bid.to_string(), key.to_string());
+    if trusted_runs().lock().unwrap().contains(&pair) {
+        return false;
+    }
+    let pending = broadcasts().lock().unwrap().get(bid).map(|bc| bc.pending.contains(key)).unwrap_or(false);
+    // Only a message this tab is known to carry (a regeneration or a stale delivery has nothing to retry or hand over).
+    let ours = active_harvests().lock().unwrap().get(key).map(|(b, _, _)| b == bid).unwrap_or(false);
+    if !pending || !ours {
+        return false;
+    }
+    let (on, decided) = {
+        let st = window.state::<crate::AppState>();
+        let g = st.settings.lock().unwrap();
+        (g.qwen_trusted_input, g.qwen_trusted_input_decided)
+    };
+    debug::log(format!("kotodama qwen send refused bid={bid} trusted={on} decided={decided}"));
+    if cfg!(windows) && on {
+        if qwen_trusted_retry(window, bid, key) {
+            return true;
+        }
+    } else if cfg!(windows) && !decided {
+        qwen_asks().lock().unwrap().insert(pair.clone());
+        blocked_marks().lock().unwrap().insert(pair);
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+        let _ = window.emit("app://qwen-trusted-ask", serde_json::json!({ "broadcastId": bid, "key": key }));
+        return true;
+    }
+    qwen_manual_handoff(window, bid, key);
+    true
+}
+
+/// Sends the same message again through simulated input (consent given). Attachments are not handed over a
+/// second time: the first attempt already placed them in the composer.
+fn qwen_trusted_retry(window: &Window, bid: &str, key: &str) -> bool {
+    let pair = (bid.to_string(), key.to_string());
+    let text = active_harvests().lock().unwrap().get(key).filter(|(b, _, _)| b == bid).map(|(_, t, _)| t.clone());
+    let (Some(text), Some(wv)) = (text, window.get_webview(&browser::provider_label(key))) else { return false };
+    let fresh = qwen_fresh().lock().unwrap().get(&pair).copied().unwrap_or(false);
+    trusted_runs().lock().unwrap().insert(pair.clone());
+    // The page said the message never left: the next attempt must be allowed to send it.
+    sent_marks().lock().unwrap().remove(&pair);
+    let Ok(js) = build_inject_js_with(bid, key, &text, fresh, false, false) else {
+        trusted_runs().lock().unwrap().remove(&pair);
+        return false;
+    };
+    // The retry is a send like any other: same silent ceiling (send_rate.rs), held on its own thread.
+    let wait = crate::send_rate::reserve(key);
+    if wait.is_zero() {
+        if wv.eval(&js).is_ok() {
+            debug::log(format!("kotodama qwen retry with simulated input bid={bid}"));
+            return true;
+        }
+        trusted_runs().lock().unwrap().remove(&pair);
+        return false;
+    }
+    debug::log(format!("kotodama qwen retry held {} ms by the send-rate ceiling bid={bid}", wait.as_millis()));
+    let (window, bid, key) = (window.clone(), bid.to_string(), key.to_string());
+    std::thread::spawn(move || {
+        std::thread::sleep(wait);
+        let pending = broadcasts().lock().unwrap().get(&bid).map(|bc| bc.pending.contains(&key)).unwrap_or(false);
+        if !pending {
+            trusted_runs().lock().unwrap().remove(&(bid, key));
+        } else if wv.eval(&js).is_err() {
+            trusted_runs().lock().unwrap().remove(&(bid.clone(), key.clone()));
+            qwen_manual_handoff(&window, &bid, &key);
+        }
+    });
+    true
+}
+
+/// The user sends this message themselves: the text goes into Qwen's field (no send), and the card ends with
+/// `reason: "manual"`, on which the frontend brings Qwen's tab forward.
+fn qwen_manual_handoff(window: &Window, bid: &str, key: &str) {
+    let text = active_harvests().lock().unwrap().get(key).filter(|(b, _, _)| b == bid).map(|(_, t, _)| t.clone());
+    if let (Some(text), Some(wv)) = (text, window.get_webview(&browser::provider_label(key))) {
+        let prelude = format!(
+            "var __kt_bid = {}; var __kt_key = {}; window.__ktTrustedInput = false;",
+            serde_json::to_string(bid).unwrap_or_default(),
+            serde_json::to_string(key).unwrap_or_default()
+        );
+        if let Ok(fill) = browser::fill_js(&text, false) {
+            let _ = wv.eval(&(prelude + &fill));
+        }
+    }
+    debug::log(format!("kotodama qwen hand-off to the user bid={bid}"));
+    manual_marks().lock().unwrap().insert((bid.to_string(), key.to_string()));
+    finish_key(window, bid, key, "sendfail", "", false, "");
+}
+
+/// The user's answer to the Qwen question. Stored for the next times; for the message that asked, `accept` retries
+/// it with simulated input and `!accept` hands it over. An empty `broadcast_id` only stores the answer (Settings).
+#[tauri::command]
+pub fn kotodama_qwen_decision(window: Window, broadcast_id: String, key: String, accept: bool) {
+    crate::set_qwen_trusted_input(window.app_handle(), accept);
+    let pair = (broadcast_id.clone(), key.clone());
+    let asked = qwen_asks().lock().unwrap().remove(&pair);
+    blocked_marks().lock().unwrap().remove(&pair);
+    if !asked {
+        return;
+    }
+    let pending = broadcasts().lock().unwrap().get(&broadcast_id).map(|bc| bc.pending.contains(&key)).unwrap_or(false);
+    if !pending {
+        return;
+    }
+    if accept && qwen_trusted_retry(&window, &broadcast_id, &key) {
+        return;
+    }
+    qwen_manual_handoff(&window, &broadcast_id, &key);
+}
+
 /// Both delivery paths (IPC and the navigation fallback) go through `handle_push`, which calls this first: when the
 /// delivery is the attachment-failure code it marks (bid, key) and strips the code from the data, so the card
 /// carries no text. Returns whether it was one.
@@ -393,6 +546,9 @@ fn audio_file_ok(name: &str) -> bool {
 #[tauri::command]
 pub fn kotodama_read_aloud(window: Window, broadcast_id: String, key: String, mode: String) -> Result<String, String> {
     let pattern = crate::audio::tts_url_pattern(&key).ok_or("unsupported")?;
+    if !crate::terms::auto_send_allowed(&window.state::<crate::AppState>().settings.lock().unwrap(), &key) {
+        return Err("autooff".into());
+    }
     if conv_bids().lock().unwrap().get(&key) != Some(&broadcast_id) {
         return Err("gone".into());
     }
@@ -447,7 +603,11 @@ fn regen_button(key: &str) -> Option<(&'static str, &'static str, &'static str)>
 /// front (there is nothing to type), which keeps a re-injection after a navigation from sending anything.
 #[tauri::command]
 pub fn kotodama_regenerate(window: Window, old_bid: String, new_bid: String, key: String, text: String) -> Result<(), String> {
+    let key_for_rate = key.clone();
     let (sel, path, item) = regen_button(&key).ok_or("unsupported")?;
+    if !crate::terms::auto_send_allowed(&window.state::<crate::AppState>().settings.lock().unwrap(), &key) {
+        return Err("autooff".into());
+    }
     if conv_bids().lock().unwrap().get(&key) != Some(&old_bid) {
         return Err("gone".into());
     }
@@ -484,11 +644,24 @@ pub fn kotodama_regenerate(window: Window, old_bid: String, new_bid: String, key
     // Order matters: the harvest snapshots the answer on screen BEFORE the click replaces it.
     let js = prelude + PUSH_HELPER_JS + SR_HIDE_JS + RESPONSE_ADOPT_JS + net_probe_js() + STREAM_WATCH_JS + HARVEST_JS + FIND_ACTION_JS + REGEN_CLICK_JS;
     debug::log(format!("kotodama REGENERATE key={key} old={old_bid} new={new_bid}"));
-    if wv.eval(&js).is_err() {
-        finish_key(&window, &new_bid, &key, "error", "", false, "");
-        return Ok(());
+    let go = move |window: Window| {
+        if wv.eval(&js).is_err() {
+            finish_key(&window, &new_bid, &key, "error", "", false, "");
+            return;
+        }
+        active_harvests().lock().unwrap().insert(key.clone(), (new_bid, text, false));
+    };
+    // Same silent send-rate ceiling as a normal send (send_rate.rs): held on its own thread, never on this one.
+    let wait = crate::send_rate::reserve(&key_for_rate);
+    if wait.is_zero() {
+        go(window);
+    } else {
+        debug::log(format!("kotodama regenerate key={key_for_rate} held {} ms by the send-rate ceiling", wait.as_millis()));
+        std::thread::spawn(move || {
+            std::thread::sleep(wait);
+            go(window);
+        });
     }
-    active_harvests().lock().unwrap().insert(key.clone(), (new_bid, text, false));
     Ok(())
 }
 
@@ -3499,6 +3672,14 @@ const TEMP_PROBE_JS: &str = r##"
 /// (browser.rs) + harvester. `fresh` = new conversation (no previous answer to snapshot);
 /// `temp` = the user wants provider temporary chats (kt_temp_chats).
 fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp: bool) -> Result<String, String> {
+    if key == QWEN {
+        qwen_fresh().lock().unwrap().insert((broadcast_id.to_string(), key.to_string()), fresh);
+    }
+    build_inject_js_with(broadcast_id, key, text, fresh, temp, true)
+}
+
+/// `build_inject_js`, with the attachments optional (a retry on the same page does not hand them over again).
+fn build_inject_js_with(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp: bool, files: bool) -> Result<String, String> {
     let (ans, busy) = selectors_for(key);
     let prelude = format!(
         "var __kt_bid = {}; var __kt_key = {}; var __kt_ans = {}; var __kt_busy = {}; var __kt_fresh = {fresh}; var __kt_fast = {fast}; var __kt_sent = false; window.__ktDiag = {diag}; window.__ktStreamEver = 0; window.__ktLimitHit = 0; window.__ktRateLimited = 0; window.__ktSentAt = 0; window.__ktEnterPressed = false; window.__ktTrustedInput = {trusted}; window.__ktNetUrl = {net_url}; window.__ktFreshBaseline = {fresh_baseline};",
@@ -3508,7 +3689,7 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
         serde_json::to_string(busy).map_err(|e| e.to_string())?,
         fast = fast_done_for(key),
         diag = crate::debug::enabled(),
-        trusted = browser::needs_trusted_input(key),
+        trusted = trusted_now(broadcast_id, key),
         net_url = net_url_js(key),
         fresh_baseline = unreliable_prewarm(key),
     );
@@ -3539,7 +3720,7 @@ fn build_inject_js(broadcast_id: &str, key: &str, text: &str, fresh: bool, temp:
         + net
         + STREAM_WATCH_JS
         + &temp_part
-        + &attach_js(broadcast_id)
+        + &(if files { attach_js(broadcast_id) } else { String::new() })
         + &browser::fill_js(text, true)?
         + HARVEST_JS
         + probe)
@@ -3576,7 +3757,7 @@ fn build_resume_js(
         // harvester must never declare "never sent" about a message it knows went out.
         sent = !allow_send,
         diag = crate::debug::enabled(),
-        trusted = browser::needs_trusted_input(key),
+        trusted = trusted_now(broadcast_id, key),
         net_url = net_url_js(key),
         fresh_baseline = unreliable_prewarm(key),
     );
@@ -3634,6 +3815,11 @@ fn build_resume_js(
 /// and, when the broadcast empties, `app://kotodama-finished`. Duplicate calls are no-ops.
 fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, truncated: bool, md: &str) {
     let attach_failed = attach_fail_marks().lock().unwrap().remove(&(bid.to_string(), key.to_string()));
+    let pair = (bid.to_string(), key.to_string());
+    let manual = manual_marks().lock().unwrap().remove(&pair);
+    trusted_runs().lock().unwrap().remove(&pair);
+    qwen_asks().lock().unwrap().remove(&pair);
+    qwen_fresh().lock().unwrap().remove(&pair);
     if attach_failed {
         // The page may get the file late: it is not reused (no warm tab, no follow-up into it).
         dirty_pages().lock().unwrap().insert(key.to_string());
@@ -3703,7 +3889,7 @@ fn finish_key(window: &Window, bid: &str, key: &str, status: &str, text: &str, t
     set_conv(window, key, (status == "done").then_some(bid));
     let _ = window.emit(
         "app://kotodama-answer",
-        serde_json::json!({ "broadcastId": bid, "key": key, "status": status, "text": text, "truncated": truncated, "md": md, "reason": if attach_failed { "attach" } else { "" } }),
+        serde_json::json!({ "broadcastId": bid, "key": key, "status": status, "text": text, "truncated": truncated, "md": md, "reason": if attach_failed { "attach" } else if manual { "manual" } else { "" } }),
     );
     if all_done {
         let _ = window.emit("app://kotodama-finished", serde_json::json!({ "broadcastId": bid }));
@@ -3987,8 +4173,13 @@ fn handle_push(
 ) {
     let mut data = data;
     let mut md = md;
-    if take_attach_failure(&bid, &key, &st, &mut data) {
+    let attach_failed = take_attach_failure(&bid, &key, &st, &mut data);
+    if attach_failed {
         md = Some(String::new());
+    }
+    // Qwen's page lost the normal send: retry with consent, ask, or hand over (see `qwen_send_refused`).
+    if !attach_failed && st == "sendfail" && seq.unwrap_or(0) == 0 && qwen_send_refused(window, &bid, &key) {
+        return;
     }
     // Network capture from the discovery probe (KOTO_NETPROBE): one JSON record per line, per provider.
     if st == "netcap" {
@@ -4118,10 +4309,15 @@ fn handle_push(
         }
         return;
     }
-    // Genuine input requested by the fill script (see browser::trusted_input).
+    // Genuine input requested by the fill script (see browser::trusted_input): honoured only for a retry the user
+    // agreed to (see `qwen_send_refused`), never because a page asked.
     if st == "trusted-fill" || st == "trusted-enter" {
-        debug::log(format!("kotodama {st} key={key}"));
-        browser::trusted_input(window, &key, &st, &data.unwrap_or_default());
+        if trusted_now(&bid, &key) {
+            debug::log(format!("kotodama {st} key={key}"));
+            browser::trusted_input(window, &key, &st, &data.unwrap_or_default());
+        } else {
+            debug::log(format!("kotodama {st} key={key} ignored: no consent for this message"));
+        }
         return;
     }
     if st == "blocked" || st == "unblocked" {
@@ -4307,8 +4503,11 @@ pub fn kotodama_prewarm(window: Window, keys: Vec<String>) {
         .values()
         .flat_map(|bc| bc.pending.iter().cloned())
         .collect();
+    let settings = window.state::<crate::AppState>().settings.lock().unwrap().clone();
     for key in keys {
-        if browser::foreground_key().as_deref() == Some(key.as_str())
+        // a page Kotodama will not send to is not loaded in the background either
+        if !crate::terms::auto_send_allowed(&settings, &key)
+            || browser::foreground_key().as_deref() == Some(key.as_str())
             || provider_busy(&key)
             || awaited.contains(&key)
         {
@@ -4545,7 +4744,74 @@ pub async fn kotodama_broadcast(
     new_chat: bool,
     bases: HashMap<String, String>,
 ) -> Result<(), String> {
+    broadcast_keys(window, broadcast_id, text, keys, new_chat, bases, false).await
+}
+
+type BoxedSend = std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), String>> + Send>>;
+
+/// The body of `kotodama_broadcast`. `rate_booked` is true for a key that already waited for its slot in the send
+/// rate ceiling (send_rate.rs): it is sent at once, not booked a second time. Boxed so a held key can call it back.
+fn broadcast_boxed(
+    window: Window,
+    broadcast_id: String,
+    text: String,
+    keys: Vec<String>,
+    new_chat: bool,
+    bases: HashMap<String, String>,
+    rate_booked: bool,
+) -> BoxedSend {
+    Box::pin(broadcast_keys(window, broadcast_id, text, keys, new_chat, bases, rate_booked))
+}
+
+async fn broadcast_keys(
+    window: Window,
+    broadcast_id: String,
+    text: String,
+    keys: Vec<String>,
+    new_chat: bool,
+    bases: HashMap<String, String>,
+    rate_booked: bool,
+) -> Result<(), String> {
     debug::log(format!("kotodama_broadcast bid={broadcast_id} keys={keys:?} new_chat={new_chat}"));
+    // Automatic sending only where the user turned it on, after accepting the Terms (terms.rs). The interface
+    // already keeps the others out; this is the guarantee. A refused key gets its outcome at once and nothing
+    // is typed into its page.
+    let (keys, refused): (Vec<String>, Vec<String>) = {
+        let g = window.state::<crate::AppState>().settings.lock().unwrap().clone();
+        keys.into_iter().partition(|k| crate::terms::auto_send_allowed(&g, k))
+    };
+    for key in &refused {
+        debug::log(format!("kotodama send key={key} refused: automatic sending is off for it"));
+        let _ = window.emit(
+            "app://kotodama-answer",
+            serde_json::json!({ "broadcastId": broadcast_id, "key": key, "status": "error", "text": "", "reason": "autooff" }),
+        );
+        if rate_booked {
+            // A key held by the send-rate ceiling is already registered as pending: the consent was withdrawn while
+            // it waited. The outcome above closes its card; here it leaves the broadcast (and closes it when it was
+            // the last one) so it does not sit in `pending` until the watchdog.
+            let all_done = {
+                let mut b = broadcasts().lock().unwrap();
+                match b.get_mut(&broadcast_id) {
+                    Some(bc) => {
+                        bc.pending.remove(key);
+                        let empty = bc.pending.is_empty();
+                        if empty {
+                            b.remove(&broadcast_id);
+                        }
+                        empty
+                    }
+                    None => false,
+                }
+            };
+            if all_done {
+                let _ = window.emit("app://kotodama-finished", serde_json::json!({ "broadcastId": broadcast_id }));
+            }
+        }
+    }
+    if keys.is_empty() {
+        return Ok(());
+    }
     // temporary provider chats: global switch + per-provider map (kt_temp_providers). A provider
     // gets the incognito trigger only if the global switch is on AND its per-provider entry is
     // not explicitly false. Snapshot the map so we can gate each key below.
@@ -4592,6 +4858,23 @@ pub async fn kotodama_broadcast(
             "app://kotodama-answer",
             serde_json::json!({ "broadcastId": broadcast_id, "key": key, "status": "pending", "text": "" }),
         );
+        // Silent ceiling on the send rate (see send_rate.rs): far above any human pace, so in practice it never
+        // waits; past it the send is held, not refused, and the card simply stays pending meanwhile.
+        // Each provider waits on its own: a held key is handed to a task of its own, so the others of the same
+        // send are not delayed by it.
+        let wait = if rate_booked { std::time::Duration::ZERO } else { crate::send_rate::reserve(key) };
+        if !wait.is_zero() {
+            debug::log(format!("kotodama send key={key} held {} ms by the send-rate ceiling", wait.as_millis()));
+            let (w, bid, txt, bs, k) = (window.clone(), broadcast_id.clone(), text.clone(), bases.clone(), key.clone());
+            tauri::async_runtime::spawn(async move {
+                let _ = tauri::async_runtime::spawn_blocking(move || std::thread::sleep(wait)).await;
+                let still = broadcasts().lock().unwrap().get(&bid).map(|bc| bc.pending.contains(&k)).unwrap_or(false);
+                if still {
+                    let _ = broadcast_boxed(w, bid, txt, vec![k], new_chat, bs, true).await;
+                }
+            });
+            continue;
+        }
         let Some(base) = bases.get(key) else {
             finish_key(&window, &broadcast_id, key, "error", "", false, "");
             continue;

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kotodama-qwen-decision"
+description = "Enables the kotodama_qwen_decision command without any pre-configured scope."
+commands.allow = ["kotodama_qwen_decision"]
+
+[[permission]]
+identifier = "deny-kotodama-qwen-decision"
+description = "Denies the kotodama_qwen_decision command without any pre-configured scope."
+commands.deny = ["kotodama_qwen_decision"]

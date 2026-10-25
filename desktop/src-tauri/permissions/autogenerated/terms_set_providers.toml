@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-terms-set-providers"
+description = "Enables the terms_set_providers command without any pre-configured scope."
+commands.allow = ["terms_set_providers"]
+
+[[permission]]
+identifier = "deny-terms-set-providers"
+description = "Denies the terms_set_providers command without any pre-configured scope."
+commands.deny = ["terms_set_providers"]

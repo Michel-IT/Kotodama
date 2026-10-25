@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-terms-consent-json"
+description = "Enables the terms_consent_json command without any pre-configured scope."
+commands.allow = ["terms_consent_json"]
+
+[[permission]]
+identifier = "deny-terms-consent-json"
+description = "Denies the terms_consent_json command without any pre-configured scope."
+commands.deny = ["terms_consent_json"]

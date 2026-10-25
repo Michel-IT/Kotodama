@@ -290,59 +290,94 @@ pub fn start_idle_suspender(app: &tauri::AppHandle) {
     });
 }
 
-/// "Clean Chrome desktop" User-Agent for the provider webview. Several sites
-/// (in particular the Google/Gemini login) block or degrade embedded browsers
-/// by recognizing the `Edg/`/WebView2 markers; a standard Chrome UA maximizes
-/// compatibility and login success.
-// User-Agent of the provider webview. It MUST be consistent with the real engine, otherwise
-// Google ("unsafe browser") and Cloudflare ("anti-bot check") block the login:
-//   - Windows: WebView2 = Chromium  -> Chrome UA (consistent).
-//   - macOS:   WKWebView = WebKit/Safari -> macOS Safari UA (consistent; a "Windows Chrome" UA
-//              on WebKit creates the inconsistency that triggers the blocks).
-#[cfg(target_os = "macos")]
-pub const PROVIDER_UA: &str =
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15";
-#[cfg(not(target_os = "macos"))]
-pub const PROVIDER_UA: &str =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+/// User-Agent of the provider webviews. Kotodama does not disguise itself: by default the webviews
+/// keep the engine's own User-Agent and Client Hints (WebView2 on Windows, WKWebView on macOS), and
+/// no script rewrites `navigator.userAgent` / `navigator.userAgentData`. The only exception is a value
+/// the USER typed in Settings (`Settings.custom_user_agent`, at their own responsibility). It is read
+/// when the first provider tab of the process is created and kept for the whole session, so every
+/// provider tab presents the same identity and a change applies after a restart, as the help text says.
+/// Set through the builder (`ICoreWebView2Settings::UserAgent` on Windows), which is a per-webview
+/// setting and not a browser argument: the environment arguments stay identical for every webview
+/// (see `provider_browser_args`).
+/// Note (QA 25/10/2026): on Google pages (Gemini) the engine itself reports `Chrome/N` without `Edg/` and the
+/// brand "Google Chrome"; the getters are native, so it is not a script of ours (likely an engine override).
+fn session_user_agent(window: &Window) -> Option<String> {
+    static UA: OnceLock<Option<String>> = OnceLock::new();
+    UA.get_or_init(|| {
+        let ua = window
+            .state::<crate::AppState>()
+            .settings
+            .lock()
+            .unwrap()
+            .custom_user_agent
+            .trim()
+            .to_string();
+        (!ua.is_empty() && crate::settings::custom_user_agent_ok(&ua)).then_some(ua)
+    })
+    .clone()
+}
 
-/// Closes a gap left by `PROVIDER_UA`: that only rewrites the classic `navigator.userAgent`
-/// string/header, but on Chromium/WebView2 the newer Client Hints API (`navigator.userAgentData`
-/// + the `Sec-CH-UA*` request headers) still exposes the REAL engine identity (Edge/WebView2
-/// brand tokens), even with the classic UA spoofed to plain Chrome -- a site cross-checking both
-/// could catch the mismatch. Self-gating: on WKWebView (macOS) `navigator.userAgentData` doesn't
-/// exist at all (real Safari has no Client Hints), so the early return leaves it correctly
-/// absent there -- no `#[cfg(target_os...)]` split needed, unlike `PROVIDER_UA`.
-/// NOTE: brand/version here (Chrome 126) must stay in sync with `PROVIDER_UA`'s `Chrome/126...`.
-pub const CLIENT_HINTS_JS: &str = r#"
-(function(){
-  try {
-    if (!navigator.userAgentData) return;
-    var brands = [
-      { brand: 'Not/A)Brand', version: '8' },
-      { brand: 'Chromium', version: '126' },
-      { brand: 'Google Chrome', version: '126' }
-    ];
-    var fullVersionList = [
-      { brand: 'Not/A)Brand', version: '8.0.0.0' },
-      { brand: 'Chromium', version: '126.0.0.0' },
-      { brand: 'Google Chrome', version: '126.0.0.0' }
-    ];
-    var fake = {
-      brands: brands, mobile: false, platform: 'Windows',
-      toJSON: function(){ return { brands: brands, mobile: false, platform: 'Windows' }; },
-      getHighEntropyValues: function(hints){
-        var full = { architecture: 'x86', bitness: '64', model: '', platformVersion: '19.0.0',
-          uaFullVersion: '126.0.0.0', fullVersionList: fullVersionList };
-        var out = { brands: brands, mobile: false, platform: 'Windows' };
-        (hints || []).forEach(function(h){ if (h in full) out[h] = full[h]; });
-        return Promise.resolve(out);
-      }
-    };
-    Object.defineProperty(navigator, 'userAgentData', { get: function(){ return fake; }, configurable: true });
-  } catch(e){}
-})();
-"#;
+/// Google refused the sign-in inside this webview: the OAuth error `disallowed_useragent`, or the
+/// "this browser or app may not be secure" page (`/signin/rejected`, `/v3/signin/rejected`,
+/// `/signin/v2/deniedsigninrejected`). Decided on the URL only, never on the page's text, so it holds
+/// in every language. The OAuth error carries its code base64-encoded in `authError`, so that is
+/// decoded too. We only TELL the user (see `notify_google_refused`): the refusal is never worked around.
+pub(crate) fn google_login_refused(url: &str) -> bool {
+    use base64::Engine;
+    let Ok(u) = url.parse::<tauri::Url>() else { return false };
+    if u.host_str() != Some("accounts.google.com") {
+        return false;
+    }
+    const CODE: &str = "disallowed_useragent";
+    let path = u.path().to_ascii_lowercase();
+    if path.contains(CODE) || path.contains("signin/rejected") || path.contains("deniedsigninrejected") {
+        return true;
+    }
+    u.query_pairs().any(|(k, v)| {
+        if v.to_ascii_lowercase().contains(CODE) {
+            return true;
+        }
+        if k != "authError" {
+            return false;
+        }
+        let raw = v.trim_end_matches('=');
+        [base64::engine::general_purpose::STANDARD_NO_PAD, base64::engine::general_purpose::URL_SAFE_NO_PAD]
+            .iter()
+            .filter_map(|e| e.decode(raw).ok())
+            .any(|b| b.windows(CODE.len()).any(|w| w == CODE.as_bytes()))
+    })
+}
+
+/// Tabs whose page is, right now, a Google refusal the interface was told about.
+fn google_refused_tabs() -> &'static Mutex<std::collections::HashSet<String>> {
+    static S: OnceLock<Mutex<std::collections::HashSet<String>>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
+}
+
+/// The tab of provider `key` is on a page that is not the Google refusal any more: the interface closes the
+/// notice (it must not stay over the page of another provider or over a page that went on).
+fn clear_google_refused<R: Runtime>(window: &tauri::Window<R>, key: &str) {
+    if google_refused_tabs().lock().unwrap().remove(key) {
+        let _ = window.emit("app://provider-google-cleared", serde_json::json!({ "key": key }));
+    }
+}
+
+/// Tells the frontend that Google refused the sign-in in provider `key`'s tab (see
+/// `google_login_refused`). Once per tab every 30 s: a refusal page that reloads or redirects twice
+/// must not stack notices.
+fn notify_google_refused<R: Runtime>(window: &tauri::Window<R>, key: &str) {
+    google_refused_tabs().lock().unwrap().insert(key.to_string());
+    static LAST: OnceLock<Mutex<std::collections::HashMap<String, std::time::Instant>>> = OnceLock::new();
+    {
+        let mut m = LAST.get_or_init(|| Mutex::new(std::collections::HashMap::new())).lock().unwrap();
+        if m.get(key).map(|t| t.elapsed() < std::time::Duration::from_secs(30)).unwrap_or(false) {
+            return;
+        }
+        m.insert(key.to_string(), std::time::Instant::now());
+    }
+    debug::log(format!("google sign-in refused in the {key} tab"));
+    let _ = window.emit("app://provider-google-refused", serde_json::json!({ "key": key }));
+}
 
 /// Forces `navigator.language`/`navigator.languages` to English on grok.com ONLY (self-gated by
 /// hostname, like the other injected scripts in this file are self-gated by feature presence --
@@ -652,14 +687,23 @@ pub fn show_context_menu(window: &Window) {
 /// tab (anti-flash). Shared by `open_provider_view` (recipe) and `show_provider_tab` (first switch).
 pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h: f64) -> Result<(), String> {
     let win_for_nav = window.clone();
+    let key_nav = key.to_string();
     let key_load = key.to_string();
-    let builder = WebviewBuilder::new(provider_label(key), WebviewUrl::External(url))
-        .user_agent(PROVIDER_UA)
+    let builder = WebviewBuilder::new(provider_label(key), WebviewUrl::External(url));
+    let builder = match session_user_agent(window) {
+        Some(ua) => builder.user_agent(&ua),
+        None => builder,
+    };
+    let builder = builder
         .initialization_script(NO_MENU_JS)
-        .initialization_script(CLIENT_HINTS_JS)
         .initialization_script(FORCE_EN_LANG_JS)
         .on_navigation(move |u| {
             debug::log(format!("on_navigation -> {u}"));
+            // Google refused the sign-in in this webview: the navigation goes on (the user sees Google's
+            // own page), and the app says what can be done about it.
+            if google_login_refused(u.as_str()) {
+                notify_google_refused(&win_for_nav, &key_nav);
+            }
             // Right-click sentinel -> our native EDITING menu (on the main thread). Nav is blocked.
             if u.host_str() == Some("kotodama.menu") {
                 let w = win_for_nav.clone();
@@ -678,6 +722,9 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
                 crate::kotodama::on_result_url(&win_for_nav, &u);
                 return false;
             }
+            if !google_login_refused(u.as_str()) {
+                clear_google_refused(&win_for_nav, &key_nav);
+            }
             let _ = win_for_nav.emit("app://provider-url", u.to_string());
             true
         })
@@ -685,6 +732,12 @@ pub(crate) fn create_tab(window: &Window, key: &str, url: tauri::Url, w: f64, h:
             debug::log(format!("on_page_load {:?} url={}", payload.event(), payload.url()));
             // When THIS tab is the pending one and finished loading, bring it on screen.
             if payload.event() == PageLoadEvent::Finished {
+                // Same check as in on_navigation, for a refusal page reached without a navigation event of its own.
+                if google_login_refused(payload.url().as_str()) {
+                    notify_google_refused(&webview.window(), &key_load);
+                } else {
+                    clear_google_refused(&webview.window(), &key_load);
+                }
                 // ALWAYS, regardless of any pending fill/broadcast: hide screen-reader-only labels
                 // (e.g. ChatGPT's hidden "Modifica"/"Edit" text next to the pencil icon) that would
                 // otherwise ride along a native Ctrl+A/Ctrl+C on this tab -- a plain directly-opened
@@ -1579,9 +1632,11 @@ pub fn park_provider<R: Runtime, M: Manager<R>>(manager: &M) {
 
 
 
-/// Genuine input for providers that ignore script-made events: text insertion and the Enter key go
+/// Genuine input for a provider that dropped the script-made send: text insertion and the Enter key go
 /// through the browser's own input pipeline (DevTools `Input` domain on WebView2), so the page receives
-/// trusted events exactly as from a keyboard. Windows only; elsewhere the script-made path stays.
+/// trusted events exactly as from a keyboard. Used ONLY for Qwen, ONLY after its normal send failed and
+/// ONLY if the user agreed to it (`Settings.qwen_trusted_input`, see `kotodama::qwen_send_refused`).
+/// Never for captchas or checks. Windows only; elsewhere the script-made path stays.
 pub(crate) fn trusted_input<R: Runtime>(manager: &impl tauri::Manager<R>, key: &str, kind: &str, text: &str) {
     #[cfg(windows)]
     {
@@ -1627,8 +1682,23 @@ pub(crate) fn trusted_input<R: Runtime>(manager: &impl tauri::Manager<R>, key: &
     }
 }
 
-/// Providers whose pages need genuine input (see `trusted_input`). Measured, not guessed: add a key only after
-/// seeing its page drop a script-made send.
-pub(crate) fn needs_trusted_input(key: &str) -> bool {
-    cfg!(windows) && matches!(key, "qwen")
+#[cfg(test)]
+mod tests {
+    use super::google_login_refused;
+
+    /// Google's refusal is recognised from the URL alone (any UI language), in its three shapes; an ordinary
+    /// sign-in step, another host or a lookalike path is not.
+    #[test]
+    fn google_refusal_is_read_from_the_url() {
+        assert!(google_login_refused("https://accounts.google.com/signin/oauth/error?authError=ChRkaXNhbGxvd2VkX3VzZXJhZ2VudBILc29tZSBkZXRhaWw%3D&client_id=x"));
+        assert!(google_login_refused("https://accounts.google.com/signin/oauth/error?error=disallowed_useragent"));
+        assert!(google_login_refused("https://accounts.google.com/v3/signin/rejected?continue=https%3A%2F%2Fgemini.google.com%2Fapp&hl=it"));
+        assert!(google_login_refused("https://accounts.google.com/signin/rejected?hl=ja"));
+        assert!(google_login_refused("https://accounts.google.com/signin/v2/deniedsigninrejected?flowName=GlifWebSignIn"));
+        assert!(!google_login_refused("https://accounts.google.com/v3/signin/identifier?continue=https%3A%2F%2Fgemini.google.com%2Fapp"));
+        assert!(!google_login_refused("https://accounts.google.com/signin/oauth/error?authError=Y2xpZW50X2lkX21pc3Npbmc"));
+        assert!(!google_login_refused("https://example.com/signin/rejected?error=disallowed_useragent"));
+        assert!(!google_login_refused("https://gemini.google.com/app"));
+        assert!(!google_login_refused("not a url"));
+    }
 }

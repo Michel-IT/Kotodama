@@ -114,6 +114,56 @@ pub struct Settings {
     /// so someone who updates is never opted in silently. A file written before this existed reads as false.
     #[serde(default)]
     pub prov_icons_decided: bool,
+    /// User-Agent the provider webviews present to the sites. Empty (the default) = the engine's own,
+    /// untouched: Kotodama never disguises itself. Set only by the user, at their own responsibility
+    /// (Terms, section 6), and checked by `custom_user_agent_ok`. Read once, when the first provider
+    /// tab is created, so a change takes effect after a restart.
+    #[serde(default)]
+    pub custom_user_agent: String,
+    /// The user agreed that Qwen's send may go through the browser's own input pipeline (simulated
+    /// Enter) when the page drops the normal one. Off by default; asked the first time it is needed.
+    #[serde(default)]
+    pub qwen_trusted_input: bool,
+    /// The question above has been answered (yes or no): it is not asked again.
+    #[serde(default)]
+    pub qwen_trusted_input_decided: bool,
+    /// Version of the Terms and Conditions the user accepted ("" = none). Only the commands in `terms.rs`
+    /// change the `terms_*` fields; `set_settings` keeps them as they are in memory.
+    #[serde(default)]
+    pub terms_version: String,
+    /// When the Terms were accepted (ISO 8601, UTC).
+    #[serde(default)]
+    pub terms_accepted_at: String,
+    /// SHA-256 of the Terms text shown when they were accepted, in the language shown (`terms_lang`).
+    #[serde(default)]
+    pub terms_hash: String,
+    /// Language of the Terms text accepted ("it" or "en").
+    #[serde(default)]
+    pub terms_lang: String,
+    /// Providers the user turned automatic sending on for. Any other provider is opened and used by hand.
+    #[serde(default)]
+    pub terms_providers: Vec<String>,
+    /// Last change of the provider list or withdrawal (ISO 8601, UTC).
+    #[serde(default)]
+    pub terms_updated_at: String,
+    /// Version of the welcome page last answered, accepted or "Continue without automatic sending": the page
+    /// is shown at startup again only when the substantial version changes (see `terms::page_answered`).
+    #[serde(default)]
+    pub terms_seen: String,
+    /// The last confirmation of the provider list used the "select all providers" gesture. Evidence only:
+    /// `terms_providers` always lists the single providers, never "all".
+    #[serde(default)]
+    pub terms_bulk: bool,
+}
+
+/// Longest custom User-Agent accepted (real ones are well under 300 characters).
+pub const CUSTOM_UA_MAX: usize = 400;
+
+/// A custom User-Agent is accepted only as one line of printable ASCII, at most `CUSTOM_UA_MAX` long.
+/// Empty is valid: it means "the engine's own". Header values with control characters or newlines
+/// could not be sent anyway, and would let a pasted value smuggle a second header line.
+pub fn custom_user_agent_ok(ua: &str) -> bool {
+    ua.len() <= CUSTOM_UA_MAX && ua.bytes().all(|b| (0x20..=0x7e).contains(&b))
 }
 
 /// Default modifier pair for every built-in shortcut, per platform.
@@ -195,6 +245,17 @@ impl Default for Settings {
             provider_hotkey: default_provider_hotkey(),
             fetch_provider_icons: true,
             prov_icons_decided: false,
+            custom_user_agent: String::new(),
+            qwen_trusted_input: false,
+            qwen_trusted_input_decided: false,
+            terms_version: String::new(),
+            terms_accepted_at: String::new(),
+            terms_hash: String::new(),
+            terms_lang: String::new(),
+            terms_providers: Vec::new(),
+            terms_updated_at: String::new(),
+            terms_seen: String::new(),
+            terms_bulk: false,
         }
     }
 }
@@ -607,6 +668,29 @@ pub fn save_kt_sessions(app: &AppHandle, sessions: &serde_json::Value) -> Result
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The custom User-Agent: empty is the default, one printable ASCII line up to the cap passes,
+    /// anything with a newline, a control character, non-ASCII text or over the cap is refused.
+    #[test]
+    fn custom_user_agent_is_one_printable_ascii_line() {
+        assert!(custom_user_agent_ok(""));
+        assert!(custom_user_agent_ok("ProgramName/1.0 (system) Engine/2.0"));
+        assert!(custom_user_agent_ok(&"a".repeat(CUSTOM_UA_MAX)));
+        assert!(!custom_user_agent_ok(&"a".repeat(CUSTOM_UA_MAX + 1)));
+        assert!(!custom_user_agent_ok("Name/1.0\r\nX-Other: 1"));
+        assert!(!custom_user_agent_ok("Name/1.0\tTab"));
+        assert!(!custom_user_agent_ok("Nome/1.0 (perch\u{e9})"));
+        let s: Settings = serde_json::from_str("{}").unwrap();
+        assert!(s.custom_user_agent.is_empty() && !s.qwen_trusted_input && !s.qwen_trusted_input_decided);
+    }
+
+    /// A settings file from before the Terms existed reads as "no consent, page never answered": whoever
+    /// updates sees the page once, and automatic sending stays off until they accept.
+    #[test]
+    fn old_settings_have_no_consent() {
+        let s: Settings = serde_json::from_str(r#"{"welcome_ack":true}"#).unwrap();
+        assert!(s.welcome_ack && s.terms_version.is_empty() && s.terms_seen.is_empty() && s.terms_providers.is_empty());
+    }
 
     #[test]
     fn history_is_written_whole_and_copied_once_a_day() {

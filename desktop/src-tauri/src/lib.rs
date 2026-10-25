@@ -21,7 +21,9 @@ mod kotodama;
 mod netread;
 mod pending_paste;
 mod plaintext;
+mod send_rate;
 mod settings;
+mod terms;
 mod toast;
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -737,7 +739,30 @@ fn set_settings(app: AppHandle, settings: Settings) -> Result<Settings, String> 
     // the effective state (fallback applied, conflicting entries dropped) is what
     // gets stored and returned, so disk and UI stay faithful.
     let mut final_settings = settings;
+    // The form refuses an invalid custom User-Agent already; one that slips through keeps the previous
+    // value rather than reaching a webview.
+    final_settings.custom_user_agent = final_settings.custom_user_agent.trim().to_string();
+    if !settings::custom_user_agent_ok(&final_settings.custom_user_agent) {
+        final_settings.custom_user_agent = app.state::<AppState>().settings.lock().unwrap().custom_user_agent.clone();
+    }
     register_hotkeys(&app, &mut final_settings);
+    // The consent to the Terms is changed only by the terms_* commands: a copy of the settings in the interface
+    // that is older than the last consent (or withdrawal) must not undo it.
+    {
+        let state = app.state::<AppState>();
+        let cur = state.settings.lock().unwrap();
+        final_settings.terms_version = cur.terms_version.clone();
+        final_settings.terms_accepted_at = cur.terms_accepted_at.clone();
+        final_settings.terms_hash = cur.terms_hash.clone();
+        final_settings.terms_lang = cur.terms_lang.clone();
+        final_settings.terms_providers = cur.terms_providers.clone();
+        final_settings.terms_updated_at = cur.terms_updated_at.clone();
+        final_settings.terms_seen = cur.terms_seen.clone();
+        final_settings.terms_bulk = cur.terms_bulk;
+        // Same for the Qwen simulated-input answer: it changes only through its dedicated commands.
+        final_settings.qwen_trusted_input = cur.qwen_trusted_input;
+        final_settings.qwen_trusted_input_decided = cur.qwen_trusted_input_decided;
+    }
 
     // In-memory state = source of truth; a SINGLE save to disk, in the
     // background, so the UI thread doesn't block on I/O.
@@ -788,6 +813,20 @@ pub(crate) fn set_provider_known(app: &AppHandle, key: &str, known: bool) {
     };
     save_settings_bg(app, snapshot);
     let _ = app.emit("app://provider-known-changed", serde_json::json!({ "key": key, "known": known }));
+}
+
+/// Records the user's answer about Qwen's simulated send (`Settings.qwen_trusted_input`): the answer
+/// itself and the fact that it was given, so the question is not asked again. The frontend mirrors the
+/// two fields in its own copy, so a later save of the settings form keeps them.
+pub(crate) fn set_qwen_trusted_input(app: &AppHandle, on: bool) {
+    let snapshot = {
+        let state = app.state::<AppState>();
+        let mut g = state.settings.lock().unwrap();
+        g.qwen_trusted_input = on;
+        g.qwen_trusted_input_decided = true;
+        g.clone()
+    };
+    save_settings_bg(app, snapshot);
 }
 
 /// Marks a provider as "known" (a Kotodama broadcast to it succeeded at least once, i.e. the user
@@ -887,7 +926,7 @@ fn save_recipe_constraints(app: AppHandle, store: settings::RecipeConstraints) -
 
 /// Persists the settings off the UI thread; the in-memory state remains the
 /// source of truth, so any write error does not block the app.
-fn save_settings_bg(app: &AppHandle, settings: Settings) {
+pub(crate) fn save_settings_bg(app: &AppHandle, settings: Settings) {
     let app = app.clone();
     std::thread::spawn(move || {
         if let Err(e) = settings::save(&app, &settings) {
@@ -2623,6 +2662,15 @@ pub fn run() {
             kotodama::provider_login_probe,
             mark_provider_known,
             kotodama::kotodama_cancel,
+            kotodama::kotodama_qwen_decision,
+            terms::terms_get,
+            terms::terms_accept,
+            terms::terms_decline,
+            terms::terms_withdraw,
+            terms::terms_set_provider,
+            terms::terms_set_providers,
+            terms::terms_consent_json,
+            terms::terms_export_file,
             get_kotodama_sessions,
             save_kotodama_sessions,
             inline_toast,

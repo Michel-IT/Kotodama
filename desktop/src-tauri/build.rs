@@ -18,6 +18,8 @@ fn main() {
         "check_for_update", "install_update",
         "quit_app", "restart_app",
         "kotodama_set_attachments", "kotodama_reuse_attachments", "kotodama_file_info", "kotodama_read_aloud", "kotodama_regenerate", "kotodama_audio_load", "kotodama_audio_export", "admin_start_state", "set_admin_start", "restart_as_admin", "kotodama_audio_delete", "provider_icon",
+        "kotodama_qwen_decision",
+        "terms_get", "terms_accept", "terms_decline", "terms_withdraw", "terms_set_provider", "terms_set_providers", "terms_consent_json", "terms_export_file",
     ];
     let attrs = tauri_build::Attributes::new()
         .app_manifest(tauri_build::AppManifest::new().commands(commands));

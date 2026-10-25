@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-terms-withdraw"
+description = "Enables the terms_withdraw command without any pre-configured scope."
+commands.allow = ["terms_withdraw"]
+
+[[permission]]
+identifier = "deny-terms-withdraw"
+description = "Denies the terms_withdraw command without any pre-configured scope."
+commands.deny = ["terms_withdraw"]

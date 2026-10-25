@@ -4,7 +4,7 @@
 
 # Kotodama · Ai Prompt Builder
 
-**All your AI assistants in one desktop app, with prompt auto-send. Fast, and fully local.**
+**All your AI assistants in one desktop app, with prompt auto-send. Fast, with no account and no telemetry.**
 
 [![Latest release](https://img.shields.io/github/v/release/Michel-IT/Kotodama?style=for-the-badge&label=download&color=E7B24B)](../../releases)
 [![Downloads](https://img.shields.io/github/downloads/Michel-IT/Kotodama/total?style=for-the-badge&color=C8892F)](../../releases)
@@ -14,7 +14,7 @@
 
 `ChatGPT` · `Claude` · `Gemini` · `Grok` · `Perplexity` · `Qwen` · `DeepSeek` · `Z.ai`
 
-🔗 **[kotodama.kuramalab.net](https://kotodama.kuramalab.net)** — if you like it, leave a ⭐, it really helps.
+🔗 **[kotodama.kuramalab.net](https://kotodama.kuramalab.net)**: if you like it, leave a ⭐, it really helps.
 
 </div>
 
@@ -22,7 +22,7 @@
 
 <div align="center">
 
-<img src="assets/kotodama-screenshot.png" alt="Kotodama — ask every AI assistant at once" width="900">
+<img src="assets/kotodama-screenshot.png" alt="Kotodama: ask every AI assistant at once" width="900">
 
 </div>
 
@@ -32,7 +32,7 @@
 
 <div align="center">
 
-[![Kotodama — demo video](https://img.youtube.com/vi/HF72ZmiMUqA/maxresdefault.jpg)](https://youtu.be/HF72ZmiMUqA)
+[![Kotodama: demo video](https://img.youtube.com/vi/HF72ZmiMUqA/maxresdefault.jpg)](https://youtu.be/HF72ZmiMUqA)
 
 ▶️ **[Watch on YouTube](https://youtu.be/HF72ZmiMUqA)**
 
@@ -44,28 +44,42 @@
 
 Kotodama is a **free, open-source** desktop app that brings the main AI assistants (ChatGPT, Claude, Gemini,
 Grok, Perplexity, Qwen, DeepSeek, Z.ai…) into a **single window**, with **automatic prompt sending**. Write the
-prompt, pick the provider, send. It runs **entirely on your machine**: no account, no telemetry, your data never
-leaves your computer.
+prompt, pick the provider, send. It needs **no account** and has **no telemetry**, and Kotodama
+collects nothing from you; what you write goes only to the providers you choose.
 
-**Kotodama** (言霊) is a Japanese concept: the *spiritual power of words* — the idea that words can shape reality.
+**Kotodama** (言霊) is a Japanese concept: the *spiritual power of words*: the idea that words can shape reality.
 Hence the project's promise: **give your words power**.
 
 ## ⬇️ Download (free)
 
-Grab the installer from the **[Releases](../../releases)** page — no account, no sign-up:
+Grab the installer from the **[Releases](../../releases)** page, no account, no sign-up:
 
-- **Windows** — `.msi` / `.exe` (NSIS)
-- **macOS** — `.dmg` *(experimental)*
-- **Linux** — `.deb` / `.AppImage` *(experimental)*
+- **Windows**: `.msi` / `.exe` (NSIS)
+- **macOS**: `.dmg` *(experimental)*
+- **Linux**: `.deb` / `.AppImage` *(experimental)*
 
 > ⚠️ Builds are not signed with a certificate: on first launch Windows SmartScreen / macOS Gatekeeper may show a
-> warning. It's normal for an open-source project — choose "Run anyway".
+> warning. It's normal for an open-source project: choose "Run anyway".
 
 ## 🔒 Privacy
 
 Kotodama has no backend, collects no data and tracks nothing: settings and recipes stay on your computer; the AI
 providers' logins live in your local profile. It's open source, so you can verify it.
 Details: <https://kotodama.kuramalab.net/privacy.php>
+
+## ⚖️ Provider services and responsibility
+
+Kotodama is open source software installed directly on the user's computer. Using external providers depends on
+the user's choices and permissions.
+
+Each AI service is used with your own account and under the terms you accepted with it; Kotodama and KuramaLab are
+not affiliated with any provider. Automatic sending (Kotodama typing and reading in a provider's page) stays off
+until you accept the Terms and Conditions shown in the app at first launch, and only for the providers you tick:
+without it the app works and the providers are used by hand. You can read the Terms again, export your consent,
+change the providers or withdraw it in the app's **Settings** (About tab).
+
+- Requests from providers: **legal@kuramalab.net**
+- Reports and questions: [GitHub issues](https://github.com/Michel-IT/Kotodama/issues)
 
 ## 🛠️ Build from source
 
@@ -81,7 +95,7 @@ npm run tauri build    # produce installers
 ```
 
 The release installers are built by GitHub Actions (`.github/workflows/release-tauri.yml`) from **this same
-source** and published on the Releases page — nothing hidden.
+source** and published on the Releases page, nothing hidden.
 
 ## 🤝 Contributing
 

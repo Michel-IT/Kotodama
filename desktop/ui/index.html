@@ -231,6 +231,7 @@
     /* Switch to another logged-in provider's real page, right in the topbar. */
     .ab-provswitch { display:flex; align-items:center; gap:4px; flex:none; }
     .ab-provswitch[hidden] { display:none; }
+    .pc-navgrp { display:flex; align-items:center; gap:4px; flex:none; }
     .ab-provswitch-btn {
       width:28px; height:28px; border-radius:8px; flex:none;
       border:1px solid var(--border); background:var(--field); color:var(--pc,var(--text-dim));
@@ -503,14 +504,77 @@
     .wc-p { line-height:1.6; font-size:14px; color:var(--text); margin:0 0 13px; }
     .wc-p.wc-small { font-size:13.5px; color:var(--text-dim); }
     .wc-p strong { color:var(--text); font-weight:650; }
-    .wc-div { height:1px; background:var(--border-soft); margin:14px 0; }
-    .wc-tldr { margin:16px 0 6px; padding:12px 14px; border-radius:11px; background:var(--panel-glow); border:1px solid var(--accent-glow); color:var(--text); font-size:14px; line-height:1.5; }
-    .wc-tldr b { color:var(--accent); }
-    .wc-foot { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:22px; flex-wrap:wrap; }
     .wc-chk { display:flex; align-items:center; gap:9px; color:var(--text-dim); font-size:13.5px; cursor:pointer; user-select:none; }
     .wc-chk input { appearance:none; width:18px; height:18px; border-radius:5px; border:1.5px solid var(--border); background:var(--field); display:grid; place-items:center; cursor:pointer; flex:none; }
     .wc-chk input:checked { background:var(--accent); border-color:var(--accent); }
     .wc-chk input:checked::after { content:""; width:5px; height:9px; border:2px solid var(--on-accent); border-top:0; border-left:0; transform:rotate(45deg); margin-top:-2px; }
+    .wc-chk input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    /* Welcome page = Terms and Conditions: summary, the text in a scrolling box with a reading bar, one box per
+       provider, the box for the specific approval (art. 1341), two buttons. Above Settings (it can be opened from
+       there), below the confirm dialog. */
+    #welcomeOverlay { z-index:1600; }
+    #termsViewOverlay { z-index:1650; }
+    .tc-modal { max-width:min(700px, calc(100vw - 32px)); }
+    .tc-body .wc-brand { margin-bottom:12px; }
+    .tc-sum { border:1px solid var(--accent-glow); border-radius:var(--radius-s); background:var(--panel-glow); padding:8px 12px; margin:0 0 10px; font-size:13px; color:var(--text); }
+    .tc-sum b { color:var(--accent); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; }
+    .tc-sum ul { margin:4px 0 0; padding-inline-start:17px; }
+    .tc-sum li { line-height:1.45; margin:0 0 2px; color:var(--text-dim); }
+    .tc-body .wc-p.wc-small { font-size:12.5px; line-height:1.5; margin:0 0 10px; }
+    .tc-langnote { font-size:12.5px; line-height:1.45; color:var(--text); margin:0 0 8px; padding:6px 10px; border-inline-start:3px solid var(--accent); background:var(--panel-glow); border-radius:var(--radius-s); }
+    .tc-langnote[hidden] { display:none; }
+    .tc-prog { margin:0 0 6px; }
+    .tc-prog-h { display:flex; justify-content:space-between; gap:10px; align-items:baseline; font-size:11.5px; color:var(--text-faint); margin-bottom:4px; }
+    .tc-prog-h .t { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tc-prog-h .pc { flex:none; font-variant-numeric:tabular-nums; color:var(--text-dim); font-weight:700; }
+    .tc-bar { height:4px; border-radius:99px; background:var(--border-soft); overflow:hidden; }
+    .tc-bar i { display:block; height:100%; width:0; background:var(--accent); border-radius:99px; transition:width .15s linear; }
+    .tc-doc { flex:none; height:clamp(140px, 32vh, 280px); overflow-y:auto; border:1px solid var(--border-soft); border-radius:var(--radius-s); background:var(--field); padding:10px 12px; margin:0 0 4px;
+      user-select:text; -webkit-user-select:text; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+    .tc-doc:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .tc-doc--full { height:auto; overflow:visible; border:none; background:none; padding:0; }
+    .tc-terms h3 { font-size:15px; font-weight:700; color:var(--text); margin:0 0 8px; }
+    .tc-meta { font-size:12px; color:var(--text-faint); margin:0 0 10px; line-height:1.5; }
+    .tc-intro { font-size:13px; line-height:1.55; color:var(--text); margin:0 0 12px; }
+    .tc-sec { margin:0 0 12px; }
+    .tc-sec h4 { font-size:13px; color:var(--text); margin:0 0 4px; display:flex; flex-wrap:wrap; gap:4px 8px; align-items:baseline; }
+    .tc-sec p { font-size:13px; line-height:1.55; color:var(--text-dim); margin:0 0 6px; }
+    .tc-sec strong, .tc-approval strong { color:var(--text); }
+    .tc-spec { border-inline-start:2px solid var(--accent-soft); padding-inline-start:9px; }
+    .tc-badge { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--accent); border:1px solid var(--accent-glow); border-radius:999px; padding:0 6px; }
+    .tc-clause { padding:6px 9px; border-inline-start:2px solid var(--accent-soft); background:var(--panel-glow); border-radius:var(--radius-s); }
+    .tc-approval { font-size:13px; line-height:1.55; color:var(--text); margin:6px 0 8px; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius-s); }
+    .tc-end { text-align:center; color:var(--text-faint); margin:4px 0 2px; letter-spacing:.3em; }
+    .tc-pick { font-size:13.5px; font-weight:700; color:var(--text); margin:10px 0 5px; }
+    .tc-bulk { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin:0 0 6px; }
+    .tc-bulk .btn { font-size:12px; padding:4px 12px; flex:none; white-space:normal; min-height:30px; text-align:center; }
+    /* Equal width and equal height for the two buttons, whatever the language. */
+    .tc-bulk-pair { display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:6px; flex:none; max-width:100%; }
+    .tc-bulk-pair .btn { min-width:0; overflow-wrap:anywhere; }
+    .tc-bulk-note { flex:1 1 220px; min-width:0; font-size:11.5px; line-height:1.4; color:var(--text-dim); }
+    .tc-bulk-list { margin:8px 0 6px; padding-inline-start:20px; columns:2; font-size:13px; }
+    .tc-pgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(138px, 1fr)); gap:2px 8px; border:1px solid var(--border-soft); border-radius:var(--radius-s); background:var(--field); padding:4px 8px; margin:0 0 8px; }
+    .tc-pgrid label { display:flex; align-items:center; gap:7px; padding:4px 3px; font-size:13px; color:var(--text); cursor:pointer; min-width:0; }
+    .tc-pgrid label .pn { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tc-pgrid label.soon { grid-column:1 / -1; opacity:.55; cursor:not-allowed; }
+    .tc-pgrid label.soon em { margin-inline-start:auto; font-style:normal; font-size:10.5px; color:var(--text-faint); white-space:nowrap; }
+    .tc-pgrid .ic { width:16px; height:16px; display:grid; place-items:center; flex:none; }
+    .tc-pgrid .ic svg, .tc-pgrid .ic img { width:16px; height:16px; }
+    .tc-pgrid input { appearance:none; width:17px; height:17px; border-radius:5px; border:1.5px solid var(--border); background:var(--field-2); display:grid; place-items:center; cursor:pointer; flex:none; margin:0; }
+    .tc-pgrid input:checked { background:var(--accent); border-color:var(--accent); }
+    .tc-pgrid input:checked::after { content:""; width:5px; height:9px; border:2px solid var(--on-accent); border-top:0; border-left:0; transform:rotate(45deg); margin-top:-2px; }
+    .tc-pgrid input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .tc-pgrid input:disabled { cursor:not-allowed; }
+    .tc-art { align-items:flex-start; margin:0 0 8px; color:var(--text); font-size:12.5px; line-height:1.45; user-select:text; -webkit-user-select:text; }
+    .tc-art[hidden] { display:none; }
+    .tc-art input { margin-top:1px; }
+    .tc-qwrow { padding:7px 9px; border:1px solid var(--accent-glow); border-radius:var(--radius-s); background:var(--panel-glow); }
+    .tc-foot { justify-content:space-between; flex-wrap:wrap; }
+    .tc-why { flex:1; min-width:140px; font-size:11.5px; color:var(--text-faint); }
+    .tc-btns { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .tc-btns .btn:disabled { opacity:.45; cursor:not-allowed; filter:none; }
+    .tc-set-btns { display:flex; gap:8px; flex-wrap:wrap; flex:none; }
+    .tc-set-btns .btn:disabled { opacity:.45; cursor:not-allowed; }
     .modal--wide { max-width:min(94vw, 800px); }
     /* Settings: FIXED height filling the window (minus the header bar): switching tabs
        must not make the modal jump in size */
@@ -1211,6 +1275,16 @@
       text-transform:uppercase; color:var(--text-faint); }
     .prov-head-nm { flex:1 1 auto; }
     .prov-head-col { flex:none; width:84px; text-align:center; }
+    /* "Enable all" / "Disable all" under the column title: same style, same size, side by side in weight */
+    .prov-head-auto { display:flex; flex-direction:column; align-items:stretch; gap:3px; }
+    /* The two buttons share one grid with equal rows and the full width, so in any language (a label that wraps
+       to two lines in one of them) they keep the same height and weight. */
+    .prov-bulk-pair { display:grid; grid-template-columns:100%; grid-auto-rows:1fr; gap:3px; }
+    .prov-bulk { font:inherit; font-size:10px; font-weight:600; letter-spacing:0; text-transform:none; line-height:1.2; padding:3px 4px;
+      border:1px solid var(--border); border-radius:6px; background:var(--field); color:var(--text); cursor:pointer; white-space:normal;
+      min-height:32px; min-width:0; overflow-wrap:anywhere; display:flex; align-items:center; justify-content:center; text-align:center; }
+    .prov-bulk:hover { border-color:var(--accent); }
+    .prov-bulk:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
     .prov-list { display:flex; flex-direction:column; gap:2px; }
     .prov-row { padding:6px 10px; border-radius:8px; }
     .prov-row:hover { background:var(--panel-glow); }
@@ -1332,10 +1406,14 @@
            window (the buttons inside stay clickable). -->
       <div class="ab-provnav" data-tauri-drag-region>
         <!-- Provider row (renderProviderRow): "Chat" + a button per ENABLED provider, same row and order
-             as in the chat bar below. Order on screen is always: Chat | providers | back | reload. -->
-        <div class="ab-provswitch" id="abProvSwitch" role="group" data-tauri-drag-region></div>
-        <button class="pc-btn" id="pcBack" data-i18n-title="back" title="Indietro">‹</button>
-        <button class="pc-btn" id="pcReload" data-i18n-title="reload" title="Ricarica">⟳</button>
+             as in the chat bar below. Order on screen is always: Chat | back, reload | providers (provFill puts the
+             #pcNavGrp group right after Chat, so the width the row needs includes it). -->
+        <div class="ab-provswitch" id="abProvSwitch" role="group" data-tauri-drag-region>
+          <span class="pc-navgrp" id="pcNavGrp">
+            <button class="pc-btn" id="pcBack" type="button" data-i18n-title="back" title="Indietro">‹</button>
+            <button class="pc-btn" id="pcReload" type="button" data-i18n-title="reload" title="Ricarica">⟳</button>
+          </span>
+        </div>
       </div>
       <!-- Kotodama meta-chat: the same provider row (filled by renderProviderRow) -->
       <div class="ab-ktnav" data-tauri-drag-region>
@@ -1373,6 +1451,14 @@
       <span class="kv-msg" id="ktVerifyMsg"></span>
       <button class="btn" id="ktVerifySkip" data-i18n="ktSkip">Skip</button>
       <button class="btn" id="ktVerifyClose" data-i18n="close">Close</button>
+    </div>
+
+    <!-- Google refused the sign-in inside a provider tab (detected from the URL, see browser.rs
+         google_login_refused). Same slot as the bars above; the refusal is only explained, never bypassed. -->
+    <div class="kt-verify-bar" id="googleRefusedBar" hidden role="alert">
+      <span class="kv-msg" id="googleRefusedMsg"></span>
+      <button class="btn" id="googleRefusedOpen" data-i18n="googleRefusedOpen">Apri nel browser di sistema</button>
+      <button class="btn" id="googleRefusedClose" data-i18n="close">Close</button>
     </div>
 
     <div class="main">
@@ -1509,11 +1595,15 @@
        loads off-screen, so the previous provider page is not visible. -->
   <div id="provLoading"><div class="pl-box"><span class="pl-spin"></span><span class="pl-txt" id="plText"></span></div></div>
 
-  <!-- Welcome modal (first launch: privacy + provider boundary) -->
+  <!-- Welcome page (first launch, and once after an update that brings Terms with a new substantial version): the
+       Terms and Conditions in a scrolling box, one box per provider for automatic sending, the specific approval
+       (art. 1341) and two buttons. "Continue without automatic sending" keeps the whole app usable: the GPL does
+       not allow making its use conditional on extra terms. Reopened from Settings > About to change the providers
+       or withdraw the consent (tcMode 'review'). -->
   <!-- Backdrop draggable (data-tauri-drag-region) so the window can be moved without dismissing; the card is not. -->
   <div class="modal-overlay" id="welcomeOverlay" data-tauri-drag-region>
-    <div class="modal wc-modal" data-tauri-drag-region="false">
-      <div class="modal-body pad wc-body">
+    <div class="modal wc-modal tc-modal" role="dialog" aria-modal="true" aria-labelledby="wcTitle" data-tauri-drag-region="false">
+      <div class="modal-body pad wc-body tc-body">
         <div class="wc-brand">
           <img class="wc-logo" src="logo.png" alt="Kotodama">
           <div>
@@ -1521,16 +1611,43 @@
             <div class="wc-sub" id="wcSub"></div>
           </div>
         </div>
-        <p class="wc-p" id="wcP1"></p>
-        <div class="wc-div"></div>
-        <p class="wc-p wc-small" id="wcP2"></p>
+        <div class="tc-sum"><b id="tcSumH"></b><ul id="tcSum"></ul></div>
         <p class="wc-p wc-small" id="wcP3"></p>
-        <div class="wc-tldr"><b id="wcTldrLabel"></b><br><span id="wcTldr"></span></div>
-        <div class="wc-foot">
-          <label class="wc-chk"><input type="checkbox" id="wcDont" checked><span id="wcDontLabel"></span></label>
-          <button class="btn" id="wcOk"></button>
+        <p class="tc-langnote" id="tcLangNote" hidden></p>
+        <div class="tc-prog">
+          <div class="tc-prog-h"><span class="t" id="tcProgT"></span><span class="pc" id="tcPct"></span></div>
+          <div class="tc-bar" id="tcBarWrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="tcProgT"><i id="tcBar"></i></div>
         </div>
+        <div class="tc-doc" id="tcDoc" tabindex="0" role="document"></div>
+        <p class="tc-pick" id="tcPick"></p>
+        <div class="tc-bulk">
+          <span class="tc-bulk-pair">
+            <button class="btn" id="tcAll" type="button"></button>
+            <button class="btn" id="tcNone" type="button"></button>
+          </span>
+          <span class="tc-bulk-note" id="tcBulkNote"></span>
+        </div>
+        <div class="tc-pgrid" id="tcProv" role="group" aria-labelledby="tcPick"></div>
+        <label class="wc-chk tc-art tc-qwrow" id="tcQwRow" hidden><input type="checkbox" id="tcQw"><span id="tcQwTxt"></span></label>
+        <label class="wc-chk tc-art"><input type="checkbox" id="tcArt"><span id="tcArtTxt"></span></label>
       </div>
+      <div class="modal-foot tc-foot">
+        <span class="tc-why" id="tcWhy" aria-live="polite"></span>
+        <span class="tc-btns">
+          <button class="btn" id="tcWithdraw" type="button" hidden></button>
+          <button class="btn" id="tcNo" type="button"></button>
+          <button class="btn primary" id="wcOk" type="button" aria-describedby="tcWhy"></button>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- The Terms again, read only (Settings > About > Terms and Conditions). -->
+  <div class="modal-overlay" id="termsViewOverlay">
+    <div class="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="tvTitle">
+      <div class="modal-head"><h2 id="tvTitle" data-i18n="aboutTerms">Termini e Condizioni</h2><button class="x" id="tvX" type="button" data-i18n-title="close" title="Chiudi">✕</button></div>
+      <div class="modal-body pad"><p class="tc-langnote" id="tvLangNote" hidden></p><div class="tc-doc tc-doc--full" id="tvDoc" tabindex="0" role="document"></div></div>
+      <div class="modal-foot"><span class="tc-why" id="tvMeta"></span><button class="btn primary" id="tvOk" type="button" data-i18n="close">Chiudi</button></div>
     </div>
   </div>
 
@@ -1572,8 +1689,24 @@
             <span class="prov-head-col" data-i18n="provColBar">Nella barra</span>
             <span class="prov-head-col" data-i18n="ktTempColHeader">Chat privata</span>
             <span class="prov-head-col" data-i18n="provColDefault">Predefinito</span>
+            <span class="prov-head-col prov-head-auto">
+              <span data-i18n="provColAuto" data-i18n-title="provColAutoTitle" title="Kotodama scrive e legge da solo nella pagina del provider. Acceso solo con il tuo consenso ai Termini.">Invio automatico</span>
+              <span class="prov-bulk-pair">
+                <button class="prov-bulk" id="provAutoAll" type="button" data-i18n="provColAutoAll">Abilita tutti</button>
+                <button class="prov-bulk" id="provAutoNone" type="button" data-i18n="provColAutoNone">Disabilita tutti</button>
+              </span>
+            </span>
           </div>
           <div class="prov-list" id="provList"></div>
+          <div class="setting" id="setQwenTrustedRow" style="margin-top:12px">
+            <div class="row">
+              <div>
+                <label data-i18n="setQwenTrusted">Qwen: invio automatico con Invio simulato</label>
+                <div class="sub" data-i18n="setQwenTrustedHint">Quando la pagina di Qwen non accetta l'invio normale, Kotodama vi simula il tasto Invio. Sotto la tua responsabilità (Termini, sezione 6). Spento: il messaggio resta nel campo di Qwen e premi Invio tu.</div>
+              </div>
+              <label class="switch"><input type="checkbox" id="setQwenTrusted"><span class="slider"></span></label>
+            </div>
+          </div>
         </div>
         <!-- Shortcuts: main hotkey as the first row, then a divider, then one row per recipe --
              ALL in the same list so the NOTIFICA/COMBINAZIONE TASTI columns line up across every row. -->
@@ -1707,6 +1840,11 @@
               <select class="field" id="setLang"></select>
             </div>
           </div>
+          <div class="setting">
+            <label for="setUa" data-i18n="setUa">User-Agent personalizzato (avanzato)</label>
+            <input type="text" class="field" id="setUa" maxlength="400" spellcheck="false" autocomplete="off" data-i18n-ph="setUaPh" placeholder="Vuoto: quello del motore (predefinito)">
+            <div class="sub" data-i18n="setUaHint">L'User-Agent è la frase con cui il programma si presenta ai siti web. Lascia questo campo vuoto per usare quello predefinito, che corrisponde al motore con cui Kotodama apre le pagine. Alcuni siti mostrano o bloccano certe funzioni a seconda di questa frase. Se cambi il valore, lo fai consapevolmente e sotto la tua responsabilità (vedi i Termini, sezione 6): un valore che non corrisponde al programma reale può violare le condizioni di un servizio o impedire l'accesso. Per sapere qual è il tuo User-Agent attuale puoi aprire un qualsiasi sito che lo mostra (cerca «qual è il mio user agent»). Per tornare al valore predefinito, svuota il campo. La modifica ha effetto dopo il riavvio di Kotodama. Formato: NomeProgramma/versione (sistema) Motore/versione</div>
+          </div>
         </div>
         <div class="set-section set-panel" data-panel="about">
           <div class="about-box">
@@ -1718,7 +1856,20 @@
                 <button type="button" class="lnk" data-url="https://kotodama.kuramalab.net" data-i18n="linkWebsite">Sito web</button>
                 <button type="button" class="lnk" data-url="https://github.com/Michel-IT/Kotodama" data-i18n="linkSource">Codice sorgente</button>
                 <button type="button" class="lnk" data-url="https://github.com/Michel-IT/Kotodama/issues" data-i18n="linkIssues">Segnala un problema</button>
+                <button type="button" class="lnk" id="aboutTerms" data-i18n="aboutTerms">Termini e Condizioni</button>
               </div>
+            </div>
+          </div>
+          <div class="setting">
+            <div class="row">
+              <div>
+                <label data-i18n="setConsent">Consenso all'invio automatico</label>
+                <div class="sub" id="setConsentState"></div>
+              </div>
+              <span class="tc-set-btns">
+                <button class="btn" id="btnConsentExport" type="button" data-i18n="setConsentExport">Esporta il consenso</button>
+                <button class="btn" id="btnConsentReview" type="button" data-i18n="setConsentReview">Rivedi i Termini</button>
+              </span>
             </div>
           </div>
           <div class="setting">
@@ -1989,7 +2140,7 @@
       ktCtxUser:'User:', ktCtxYou:'You answered:', ktCtxNew:'New message:',
       ktRetry:'Retry', ktRetryAll:'Send again to the ones that did not answer',
       setTabGeneral:'General', setTabShortcuts:'Shortcuts', setTabAppearance:'Appearance',
-      setTabSystem:'System', setTabAbout:'Updates',
+      setTabSystem:'System', setTabAbout:'About',
       setRecipeHotkeys:'Shortcuts',
       setRecipeHotkeysHint:'Click a field and press the combo; ✕ removes it.',
       rhNotifyTitle:'Notifications for this shortcut', rhColNotify:'Notify', rhColHotkey:'Key combo',
@@ -2024,15 +2175,51 @@
       setAlwaysOnTop:'Always on top', setAlwaysOnTopHint:'Kotodama stays above other windows.',
       setLowPower:'Resource saving', setLowPowerHint:'Less memory: CPU drawing and idle providers suspended. Requires a restart.',
       setLowPowerRestart:'Saved. Restart Kotodama to apply resource saving.',
+      setUa:'Custom User-Agent (advanced)', setUaPh:'Empty: the engine\'s own (default)',
+      setUaHint:'The User-Agent is the line your program uses to introduce itself to websites. Leave this field empty to use the default, which matches the engine Kotodama uses to open pages. Some sites show or block certain features depending on this line. If you change it, you do so knowingly and at your own responsibility (see Terms, section 6): a value that does not match the real program may breach a service\'s terms or block access. To find your current User-Agent, open any site that displays it (search for "what is my user agent"). To restore the default, clear the field. A change takes effect after restarting Kotodama. Format: ProgramName/version (system) Engine/version',
+      setUaInvalid:'The User-Agent must be one line of plain characters (letters, digits and symbols, no accents), at most 400.',
+      setUaConfirmTitle:'Custom User-Agent', setUaConfirmOk:'Use this User-Agent',
+      setUaConfirm:'Kotodama will introduce itself to the providers\' sites with the value you entered instead of its own. You do so knowingly and at your own responsibility (Terms, section 6): a value that does not match the real program may breach a service\'s terms or block access.',
+      setUaRestart:'Saved. Restart Kotodama to apply the User-Agent.',
+      googleRefusedMsg:'Google does not allow sign-in inside the app window. You can use {p} in your system browser.',
+      googleRefusedOpen:'Open in system browser',
+      qwenAskTitle:'Qwen: automatic send', qwenAskOk:'Turn on simulated Enter for Qwen', qwenAskNo:'No, I\'ll send it myself',
+      qwenAskIntro:'Qwen\'s page did not take the message sent the normal way. Kotodama can send it by simulating a press of the Enter key inside the page: this only serves to send your message, never to get around captchas or checks. You can turn it off in Settings › Providers. If you say no, the message stays in Qwen\'s field and you press Enter.',
+      qwenConsent:'For Qwen, Kotodama sends the message by simulating an Enter key press on the page. I understand and choose to use it this way, at my own responsibility (Terms, section 6).',
+      ktQwenManual:'The message is in Qwen\'s field: press Enter in its page to send it.',
+      ktQwenManualInline:'Your text is in Qwen\'s field: open Qwen and press Enter to send it.',
+      setQwenTrusted:'Qwen: automatic send with simulated Enter',
+      setQwenTrustedHint:'When Qwen\'s page does not take the normal send, Kotodama simulates the Enter key in it. At your own responsibility (Terms, section 6). Off: the message stays in Qwen\'s field and you press Enter.',
       downloadDone:'Saved to Downloads/Kotodama', downloadFail:'Download failed',
       dlTitle:'Download history', dlSearch:'Search downloads', dlClear:'Clear all',
       dlEmpty:'No downloads yet', dlNoMatch:'No matches', dlCopyLink:'Copy link', dlFolder:'Open folder', dlRemove:'Remove from list', dlLinkCopied:'Link copied', dlDownloading:'Downloading…',
       dlClearConfirm:'Clear the whole download list?<br>(The files are not deleted.)',
       welcomeTitle:'Welcome to Kotodama', welcomeSub:'Ai Prompt Builder · open source',
-      welcomeP1:'Kotodama runs <strong>entirely on your computer</strong>. No account, no sign-up, no telemetry, no tracking. Your prompts and settings stay on your device, and it\'s open source (GPL-3.0), so anyone can verify it.',
-      welcomeP2:'One thing to be clear about: Kotodama is a <strong>window</strong> onto the AI providers (ChatGPT, Claude, Gemini, Perplexity and others). When you open and use them, you\'re using their services directly, under <strong>their</strong> privacy policies and terms. Kotodama doesn\'t sit in the middle and can\'t control how they handle your data, exactly as if you opened them in your browser.',
-      welcomeTldrLabel:'In short', welcomeTldr:'Kotodama answers for Kotodama; each provider answers for itself.',
-      welcomeDont:'Don\'t show this again at startup', welcomeOk:'Got it',
+      tcSumH:'In short',
+      tcSum1:'Kotodama is free and open source: it runs on your computer, with no server and no telemetry.',
+      tcSum2:'For each AI service you turn on, it types and reads by itself in that service\'s page, with your account.',
+      tcSum3:'Many services forbid automatic programs in their terms: turning them on is your choice and you are responsible.',
+      tcSum4:'You can use Kotodama without automatic sending too: you will open the services by hand.',
+      tcLangNote:'The Terms and Conditions are available in English and Italian: below is the English text.',
+      tcProg:'Terms and Conditions · version {v}', tcReadPct:'Read {n}%', tcReadDone:'You reached the end',
+      tcPick:'Turn on automatic sending for:', tcSelAll:'Select all providers', tcSelNone:'Clear all',
+      tcBulkNote:'You can select them all with one click and then untick the ones you don\'t want. The risk for your account varies from service to service: see Terms, section 6.', tcArt:'I expressly approve the clauses in sections 6, 7, 8 and 11.',
+      tcGo:'Accept and enable the selected providers', tcGoNo:'Continue without automatic sending',
+      tcWhyRead:'Scroll the Terms to the end to be able to accept.', tcWhyProv:'Tick at least one provider.', tcWhyArt:'Tick the box for sections 6, 7, 8 and 11.',
+      tcTermsH:'Terms and Conditions text', tcReviewH:'Terms and automatic sending',
+      tcWithdraw:'Withdraw consent', tcWithdrawTitle:'Withdraw your consent?',
+      tcWithdrawQ:'Automatic sending stops for every provider. You can keep using them by hand, and accept the Terms again whenever you want from Settings.',
+      aboutTerms:'Terms and Conditions', setConsent:'Consent to automatic sending',
+      setConsentState:'Version {v}, accepted on {d}. Automatic sending: {list}.', setConsentNoProv:'no provider',
+      setConsentNone:'Not given: automatic sending is off for every provider, which you use by hand.',
+      setConsentExport:'Export consent', setConsentReview:'Review the Terms', setConsentExportedTo:'Consent saved in {p}',
+      provColAuto:'Auto-send', provColAutoTitle:'Kotodama types and reads by itself in the provider\'s page. On only with your consent to the Terms.',
+      provColAutoAll:'Enable all', provColAutoNone:'Disable all',
+      provBulkAskTitle:'Automatic sending for several services', provBulkAskOk:'Turn on for all of them',
+      provBulkAsk:'Kotodama will type your messages into the pages of the services below, send them and read the answers, with your account. Many services forbid automatic programs in their terms: turning them on is your choice and your responsibility (Terms, section 6). You can turn each one off at any time.',
+      provAutoAskTitle:'Automatic sending for {p}', provAutoAskOk:'Turn on for {p}',
+      provAutoAsk:'Kotodama will type your messages into the page of {p}, send them and read the answers, with your account. Many services forbid automatic programs in their terms: turning it on is your choice and your responsibility (Terms, section 6).',
+      ktAutoOff:'Automatic sending is off for {p}: type in {p}\'s page yourself, or turn it on.', ktAutoOn:'Turn on automatic sending',
       save:'Save', cancel:'Cancel', reset:'Reset', pressCombo:'Press a combo…', settingsSaved:'Settings saved ✓',
       hotkeyFallback:'Shortcut unavailable on Windows: using {k}',
       setUpdates:'Updates', setUpdatesHint:'Check whether a new version is available.', checkUpdates:'Check for updates',
@@ -2105,11 +2292,12 @@
     // Ctrl+Cmd because Option is a dead-key modifier there (Opt+C types a cedilla), so Ctrl+Alt
     // clashes with plain text entry; every other platform keeps Ctrl+Alt.
     const IS_MAC = /Mac|iPhone|iPad|iPod/.test((navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||navigator.userAgent);
+    const IS_WIN = /Win/.test((navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||navigator.userAgent);
     const DEFAULT_MOD = IS_MAC ? 'Control+Super' : 'Control+Alt';
     // Main shortcut: <mod>+Space everywhere, but macOS reserves BOTH Ctrl+Cmd+Space (Emoji &
     // Symbols) and Ctrl+Opt+Space (input source), so it gets K -- for Kotodama -- instead.
     const DEFAULT_MAIN_HOTKEY = DEFAULT_MOD + (IS_MAC ? '+KeyK' : '+Space');
-    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:DEFAULT_MAIN_HOTKEY, provider_hotkey:DEFAULT_MOD+'+KeyP', monitor_enabled:true, gesture_menu:true, fetch_provider_icons:true, prov_icons_decided:false, autostart:true, always_on_top:true, low_power:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
+    const DEFAULT_SETTINGS = { language:'it', default_provider:'openai', hotkey:DEFAULT_MAIN_HOTKEY, provider_hotkey:DEFAULT_MOD+'+KeyP', monitor_enabled:true, gesture_menu:true, fetch_provider_icons:true, prov_icons_decided:false, autostart:true, always_on_top:true, low_power:false, custom_user_agent:'', qwen_trusted_input:false, qwen_trusted_input_decided:false, theme:'sumi', recipe:'key:neutral', length:0, tone:0, resp_fmt:1, welcome_ack:false };
     // Version: single source of truth = desktop/package.json.
     // In Tauri it comes from the bundle (tauri.conf.json -> ../package.json) via app.getVersion();
     // in web mode we read it via fetch of the same package.json. No hardcoded number.
@@ -2155,6 +2343,8 @@
       renderKtSessions();   // recipe tags follow the language (every applyLang call runs after the sessions state exists)
       if(typeof ktSideApply==='function') ktSideApply();   // re-translate the collapse toggle's tooltip
       renderProviderRow(true);   // row labels (Chat / Altri / tooltips) follow the language
+      renderConsentState();      // Settings > About: the consent line follows the language too
+      if(typeof tcRelang==='function') tcRelang().catch(()=>{});   // the welcome page / the Terms, if open, are drawn again
       { const pn=document.getElementById('provIconsNotice');   // open provider-icons notice follows the language too
         if(pn && !pn.hidden && typeof renderProvIconsNotice==='function') renderProvIconsNotice(); }
       // the chip bar's "+" is built with its tooltip in the language of that moment: re-translate it here
@@ -2388,6 +2578,7 @@
       const p=PROVIDERS[key]; if(!p || p.mode==='manual' || !p.base) return;
       const t=TR;
       const url=(forLogin && p.loginUrl) ? p.loginUrl : p.base;
+      if(googleRefusedKey && googleRefusedKey!==key) hideGoogleRefused();   // the notice belongs to the tab it came from
       selectProviderTile(key); lastProviderUrl=url;
       provRecentPush(key);
       if(TAURI){
@@ -2435,7 +2626,7 @@
       clearTimeout(provLoadingSafety);
       provLoadingSafety=setTimeout(()=>{ body.classList.remove('provider-loading'); }, 25000);
     }
-    function closeProviderBar(){ body.classList.remove('provider-open','provider-loading'); setClaudeHint(false); closeDownloads(); }
+    function closeProviderBar(){ body.classList.remove('provider-open','provider-loading'); setClaudeHint(false); closeDownloads(); hideGoogleRefused(); }
     // Provider row in the top bar: "Chat" first, then one button per ENABLED provider (Settings >
     // Provider, not known_providers: the row no longer depends on the login history). Same row in the chat
     // bar (#abProvChat) and in the provider page bar (#abProvSwitch); only the visible one is drawn.
@@ -2443,6 +2634,9 @@
     // What does not fit goes into an "Altri" menu. No status dot: a click only opens the real page.
     const abProvSwitchEl=document.getElementById('abProvSwitch');
     const abProvChatEl=document.getElementById('abProvChat');
+    // Back / reload live in the row of the provider page (provFill re-attaches them: the row is rebuilt from
+    // scratch, so the elements are kept here and their labels are set again each time).
+    const pcNavGrp=document.getElementById('pcNavGrp'), pcBackBtn=document.getElementById('pcBack'), pcReloadBtn=document.getElementById('pcReload');
     const PROV_RECENT_KEY='kotodama.provRecent';
     const PROV_CHAT_SVG='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></svg>';
     let provMoreKeys=[];          // providers that did not fit, listed by the "Altri" menu
@@ -2500,7 +2694,15 @@
       el.innerHTML='';
       el.setAttribute('aria-label', TR.provRowAria||'Provider pages');
       el.appendChild(provChatBtn(chatNamed, !inPage));
-      if(shown.length || hidden.length){ const sep=document.createElement('span'); sep.className='pg-sep'; sep.setAttribute('aria-hidden','true'); el.appendChild(sep); }
+      const addSep=()=>{ const sep=document.createElement('span'); sep.className='pg-sep'; sep.setAttribute('aria-hidden','true'); el.appendChild(sep); };
+      if(inPage){
+        // Chat | back, reload | providers: the two buttons stay next to "Chat", only on a provider page
+        addSep();
+        pcBackBtn.title=TR.back||pcBackBtn.title; pcBackBtn.setAttribute('aria-label', pcBackBtn.title);
+        pcReloadBtn.title=TR.reload||pcReloadBtn.title; pcReloadBtn.setAttribute('aria-label', pcReloadBtn.title);
+        el.appendChild(pcNavGrp);
+        if(shown.length || hidden.length) addSep();
+      } else if(shown.length || hidden.length) addSep();
       shown.forEach(k=>el.appendChild(provBtn(k, inPage && k===selectedProvider)));
       provMoreKeys=hidden.slice();
       if(hidden.length){
@@ -2599,8 +2801,8 @@
     // The row follows the window width and the view (chat <-> provider page, switched through body classes).
     new MutationObserver(()=>renderProviderRow()).observe(document.body,{attributes:true,attributeFilter:['class']});
     window.addEventListener('resize', ()=>requestAnimationFrame(()=>renderProviderRow()));
-    document.getElementById('pcBack').addEventListener('click', ()=>{ if(TAURI) invoke('provider_back').catch(()=>{}); });
-    document.getElementById('pcReload').addEventListener('click', ()=>{ if(TAURI) invoke('provider_reload').catch(()=>{}); });
+    pcBackBtn.addEventListener('click', ()=>{ if(TAURI) invoke('provider_back').catch(()=>{}); });
+    pcReloadBtn.addEventListener('click', ()=>{ if(TAURI) invoke('provider_reload').catch(()=>{}); });
 
     /* ===================== KOTODAMA META-CHAT ===================== */
     // One message -> broadcast to every selected provider (hidden parked webviews);
@@ -3120,13 +3322,13 @@
         const st=(!a.status||a.status==='pending')?'error':a.status;   // app closed halfway -> error
         const bits=ktTileBits(key);
         const card=document.createElement('div');
-        card.className='kt-card '+ktStatusClass(st); card.dataset.key=key;
+        card.className='kt-card '+ktStatusClass(st, a.reason); card.dataset.key=key;
         card.innerHTML=`<div class="kt-card-head"><span class="ic">${bits.svg}</span><span class="nm"></span>`
           +`<span class="kt-status"><span class="kt-st-txt"></span></span></div>`
           +`<div class="kt-card-body"></div>`
           +`<div class="kt-card-foot" hidden></div>`;
         card.querySelector('.nm').textContent=p.name;
-        card.querySelector('.kt-st-txt').textContent=ktStatusLabel(st);
+        card.querySelector('.kt-st-txt').textContent=ktStatusTxt(st, a.reason);
         if(a.firstMs!=null) ktShowTiming(card.querySelector('.kt-status'), { firstMs:a.firstMs, totalMs:a.totalMs });
         const body=card.querySelector('.kt-card-body');
         const text=((a.text)||'').trim();
@@ -3135,7 +3337,7 @@
           const foot=card.querySelector('.kt-card-foot'); foot.hidden=false;
           foot.appendChild(ktActs(ktCopyBtn(()=>text)));
         } else {
-          body.classList.add('empty'); body.textContent=(a.reason==='attach' ? ktAttachMsg(key) : ktStatusLabel(st));
+          body.classList.add('empty'); body.textContent=(ktReasonMsg(a.reason, key) || ktStatusLabel(st));
           // Same as ktOnAnswer: offer to open the provider tab when there's no text to show
           // (login/error) -- otherwise reopening an old session leaves no way to act on it.
           const foot=card.querySelector('.kt-card-foot');
@@ -3143,6 +3345,7 @@
           btn.textContent = st==='login' ? (TR.ktLoginBtn||TR.ktOpenProvider) : TR.ktOpenProvider;
           btn.addEventListener('click', ()=>{ closeKotodama(); openProviderRealPage(key, st==='login'); });
           if(st!=='cancelled'){ foot.hidden=false; foot.prepend(btn); }
+          if(a.reason==='autooff') ktAutoOffBtn(foot, svBid, key);
           const cp=foot.querySelector('.kt-copy'); if(cp) cp.remove();
         }
         if(st!=='done'){
@@ -3247,6 +3450,13 @@
       return t.ktCtxIntro+'\n'+ctx+'\n\n'+t.ktCtxNew+' '+newText;
     }
     async function ktDispatchKey(bid, key, text, ctxTurn, freshFlag){
+      if(!ktAutoAllowed(key)){
+        // Automatic sending is off for it (no consent to the Terms for this provider): nothing is typed into its
+        // page, Rust refuses it too. The card says so and offers to open the page or turn sending on.
+        if(ktStarted) delete ktStarted[key];
+        setTimeout(()=>ktOnAnswer({ broadcastId:bid, key, status:'error', text:'', reason:'autooff' }), 0);
+        return;
+      }
       if(!freshFlag){
         // Back in the bar after some turns without it: it gets the messages it missed, then the new one
         // (the owner's request of 27/09/2026: continuity must include what it missed).
@@ -3395,6 +3605,7 @@
     }
     function ktInlineDispatch(recipeStr, text){
       const key=providerForRecipe(recipeStr);
+      if(!ktAutoAllowed(key)){ invoke('inline_fail',{reason:'autooff'}).catch(()=>{}); return; }   // see ktDispatchKey
       inlineToastStage('connect', 0, key);   // show WHICH provider (icon + name) in the toast
       const bid='inl-'+(inlineSeq++)+'-'+Math.random().toString(36).slice(2,6);
       inlinePending[bid]=true;
@@ -3423,7 +3634,7 @@
         invoke('set_last_answer',{text}).catch(()=>{});
         if(st==='done' && d.key) invoke('mark_provider_known',{key:d.key}).catch(()=>{}); // same signal as ktOnAnswer
       }
-      else invoke('inline_fail',{reason:st}).catch(()=>{});
+      else invoke('inline_fail',{reason:d.reason==='autooff' ? 'autooff' : st}).catch(()=>{});
       const sess=inlineSessions[d.broadcastId];
       delete inlineSessions[d.broadcastId];
       if(sess && d.key){
@@ -3468,6 +3679,8 @@
     async function ktRetryKey(oldBid, key){
       const turn=ktTurnByBid[oldBid]; const ref=ktCards[`${oldBid}:${key}`];
       if(!turn || !ref || !TAURI) return;
+      // automatic sending off for it: ask for the consent for this provider, then retry
+      if(!ktAutoAllowed(key)){ tcAskProvider(key, ()=>ktRetryKey(oldBid, key)); return; }
       const bid='b'+(ktSeq++)+'-r'+Math.random().toString(36).slice(2,6);
       // A retry is a new send, and Rust keeps the files per send: they are handed to the new one first. Without them
       // the provider would get the text of a message about a file it never receives (for an image alone: only the
@@ -3783,6 +3996,20 @@
           renderProviderXfer();
         });
         defCell.appendChild(rd); row.appendChild(defCell);
+        // 4. automatic sending: on only with the consent to the Terms for this provider (terms.rs). Turning it on
+        // asks for that consent, for this provider only; turning it off needs nothing.
+        const autoCell=document.createElement('span'); autoCell.className='prov-cell';
+        const aSw=document.createElement('label'); aSw.className='switch sm'; aSw.title=TR.provColAutoTitle||'';
+        aSw.innerHTML='<input type="checkbox"><span class="slider"></span>';
+        const aCb=aSw.querySelector('input');
+        aCb.checked=ktAutoAllowed(key);
+        aCb.setAttribute('aria-label', (TR.provColAuto||'')+' '+p.name);
+        aCb.addEventListener('change', async ()=>{
+          if(aCb.checked){ aCb.checked=false; tcAskProvider(key, null); return; }
+          if(!TAURI) return;
+          try{ tcMirror(await invoke('terms_set_provider',{ key, on:false })); }catch(e){ aCb.checked=true; }
+        });
+        autoCell.appendChild(aSw); row.appendChild(autoCell);
         box.appendChild(row);
       });
     }
@@ -3935,6 +4162,14 @@
     // code (d.reason === 'attach'), the sentence is this one, in the interface language.
     function ktAttachMsg(key){
       return (TR.ktAttachFailed||'').replace('{p}', (PROVIDERS[key] && PROVIDERS[key].name) || key);
+    }
+    // The sentence for a card that ended for a known reason: an attachment that never arrived, or a message left in
+    // the provider's field for the user to send (Qwen without consent to the simulated send). '' otherwise.
+    function ktReasonMsg(reason, key){
+      if(reason==='attach') return ktAttachMsg(key);
+      if(reason==='manual') return TR.ktQwenManual||'';
+      if(reason==='autooff') return (TR.ktAutoOff||'').split('{p}').join((PROVIDERS[key]||{}).name||key);
+      return '';
     }
     function ktStatusLabel(st, extra){
       const t=TR;
@@ -4609,7 +4844,10 @@
       });
     }
     function ktIsFinal(ref){ const c=ref.card.classList; return c.contains('done')||c.contains('error')||c.contains('timeout')||c.contains('cancelled'); }
-    function ktStatusClass(st){ return st==='done'||st==='timeout'||st==='cancelled' ? st : 'error'; }
+    // Automatic sending off is not a failure: the card shows only the explanation and the button that turns it
+    // on, with no red status ('autooff' has no colour of its own).
+    function ktStatusClass(st, reason){ return reason==='autooff' ? 'autooff' : st==='done'||st==='timeout'||st==='cancelled' ? st : 'error'; }
+    function ktStatusTxt(st, reason){ return reason==='autooff' ? '' : ktStatusLabel(st); }
     // The window is always divided into exactly N equal columns (N = cards in THIS turn) --
     // not a minimum-width-driven wrap (grid-auto-fit/-fill both reflow once cards no longer fit
     // a fixed min-width, which is not what's wanted here).
@@ -4761,9 +4999,9 @@
       if(!ref.card.classList.contains('pending') && st==='cancelled') return;
       ref.card.classList.remove('pending','blocked');
       { const ob=ref.foot.querySelector('.kt-open-block'); if(ob) ob.remove(); }
-      ref.card.classList.add(ktStatusClass(st));
+      ref.card.classList.add(ktStatusClass(st, d.reason));
       if(ref.spin) ref.spin.remove();
-      ref.st.textContent=ktStatusLabel(st)+((d.truncated&&st!=='error')?` ${TR.ktTruncated}`:'');
+      ref.st.textContent=ktStatusTxt(st, d.reason)+((d.truncated&&st!=='error')?` ${TR.ktTruncated}`:'');
       ktShowTiming(ref.card.querySelector('.kt-status'), ktTimingOf(ref));
       const text=(d.text||'').trim();
       ref.text=text;
@@ -4772,7 +5010,7 @@
         ref.foot.hidden=false;
       } else {
         ref.body.classList.add('empty');
-        ref.body.textContent = st==='captcha' ? TR.ktCaptcha : (d.reason==='attach' ? ktAttachMsg(d.key) : ktStatusLabel(st));   // the full sentence in the body
+        ref.body.textContent = st==='captcha' ? TR.ktCaptcha : (ktReasonMsg(d.reason, d.key) || ktStatusLabel(st));   // the full sentence in the body
         // login/error: offer to open the provider tab to fix it (login, cookies...). Unambiguous
         // "Accedi"/"Log in" label specifically for 'login' -- generic "Apri provider" otherwise.
         const t=TR, k=d.key;
@@ -4780,6 +5018,7 @@
         btn.textContent = st==='login' ? (t.ktLoginBtn||t.ktOpenProvider) : t.ktOpenProvider;
         btn.addEventListener('click', ()=>{ closeKotodama(); openProviderRealPage(k, st==='login'); });
         if(st!=='cancelled'){ ref.foot.hidden=false; ref.foot.prepend(btn); }
+        if(d.reason==='autooff') ktAutoOffBtn(ref.foot, d.broadcastId, d.key);
         const cp=ref.foot.querySelector('.kt-copy'); if(cp) cp.remove();
       }
       // A failed or partial answer can be sent again, 'login' included: after signing in that is the fix.
@@ -5208,7 +5447,7 @@
     function ktPrewarm(){
       if (ktPrewarmed || !TAURI) return;
       ktPrewarmed = true;
-      const keys=[...ktLoadSel()];
+      const keys=[...ktLoadSel()].filter(ktAutoAllowed);   // a page Kotodama will not send to is not loaded either
       // Pre-warming moves these tabs to an empty chat: the live conversation no longer has them, so coming back
       // to it must start them again with its context, not write into the empty chat (safe side: a refused
       // pre-warm only costs a fresh start).
@@ -5249,14 +5488,62 @@
     // verification bar sits below the hint when both are visible.
     async function syncProviderTopExtra(){
       const hintH = claudeHint.hidden ? 0 : (claudeHint.offsetHeight||0);
-      const vb=document.getElementById('ktVerifyBar');
-      if(vb){ vb.style.top = `calc(var(--topbar-h) + ${hintH}px)`; }
-      const px = hintH + ((vb && !vb.hidden) ? (vb.offsetHeight||0) : 0);
+      // the bars stack below the hint, in this order: verification queue, Google sign-in refused
+      let px = hintH;
+      ['ktVerifyBar','googleRefusedBar'].forEach(id=>{
+        const b=document.getElementById(id); if(!b) return;
+        b.style.top = `calc(var(--topbar-h) + ${px}px)`;
+        if(!b.hidden) px += (b.offsetHeight||0);
+      });
       // the chat view moves down by both bars too, so neither covers the top of the sidebar
       document.documentElement.style.setProperty('--kt-hint-h', px+'px');
       if(TAURI){ try{ await invoke('set_provider_top_extra',{px}); }catch(e){} }
     }
     claudeHintClose.addEventListener('click', ()=>{ localStorage.setItem(CLAUDE_HINT_KEY,'1'); setClaudeHint(false); });
+
+    /* ===================== GOOGLE SIGN-IN REFUSED ===================== */
+    // Rust reports it from the URL of the provider tab (app://provider-google-refused). We say what happened and
+    // offer the provider in the system browser; nothing tries to get past the refusal.
+    // `var`: closeProviderBar (above) can run before this point of the script.
+    var googleRefusedBar=document.getElementById('googleRefusedBar');
+    var googleRefusedKey='';
+    function showGoogleRefused(key){
+      const p=PROVIDERS[key]; if(!p) return;
+      googleRefusedKey=key;
+      document.getElementById('googleRefusedMsg').textContent=(TR.googleRefusedMsg||'').split('{p}').join(p.name);
+      googleRefusedBar.hidden=false; syncProviderTopExtra();
+    }
+    function hideGoogleRefused(){ if(!googleRefusedBar || googleRefusedBar.hidden) return; googleRefusedBar.hidden=true; googleRefusedKey=''; syncProviderTopExtra(); }
+    document.getElementById('googleRefusedOpen').addEventListener('click', ()=>{
+      const p=PROVIDERS[googleRefusedKey];
+      if(p && p.base && TAURI) invoke('open_url',{url:p.base}).catch(()=>{});
+      hideGoogleRefused();
+    });
+    document.getElementById('googleRefusedClose').addEventListener('click', hideGoogleRefused);
+
+    /* ===================== QWEN: SIMULATED SEND, ONLY WITH CONSENT ===================== */
+    // Asked by Rust (app://qwen-trusted-ask) when Qwen's page dropped a normal send and the user never answered.
+    // The answer is mirrored in currentSettings first, so a later save of the settings form keeps it.
+    function qwenConsentHtml(){ return ktEscHtml(TR.qwenAskIntro||'')+'<br><br><b>'+ktEscHtml(TR.qwenConsent||'')+'</b>'; }
+    function ktEscHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function qwenDecide(bid, key, accept){
+      currentSettings.qwen_trusted_input=accept; currentSettings.qwen_trusted_input_decided=true;
+      if(TAURI) invoke('kotodama_qwen_decision',{broadcastId:bid, key, accept}).catch(()=>{});
+    }
+    function askQwenTrusted(bid, key){
+      askConfirm(qwenConsentHtml(), ()=>qwenDecide(bid, key, true),
+        { title:TR.qwenAskTitle, ok:TR.qwenAskOk, cancel:TR.qwenAskNo, safe:true, onCancel:replaced=>{
+          if(!replaced){ qwenDecide(bid, key, false); return; }
+          // Another question took its place: no answer was given. Rust still waits, so ask again as soon as
+          // the other question is closed.
+          qwenReask.push({ bid, key });
+        } });
+    }
+    var qwenReask=[];
+    function qwenReaskFlush(){
+      if(!qwenReask.length) return;
+      setTimeout(()=>{ if(qwenReask.length && !confirmOverlay.classList.contains('show')){ const q=qwenReask.shift(); askQwenTrusted(q.bid, q.key); } }, 120);
+    }
     // if the window changes width the banner may wrap → re-measure
     let chRAF=0;
     window.addEventListener('resize', ()=>{ if(!claudeHint.hidden){ cancelAnimationFrame(chRAF); chRAF=requestAnimationFrame(()=>setClaudeHint(true)); } });
@@ -5268,26 +5555,318 @@
 
     /* ===================== MODALS ===================== */
     function openModal(o){ o.classList.add('show'); }
-    function closeModal(o){ if(o===settingsOverlay && vpOpen && vpOpen.where==='settings') vpClose(); o.classList.remove('show'); }
+    function closeModal(o){ if(o===settingsOverlay && vpOpen && vpOpen.where==='settings') vpClose(); o.classList.remove('show'); if(o.id==='confirmOverlay'){ if(confirmCancelAction) confirmDismissed(); qwenReaskFlush(); } }
     const settingsOverlay=document.getElementById('settingsOverlay');
     const recipeOverlay=document.getElementById('recipeOverlay');
     const welcomeOverlay=document.getElementById('welcomeOverlay');
-    function renderWelcome(){
-      const t=TR, set=(id,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
-      set('wcTitle',t.welcomeTitle); set('wcSub',t.welcomeSub);
-      set('wcP1',t.welcomeP1); set('wcP2',t.welcomeP2); set('wcP3',t.welcomeIcons);
-      set('wcTldrLabel',t.welcomeTldrLabel); set('wcTldr',t.welcomeTldr);
-      set('wcDontLabel',t.welcomeDont); set('wcOk',t.welcomeOk);
+    /* ===================== WELCOME = TERMS AND CONDITIONS ===================== */
+    // The page shows the Terms (Rust gives the text and the fingerprint that accepting it records, terms.rs), one
+    // box per provider and the specific approval of sections 6, 7, 8 and 11 (art. 1341). "Accept" needs the text
+    // scrolled to the end, that approval and at least one provider. Whatever the answer, the app stays usable:
+    // without consent the providers open and work by hand, and nothing is sent automatically (Rust refuses it too).
+    // `var`, not `let`: renderProviderXfer can run before this point of the script and reads them.
+    var TC_KEYS=['openai','anthropic','gemini','grok','perplexity','qwen','deepseek','zai','mistral','poe','kimi','meta'];
+    var tcDoc=null, tcMode='first', tcRead=false, tcDone=null, tcPrevFocus=null, tcSubstantial='1', tcBulk=false;
+    function tcEl(id){ return document.getElementById(id); }
+    function tcMajor(v){ return String(v||'').split('.')[0]; }
+    // Same rules as terms.rs (consent_valid, auto_send_allowed): a consent of the current substantial version,
+    // and the provider in it.
+    function tcConsentValid(){ return !!currentSettings.terms_version && tcMajor(currentSettings.terms_version)===(tcSubstantial||'1'); }
+    function ktAutoAllowed(key){ return tcConsentValid() && (currentSettings.terms_providers||[]).includes(key); }
+    // The terms_* commands return the settings: only what they decide is copied, the rest of the copy stays.
+    function tcMirror(s){
+      if(!s) return;
+      ['terms_version','terms_accepted_at','terms_hash','terms_lang','terms_providers','terms_updated_at','terms_seen','terms_bulk',
+       'welcome_ack','prov_icons_decided','qwen_trusted_input','qwen_trusted_input_decided'].forEach(k=>{ if(k in s) currentSettings[k]=s[k]; });
+      const q=tcEl('setQwenTrusted'); if(q){ q.checked=!!currentSettings.qwen_trusted_input; q.dataset.touched=''; }
+      renderProviderXfer(); renderConsentState();
     }
-    function showWelcome(){ renderWelcome(); openModal(welcomeOverlay); }
-    document.getElementById('wcOk').addEventListener('click', ()=>{
+    // The Terms in the language of the app: Italian, or English for every other language (with a note).
+    async function tcLoad(){
+      const l = lang==='it' ? 'it' : 'en';
+      if(TAURI){
+        try{ tcDoc=await invoke('terms_get',{ lang:l }); tcSubstantial=tcDoc.substantial||tcSubstantial; return tcDoc; }catch(e){}
+      }
+      try{
+        const r=await fetch('terms/terms-'+l+'.html');
+        tcDoc={ lang:l, html:r.ok ? await r.text() : '', version:'', hash:'', substantial:tcSubstantial, valid:tcConsentValid(), answered:!!currentSettings.terms_seen || tcConsentValid() };
+      }catch(e){ tcDoc=null; }
+      return tcDoc;
+    }
+    function tcFill(t){
+      const first=tcMode==='first';
+      tcEl('wcTitle').textContent = first ? (t.welcomeTitle||'') : (t.tcReviewH||t.welcomeTitle||'');
+      tcEl('wcSub').textContent=t.welcomeSub||'';
+      tcEl('tcSumH').textContent=t.tcSumH||'';
+      tcEl('tcSum').innerHTML=[t.tcSum1,t.tcSum2,t.tcSum3,t.tcSum4].filter(Boolean).map(x=>'<li>'+ktEscHtml(x)+'</li>').join('');
+      const ic=tcEl('wcP3'); ic.textContent=t.welcomeIcons||''; ic.hidden=!first;   // the icons: a first-start decision
+      const note=tcEl('tcLangNote'); note.hidden = lang==='it' || lang==='en'; note.textContent=t.tcLangNote||'';
+      tcEl('tcProgT').textContent=(t.tcProg||'').split('{v}').join(tcDoc ? tcDoc.version : '');
+      tcEl('tcPick').textContent=t.tcPick||'';
+      tcEl('tcAll').textContent=t.tcSelAll||''; tcEl('tcNone').textContent=t.tcSelNone||''; tcEl('tcBulkNote').textContent=t.tcBulkNote||'';
+      tcEl('tcQwTxt').textContent=t.qwenConsent||'';
+      tcEl('tcArtTxt').textContent=t.tcArt||'';
+      tcEl('tcWithdraw').textContent=t.tcWithdraw||'';
+      tcEl('tcNo').textContent = first ? (t.tcGoNo||'') : (t.close||'');
+      tcEl('wcOk').textContent=t.tcGo||'';
+      tcEl('tcDoc').setAttribute('aria-label', t.tcTermsH||'');
+    }
+    // The text is shown in the language and direction OF THE DOCUMENT (Italian or English, both left to right),
+    // whatever the interface language: English text inside a right-to-left interface must not be laid out right to left.
+    function tcSetDocLang(el){ if(!el) return; el.lang=tcDoc ? tcDoc.lang : 'en'; el.dir='ltr'; }
+    function tcRenderProviders(pre){
+      const box=tcEl('tcProv'); box.innerHTML='';
+      TC_KEYS.concat(['copilot']).forEach(key=>{
+        const p=PROVIDERS[key]; if(!p) return;
+        const soon=PROV_COMING_SOON.has(key) || !TC_KEYS.includes(key);
+        const lb=document.createElement('label'); if(soon) lb.className='soon';
+        lb.innerHTML=`<input type="checkbox"${soon?' disabled':''}><span class="ic">${ktTileBits(key).svg}</span><span class="pn"></span>`+(soon?'<em></em>':'');
+        lb.querySelector('.pn').textContent=p.name;
+        if(soon) lb.querySelector('em').textContent=TR.provComingSoon||'';
+        const cb=lb.querySelector('input');
+        if(!soon){ cb.dataset.prov=key; cb.checked=pre.has(key); cb.addEventListener('change', tcSync); }
+        box.appendChild(lb);
+      });
+    }
+    function tcPicked(){ return [...tcEl('tcProv').querySelectorAll('input[data-prov]:checked')].map(c=>c.dataset.prov); }
+    // What still keeps "Accept" off, the first missing thing from the top; '' = nothing.
+    function tcSync(){
+      const picked=tcPicked();
+      // Qwen's own consent (the Qwen clause in section 6 of the Terms): the simulated Enter exists on Windows only, as its switch in Settings
+      tcEl('tcQwRow').hidden = !(picked.includes('qwen') && IS_WIN);
+      const why = !tcRead ? 'tcWhyRead' : !picked.length ? 'tcWhyProv' : !tcEl('tcArt').checked ? 'tcWhyArt' : '';
+      tcEl('tcWhy').textContent = why ? (TR[why]||'') : '';
+      tcEl('wcOk').disabled=!!why;
+    }
+    // Reading bar: the share of the text scrolled; reaching the end once is enough (or a window tall enough to
+    // show it all). Without a text there is nothing to accept.
+    function tcOnScroll(){
+      const b=tcEl('tcDoc'), has=!!(tcDoc && tcDoc.html);
+      const max=b.scrollHeight-b.clientHeight;
+      if(has && max-b.scrollTop<6) tcRead=true;
+      const pct = tcRead ? 100 : (has && max>0 ? Math.min(100, Math.round(b.scrollTop/max*100)) : 0);
+      tcEl('tcBar').style.width=pct+'%';
+      tcEl('tcBarWrap').setAttribute('aria-valuenow', String(pct));
+      tcEl('tcPct').textContent = tcRead ? (TR.tcReadDone||'') : (TR.tcReadPct||'').split('{n}').join(String(pct));
+      tcSync();
+    }
+    // mode 'first' = at startup (must be answered); 'review' = from Settings (can be closed). opts.preselect =
+    // providers ticked on opening; opts.onAccept runs after a successful acceptance.
+    async function showWelcome(mode, opts){
+      const o=opts||{};
+      tcMode = mode==='review' ? 'review' : 'first';
+      await tcLoad();
+      tcDone=o.onAccept||null;
+      tcRead=false; tcBulk=!!o.bulk;
+      tcFill(TR);
+      const doc=tcEl('tcDoc'); doc.innerHTML=tcDoc ? tcDoc.html : ''; doc.scrollTop=0; tcSetDocLang(doc);
+      const pre=new Set(o.preselect || (tcMode==='review' && tcConsentValid() ? (currentSettings.terms_providers||[]) : []));
+      tcRenderProviders(pre);
+      tcEl('tcQw').checked=!!currentSettings.qwen_trusted_input;
+      tcEl('tcArt').checked=false;
+      tcEl('tcWithdraw').hidden = !(tcMode==='review' && tcConsentValid());
+      if(!welcomeOverlay.classList.contains('show')) tcPrevFocus=document.activeElement;
+      openModal(welcomeOverlay);
+      requestAnimationFrame(()=>{ tcOnScroll(); try{ doc.focus({ preventScroll:true }); }catch(e){ doc.focus(); } });
+    }
+    function tcClose(){
       closeModal(welcomeOverlay);
-      // The welcome says that icons are downloaded (and where to turn it off): confirming it is the decision of a
-      // new install, whether or not "don't show again" is ticked. fetch_provider_icons keeps its value.
-      currentSettings.prov_icons_decided=true;
-      if(document.getElementById('wcDont').checked) currentSettings.welcome_ack=true;
-      persistSettings(currentSettings);
-      provIconsPreload();
+      tcEl('tcDoc').innerHTML='';   // the read-only view uses the same section ids
+      tcDone=null;
+      // Focus goes back to what had it; at startup nothing had (the body), so it goes to the message field
+      // of the visible view, never to the controls that were behind the page.
+      const back=tcPrevFocus;
+      tcPrevFocus=null;
+      if(back && back!==document.body && back.focus && document.contains(back) && back.offsetParent!==null){ back.focus(); return; }
+      for(const id of ['ktInput','content']){ const el=document.getElementById(id); if(el && el.offsetParent!==null){ try{ el.focus({ preventScroll:true }); }catch(e){} return; } }
+    }
+    tcEl('tcDoc').addEventListener('scroll', tcOnScroll, { passive:true });
+    tcEl('tcArt').addEventListener('change', tcSync);
+    window.addEventListener('resize', ()=>{ if(welcomeOverlay.classList.contains('show')) tcOnScroll(); });
+    // Esc closes only the review: at startup the page waits for one of its two answers. In both cases the key
+    // stops here: a consent page is never dismissed by a key that something behind it also listens to.
+    welcomeOverlay.addEventListener('keydown', e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); if(tcMode==='review') tcClose(); } });
+    // Focus stays inside the page while it is open (Tab and Shift+Tab go round; a click on empty space does not
+    // let the next Tab reach the controls behind it). A dialog opened ON TOP of it (withdraw) keeps its own focus.
+    function tcTrapItems(){
+      return [...welcomeOverlay.querySelectorAll('.modal button, .modal input, .modal [tabindex]')]
+        .filter(el=>!el.disabled && el.getAttribute('tabindex')!=='-1' && el.offsetParent!==null);
+    }
+    function tcOtherModalOpen(){ return !!document.querySelector('#confirmOverlay.show'); }   // the only dialog that opens above this page
+    document.addEventListener('keydown', e=>{
+      if(e.key!=='Tab' || !welcomeOverlay.classList.contains('show') || tcOtherModalOpen()) return;
+      const items=tcTrapItems(); if(!items.length) return;
+      const first=items[0], last=items[items.length-1], a=document.activeElement;
+      if(!welcomeOverlay.contains(a)){ e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+      else if(e.shiftKey && a===first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && a===last){ e.preventDefault(); first.focus(); }
+    }, true);
+    document.addEventListener('focusin', e=>{
+      if(!welcomeOverlay.classList.contains('show') || tcOtherModalOpen() || welcomeOverlay.contains(e.target)) return;
+      const items=tcTrapItems(); if(items.length) items[0].focus();
+    });
+    // The select-all gesture only TICKS the provider boxes, in view and one by one editable. It never touches the
+    // approval of art. 1341, nor Qwen's own line, nor the User-Agent; reading to the end stays required.
+    tcEl('tcAll').addEventListener('click', ()=>{
+      tcEl('tcProv').querySelectorAll('input[data-prov]').forEach(c=>{ c.checked=true; });
+      tcBulk=true; tcSync();
+    });
+    tcEl('tcNone').addEventListener('click', ()=>{
+      tcEl('tcProv').querySelectorAll('input[data-prov]').forEach(c=>{ c.checked=false; });
+      tcSync();
+    });
+    // Language changed while the page is open: everything is drawn again in the new language, with the boxes
+    // ticked and the scroll position kept. If the TEXT itself changes (Italian <-> English) it starts again from the
+    // top and has to be read again: what is accepted is the text that was shown.
+    async function tcRelang(){
+      if(welcomeOverlay.classList.contains('show')){
+        const prev=tcDoc ? tcDoc.lang : '', picked=new Set(tcPicked());
+        const art=tcEl('tcArt').checked, qw=tcEl('tcQw').checked, doc=tcEl('tcDoc'), top=doc.scrollTop;
+        const act=document.activeElement, actProv=act && act.dataset ? act.dataset.prov : '', actId=act && act.id;
+        await tcLoad();
+        const same=!!tcDoc && tcDoc.lang===prev;
+        tcFill(TR);
+        if(!same){ doc.innerHTML=tcDoc ? tcDoc.html : ''; tcRead=false; }
+        tcSetDocLang(doc);
+        tcRenderProviders(picked);
+        // The approval belongs to the text that was shown: a different text has to be approved again.
+        tcEl('tcArt').checked = same ? art : false; tcEl('tcQw').checked=qw;
+        tcSync();
+        if(actProv){ const c=tcEl('tcProv').querySelector('input[data-prov="'+actProv+'"]'); if(c) c.focus(); }
+        else if(actId && actId!=='tcDoc'){ const c=tcEl(actId); if(c && welcomeOverlay.contains(c)) c.focus(); }
+        requestAnimationFrame(()=>{ doc.scrollTop = same ? top : 0; tcOnScroll(); });
+      }
+      if(termsViewOverlay.classList.contains('show')) await tvFill(true);
+    }
+    document.getElementById('wcOk').addEventListener('click', async ()=>{
+      tcSync();
+      if(tcEl('wcOk').disabled || !tcDoc) return;
+      const providers=tcPicked(), qwShown=!tcEl('tcQwRow').hidden, first=tcMode==='first', done=tcDone;
+      let s=null;
+      if(TAURI){
+        try{ s=await invoke('terms_accept',{ lang:tcDoc.lang, providers, qwenTrusted: qwShown ? tcEl('tcQw').checked : null, bulk:tcBulk }); }
+        catch(e){ toast(`${TR.openError}: ${e}`); return; }
+      } else {
+        const v=tcDoc.version||'1.0', now=new Date().toISOString();
+        s={ terms_version:v, terms_seen:v, terms_lang:tcDoc.lang, terms_providers:providers, terms_bulk:tcBulk, terms_accepted_at:now, terms_updated_at:now, welcome_ack:true, prov_icons_decided:true };
+      }
+      tcMirror(s);
+      tcClose();
+      // The page also says that icons are downloaded (and where to turn it off): answering it is that decision
+      // too, as the old welcome was. fetch_provider_icons keeps its value.
+      if(first) provIconsPreload();
+      if(done) done();
+    });
+    tcEl('tcNo').addEventListener('click', async ()=>{
+      if(tcMode==='first'){
+        if(TAURI){ try{ tcMirror(await invoke('terms_decline')); }catch(e){} }
+        else tcMirror({ terms_seen:'1.0', welcome_ack:true, prov_icons_decided:true });
+        tcClose(); provIconsPreload();
+        return;
+      }
+      tcClose();
+    });
+    tcEl('tcWithdraw').addEventListener('click', ()=>{
+      askConfirm(ktEscHtml(TR.tcWithdrawQ||''), async ()=>{
+        if(TAURI){ try{ tcMirror(await invoke('terms_withdraw')); }catch(e){ toast(`${TR.openError}: ${e}`); return; } }
+        else tcMirror({ terms_version:'', terms_providers:[], terms_bulk:false, terms_accepted_at:'', terms_hash:'' });
+        tcClose();
+      }, { title:TR.tcWithdrawTitle, ok:TR.tcWithdraw, safe:true });
+    });
+    // Turning automatic sending on for ONE provider (Settings > Providers, or the card of a message it did not
+    // get). With a consent that counts, a confirmation for that provider; without, the Terms with only it ticked.
+    function tcAskProvider(key, onDone){
+      const p=PROVIDERS[key]; if(!p || !TC_KEYS.includes(key)) return;
+      if(!tcConsentValid()){ showWelcome('review', { preselect:[key], onAccept:onDone }); return; }
+      const name=p.name, fill=s=>(s||'').split('{p}').join(name);
+      askConfirm(ktEscHtml(fill(TR.provAutoAsk)), async ()=>{
+        if(!TAURI) return;
+        try{ tcMirror(await invoke('terms_set_provider',{ key, on:true })); }catch(e){ toast(`${TR.openError}: ${e}`); return; }
+        if(onDone) onDone();
+      }, { title:fill(TR.provAutoAskTitle), ok:fill(TR.provAutoAskOk), safe:true });
+    }
+    // Settings > Providers, "Enable all". The same gesture as on the welcome page, in one step: ONE dialog lists the
+    // providers about to be turned on that have no consent yet; with no consent that counts (the approval of art.
+    // 1341 missing for this version) the Terms page opens with every provider ticked, to be read and approved as
+    // always. Qwen's own consent and the User-Agent are not touched. The record always lists single providers.
+    function tcAutoCandidates(){ return TC_KEYS.filter(k=>PROVIDERS[k] && !PROV_COMING_SOON.has(k)); }
+    function tcAskAll(){
+      const todo=tcAutoCandidates().filter(k=>!ktAutoAllowed(k));
+      if(!todo.length) return;                      // consent already on record for every provider: nothing to ask
+      if(!tcConsentValid()){ showWelcome('review', { preselect:todo, bulk:true }); return; }
+      const list='<ul class="tc-bulk-list">'+todo.map(k=>'<li>'+ktEscHtml(PROVIDERS[k].name)+'</li>').join('')+'</ul>';
+      askConfirm(ktEscHtml(TR.provBulkAsk||'')+list+'<p class="tc-bulk-note">'+ktEscHtml(TR.tcBulkNote||'')+'</p>', async ()=>{
+        if(!TAURI) return;
+        try{ tcMirror(await invoke('terms_set_providers',{ keys:todo, on:true, bulk:true })); }
+        catch(e){ toast(`${TR.openError}: ${e}`); }
+      }, { title:TR.provBulkAskTitle, ok:TR.provBulkAskOk, safe:true });
+    }
+    // "Disable all": turning off needs no consent and no dialog; the proof of the consents given stays.
+    async function tcDisableAll(){
+      const on=tcAutoCandidates().filter(k=>ktAutoAllowed(k));
+      if(!on.length || !TAURI) return;
+      try{ tcMirror(await invoke('terms_set_providers',{ keys:on, on:false, bulk:false })); }
+      catch(e){ toast(`${TR.openError}: ${e}`); }
+    }
+    document.getElementById('provAutoAll').addEventListener('click', tcAskAll);
+    document.getElementById('provAutoNone').addEventListener('click', tcDisableAll);
+    // A card refused because automatic sending is off for its provider: besides opening the page, sending can be
+    // turned on (consent for that provider only) and the message goes again at once.
+    function ktAutoOffBtn(foot, bid, key){
+      const b=document.createElement('button'); b.className='btn primary'; b.type='button'; b.textContent=TR.ktAutoOn||'';
+      b.addEventListener('click', ()=>tcAskProvider(key, ()=>ktRetryKey(bid, key)));
+      foot.prepend(b);
+    }
+    /* Settings > About: the Terms read only, the state of the consent, export and review. */
+    function tcFmtDate(iso){
+      if(!iso) return '';
+      try{ return new Intl.DateTimeFormat(document.documentElement.lang||undefined, { dateStyle:'medium', timeStyle:'short' }).format(new Date(iso)); }
+      catch(e){ return iso; }
+    }
+    function renderConsentState(){
+      const el=tcEl('setConsentState'); if(!el) return;
+      const t=TR, ok=tcConsentValid();
+      if(ok){
+        const list=(currentSettings.terms_providers||[]).filter(k=>PROVIDERS[k]).map(k=>PROVIDERS[k].name);
+        el.textContent=(t.setConsentState||'').split('{v}').join(currentSettings.terms_version)
+          .split('{d}').join(tcFmtDate(currentSettings.terms_accepted_at))
+          .split('{list}').join(list.length ? list.join(', ') : (t.setConsentNoProv||''));
+      } else el.textContent=t.setConsentNone||'';
+      const ex=tcEl('btnConsentExport'); if(ex) ex.disabled=!ok;
+    }
+    const termsViewOverlay=tcEl('termsViewOverlay');
+    // Draws the read-only Terms; `keep` = redraw of the open view after a language change (scroll kept when the
+    // text is the same one). The text carries the language and direction of the document, not of the interface.
+    async function tvFill(keep){
+      const box=termsViewOverlay.querySelector('.modal-body'), top=box ? box.scrollTop : 0, prev=tcDoc ? tcDoc.lang : '';
+      await tcLoad();
+      const same=!!tcDoc && tcDoc.lang===prev;
+      if(!keep || !same) tcEl('tvDoc').innerHTML=tcDoc ? tcDoc.html : '';
+      tcSetDocLang(tcEl('tvDoc'));
+      const n=tcEl('tvLangNote'); n.hidden = lang==='it' || lang==='en'; n.textContent=TR.tcLangNote||'';
+      tcEl('tvMeta').textContent=(TR.tcProg||'').split('{v}').join(tcDoc ? tcDoc.version : '');
+      tcEl('tvX').setAttribute('aria-label', TR.close||'');
+      tcEl('tvDoc').setAttribute('aria-label', TR.tcTermsH||'');
+      if(keep && box) box.scrollTop = same ? top : 0;
+    }
+    async function showTermsView(){
+      await tvFill(false);
+      openModal(termsViewOverlay);
+      setTimeout(()=>{ try{ tcEl('tvDoc').focus({ preventScroll:true }); }catch(e){} }, 30);
+    }
+    function closeTermsView(){ closeModal(termsViewOverlay); tcEl('tvDoc').innerHTML=''; tcEl('aboutTerms').focus(); }
+    tcEl('tvX').addEventListener('click', closeTermsView);
+    tcEl('tvOk').addEventListener('click', closeTermsView);
+    termsViewOverlay.addEventListener('click', e=>{ if(e.target===termsViewOverlay) closeTermsView(); });
+    termsViewOverlay.addEventListener('keydown', e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); closeTermsView(); } });
+    tcEl('aboutTerms').addEventListener('click', showTermsView);
+    tcEl('btnConsentReview').addEventListener('click', ()=>showWelcome('review'));
+    // Export: the record Rust builds (version, date, fingerprint, providers) is always saved into
+    // Downloads/Kotodama (never a system save dialog), the folder is shown and the path is told in a toast.
+    tcEl('btnConsentExport').addEventListener('click', async ()=>{
+      if(!TAURI) return;
+      try{ const p=await invoke('terms_export_file'); toast((TR.setConsentExportedTo||'').split('{p}').join(p)); }
+      catch(e){ toast(`${TR.openError}: ${e}`); }
     });
     /* One-time notice for an install that existed before provider icons did: nothing is downloaded until it is
        answered. A card at the top right under the bars, not a modal: the app stays usable; Esc = "No". */
@@ -5343,14 +5922,21 @@
     // no user input → safe. {v} is a semver version.
     // opts: { title, ok } replace the generic "Confirm" words for this question only; { safe:true } starts
     // with the focus on Cancel, for questions where a stray Enter must not destroy anything.
+    // opts.cancel replaces the "Cancel" word; opts.onCancel runs when the question is dismissed (Cancel, X, Esc,
+    // click outside), for questions whose "no" is an answer too. It gets `replaced` = true when another question
+    // took its place: that is not an answer of the user, so nothing must be recorded and the question must be asked again.
+    let confirmCancelAction=null;
+    function confirmDismissed(replaced){ const c=confirmCancelAction; confirmCancelAction=null; confirmAction=null; if(c) c(!!replaced); }
     function askConfirm(message,onOk,opts){
       const o=opts||{};
+      if(confirmCancelAction) confirmDismissed(true);
       document.getElementById('confirmTitle').textContent=o.title||TR.confirmTitle;
       document.getElementById('confirmOk').textContent=o.ok||TR.confirm;
-      document.getElementById('confirmMsg').innerHTML=message; confirmAction=onOk; openModal(confirmOverlay);
+      document.getElementById('confirmCancel').textContent=o.cancel||TR.cancel;
+      document.getElementById('confirmMsg').innerHTML=message; confirmAction=onOk; confirmCancelAction=o.onCancel||null; openModal(confirmOverlay);
       if(o.safe) setTimeout(()=>document.getElementById('confirmCancel').focus(), 30);
     }
-    document.getElementById('confirmOk').addEventListener('click', ()=>{ const a=confirmAction; confirmAction=null; closeModal(confirmOverlay); if(a) a(); });
+    document.getElementById('confirmOk').addEventListener('click', ()=>{ const a=confirmAction; confirmAction=null; confirmCancelAction=null; closeModal(confirmOverlay); if(a) a(); });
     document.getElementById('confirmX').addEventListener('click', ()=>closeModal(confirmOverlay));
     document.getElementById('confirmCancel').addEventListener('click', ()=>closeModal(confirmOverlay));
 
@@ -5458,6 +6044,15 @@
     const setAutostart=document.getElementById('setAutostart');
     const setAlwaysOnTop=document.getElementById('setAlwaysOnTop');
     const setLowPower=document.getElementById('setLowPower');
+    const setUa=document.getElementById('setUa');
+    const setQwenTrusted=document.getElementById('setQwenTrusted');
+    if(!IS_WIN){ const r=document.getElementById('setQwenTrustedRow'); if(r) r.hidden=true; }
+    // Turning the simulated send on from Settings needs the same consent as the question asked on a failed send.
+    setQwenTrusted.addEventListener('change', ()=>{
+      if(!setQwenTrusted.checked){ setQwenTrusted.dataset.touched='1'; return; }
+      setQwenTrusted.checked=false;
+      askConfirm(qwenConsentHtml(), ()=>{ setQwenTrusted.checked=true; setQwenTrusted.dataset.touched='1'; }, { title:TR.qwenAskTitle, ok:TR.qwenAskOk, safe:true });
+    });
     const setGesture=document.getElementById('setGesture');
     const setProvIcons=document.getElementById('setProvIcons');
     const setAdmin=document.getElementById('setAdmin');
@@ -5706,14 +6301,28 @@
       setAutostart.checked=!!currentSettings.autostart;
       setAlwaysOnTop.checked=!!currentSettings.always_on_top;
       setLowPower.checked=!!currentSettings.low_power;
+      setUa.value=currentSettings.custom_user_agent||'';
+      setQwenTrusted.checked=!!currentSettings.qwen_trusted_input; setQwenTrusted.dataset.touched='';
       renderProviderXfer();
     }
-    function openSettings(){ fillSettingsForm(); settingsShowTab('system'); openModal(settingsOverlay); checkUpdate(true); }
+    function openSettings(){ fillSettingsForm(); renderConsentState(); settingsShowTab('system'); openModal(settingsOverlay); checkUpdate(true); }
     setProvIcons.addEventListener('change', ()=>{ setProvIcons.dataset.touched='1'; });
     setTheme.addEventListener('change', ()=>applyTheme(setTheme.value)); // live preview
     setLang.addEventListener('change', ()=>{ applyLang(setLang.value); }); // live language preview (restored on Cancel)
 
+    // Same rule as settings.rs custom_user_agent_ok: one line of printable ASCII, at most 400 characters.
+    function uaValid(s){ return s.length<=400 && /^[\x20-\x7e]*$/.test(s); }
     async function saveSettings(){
+      const ua=(setUa.value||'').trim();
+      if(!uaValid(ua)){ settingsShowTab('system'); setUa.focus(); toast(TR.setUaInvalid); return; }
+      // A custom User-Agent is the user's own choice and responsibility: confirmed every time it is set or changed.
+      if(ua && ua!==(currentSettings.custom_user_agent||'')){
+        askConfirm(ktEscHtml(TR.setUaConfirm||''), ()=>{ saveSettingsNow(ua); }, { title:TR.setUaConfirmTitle, ok:TR.setUaConfirmOk, safe:true });
+        return;
+      }
+      return saveSettingsNow(ua);
+    }
+    async function saveSettingsNow(ua){
       // spread of currentSettings → does not reset provider/recipe/length/tone (managed by the tiles/controls)
       // per-recipe shortcuts: keep only non-empty, non-conflicting combos (Rust drops dupes too)
       const rh={};
@@ -5732,6 +6341,8 @@
       const rr={}; Object.keys(capturedRecipeRead).forEach(k=>{ if(capturedRecipeRead[k]===true) rr[k]=true; });
       const rp={ ...capturedRecipeProvider };
       const lowPowerChanged = !!currentSettings.low_power !== setLowPower.checked;
+      const uaChanged = ua !== (currentSettings.custom_user_agent||'');
+      const qwTouched = setQwenTrusted.dataset.touched==='1';
       // Provider icons: the switch only counts if the user touched it (touching = the decision). Untouched:
       // an existing decision stays as it is, and an undecided state stays undecided (the notice remains).
       const piTouched = setProvIcons.dataset.touched==='1';
@@ -5739,8 +6350,12 @@
       const piBefore = provIconsAllowed();
       const provIconsChanged = piTouched && (!piDecided || setProvIcons.checked !== piBefore);
       const piFetch = piTouched ? setProvIcons.checked : currentSettings.fetch_provider_icons;
-      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, provider_hotkey:ph, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, fetch_provider_icons:piFetch, prov_icons_decided:(piTouched || piDecided), autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, recipe_read:rr, recipe_provider:rp, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
+      const desired={ ...currentSettings, language:setLang.value, hotkey:capturedHotkey, provider_hotkey:ph, monitor_enabled:rhGlobalNotify.checked, gesture_menu:setGesture.checked, fetch_provider_icons:piFetch, prov_icons_decided:(piTouched || piDecided), autostart:setAutostart.checked, always_on_top:setAlwaysOnTop.checked, low_power:setLowPower.checked, custom_user_agent:ua, qwen_trusted_input:(qwTouched ? setQwenTrusted.checked : !!currentSettings.qwen_trusted_input), qwen_trusted_input_decided:(qwTouched || !!currentSettings.qwen_trusted_input_decided), theme:setTheme.value, default_provider:setProvider.value, recipe:setRecipe.value, recipe_hotkeys:rh, recipe_notify:rn, recipe_menu:rm, recipe_read:rr, recipe_provider:rp, kt_temp_providers:(function(){ const m={}; document.querySelectorAll('.prov-xfer-temp input[data-prov]').forEach(cb=>{ if(!cb.disabled) m[cb.dataset.prov]=cb.checked; }); return m; })() };
+      // `set_settings` ignores the Qwen consent on purpose (only an explicit answer changes it), so the switch
+      // is saved through the same command as the dialog's answer; an empty broadcast id only stores it.
+      if(qwTouched){ await invoke('kotodama_qwen_decision',{broadcastId:'', key:'qwen', accept:setQwenTrusted.checked}).catch(()=>{}); }
       const eff=await persistSettings(desired);   // effective (hotkey may change to a fallback)
+      if(qwTouched){ eff.qwen_trusted_input=setQwenTrusted.checked; eff.qwen_trusted_input_decided=true; }
       currentSettings=eff; await applySettings(eff);
       if(provIconsChanged){ provIconsReset(); hideProvIconsNotice(); }
       closeModal(settingsOverlay);   // closes the Constraints panel first, so a half-done edit is tidied
@@ -5750,6 +6365,8 @@
       // Resource saving acts on the arguments WebView2 creates its environment with: it reads them
       // once, at process start, so the change only takes effect after a restart.
       else if(lowPowerChanged){ toast(TR.setLowPowerRestart); }
+      // The User-Agent is read when the first provider tab is created (browser.rs session_user_agent).
+      else if(uaChanged){ toast(TR.setUaRestart); }
       else { toast(TR.settingsSaved); }
     }
     let restoring=false;   // during restore do not re-save (avoids resetting the indices)
@@ -6551,7 +7168,18 @@
         clearTimeout(provLoadingSafety);
         body.classList.remove('provider-loading'); // webview really on screen → remove overlay
       });
-      listen('app://provider-closed', ()=>{ closeProviderBar(); });
+      listen('app://provider-closed', ()=>{ closeProviderBar(); hideGoogleRefused(); });
+      listen('app://provider-google-refused', e=>{ const d=e.payload||{}; if(d.key) showGoogleRefused(d.key); });
+      // that tab went on to a page that is not the refusal: the notice goes away with it
+      listen('app://provider-google-cleared', e=>{ const d=e.payload||{}; if(d.key && d.key===googleRefusedKey) hideGoogleRefused(); });
+      listen('app://qwen-trusted-ask', e=>{ const d=e.payload||{}; if(d.broadcastId && d.key) askQwenTrusted(d.broadcastId, d.key); });
+      // Qwen handed the message to the user (no consent to the simulated send): bring its tab forward, text in place.
+      listen('app://kotodama-answer', e=>{ const d=e.payload||{}; if(d.reason==='manual' && d.key){
+        // From the chat: bring Qwen's tab forward. From an inline transform (Ctrl+Alt+C) the user is working in
+        // another app: only tell where the text is, the active window does not change.
+        if(inlinePending[d.broadcastId] || inlineClosed.has(d.broadcastId)){ toast(TR.ktQwenManualInline||''); return; }
+        toast(TR.ktQwenManual||''); closeKotodama(); openProviderRealPage(d.key, false);
+      } });
       // Kotodama meta-chat: per-provider answers and progress heartbeats.
       listen('app://kotodama-answer', e=>{ ktOnAnswer(e.payload||{}); ktSyncAllRetry(); });
       listen('app://kotodama-progress', e=>{ ktOnProgress(e.payload||{}); });
@@ -6794,7 +7422,11 @@
       provIconsPreload();   // real provider icons arrive in the background; the disc with initials shows meanwhile
       showAppVersion();
       openKotodama();   // Kotodama is the start page; the classic builder stays reachable via the "← Ai Prompt Builder" button (hidden while KT_ONLY)
-      if(currentSettings.welcome_ack) maybeShowProvIconsNotice(); else showWelcome();   // welcome on first launch: privacy + provider boundary (it overlaps anyway)
+      // The welcome page is the Terms: shown at startup until it is answered for the current substantial version
+      // (a new install, and once after the update that brings it or a substantial change). Otherwise the one-time
+      // icons notice, as before.
+      await tcLoad();
+      if(tcDoc && !tcDoc.answered) showWelcome('first'); else maybeShowProvIconsNotice();
       setTimeout(()=>checkUpdate(false), 2500);   // silent update check at startup
       // ...and then periodically (every hour), without stacking a second prompt if a dialog is already open
       setInterval(()=>{ if(!confirmOverlay.classList.contains('show')) checkUpdate(false); }, 3600000);
