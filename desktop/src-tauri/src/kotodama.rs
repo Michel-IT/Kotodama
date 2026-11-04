@@ -1198,6 +1198,7 @@ const PROVIDER_HOSTS: &[&str] = &[
     "chat.mistral.ai",
     "poe.com",
     "www.kimi.com",
+    "www.kimi.ai",
     "www.meta.ai",
     "copilot.com",
     "www.copilot.com",

@@ -68,7 +68,7 @@ const SITES: &[Site] = &[
     Site { key: "zai", home: "https://chat.z.ai/", extra_roots: &["zhipuai.cn", "bigmodel.cn", "chatglm.cn"] },
     Site { key: "mistral", home: "https://chat.mistral.ai/", extra_roots: &[] },
     Site { key: "poe", home: "https://poe.com/", extra_roots: &["poecdn.net", "quora.com"] },
-    Site { key: "kimi", home: "https://www.kimi.com/", extra_roots: &["moonshot.cn", "moonshot.ai"] },
+    Site { key: "kimi", home: "https://www.kimi.ai/", extra_roots: &["kimi.com", "moonshot.cn", "moonshot.ai"] },
     Site { key: "meta", home: "https://www.meta.ai/", extra_roots: &["meta.com", "facebook.com", "fbcdn.net"] },
     Site { key: "copilot", home: "https://copilot.microsoft.com/", extra_roots: &["bing.com", "office.net"] },
 ];

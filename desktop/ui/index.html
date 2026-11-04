@@ -734,8 +734,14 @@
       border-bottom:1px solid var(--border-soft); }
     .kt-side-panel .recipes { padding:6px; flex:1 1 auto; min-height:60px; overflow-y:auto; }
     .kt-search input { font-size:12.5px; }
+    /* The list fills the height, so "Delete all history" stays at the bottom of the bar whatever the number of rows. */
     .kt-sess-list { flex:1; min-height:0; overflow-y:auto; padding:6px; }
-    .kt-sess { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:10px;
+    /* The sticky day header casts a 1px line under itself: the first row of a group needs room so the active
+       frame is not covered by that line. */
+    .kt-side:not(.collapsed) .kt-day + .kt-sess { margin-top:2px; }
+    /* The last group, when folded, ends the list: its day line would read as a divider above the clear button. */
+    .kt-side:not(.collapsed) .kt-group.folded:last-child > .kt-day { box-shadow:none; }
+    .kt-sess { display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:10px;
       cursor:pointer; border:1px solid transparent; }
     .kt-sess:hover { background:var(--field); }
     .kt-sess.active { background:var(--field); border-color:var(--accent); }
@@ -2074,7 +2080,7 @@
       zai:        { name:'Z.ai',       base:'https://chat.z.ai/',               q:'',    mode:'clipboard', autosend:true, loginUrl:'https://chat.z.ai/auth' },
       mistral:    { name:'Mistral',    base:'https://chat.mistral.ai/chat',     q:'',    mode:'clipboard', autosend:true },
       poe:        { name:'Poe',        base:'https://poe.com/',                 q:'',    mode:'clipboard', autosend:true, tempClick:true },
-      kimi:       { name:'Kimi',       base:'https://www.kimi.com/',            q:'',    mode:'clipboard', autosend:true },
+      kimi:       { name:'Kimi',       base:'https://www.kimi.ai/',             q:'',    mode:'clipboard', autosend:true },
       meta:       { name:'Meta AI',    base:'https://www.meta.ai/',             q:'',    mode:'clipboard', autosend:true },
       copilot:    { name:'Copilot',    base:'https://copilot.com/',             q:'',    mode:'clipboard', autosend:true, tempClick:true },
       kotodama:   { name:'Kotodama',   base:'',                                 q:'',    mode:'meta' }
