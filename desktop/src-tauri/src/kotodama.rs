@@ -2437,7 +2437,14 @@ const HARVEST_JS: &str = r##"
     // by the chrome-skipping walk instead. Only then: the cheap innerText stays the hot path everywhere else.
     var withReasoning = false;
     try { var tc = el && el.querySelector('.thinking-container'); withReasoning = !!tc && isChrome(tc); } catch(e){}
-    return sanitizeAnswer(el ? (withReasoning ? cleanAnswerText(el) : (el.innerText || '')) : '');
+    var txt = el ? (withReasoning ? cleanAnswerText(el) : (el.innerText || '')) : '';
+    // Kimi's thinking model can put its whole reply inside the reasoning block, which the page keeps hidden
+    // (display:none, so innerText is empty and the page itself shows nothing). Only when nothing else was read,
+    // the hidden text section is taken (textContent: innerText skips display:none). Read live 18/11/2026.
+    if (el && !txt.trim()) {
+      try { var pf = el.querySelector('.process-flow__text-section'); if (pf) txt = (pf.textContent || '').trim(); } catch(e){}
+    }
+    return sanitizeAnswer(txt);
   }
   // "Still generating?" - LANGUAGE-INDEPENDENT (no localized aria-label text). Uses the
   // per-provider BUSY_SEL (data-* attrs) + neutral streaming markers. NB: this only speeds
@@ -2565,7 +2572,25 @@ const HARVEST_JS: &str = r##"
           return;
         }
         if (tag === 'table') {
-          var rows = n.querySelectorAll('tr'), lines = [];
+          // The body half of a split table (see below) was already written with its header.
+          if (mergedBodies.has(n)) return;
+          var rows = Array.prototype.slice.call(n.querySelectorAll('tr')), lines = [];
+          // Kimi draws one table as two: a header-only <table> (sticky) and, in a sibling wrapper, a body-only
+          // <table>. Converted one by one, the first data row became the header. A header-only table takes the
+          // rows of the next table within the same wrapper (three levels up at most) when that one has no header
+          // and the same column count; the body table is then skipped. Read live 18/11/2026.
+          if (rows.length === 1 && !n.querySelector('td')) {
+            var cols = rows[0].querySelectorAll('th').length, anc = n.parentElement, body = null;
+            for (var up = 0; up < 3 && anc && !body; up++, anc = anc.parentElement) {
+              var ts = anc.querySelectorAll('table'), k = Array.prototype.indexOf.call(ts, n);
+              var nx = k > -1 ? ts[k + 1] : null;
+              if (nx && !nx.querySelector('th')) {
+                var r0 = nx.querySelector('tr');
+                if (r0 && r0.querySelectorAll('td').length === cols) body = nx;
+              }
+            }
+            if (body) { mergedBodies.add(body); rows = rows.concat(Array.prototype.slice.call(body.querySelectorAll('tr'))); }
+          }
           rows.forEach(function(tr, ri){
             var cells = tr.querySelectorAll('th,td');
             var cellTxt = Array.prototype.map.call(cells, function(c){ return inlineMd(c).replace(/\s*\n\s*/g, ' ').replace(/ {2,}/g, ' ').trim().replace(/\|/g, '\\|'); });
@@ -2580,7 +2605,14 @@ const HARVEST_JS: &str = r##"
       flush();
       return out.join('\n\n');
     }
-    try { return blockMd(el, 0).trim(); } catch(e){ return ''; }
+    var mergedBodies = new WeakSet();
+    try {
+      var md = blockMd(el, 0).trim();
+      // Kimi's hidden reasoning block holding the whole reply (see answerTxt): an ancestor is display:none, so
+      // the walk above skipped it. Walked from the text section itself, whose own nodes are not hidden.
+      if (!md) { var pf = el.querySelector('.process-flow__text-section'); if (pf) { mergedBodies = new WeakSet(); md = blockMd(pf, 0).trim(); } }
+      return md;
+    } catch(e){ return ''; }
   }
   // The provider's OWN verified "generating" marker, without the generic fallbacks. Kept separate
   // from `isBusy()` on purpose: the fallbacks are guesses that false-positive on unrelated controls,

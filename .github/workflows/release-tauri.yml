@@ -30,7 +30,7 @@ jobs:
       matrix:
         include:
           - { os: windows-latest, args: '' }
-          - { os: macos-14,       args: '--bundles app,dmg',      experimental: true }
+          - { os: macos-15,       args: '--bundles app,dmg',      experimental: true }
           - { os: ubuntu-22.04,   args: '--bundles deb,appimage', experimental: true }
 
     runs-on: ${{ matrix.os }}
