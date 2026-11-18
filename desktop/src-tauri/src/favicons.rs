@@ -28,7 +28,7 @@ use std::time::{Duration, Instant};
 
 use base64::Engine;
 use serde::Serialize;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use url::{Host, Url};
 
 const MAX_ICON_BYTES: usize = 64 * 1024;
@@ -70,7 +70,7 @@ const SITES: &[Site] = &[
     Site { key: "poe", home: "https://poe.com/", extra_roots: &["poecdn.net", "quora.com"] },
     Site { key: "kimi", home: "https://www.kimi.ai/", extra_roots: &["kimi.com", "moonshot.cn", "moonshot.ai"] },
     Site { key: "meta", home: "https://www.meta.ai/", extra_roots: &["meta.com", "facebook.com", "fbcdn.net"] },
-    Site { key: "copilot", home: "https://copilot.microsoft.com/", extra_roots: &["bing.com", "office.net"] },
+    Site { key: "copilot", home: "https://copilot.microsoft.com/", extra_roots: &["copilot.com", "bing.com", "office.net"] },
 ];
 
 fn site_for(key: &str) -> Option<&'static Site> {
@@ -707,6 +707,57 @@ async fn download(site: &Site) -> Outcome {
     } else {
         Outcome::NotFound
     }
+}
+
+/// Icon offered by the provider's OWN page, already open in the app. Some CDNs refuse a plain download from a
+/// non-browser client (DeepSeek, Mistral) but serve the same file to the page itself, so the page reads its
+/// logo from its own origin and hands the bytes here. Accepted only from a page of the provider's own site
+/// (the same registrable domain as the site's home or its listed roots), with the same size cap and the same
+/// validation as a download. Stored in the same cache and announced to the interface at once.
+#[tauri::command]
+pub fn provider_icon_offer(app: AppHandle, webview: tauri::Webview, key: String, data: String) -> bool {
+    let Some(site) = site_for(&key) else { return false };
+    let enabled = app
+        .state::<crate::AppState>()
+        .settings
+        .lock()
+        .map(|s| s.prov_icons_decided && s.fetch_provider_icons)
+        .unwrap_or(false);
+    if !enabled || data.len() > MAX_ICON_BYTES * 4 / 3 + 8 {
+        return false;
+    }
+    let page_ok = webview
+        .url()
+        .ok()
+        .and_then(|u| u.host_str().map(root_domain))
+        .map(|pr| {
+            let home = Url::parse(site.home).ok().and_then(|u| u.host_str().map(root_domain));
+            home.as_deref() == Some(pr.as_str()) || site.extra_roots.iter().any(|r| *r == pr)
+        })
+        .unwrap_or(false);
+    if !page_ok {
+        return false;
+    }
+    let Ok(bytes) = base64::engine::general_purpose::STANDARD.decode(data.as_bytes()) else { return false };
+    if bytes.len() > MAX_ICON_BYTES || validate_icon(&bytes).is_none() {
+        return false;
+    }
+    let Some(dir) = cache_dir(&app) else { return false };
+    let _ = std::fs::create_dir_all(&dir);
+    let icon_path = dir.join(format!("{}.icon", site.key));
+    // The same bytes again (every page load offers them): nothing to write, nothing to announce.
+    if std::fs::read(&icon_path).map(|old| old == bytes).unwrap_or(false) {
+        return true;
+    }
+    if write_atomic_bytes(&icon_path, &bytes).is_err() {
+        return false;
+    }
+    let _ = std::fs::remove_file(dir.join(format!("{}.miss", site.key)));
+    let _ = app.emit(
+        "app://provider-icon",
+        serde_json::json!({ "key": site.key, "data_url": to_data_url(&bytes, validate_icon(&bytes).unwrap_or(Kind::Png)) }),
+    );
+    true
 }
 
 // ---------------------------------------------------------------------------------------------------------------

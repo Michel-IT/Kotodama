@@ -7189,6 +7189,8 @@
     /* ===================== TAURI LISTENERS ===================== */
     function wireTauri(){
       if(!TAURI) return;
+      // A provider page offered its own icon (see provider_icon_offer): show it at once, in the bar and the panel.
+      listen('app://provider-icon', e=>{ const d=e.payload||{}; if(!d.key || !provIconOk(d.data_url)) return; PROV_ICONS[d.key]=d.data_url; provIconsLsPut(d.key,d.data_url); document.querySelectorAll(`.pico[data-pico="${d.key}"]`).forEach(el=>{ provIconFill(el,d.key); }); });
       // Main hotkey / toast "Open" / tray: fill Kotodama's composer and stay on the home view.
       // The user picks recipe/provider from there; nothing auto-sends. Used to fill the classic
       // builder's #content, invisible now that it sits under the always-on Kotodama view (KT_ONLY).

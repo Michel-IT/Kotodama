@@ -4729,6 +4729,36 @@ pub fn on_page_finished<R: Runtime>(webview: &tauri::Webview<R>, key: &str) {
     // passively probe whether it needs login, so the app can auto-show it without requiring an
     // actual send attempt first.
     let _ = webview.eval(&login_probe_js(key));
+    let _ = webview.eval(&icon_offer_js(key));
+}
+
+/// Once per provider page load: the page reads its own favicon (same origin, so the browser lets it through where a
+/// plain download is refused) and hands the bytes to `provider_icon_offer`. Rust checks origin, size and type again.
+fn icon_offer_js(key: &str) -> String {
+    r#"(function(){
+  var KEY = "__KEY__";
+  var MAX = 65536;
+  function rootOf(h){ var l=(h||'').split('.'); return l.length>2 ? l.slice(-2).join('.') : (h||''); }
+  // Same registrable domain (fe-static.deepseek.com belongs to deepseek.com); Rust checks the page's domain again.
+  function sameSite(u){ try { var x=new URL(u, location.href); return (x.protocol==='https:') && rootOf(x.hostname)===rootOf(location.hostname); } catch(e){ return false; } }
+  function candidates(){
+    var out = [];
+    var links = document.querySelectorAll('link[rel~="icon"]');
+    for (var i=0;i<links.length;i++){ var h = links[i].href; if (h && sameSite(h) && out.indexOf(h)<0) out.push(h); }
+    var ico = location.origin + '/favicon.ico'; if (out.indexOf(ico)<0) out.push(ico);
+    return out.slice(0,3);
+  }
+  function toB64(buf){ var s='', b=new Uint8Array(buf); for (var i=0;i<b.length;i+=8192) s += String.fromCharCode.apply(null, b.subarray(i,i+8192)); return btoa(s); }
+  function tryNext(list, i){
+    if (i>=list.length) return;
+    fetch(list[i], {credentials:'omit'}).then(function(r){ if (!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(function(buf){
+        if (buf.byteLength===0 || buf.byteLength>MAX) throw 0;
+        window.__TAURI__.core.invoke('provider_icon_offer', { key: KEY, data: toB64(buf) }).catch(function(){});
+      }).catch(function(){ tryNext(list, i+1); });
+  }
+  setTimeout(function(){ try { if (window.__TAURI__ && window.__TAURI__.core) tryNext(candidates(), 0); } catch(e){} }, 4000);
+})();"#.replace("__KEY__", key)
 }
 
 /// Broadcast `text` to the given provider tabs WITHOUT showing them.

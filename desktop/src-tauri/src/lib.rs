@@ -2648,6 +2648,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             browser::show_provider_tab,
             favicons::provider_icon,
+            favicons::provider_icon_offer,
             kotodama::kotodama_broadcast,
             kotodama::kotodama_set_attachments,
             kotodama::kotodama_reuse_attachments,
