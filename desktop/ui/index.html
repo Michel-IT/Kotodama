@@ -183,6 +183,11 @@
       object-fit:cover;
     }
     .ab-brand h1 { font-size:15px; font-weight:650; letter-spacing:.2px; white-space:nowrap; }
+    /* The wordmark (from the README banner) replaces icon + title; the square icon comes back when the bar is
+       narrow and a provider is open. The title stays in the DOM, hidden, for screen readers. */
+    .ab-brand .wordmark { height:32px; width:auto; display:block; flex:none; }
+    .ab-brand .spark { display:none; }
+    .ab-brand h1 { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
     .ab-spacer { flex:1; align-self:stretch; }
 
     .ab-tools { display:flex; gap:8px; align-items:center; }
@@ -254,9 +259,12 @@
     .prov-more-menu .kt-add-row:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; background:var(--panel-2); }
     /* Always keep a grab area right before the window controls, so the window can be dragged. */
     .ab-grip { flex:none; width:28px; align-self:stretch; }
-    /* on narrow windows hide the brand text (the logo stays) so it does not
+    /* on narrow windows with a provider open, swap the wordmark for the square icon so the brand does not
        collide with the provider nav buttons */
-    @media (max-width:880px) { body.provider-open .ab-brand h1 { display:none; } }
+    @media (max-width:880px) {
+      body.provider-open .ab-brand .wordmark { display:none; }
+      body.provider-open .ab-brand .spark { display:block; }
+    }
     .pc-close {
       display:flex; align-items:center; gap:6px; flex:none; height:30px; padding:0 12px; border-radius:8px;
       border:1px solid var(--border); background:var(--field); color:var(--text); cursor:pointer;
@@ -1401,7 +1409,8 @@
     <!-- Top bar: titlebar (drag) + provider nav + window controls -->
     <div class="appbar" id="appbar" data-tauri-drag-region>
       <div class="ab-brand" data-tauri-drag-region>
-        <img class="spark" src="logo.png" alt="Kotodama" data-tauri-drag-region>
+        <img class="spark" src="logo.png" alt="" data-tauri-drag-region>
+        <img class="wordmark" src="wordmark.png" alt="" draggable="false" data-tauri-drag-region>
         <h1 data-tauri-drag-region>Kotodama</h1>
       </div>
 
